@@ -1,9 +1,56 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type SyntheticEvent } from "react";
 
 import type { Photo } from "../data/photos";
 import { useScrollLock } from "../lib/useScrollLock";
 import { cx } from "../lib/cx";
 import { useI18n } from "../lib/i18n";
+
+const CROP_RATIO_THRESHOLD = 2;
+
+function clamp(n: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, n));
+}
+
+type MediaLayout = {
+  aspect: number; // container width / height
+  shouldCrop: boolean;
+  orientation: "landscape" | "portrait" | "square";
+};
+
+function computeMediaLayout(naturalWidth: number, naturalHeight: number): MediaLayout {
+  if (!naturalWidth || !naturalHeight) return { aspect: 1, shouldCrop: false, orientation: "square" };
+
+  const longEdge = Math.max(naturalWidth, naturalHeight);
+  const shortEdge = Math.min(naturalWidth, naturalHeight);
+  const aspectRatio = longEdge / shortEdge;
+
+  const ratio = naturalWidth / naturalHeight;
+  const orientation = ratio > 1 ? "landscape" : ratio < 1 ? "portrait" : "square";
+
+  const shouldCrop = aspectRatio > CROP_RATIO_THRESHOLD;
+  const aspect = shouldCrop ? clamp(ratio, 1 / CROP_RATIO_THRESHOLD, CROP_RATIO_THRESHOLD) : ratio;
+
+  return { aspect, shouldCrop, orientation };
+}
+
+type Size = { w: number; h: number };
+
+function fitBox(maxW: number, maxH: number, aspect: number): Size {
+  const safeAspect = Number.isFinite(aspect) && aspect > 0 ? aspect : 1;
+
+  let w = maxW;
+  let h = w / safeAspect;
+
+  if (h > maxH) {
+    h = maxH;
+    w = h * safeAspect;
+  }
+
+  return {
+    w: Math.max(0, Math.floor(w)),
+    h: Math.max(0, Math.floor(h))
+  };
+}
 
 type Props = {
   photo: Photo;
@@ -23,6 +70,28 @@ export default function PhotoModal({
   hasNext = false
 }: Props) {
   const { t } = useI18n();
+
+  const [viewport, setViewport] = useState(() => ({
+    w: typeof window === "undefined" ? 0 : window.innerWidth,
+    h: typeof window === "undefined" ? 0 : window.innerHeight
+  }));
+
+  useEffect(() => {
+    const onResize = () => setViewport({ w: window.innerWidth, h: window.innerHeight });
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
+  const [layout, setLayout] = useState<MediaLayout>(() => computeMediaLayout(photo.width, photo.height));
+
+  useEffect(() => {
+    setLayout(computeMediaLayout(photo.width, photo.height));
+  }, [photo.id, photo.width, photo.height]);
+
+  const onImgLoad = (e: SyntheticEvent<HTMLImageElement>) => {
+    const img = e.currentTarget;
+    setLayout(computeMediaLayout(img.naturalWidth, img.naturalHeight));
+  };
 
   const closeBtnRef = useRef<HTMLButtonElement | null>(null);
   const titleId = useMemo(() => `photo-title-${photo.id}`, [photo.id]);
@@ -59,6 +128,31 @@ export default function PhotoModal({
     photo.settings ? { k: t("photo.meta.settings"), v: photo.settings } : null
   ].filter(Boolean) as Array<{ k: string; v: string }>;
 
+  const isStacked = viewport.w <= 980;
+  const sideW = isStacked ? 0 : viewport.w <= 1180 ? 360 : 420;
+
+  const maxModalW = viewport.w * 0.92;
+  const maxModalH = viewport.h * 0.92;
+
+  const minStackSideH = 220;
+
+  const maxMediaW = isStacked ? maxModalW : Math.max(0, maxModalW - sideW);
+  const maxMediaH = isStacked ? Math.max(0, maxModalH - minStackSideH) : maxModalH;
+
+  const mediaSize = fitBox(maxMediaW, maxMediaH, layout.aspect);
+  const modalW = isStacked ? mediaSize.w : mediaSize.w + sideW;
+  const modalH = isStacked ? Math.min(maxModalH, mediaSize.h + minStackSideH) : mediaSize.h;
+  const sideH = isStacked ? Math.max(0, modalH - mediaSize.h) : modalH;
+
+  const modalStyle = {
+    "--modal-w": `${modalW}px`,
+    "--modal-h": `${modalH}px`,
+    "--media-w": `${mediaSize.w}px`,
+    "--media-h": `${mediaSize.h}px`,
+    "--side-w": `${sideW}px`,
+    "--side-h": `${sideH}px`
+  } as CSSProperties;
+
   return (
     <div
       className="backdrop"
@@ -69,13 +163,14 @@ export default function PhotoModal({
     >
       <div
         className={cx("card", "modal")}
+        style={modalStyle}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
         onMouseDown={(e) => e.stopPropagation()}
       >
-        <div className="modalMedia">
-          <img className="modalImg" src={photo.src} alt={photo.alt} />
+        <div className={cx("modalMedia", layout.orientation, layout.shouldCrop && "isCrop")}>
+          <img className="modalImg" src={photo.src} alt={photo.alt} onLoad={onImgLoad} />
         </div>
 
         <div className="modalSide">
