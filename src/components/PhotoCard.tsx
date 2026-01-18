@@ -2,12 +2,15 @@ import type { Photo } from "../data/photos";
 import { formatYear } from "../lib/date";
 import { useI18n } from "../lib/i18n";
 
+import ResponsiveFlickrImage from "./ResponsiveFlickrImage";
+
 type Props = {
   photo: Photo;
   onOpen: (id: string) => void;
+  priority?: boolean;
 };
 
-export default function PhotoCard({ photo, onOpen }: Props) {
+export default function PhotoCard({ photo, onOpen, priority = false }: Props) {
   const { t } = useI18n();
   const year = formatYear(photo.date);
 
@@ -18,13 +21,14 @@ export default function PhotoCard({ photo, onOpen }: Props) {
       onClick={() => onOpen(photo.id)}
       aria-label={t("photo.open", { title: photo.title })}
     >
-      <img
+      <ResponsiveFlickrImage
         className="photoImg"
-        src={photo.src}
+        baseUrl={photo.src}
+        originalWidth={photo.width}
+        originalHeight={photo.height}
+        variant="grid"
         alt={photo.alt}
-        loading="lazy"
-        decoding="async"
-        style={{ aspectRatio: `${photo.width} / ${photo.height}` }}
+        priority={priority}
       />
 
       <div className="photoOverlay">
