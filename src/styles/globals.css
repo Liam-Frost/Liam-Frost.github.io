@@ -231,6 +231,73 @@ img {
   overflow: hidden;
 }
 
+/*
+  Performance degrade ladder (runtime toggles)
+  - html[data-perf-tier="0..3"] is set by QualityProvider
+  - html[data-perf-filters="on|off"] is set by QualityProvider
+*/
+html[data-perf-filters="off"] .photoCard,
+html[data-perf-filters="off"] .photoOverlay,
+html[data-perf-filters="off"] .backdrop,
+html[data-perf-filters="off"] .input,
+html[data-perf-filters="off"] .select,
+html[data-perf-filters="off"] .metaItem,
+html[data-perf-filters="off"] .navLinks {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+/* Keep header looking intentional: only fully remove blur at tier 0. */
+html[data-perf-tier="0"] .siteHeader {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  background: rgba(33, 52, 72, 0.92);
+}
+
+@media (prefers-color-scheme: light) {
+  html[data-theme="system"][data-perf-tier="0"] .siteHeader {
+    background: rgba(234, 224, 207, 0.95);
+  }
+}
+
+html[data-theme="light"][data-perf-tier="0"] .siteHeader {
+  background: rgba(234, 224, 207, 0.95);
+}
+
+html[data-perf-filters="off"] .photoCard,
+html[data-perf-filters="off"] .photoOverlay,
+html[data-perf-filters="off"] .metaItem,
+html[data-perf-filters="off"] .input,
+html[data-perf-filters="off"] .select,
+html[data-perf-filters="off"] .navLinks {
+  background: rgba(234, 224, 207, 0.12);
+}
+
+html[data-theme="light"][data-perf-filters="off"] .photoCard,
+html[data-theme="light"][data-perf-filters="off"] .photoOverlay,
+html[data-theme="light"][data-perf-filters="off"] .metaItem,
+html[data-theme="light"][data-perf-filters="off"] .input,
+html[data-theme="light"][data-perf-filters="off"] .select,
+html[data-theme="light"][data-perf-filters="off"] .navLinks {
+  background: rgba(255, 255, 255, 0.82);
+}
+
+html[data-perf-filters="off"] .bgFx::before {
+  filter: none;
+}
+
+html[data-perf-tier="0"] .brandMark,
+html[data-perf-tier="1"] .brandMark {
+  animation: none !important;
+}
+
+html[data-perf-tier="0"] .reveal,
+html[data-perf-tier="1"] .reveal {
+  filter: none;
+  transition: opacity 220ms var(--ease), transform 220ms var(--ease);
+}
+
+
 .bgFx::before,
 .bgFx::after {
   content: "";

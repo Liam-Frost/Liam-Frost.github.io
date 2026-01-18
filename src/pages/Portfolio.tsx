@@ -158,7 +158,7 @@ export default function PortfolioPage() {
           {filtered.map((p, idx) => (
             <div key={p.id} className="masonryItem">
               <Reveal delayMs={(idx % 8) * 35}>
-                <PhotoCard photo={p} onOpen={open} />
+                <PhotoCard photo={p} onOpen={open} priority={idx < 4} />
               </Reveal>
             </div>
           ))}

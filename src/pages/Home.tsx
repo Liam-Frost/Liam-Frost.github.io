@@ -200,7 +200,7 @@ export default function HomePage() {
             {featured.map((p, idx) => (
               <div key={p.id} className="masonryItem">
                 <Reveal delayMs={(idx % 6) * 40}>
-                  <PhotoCard photo={p} onOpen={openFeatured} />
+                  <PhotoCard photo={p} onOpen={openFeatured} priority={idx < 2} />
                 </Reveal>
               </div>
             ))}

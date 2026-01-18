@@ -1,9 +1,11 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type SyntheticEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 
 import type { Photo } from "../data/photos";
 import { useScrollLock } from "../lib/useScrollLock";
 import { cx } from "../lib/cx";
 import { useI18n } from "../lib/i18n";
+import { useQuality } from "../perf/useQuality";
+import ResponsiveFlickrImage from "./ResponsiveFlickrImage";
 
 const CROP_RATIO_THRESHOLD = 2;
 
@@ -70,6 +72,7 @@ export default function PhotoModal({
   hasNext = false
 }: Props) {
   const { t } = useI18n();
+  const { config } = useQuality();
 
   const [viewport, setViewport] = useState(() => ({
     w: typeof window === "undefined" ? 0 : window.innerWidth,
@@ -88,15 +91,15 @@ export default function PhotoModal({
     setLayout(computeMediaLayout(photo.width, photo.height));
   }, [photo.id, photo.width, photo.height]);
 
-  const onImgLoad = (e: SyntheticEvent<HTMLImageElement>) => {
-    const img = e.currentTarget;
-    setLayout(computeMediaLayout(img.naturalWidth, img.naturalHeight));
+  const onNaturalSize = (naturalWidth: number, naturalHeight: number) => {
+    setLayout(computeMediaLayout(naturalWidth, naturalHeight));
   };
 
   const closeBtnRef = useRef<HTMLButtonElement | null>(null);
   const titleId = useMemo(() => `photo-title-${photo.id}`, [photo.id]);
 
   useScrollLock(true);
+
 
   useEffect(() => {
     closeBtnRef.current?.focus();
@@ -170,7 +173,17 @@ export default function PhotoModal({
         onMouseDown={(e) => e.stopPropagation()}
       >
         <div className={cx("modalMedia", layout.orientation, layout.shouldCrop && "isCrop")}>
-          <img className="modalImg" src={photo.src} alt={photo.alt} onLoad={onImgLoad} />
+          <ResponsiveFlickrImage
+            className="modalImg"
+            baseUrl={photo.src}
+            originalWidth={photo.width}
+            originalHeight={photo.height}
+            variant="lightbox"
+            alt={photo.alt}
+            priority
+            fit={layout.shouldCrop ? "cover" : "contain"}
+            onLoadNaturalSize={onNaturalSize}
+          />
         </div>
 
         <div className="modalSide">
