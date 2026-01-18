@@ -4,7 +4,7 @@ import type { Photo } from "../data/photos";
 import { useScrollLock } from "../lib/useScrollLock";
 import { cx } from "../lib/cx";
 import { useI18n } from "../lib/i18n";
-import { useQuality } from "../perf/useQuality";
+import FullscreenImageViewer from "./FullscreenImageViewer";
 import ResponsiveFlickrImage from "./ResponsiveFlickrImage";
 
 const CROP_RATIO_THRESHOLD = 2;
@@ -72,7 +72,8 @@ export default function PhotoModal({
   hasNext = false
 }: Props) {
   const { t } = useI18n();
-  const { config } = useQuality();
+
+  const [viewerOpen, setViewerOpen] = useState(false);
 
   const [viewport, setViewport] = useState(() => ({
     w: typeof window === "undefined" ? 0 : window.innerWidth,
@@ -99,7 +100,6 @@ export default function PhotoModal({
   const titleId = useMemo(() => `photo-title-${photo.id}`, [photo.id]);
 
   useScrollLock(true);
-
 
   useEffect(() => {
     closeBtnRef.current?.focus();
@@ -172,7 +172,29 @@ export default function PhotoModal({
         aria-labelledby={titleId}
         onMouseDown={(e) => e.stopPropagation()}
       >
-        <div className={cx("modalMedia", layout.orientation, layout.shouldCrop && "isCrop")}>
+        {viewerOpen ? (
+          <FullscreenImageViewer
+            baseUrl={photo.src}
+            originalWidth={photo.width}
+            originalHeight={photo.height}
+            alt={photo.alt}
+            onClose={() => setViewerOpen(false)}
+          />
+        ) : null}
+
+        <div
+          className={cx("modalMedia", layout.orientation, layout.shouldCrop && "isCrop")}
+          onClick={() => setViewerOpen(true)}
+          role="button"
+          tabIndex={0}
+          aria-label="View original fullscreen"
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              setViewerOpen(true);
+            }
+          }}
+        >
           <ResponsiveFlickrImage
             className="modalImg"
             baseUrl={photo.src}
@@ -201,9 +223,9 @@ export default function PhotoModal({
 
           {photo.tags?.length ? (
             <div className="tags" aria-label="Tags">
-              {photo.tags.map((t) => (
-                <span key={t} className="tag">
-                  {t}
+              {photo.tags.map((tag) => (
+                <span key={tag} className="tag">
+                  {tag}
                 </span>
               ))}
             </div>
@@ -221,20 +243,10 @@ export default function PhotoModal({
           ) : null}
 
           <div className="modalNav">
-            <button
-              className={cx("btn", "btnSoft")}
-              type="button"
-              onClick={onPrev}
-              disabled={!hasPrev}
-            >
+            <button className={cx("btn", "btnSoft")} type="button" onClick={onPrev} disabled={!hasPrev}>
               {t("photo.prev")}
             </button>
-            <button
-              className={cx("btn", "btnSoft")}
-              type="button"
-              onClick={onNext}
-              disabled={!hasNext}
-            >
+            <button className={cx("btn", "btnSoft")} type="button" onClick={onNext} disabled={!hasNext}>
               {t("photo.next")}
             </button>
           </div>
