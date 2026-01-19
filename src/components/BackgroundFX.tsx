@@ -1,4 +1,7 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+
+const THEME_ATTR = "data-theme";
+const PREFERS_LIGHT_MQ = "(prefers-color-scheme: light)";
 
 import { useQuality } from "../perf/useQuality";
 
@@ -10,12 +13,33 @@ export default function BackgroundFX() {
   const ref = useRef<HTMLDivElement | null>(null);
   const { config, reducedMotion, tier } = useQuality();
 
+  const [themeTick, setThemeTick] = useState(0);
+
+  useEffect(() => {
+    const onThemeChange = () => setThemeTick((v) => v + 1);
+
+    const obs = new MutationObserver(onThemeChange);
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: [THEME_ATTR] });
+
+    const mq = window.matchMedia?.(PREFERS_LIGHT_MQ);
+    mq?.addEventListener?.("change", onThemeChange);
+
+    return () => {
+      obs.disconnect();
+      mq?.removeEventListener?.("change", onThemeChange);
+    };
+  }, []);
+
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
 
     const supportsHover = window.matchMedia?.("(hover: hover)")?.matches ?? false;
     const finePointer = window.matchMedia?.("(pointer: fine)")?.matches ?? false;
+
+    const prefersLight = window.matchMedia?.(PREFERS_LIGHT_MQ)?.matches ?? false;
+    const themeAttr = document.documentElement.getAttribute(THEME_ATTR);
+    const isEffectiveDark = themeAttr === "dark" || (themeAttr === "system" && !prefersLight);
 
     const setVars = (xPercent: number, yPercent: number) => {
       const x = clamp(xPercent, 0, 100);
@@ -32,10 +56,22 @@ export default function BackgroundFX() {
 
     setVars(50, 35);
 
-    // Reduced motion OR low tiers: keep background static.
-    // Tier0 is explicitly "sample-only": no heavy updates.
+    // Light mode: disable this background motion (you said you'll replace with a different animation later)
+    if (!isEffectiveDark) return;
+
+    // Only allow motion when theme is effectively dark.
+    // White/Day mode stays still by design.
+
+    // Hard rules:
+    // - data-theme="light": always off
+    // - data-theme="system" + OS not light: on (subject to perf/debug gates)
+    // - data-theme="dark": on at tier2/3 (subject to perf/debug gates)
+    if (!isEffectiveDark) return;
+
+    // Respect debug/perf config gates.
+    if (!config.enableDecorativeAnimations) return;
+    if (tier <= 1) return;
     if (reducedMotion || !supportsHover || !finePointer) return;
-    if (!config.enableDecorativeAnimations || tier <= 1) return;
 
     let raf = 0;
     let frame = 0;
@@ -94,7 +130,7 @@ export default function BackgroundFX() {
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("blur", onBlur);
     };
-  }, [config.decorativeMultiplier, config.enableDecorativeAnimations, config.fpsCap, config.updateEveryNFrames, reducedMotion, tier]);
+  }, [config.decorativeMultiplier, config.enableDecorativeAnimations, config.fpsCap, config.updateEveryNFrames, reducedMotion, tier, themeTick]);
 
   return <div ref={ref} className="bgFx" aria-hidden="true" />;
 }

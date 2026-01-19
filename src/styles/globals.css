@@ -77,6 +77,11 @@ html[data-lang="zh"] {
   --font-sans: var(--font-zh);
 }
 
+html[data-lang="zh-Hant"] {
+  --font-sans: var(--font-zh);
+}
+
+
 html[data-lang="en"] {
   --font-sans: var(--font-en);
 }
@@ -147,6 +152,15 @@ html {
   color-scheme: dark;
 }
 
+/* View Transitions (theme toggle)
+   Disable UA cross-fade so our circular reveal is obvious. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
@@ -160,6 +174,19 @@ body {
   background: var(--bg);
   overflow-x: hidden;
 }
+
+/* ViewTransition layering:
+   - old(root) stays as the outside world
+   - new(root) gets clipped into the expanding circle
+*/
+::view-transition-old(root) {
+  z-index: 1;
+}
+
+::view-transition-new(root) {
+  z-index: 2;
+}
+
 
 a {
   color: inherit;
@@ -337,46 +364,17 @@ html[data-perf-tier="1"] .reveal {
   }
 }
 
-/* Light theme override */
-html[data-theme="light"] .bgFx::before {
-  filter: blur(72px) saturate(0.82);
-  opacity: 0.46;
-  mix-blend-mode: soft-light; /* 可选：如果你不想用就删掉 */
-}
-
-html[data-theme="light"] .bgFx::before {
-  background:
-    radial-gradient(1100px 820px at var(--mxp) var(--myp), var(--fx-a), transparent 58%),
-    radial-gradient(
-      1400px 980px at calc(100% - var(--mxp)) calc(100% - var(--myp)),
-      var(--fx-b),
-      transparent 60%
-    ),
-    radial-gradient(1600px 1200px at 18% 120%, var(--fx-c), transparent 62%);
-}
-
+/* Light theme: hide all background effects (only show bg color) */
+html[data-theme="light"] .bgFx::before,
 html[data-theme="light"] .bgFx::after {
-  opacity: 0.55;
+  display: none;
 }
 
 /* System theme override (only when OS prefers light) */
 @media (prefers-color-scheme: light) {
-  html[data-theme="system"] .bgFx::before {
-    filter: blur(72px) saturate(0.82);
-    opacity: 0.46;
-    mix-blend-mode: soft-light; /* 可选 */
-    background:
-      radial-gradient(1100px 820px at var(--mxp) var(--myp), var(--fx-a), transparent 58%),
-      radial-gradient(
-        1400px 980px at calc(100% - var(--mxp)) calc(100% - var(--myp)),
-        var(--fx-b),
-        transparent 60%
-      ),
-      radial-gradient(1600px 1200px at 18% 120%, var(--fx-c), transparent 62%);
-  }
-
+  html[data-theme="system"] .bgFx::before,
   html[data-theme="system"] .bgFx::after {
-    opacity: 0.55;
+    display: none;
   }
 }
 
@@ -503,6 +501,107 @@ html[data-theme="light"] .siteHeader {
   flex-wrap: wrap;
   align-items: center;
 }
+
+.themeToggle {
+  padding: 10px 12px;
+  border-radius: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+/* Language menu (icon + click to expand) */
+.langWrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.langBtn {
+  padding: 10px 12px;
+  border-radius: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.langIcon {
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text);
+}
+
+.langPanel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 10px);
+  min-width: 168px;
+  padding: 10px;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background: rgba(33, 52, 72, 0.66);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: var(--shadow);
+  display: grid;
+  gap: 6px;
+
+  opacity: 0;
+  transform: translateY(-6px) scale(0.98);
+  pointer-events: none;
+  transform-origin: top right;
+  transition: opacity 160ms var(--ease), transform 160ms var(--ease);
+}
+
+@media (prefers-color-scheme: light) {
+  html[data-theme="system"] .langPanel {
+    background: rgba(234, 224, 207, 0.9);
+  }
+}
+
+html[data-theme="light"] .langPanel {
+  background: rgba(234, 224, 207, 0.9);
+}
+
+.langWrapOpen .langPanel {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+
+.langItem {
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text);
+  border-radius: 12px;
+  padding: 9px 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  text-align: left;
+  transition: background 140ms var(--ease), border-color 140ms var(--ease), transform 140ms var(--ease);
+}
+
+.langItem:hover {
+  background: rgba(148, 180, 193, 0.16);
+  transform: translateY(-1px);
+}
+
+.langItemActive {
+  border-color: rgba(148, 180, 193, 0.34);
+  background: rgba(148, 180, 193, 0.22);
+}
+
+.langLabel {
+  font-size: 13px;
+}
+
 
 .navToggle {
   display: none;
@@ -691,6 +790,42 @@ html[data-theme="light"] .siteHeader {
   letter-spacing: -0.03em;
 }
 
+/* Typing Animation */
+.typingAnimation {
+  display: inline;
+}
+
+.typingText {
+  display: inline;
+}
+
+.typingCursor {
+  display: inline;
+  color: var(--accent2);
+  font-weight: 400;
+  margin-left: 2px;
+}
+
+.typingCursorBlink {
+  animation: cursorBlink 1s step-end infinite;
+}
+
+@keyframes cursorBlink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .typingCursorBlink {
+    animation: none;
+  }
+}
+
 .heroSubtitle {
   margin: 14px 0 0;
   color: var(--muted);
@@ -723,22 +858,38 @@ html[data-theme="light"] .siteHeader {
   gap: 14px;
 }
 
-.avatar {
-  width: 76px;
-  height: 76px;
-  border-radius: 22px;
-  background: linear-gradient(135deg, rgba(84, 119, 146, 0.9), rgba(148, 180, 193, 0.86));
-  padding: 2px;
+.profileHeader {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 14px;
+  align-items: center;
 }
 
-.avatarInner {
+
+.avatar {
+  width: 114px;
+  height: 114px;
+  border-radius: 22px;
+  background: transparent;
+  padding: 0;
+  overflow: hidden;
+}
+
+/* Use theme text color (no harsh pure white). */
+.avatarMark {
   width: 100%;
   height: 100%;
-  border-radius: 20px;
-  background:
-    radial-gradient(60px 60px at 30% 20%, rgba(255, 255, 255, 0.2), transparent 60%),
-    rgba(0, 0, 0, 0.2);
+  background-color: currentColor;
+  -webkit-mask-image: url("/portrait1.svg");
+  mask-image: url("/portrait1.svg");
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-size: contain;
+  mask-size: contain;
 }
+
 
 .profileName {
   margin: 0;

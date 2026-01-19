@@ -1,11 +1,15 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
 
-export type Lang = "zh" | "en" | "fr" | "ja";
+export type Lang = "zh" | "zh-Hant" | "en" | "fr" | "ja";
 
 export type LocalizedString = Record<Lang, string>;
 
 export function pickLocalized(value: Partial<LocalizedString> | undefined, lang: Lang) {
   if (!value) return "";
+  // zh-Hant falls back to zh if not available
+  if (lang === "zh-Hant" && !value["zh-Hant"]) {
+    return value.zh ?? value.en ?? "";
+  }
   return value[lang] ?? value.en ?? value.zh ?? value.fr ?? value.ja ?? "";
 }
 
@@ -398,14 +402,119 @@ const ja: Record<Key, string> = {
   "notFound.portfolio": "ギャラリーへ"
 };
 
-const DICT: Record<Lang, Record<Key, string>> = { zh, en, fr, ja };
+const zhHant: Record<Key, string> = {
+  // Common
+  "common.skipToContent": "跳到主要內容",
+  "common.theme": "主題",
+  "common.language": "語言",
+  "common.reset": "重置",
+  "common.close": "關閉",
+  "common.backToTop": "回到頂部",
+
+  // Nav
+  "nav.home": "首頁",
+  "nav.portfolio": "作品集",
+  "nav.about": "關於",
+  "nav.skills": "技術棧",
+  "nav.contact": "聯繫",
+  "nav.openMenu": "開啟選單",
+  "nav.closeMenu": "關閉選單",
+
+  // Theme
+  "theme.system": "系統",
+  "theme.light": "淺色",
+  "theme.dark": "深色",
+
+  // Home
+  "home.eyebrow": "PERSONAL + PHOTO PORTFOLIO",
+  "home.title": "你好，我是 {name}",
+  "home.cta.portfolio": "查看作品集",
+  "home.cta.contact": "聯繫我",
+
+  // About
+  "about.title": "關於我",
+  "about.subtitle": "我關注視覺敘事、互動細節與效能體驗。",
+
+  "about.card.left": "能力與方法",
+  "about.card.right": "設備",
+
+  "about.section.capabilities": "Capabilities",
+  "about.section.focus": "Focus",
+  "about.section.tooling": "Tooling",
+  "about.section.workflow": "Workflow",
+  "about.section.gear": "Gear",
+  "about.section.output": "Output",
+
+  "about.capabilities.b1": "組件化與設計系統：一致性、可維護性",
+  "about.capabilities.b2": "效能與可及性：讓體驗更快、更穩",
+  "about.capabilities.b3": "動效與互動語意：克制但有層次",
+
+  "about.focus.body": "把前端、後端與攝影視為同一件事：用清晰的結構、穩定的系統和可延展的敘事，把複雜內容組織成可被理解、瀏覽並長期演進的體驗。",
+
+  // Skills
+  "skills.title": "技術棧",
+  "skills.subtitle": "結構化展示能力分組與層級。",
+  "skills.filterAll": "顯示全部",
+
+  "skills.group.frontend": "Frontend",
+  "skills.group.backend": "Backend",
+  "skills.group.creative": "Creative",
+
+  "skills.groupDesc.frontend": "前端工程與現代 Web 交付。",
+  "skills.groupDesc.backend": "後端工程與效能和可靠性。",
+  "skills.groupDesc.creative": "設計工具與視覺 / 動效能力。",
+
+  // Featured
+  "featured.title": "精選照片",
+  "featured.subtitle": "點擊開啟燈箱查看詳情；支援鍵盤導覽。",
+  "featured.cta.all": "查看全部作品",
+  "featured.cta.contact": "合作 / 約拍",
+
+  // Contact
+  "contact.title": "聯繫我",
+  "contact.subtitle": "適合工作機會、合作、約拍與交流。",
+  "contact.lead": "讓我們聊聊",
+  "contact.message": "有合作想法？歡迎直接來信。",
+  "contact.elsewhere": "也可以在以下平台找到我：",
+  "contact.copy": "複製郵箱",
+  "contact.copied": "已複製郵箱到剪貼簿",
+  "contact.copyFailed": "複製失敗，請手動複製郵箱",
+
+  // Portfolio
+  "portfolio.title": "攝影作品集",
+  "portfolio.subtitle": "支援分類篩選、關鍵字搜尋與瀑布流展示。",
+  "portfolio.search": "搜尋：標題 / 標籤 / 地點",
+  "portfolio.sort.new": "最新優先",
+  "portfolio.sort.old": "最早優先",
+  "portfolio.count": "共 {count} 張",
+
+  // Photo
+  "photo.open": "開啟照片：{title}",
+  "photo.close": "關閉",
+  "photo.prev": "上一張",
+  "photo.next": "下一張",
+  "photo.hint": "鍵盤：Esc 關閉，←/→ 切換。",
+  "photo.meta.location": "地點",
+  "photo.meta.date": "日期",
+  "photo.meta.camera": "相機",
+  "photo.meta.lens": "鏡頭",
+  "photo.meta.settings": "參數",
+
+  // NotFound
+  "notFound.title": "404",
+  "notFound.subtitle": "這個頁面不存在，可能被移動或刪除了。",
+  "notFound.home": "返回首頁",
+  "notFound.portfolio": "去作品集"
+};
+
+const DICT: Record<Lang, Record<Key, string>> = { zh, "zh-Hant": zhHant, en, fr, ja };
 
 const STORAGE_KEY = "lang";
 
 function normalizeLang(value: string | null): Lang | null {
   if (!value) return null;
   const v = value.toLowerCase();
-  if (v === "zh" || v === "en" || v === "fr" || v === "ja") return v;
+  if (v === "zh" || v === "zh-hant" || v === "en" || v === "fr" || v === "ja") return v as Lang;
   return null;
 }
 
@@ -418,6 +527,7 @@ function detectLang(): Lang {
   }
 
   const nav = (navigator.language || "").toLowerCase();
+  if (nav.startsWith("zh-tw") || nav.startsWith("zh-hk") || nav.startsWith("zh-hant")) return "zh-Hant";
   if (nav.startsWith("fr")) return "fr";
   if (nav.startsWith("ja")) return "ja";
   if (nav.startsWith("en")) return "en";
@@ -426,6 +536,7 @@ function detectLang(): Lang {
 
 function langToHtmlLang(lang: Lang) {
   if (lang === "zh") return "zh-Hans";
+  if (lang === "zh-Hant") return "zh-Hant";
   if (lang === "ja") return "ja";
   return lang;
 }

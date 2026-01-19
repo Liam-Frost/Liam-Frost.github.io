@@ -1,12 +1,26 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 import PhotoCard from "../components/PhotoCard";
 import Reveal from "../components/Reveal";
 import SkillStack from "../components/SkillStack";
+import TypingAnimation from "../components/TypingAnimation";
 import { photos } from "../data/photos";
 import { site } from "../data/site";
-import { pickLocalized, useI18n } from "../lib/i18n";
+import { pickLocalized, useI18n, type Lang } from "../lib/i18n";
+
+// Greeting messages (Japanese uses \n for forced line break)
+const GREETINGS = {
+  zh: `你好，我是 ${site.nameLatin}`,
+  en: `Hi, I'm ${site.nameLatin}`,
+  fr: `Salut, je suis ${site.nameLatin}`,
+  ja: `はじめまして、\n${site.nameLatin}です`
+};
+
+type GreetingLang = keyof typeof GREETINGS;
+
+// Fixed order for cycling (no zh-Hant since it looks same as zh)
+const GREETING_ORDER: GreetingLang[] = ["zh", "en", "fr", "ja"];
 
 export default function HomePage() {
   const { lang, t } = useI18n();
@@ -15,6 +29,32 @@ export default function HomePage() {
   const navigate = useNavigate();
 
   const [copyHint, setCopyHint] = useState("");
+
+  // Map initial lang to greeting lang (zh-Hant -> zh for greeting)
+  const mapToGreetingLang = (l: Lang): GreetingLang => {
+    return l === "zh-Hant" ? "zh" : (l as GreetingLang);
+  };
+
+  // Capture initial language only once on mount, ignore subsequent language changes
+  const initialLangRef = useRef<GreetingLang | null>(null);
+  useEffect(() => {
+    if (initialLangRef.current === null) {
+      initialLangRef.current = mapToGreetingLang(lang);
+    }
+  }, [lang]);
+
+  // Build words array: start with initial greeting lang, then continue in list order
+  const greetingWords = useMemo(() => {
+    const initialGreetingLang = initialLangRef.current ?? mapToGreetingLang(lang);
+    const startIdx = GREETING_ORDER.indexOf(initialGreetingLang);
+    // Reorder: from startIdx to end, then from 0 to startIdx-1
+    const orderedLangs = [
+      ...GREETING_ORDER.slice(startIdx),
+      ...GREETING_ORDER.slice(0, startIdx)
+    ];
+    return orderedLangs.map((l) => GREETINGS[l]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Empty deps: only compute once on mount
 
   const openFeatured = (id: string) => {
     navigate({ pathname: "/portfolio", search: `?photo=${encodeURIComponent(id)}` });
@@ -39,7 +79,16 @@ export default function HomePage() {
               <p className="eyebrow">{t("home.eyebrow")}</p>
 
               <h1 className="heroTitle">
-                {t("home.title", { name: site.nameLatin })}
+                <TypingAnimation
+                  words={greetingWords}
+                  typeSpeed={50}
+                  deleteSpeed={100}
+                  pauseDelay={2500}
+                  loop
+                  showCursor
+                  blinkCursor
+                  cursorStyle="underscore"
+                />
               </h1>
 
               <p className="heroSubtitle">{pickLocalized(site.bio, lang)}</p>
@@ -65,15 +114,15 @@ export default function HomePage() {
 
             <Reveal delayMs={120} className="card heroCard">
               <div className="profile">
-                <div className="avatar" aria-hidden="true">
-                  <div className="avatarInner" />
-                </div>
+                <div className="profileHeader">
+                  <div className="avatar" aria-hidden="true">
+                    <div className="avatarMark" />
+                  </div>
 
-                <div>
-                  <h2 className="profileName">
-                    {site.name}
-                  </h2>
-                  <p className="profileTagline">{pickLocalized(site.role, lang)}</p>
+                  <div>
+                    <h2 className="profileName">{site.name}</h2>
+                    <p className="profileTagline">{pickLocalized(site.role, lang)}</p>
+                  </div>
                 </div>
 
                 <div className="profileStats" aria-label="Stats">
@@ -85,13 +134,6 @@ export default function HomePage() {
                   ))}
                 </div>
 
-                <div className="chips" aria-label="Social links">
-                  {site.socials.map((s) => (
-                    <a key={s.label} className="chip" href={s.href} target="_blank" rel="noreferrer">
-                      {s.label}
-                    </a>
-                  ))}
-                </div>
 
               </div>
             </Reveal>
