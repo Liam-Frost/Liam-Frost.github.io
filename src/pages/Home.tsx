@@ -121,15 +121,6 @@ export default function HomePage() {
                   {t("home.cta.contact")}
                 </Link>
               </div>
-
-              <ul className="heroMeta">
-                <li>
-                  <span className="pill">📍 {pickLocalized(site.location, lang)}</span>
-                </li>
-                <li>
-                  <span className="pill">💼 {pickLocalized(site.role, lang)}</span>
-                </li>
-              </ul>
             </Reveal>
 
             <Reveal delayMs={120} className="card heroCard">

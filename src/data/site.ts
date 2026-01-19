@@ -9,11 +9,11 @@ export const site = {
   email: "frostnova986@gmail.com",
 
   role: {
-    zh: "全栈工程师 / 摄影爱好者 / 音乐爱好者",
-    "zh-Hant": "全棧工程師 / 攝影愛好者 / 音樂愛好者",
-    en: "Full-stack engineer / Photographer / Music lover",
-    fr: "Ingénieur full-stack / Photographe / Passionné de musique",
-    ja: "フルスタックエンジニア / フォトグラファー / 音楽好き"
+    zh: "全栈工程师 | 摄影爱好者 | 音乐爱好者",
+    "zh-Hant": "全棧工程師 | 攝影愛好者 | 音樂愛好者",
+    en: "Full-stack engineer | Photographer | Music lover",
+    fr: "Ingénieur full-stack | Photographe | Passionné de musique",
+    ja: "フルスタックエンジニア | フォトグラファー | 音楽好き"
   } satisfies L,
 
   location: {
