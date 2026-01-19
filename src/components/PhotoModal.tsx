@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 
-import type { Photo } from "../data/photos";
+import { getPhotoField, getPhotoTags, type Photo } from "../data/photos";
 import { useScrollLock } from "../lib/useScrollLock";
 import { cx } from "../lib/cx";
 import { useI18n } from "../lib/i18n";
@@ -71,7 +71,13 @@ export default function PhotoModal({
   hasPrev = false,
   hasNext = false
 }: Props) {
-  const { t } = useI18n();
+  const { lang, t } = useI18n();
+
+  const title = getPhotoField(photo.title, lang);
+  const alt = getPhotoField(photo.alt, lang);
+  const location = getPhotoField(photo.location, lang);
+  const description = getPhotoField(photo.description, lang);
+  const tags = getPhotoTags(photo.tags, lang);
 
   const [viewerOpen, setViewerOpen] = useState(false);
 
@@ -124,7 +130,7 @@ export default function PhotoModal({
   }, [hasNext, hasPrev, onClose, onNext, onPrev]);
 
   const meta = [
-    photo.location ? { k: t("photo.meta.location"), v: photo.location } : null,
+    location ? { k: t("photo.meta.location"), v: location } : null,
     photo.date ? { k: t("photo.meta.date"), v: photo.date } : null,
     photo.camera ? { k: t("photo.meta.camera"), v: photo.camera } : null,
     photo.lens ? { k: t("photo.meta.lens"), v: photo.lens } : null,
@@ -177,7 +183,7 @@ export default function PhotoModal({
             baseUrl={photo.src}
             originalWidth={photo.width}
             originalHeight={photo.height}
-            alt={photo.alt}
+            alt={alt}
             onClose={() => setViewerOpen(false)}
           />
         ) : null}
@@ -201,7 +207,7 @@ export default function PhotoModal({
             originalWidth={photo.width}
             originalHeight={photo.height}
             variant="lightbox"
-            alt={photo.alt}
+            alt={alt}
             priority
             fit={layout.shouldCrop ? "cover" : "contain"}
             onLoadNaturalSize={onNaturalSize}
@@ -211,7 +217,7 @@ export default function PhotoModal({
         <div className="modalSide">
           <div className="modalTop">
             <h2 className="modalTitle" id={titleId}>
-              {photo.title}
+              {title}
             </h2>
 
             <button ref={closeBtnRef} className="btn btnGhost btnSmall" type="button" onClick={onClose}>
@@ -219,11 +225,11 @@ export default function PhotoModal({
             </button>
           </div>
 
-          {photo.description ? <p className="sectionSubtitle">{photo.description}</p> : null}
+          {description ? <p className="sectionSubtitle">{description}</p> : null}
 
-          {photo.tags?.length ? (
+          {tags.length ? (
             <div className="tags" aria-label="Tags">
-              {photo.tags.map((tag) => (
+              {tags.map((tag) => (
                 <span key={tag} className="tag">
                   {tag}
                 </span>

@@ -428,12 +428,19 @@ html[data-theme="light"] .siteHeader {
 }
 
 .brandMark {
-  width: 14px;
-  height: 14px;
-  border-radius: 6px;
+  width: 28px;
+  height: 28px;
+
   background: linear-gradient(135deg, var(--accent), var(--accent2));
+
+  -webkit-mask: url("/LOGO2.svg") center / contain no-repeat;
+  mask: url("/LOGO2.svg") center / contain no-repeat;
+
+  border-radius: 0;
+
   box-shadow: 0 0 0 6px rgba(148, 180, 193, 0.2);
 }
+
 
 @media (prefers-reduced-motion: no-preference) {
   .brandMark {
