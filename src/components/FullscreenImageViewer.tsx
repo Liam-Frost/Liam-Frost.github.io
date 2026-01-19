@@ -251,13 +251,19 @@ export default function FullscreenImageViewer({ baseUrl, originalWidth, original
         </div>
 
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
-          <a className="btn btnGhost" href={src} target="_blank" rel="noreferrer" style={controlStyle}>
+          <a
+            className="btn btnGhost"
+            href={src}
+            target="_blank"
+            rel="noreferrer"
+            style={{ ...controlStyle, color: "rgba(255,255,255,0.92)" }}
+          >
             {isCoarsePointer ? "原图" : "在新标签打开原图"}
           </a>
 
           <button
             className="btn btnGhost"
-            style={{ ...controlStyle, minWidth: isCoarsePointer ? 44 : undefined }}
+            style={{ ...controlStyle, minWidth: isCoarsePointer ? 44 : undefined, color: "rgba(255,255,255,0.92)" }}
             type="button"
             aria-label="关闭"
             onClick={onClose}
