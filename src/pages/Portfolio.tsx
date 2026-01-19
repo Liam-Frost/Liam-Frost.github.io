@@ -4,25 +4,25 @@ import { useSearchParams } from "react-router-dom";
 import PhotoCard from "../components/PhotoCard";
 import PhotoModal from "../components/PhotoModal";
 import Reveal from "../components/Reveal";
-import { photos, type Photo } from "../data/photos";
+import { photos, getPhotoField, getPhotoTags, type Photo } from "../data/photos";
 import { cx } from "../lib/cx";
-import { useI18n } from "../lib/i18n";
+import { useI18n, type Lang } from "../lib/i18n";
 
 type SortMode = "new" | "old";
 
-function sortByDate(mode: SortMode, list: Photo[]) {
+function sortByDate(mode: SortMode, list: Photo[], lang: Lang) {
   const factor = mode === "new" ? -1 : 1;
   return [...list].sort((a, b) => {
     const da = new Date(a.date).getTime();
     const db = new Date(b.date).getTime();
     if (Number.isNaN(da) || Number.isNaN(db)) return 0;
-    if (da === db) return a.title.localeCompare(b.title);
+    if (da === db) return getPhotoField(a.title, lang).localeCompare(getPhotoField(b.title, lang));
     return (da - db) * factor;
   });
 }
 
 export default function PortfolioPage() {
-  const { t } = useI18n();
+  const { lang, t } = useI18n();
 
   const [searchParams, setSearchParams] = useSearchParams();
   const openId = searchParams.get("photo");
@@ -30,30 +30,37 @@ export default function PortfolioPage() {
   const ALL = "__all__";
 
   const categories = useMemo(() => {
-    const set = new Set(photos.map((p) => p.category));
+    const set = new Set(photos.map((p) => getPhotoField(p.category, lang)));
     return [ALL, ...Array.from(set).sort((a, b) => a.localeCompare(b))];
-  }, []);
+  }, [lang]);
 
   const [category, setCategory] = useState<string>(ALL);
   const [query, setQuery] = useState<string>("");
   const [sort, setSort] = useState<SortMode>("new");
 
-  const sortedAll = useMemo(() => sortByDate(sort, photos), [sort]);
+  const sortedAll = useMemo(() => sortByDate(sort, photos, lang), [sort, lang]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
 
     return sortByDate(
       sort,
-        photos.filter((p) => {
-        if (category !== ALL && p.category !== category) return false;
+      photos.filter((p) => {
+        const cat = getPhotoField(p.category, lang);
+        if (category !== ALL && cat !== category) return false;
         if (!q) return true;
 
-        const haystack = [p.title, p.category, p.location ?? "", p.tags.join(" ")].join(" ").toLowerCase();
+        const haystack = [
+          getPhotoField(p.title, lang),
+          cat,
+          getPhotoField(p.location, lang),
+          getPhotoTags(p.tags, lang).join(" ")
+        ].join(" ").toLowerCase();
         return haystack.includes(q);
-      })
+      }),
+      lang
     );
-  }, [category, query, sort]);
+  }, [category, query, sort, lang]);
 
   const openPhoto = useMemo(() => {
     if (!openId) return null;

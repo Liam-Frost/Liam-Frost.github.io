@@ -5,7 +5,7 @@ import PhotoCard from "../components/PhotoCard";
 import Reveal from "../components/Reveal";
 import SkillStack from "../components/SkillStack";
 import TypingAnimation from "../components/TypingAnimation";
-import { photos } from "../data/photos";
+import { photos, type Photo } from "../data/photos";
 import { site } from "../data/site";
 import { pickLocalized, useI18n, type Lang } from "../lib/i18n";
 
@@ -25,7 +25,27 @@ const GREETING_ORDER: GreetingLang[] = ["zh", "en", "fr", "ja"];
 export default function HomePage() {
   const { lang, t } = useI18n();
 
-  const featured = useMemo(() => photos.slice(0, 6), []);
+  // Featured photo IDs for homepage
+  const FEATURED_IDS = [
+    "tokyo-tower",                            // 东京之塔
+    "glico-night-icon",                       // 奔跑
+    "tokyo-night-anchor",                     // 东京印象
+    "rome-alley-dome-006",                    // 穹顶之间
+    "beijing-temple-003",                     // 敬天
+    "crowd-and-lights",                       // 大阪印象
+    "hanabi-scatter",                         // 散落
+    "jellyfish",                              // 水母
+    "vancouver-locarno-pier-2025",            // 京都印象
+    "shibuya-sky-arena"                       // 东京折叠
+  ];
+
+  const featured = useMemo(() => {
+    const photoMap = new Map(photos.map(p => [p.id, p]));
+    return FEATURED_IDS
+      .map(id => photoMap.get(id))
+      .filter((p): p is Photo => p !== undefined);
+  }, []);
+
   const navigate = useNavigate();
 
   const [copyHint, setCopyHint] = useState("");

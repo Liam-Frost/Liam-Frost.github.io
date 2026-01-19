@@ -55,7 +55,6 @@ export default function Header({ theme, onCycleTheme }: Props) {
     <nav className="nav" aria-label="Primary">
       <Link className="brand" to="/" aria-label={t("nav.home")}>
         <span className="brandMark" aria-hidden="true" />
-        <span>{site.nameLatin}</span>
       </Link>
 
       <button
