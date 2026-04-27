@@ -123,18 +123,14 @@ export function SpotifyCard({ url, className, data: initialData, onPlaybackChang
         </div>
       ) : null}
 
-      <button
-        onClick={handlePlayPause}
-        className={cn(
-          "spotifyCardCoverButton",
-          data.audio && "hasAudio",
-          isPlaying && "isPlaying"
-        )}
-        type="button"
-        aria-label={data.audio ? "Play Spotify preview" : undefined}
-      >
-        {data.image ? <img src={data.image} alt={data.title} className="spotifyCardCover" /> : null}
-        {data.audio && (
+      {data.audio ? (
+        <button
+          onClick={handlePlayPause}
+          className={cn("spotifyCardCoverButton", "hasAudio", isPlaying && "isPlaying")}
+          type="button"
+          aria-label={isPlaying ? "Pause Spotify preview" : "Play Spotify preview"}
+        >
+          {data.image ? <img src={data.image} alt={data.title} className="spotifyCardCover" /> : null}
           <div className={cn("spotifyCardDisc", isPlaying && "isPlaying")}>
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 110 110">
               <circle cx="55" cy="55" r="55" fill="#000" />
@@ -143,8 +139,12 @@ export function SpotifyCard({ url, className, data: initialData, onPlaybackChang
               <circle cx="55" cy="55" r="43.5" stroke="#fff" strokeOpacity="0.21" />
             </svg>
           </div>
-        )}
-      </button>
+        </button>
+      ) : (
+        <div className="spotifyCardCoverButton">
+          {data.image ? <img src={data.image} alt={data.title} className="spotifyCardCover" /> : null}
+        </div>
+      )}
 
       <div className="spotifyCardContent">
         <div className="spotifyCardIconRow">

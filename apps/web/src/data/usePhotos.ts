@@ -1,7 +1,7 @@
 import { startTransition, useEffect, useState } from "react";
 import { photos as seedPhotos, type Photo } from "@liam-frost/content";
 
-import { apiUrl } from "../lib/api";
+import { apiFetchEnabled, apiUrl } from "../lib/api";
 
 type PhotoDataStatus = "seed" | "loading" | "ready" | "offline";
 
@@ -10,6 +10,11 @@ export function usePhotos() {
   const [status, setStatus] = useState<PhotoDataStatus>("seed");
 
   useEffect(() => {
+    if (!apiFetchEnabled) {
+      setStatus("seed");
+      return;
+    }
+
     const controller = new AbortController();
 
     setStatus("loading");

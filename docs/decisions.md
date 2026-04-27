@@ -66,6 +66,18 @@ The model changed the API entrypoint so `buildServer()` can be imported without 
 
 Reason: this keeps future route tests and Claude/code-review checks safer as the API grows.
 
+### 2026-04-26: Disable API Fetching for GitHub Pages Builds
+
+The model added `VITE_DISABLE_API_FETCH=true` to the GitHub Pages build workflow while keeping API fetching enabled by default elsewhere.
+
+Reason: the project is moving to a VPS where same-origin `/api` should work, but the legacy GitHub Pages deployment has no backend and should not issue a guaranteed 404 request on every page load.
+
+### 2026-04-26: Restrict Default API CORS to Local Dev Origins
+
+The model changed the default API CORS behavior from allow-all to localhost and 127.0.0.1 dev origins.
+
+Reason: public deployment should not accidentally expose permissive CORS by default; production origins can be configured explicitly through `CORS_ORIGIN`.
+
 ### 2026-04-26: Remove Tracked `my-app` Scaffold
 
 The model chose to remove the tracked `my-app` Vite starter scaffold.
