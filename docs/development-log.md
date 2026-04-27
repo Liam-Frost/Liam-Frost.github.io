@@ -32,6 +32,7 @@
 - The model ran Claude Code CLI review for Stage 2.
 - The model fixed Stage 2 review findings by binding Postgres to localhost only, replacing string visibility with a Prisma enum, improving seed error handling, making `db:migrate` seed after migration, pinning Prisma versions exactly, and documenting `db:migrate`.
 - The model re-ran `npm run db:generate`, `npm run typecheck`, `npm run build`, `npm audit --audit-level=high`, and seed-fallback route checks; all passed.
+- PR #1 had already been merged, so Stage 2 changes were opened as PR #2: https://github.com/Liam-Frost/Liam-Frost.github.io/pull/2
 
 ## Notes
 

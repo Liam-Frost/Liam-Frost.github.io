@@ -52,10 +52,11 @@ Status: implementation complete; Claude Code review complete and fixes applied.
 - Ran Claude Code CLI review for Stage 2.
 - Fixed review findings: local-only Postgres port binding, Prisma `Visibility` enum, seed error handling, `db:migrate` seeding workflow, exact Prisma version pins, and missing `db:migrate` docs.
 - Re-ran `npm run db:generate`, `npm run typecheck`, `npm run build`, `npm audit --audit-level=high`, and Fastify seed-fallback route checks after review fixes.
+- Created Stage 2 PR #2: https://github.com/Liam-Frost/Liam-Frost.github.io/pull/2
 
 ### Upcoming
 
-- Push Stage 2 commits to `origin/dev`, updating PR #1.
+- Review and merge Stage 2 PR #2.
 
 ## Future Stages
 
