@@ -1,7 +1,10 @@
+import "dotenv/config";
+
 import cors from "@fastify/cors";
 import Fastify from "fastify";
 import { pathToFileURL } from "node:url";
 
+import { hasDatabaseUrl } from "./db/client";
 import { registerPhotoRoutes } from "./routes/photos";
 import { registerSpotifyRoutes } from "./routes/spotify";
 import { readStorageConfig } from "./storage/config";
@@ -20,6 +23,7 @@ export function buildServer() {
   app.get("/api/health", async () => ({
     ok: true,
     service: "liam-frost-api",
+    database: hasDatabaseUrl() ? "configured" : "seed",
     storage: readStorageConfig().driver
   }));
 

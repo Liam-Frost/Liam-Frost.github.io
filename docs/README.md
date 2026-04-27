@@ -5,6 +5,7 @@ This folder is the source of truth for the migration from a static portfolio to 
 ## Documents
 
 - `architecture.md`: current architecture and intended direction.
+- `database.md`: PostgreSQL/Prisma setup and seed workflow.
 - `progress.md`: migration progress by stage.
 - `development-log.md`: chronological development log.
 - `decisions.md`: user decisions and model-made implementation decisions.
