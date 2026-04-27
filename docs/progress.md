@@ -11,7 +11,7 @@ Status: complete.
 
 ### Stage 1: Repository and API Foundation
 
-Status: in progress.
+Status: implementation complete; external Claude Code review is blocked by local authentication.
 
 - Moved the current front-end into `apps/web`.
 - Added `apps/api` Fastify service scaffold.
@@ -19,14 +19,17 @@ Status: in progress.
 - Added `/api/health`, `/api/photos`, `/api/photos/:id`, and `/api/spotify` endpoints.
 - Added image storage config scaffolding for `remote-url`, `local`, and `r2`.
 - Updated docs to record architecture, progress, and decisions.
+- Verified `npm run typecheck` passes.
+- Verified `npm run build` passes.
+- Verified API runtime endpoints: `/api/health` and `/api/photos` returned successfully with 40 photos.
+- Attempted Claude Code CLI review via local `claude`, local `claude-code`, and `npx @anthropic-ai/claude-code`.
+- Claude Code CLI review could not complete because the environment is not logged in: `Not logged in · Please run /login`.
 
 ### Upcoming
 
-- Install/update workspace dependencies and lockfile.
-- Run type checks and front-end build.
-- Run API health verification.
-- Invoke Claude Code CLI review for the stage if the CLI is available.
-- Fix review/build findings, commit, and prepare PR.
+- Run Claude Code CLI review after authentication is available.
+- Fix any external review findings.
+- Prepare PR after external review is complete, or create it earlier if the user approves proceeding without that review.
 
 ## Future Stages
 

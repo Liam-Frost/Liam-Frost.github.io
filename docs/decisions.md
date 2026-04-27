@@ -60,6 +60,12 @@ The model chose not to introduce PostgreSQL, Prisma, authentication, and admin C
 
 Reason: introducing all of them at once would make regressions harder to isolate; Stage 1 should first prove the repo structure and API boundary.
 
+### 2026-04-26: Keep API Server Startup Import-Safe
+
+The model changed the API entrypoint so `buildServer()` can be imported without automatically listening on a port.
+
+Reason: this keeps future route tests and Claude/code-review checks safer as the API grows.
+
 ### 2026-04-26: Remove Tracked `my-app` Scaffold
 
 The model chose to remove the tracked `my-app` Vite starter scaffold.

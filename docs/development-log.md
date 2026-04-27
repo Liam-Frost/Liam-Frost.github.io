@@ -10,6 +10,11 @@
 - User required future image storage to support Cloudflare R2 while also allowing local paths or image-host URLs.
 - The model created `dev` and committed the current front-end baseline before structural migration.
 - The model started Stage 1 by moving the front-end to `apps/web`, adding `apps/api`, and extracting shared photo data to `packages/content`.
+- The model installed npm workspace dependencies with `npm install`.
+- The model verified `npm run typecheck` and `npm run build` successfully.
+- The model started the API temporarily and verified `/api/health` plus `/api/photos`; the API returned 40 photos.
+- The model attempted Claude Code CLI review. Local `claude` and `claude-code` commands were unavailable; `npx @anthropic-ai/claude-code` resolved version `2.1.119` but could not run the review because the environment is not logged in.
+- The model performed a local self-check and changed API startup so importing `buildServer()` will not automatically bind a port.
 
 ## Notes
 
