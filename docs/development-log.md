@@ -19,7 +19,8 @@
 - The model fixed the review findings: added Spotify URL validation and external-call error handling, changed default CORS from allow-all to local dev origins, disabled API fetching for the GH Pages workflow, added a touch-accessible SpotifyDock close control, avoided rendering a no-op Spotify cover button without audio, added CI typecheck, and corrected a misleading homepage photo comment.
 - The model re-ran `npm run typecheck`, `npm run build`, and Fastify route injection checks for `/api/health` plus `/api/photos`; all passed.
 - The model pushed `dev` to `origin/dev`.
-- The model attempted `gh pr create`, but GitHub CLI is not installed in the environment, so PR creation is blocked locally. GitHub returned the branch PR creation URL for manual continuation.
+- The model attempted `gh pr create`, but GitHub CLI was not initially available in the shell PATH. GitHub returned the branch PR creation URL for manual continuation.
+- After the user installed GitHub CLI, the model found `gh.exe` at `C:\Program Files\GitHub CLI\gh.exe`, removed the empty untracked root `src/` directory, and retried PR creation. The retry is blocked because GitHub CLI is installed but not authenticated in this environment.
 
 ## Notes
 

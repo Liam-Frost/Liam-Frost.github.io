@@ -28,11 +28,12 @@ Status: implementation complete; Claude Code review complete and fixes applied.
 - Re-verified `npm run build` passes after review fixes.
 - Re-verified API route behavior with Fastify `inject`: `/api/health` returned `200`, `/api/photos` returned `200` with 40 photos.
 - Pushed `dev` to `origin/dev`.
-- Attempted to create a PR with GitHub CLI, but `gh` is not installed in the local environment.
+- Removed an empty untracked root `src/` directory left behind by the Windows directory move; tracked source now lives under `apps/web/src` and `packages/content/src`.
+- Found GitHub CLI at `C:\Program Files\GitHub CLI\gh.exe`, but PR creation is blocked because `gh` is not authenticated in this environment.
 
 ### Upcoming
 
-- Create PR after GitHub CLI is installed, or use the GitHub URL generated for the pushed branch.
+- Authenticate GitHub CLI with `gh auth login`, then create the PR, or use the GitHub URL generated for the pushed branch.
 
 ## Future Stages
 
