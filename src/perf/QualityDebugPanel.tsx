@@ -26,7 +26,7 @@ function shouldShowDebugPanel() {
 
 const panelStyle: React.CSSProperties = {
   position: "fixed",
-  right: 12,
+  left: 12,
   bottom: 12,
   width: 360,
   maxWidth: "calc(100vw - 24px)",
