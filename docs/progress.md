@@ -30,15 +30,35 @@ Status: implementation complete; Claude Code review complete and fixes applied.
 - Pushed `dev` to `origin/dev`.
 - Removed an empty untracked root `src/` directory left behind by the Windows directory move; tracked source now lives under `apps/web/src` and `packages/content/src`.
 - Found GitHub CLI at `C:\Program Files\GitHub CLI\gh.exe`, but PR creation is blocked because `gh` is not authenticated in this environment.
+- Created PR #1 after GitHub CLI authentication became available.
+
+### Stage 2: PostgreSQL and Prisma Foundation
+
+Status: in progress.
+
+- Added Prisma dependencies to `apps/api`.
+- Added PostgreSQL `Photo` model in `apps/api/prisma/schema.prisma`.
+- Added DB client helpers and photo repository with database-first, seed-fallback behavior.
+- Updated photo API routes to read through the repository.
+- Added seed script to upsert shared photo content into PostgreSQL.
+- Added `compose.yaml` with local PostgreSQL service.
+- Added root database scripts: `db:generate`, `db:push`, `db:migrate`, `db:seed`, and `db:studio`.
+- Ran `npm run db:generate` successfully with Prisma 6.19.3.
+- Ran `npm audit --audit-level=high`; result: 0 vulnerabilities.
+- Ran `npm run typecheck`; result: passed.
+- Ran `npm run build`; result: passed.
+- Verified API seed fallback with Fastify `inject`: health returned `database: seed`, photos returned 40 items, existing photo returned 200, missing photo returned 404.
+- Docker is not available in the current local shell, so the real PostgreSQL container path could not be verified here.
 
 ### Upcoming
 
-- Authenticate GitHub CLI with `gh auth login`, then create the PR, or use the GitHub URL generated for the pushed branch.
+- Run Claude Code CLI review for Stage 2.
+- Fix any Stage 2 review findings.
+- Push Stage 2 commits to `origin/dev`, updating PR #1.
 
 ## Future Stages
 
-- Add PostgreSQL and Prisma.
-- Migrate photo content from seed data into database records.
+- Verify PostgreSQL path with Docker or a real VPS database.
 - Add `/admin` authentication.
 - Add photo CRUD and image upload processing.
 - Add projects module.

@@ -4,6 +4,11 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
+    "db:generate": "prisma generate --schema prisma/schema.prisma",
+    "db:migrate": "prisma migrate dev --schema prisma/schema.prisma",
+    "db:push": "prisma db push --schema prisma/schema.prisma",
+    "db:seed": "tsx src/db/seed.ts",
+    "db:studio": "prisma studio --schema prisma/schema.prisma",
     "dev": "tsx watch src/server.ts",
     "build": "tsc --noEmit",
     "start": "tsx src/server.ts",
@@ -12,11 +17,14 @@
   "dependencies": {
     "@fastify/cors": "^11.0.0",
     "@liam-frost/content": "^0.1.0",
+    "@prisma/client": "^6.19.3",
+    "dotenv": "^16.6.1",
     "fastify": "^5.0.0",
     "spotify-url-info": "^3.3.0"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",
+    "prisma": "^6.19.3",
     "tsx": "^4.19.0",
     "typescript": "^5.5.4"
   }

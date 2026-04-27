@@ -27,11 +27,15 @@ The first-stage API uses Fastify and TypeScript. It currently provides:
 - `GET /api/photos/:id`
 - `GET /api/spotify?url=...`
 
-Database, admin authentication, CRUD, media metadata import, and upload processing are planned for later stages.
+The API has a PostgreSQL/Prisma foundation for photos. During migration, photo routes use the database when `DATABASE_URL` is configured and reachable, then fall back to shared seed data when the database is not configured or unavailable. This keeps the existing front-end stable while the admin/database workflow is built out.
+
+Admin authentication, CRUD, media metadata import, and upload processing are planned for later stages.
 
 ## Content
 
 Photography seed data is stored in `packages/content` so that the front-end and API read the same content source during migration. This prevents data drift while the database layer is not yet introduced.
+
+The database seed script also reads from `packages/content`, so the same source currently powers the static fallback and the initial PostgreSQL data migration.
 
 ## Image Storage Direction
 
