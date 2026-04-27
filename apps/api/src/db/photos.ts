@@ -76,7 +76,7 @@ export async function listPhotos(logger?: Logger): Promise<Photo[]> {
 
   try {
     const records = await getPhotoDelegate(client).findMany({
-      where: { visibility: "public" },
+      where: { visibility: "PUBLIC" },
       orderBy: [{ sortOrder: "asc" }, { date: "desc" }, { id: "asc" }]
     });
 

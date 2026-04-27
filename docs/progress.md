@@ -34,7 +34,7 @@ Status: implementation complete; Claude Code review complete and fixes applied.
 
 ### Stage 2: PostgreSQL and Prisma Foundation
 
-Status: in progress.
+Status: implementation complete; Claude Code review complete and fixes applied.
 
 - Added Prisma dependencies to `apps/api`.
 - Added PostgreSQL `Photo` model in `apps/api/prisma/schema.prisma`.
@@ -49,11 +49,12 @@ Status: in progress.
 - Ran `npm run build`; result: passed.
 - Verified API seed fallback with Fastify `inject`: health returned `database: seed`, photos returned 40 items, existing photo returned 200, missing photo returned 404.
 - Docker is not available in the current local shell, so the real PostgreSQL container path could not be verified here.
+- Ran Claude Code CLI review for Stage 2.
+- Fixed review findings: local-only Postgres port binding, Prisma `Visibility` enum, seed error handling, `db:migrate` seeding workflow, exact Prisma version pins, and missing `db:migrate` docs.
+- Re-ran `npm run db:generate`, `npm run typecheck`, `npm run build`, `npm audit --audit-level=high`, and Fastify seed-fallback route checks after review fixes.
 
 ### Upcoming
 
-- Run Claude Code CLI review for Stage 2.
-- Fix any Stage 2 review findings.
 - Push Stage 2 commits to `origin/dev`, updating PR #1.
 
 ## Future Stages

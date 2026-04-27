@@ -96,6 +96,12 @@ The model chose Prisma 6.19.3 instead of the latest major version 7.x.
 
 Reason: Prisma 7 is a major upgrade with migration implications; 6.19.3 avoids the known audit issue encountered in 6.19.0 while minimizing framework churn in this stage.
 
+### 2026-04-26: Keep Photo Slug Mirrored to Seed ID Temporarily
+
+The model kept `Photo.slug` as a unique database field but seeds it with the existing photo `id`.
+
+Reason: future public detail/admin routes will likely need a stable slug, but the current seed content has stable URL-safe IDs and no separate slug copy yet. This keeps the schema ready without inventing new slugs prematurely.
+
 ### 2026-04-26: Load API Environment From `apps/api/.env`
 
 The model added `dotenv` loading to the API server and database seed script.
