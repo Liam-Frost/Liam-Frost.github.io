@@ -13,7 +13,7 @@ export function buildServer() {
   const app = Fastify({ logger: true });
   const corsOrigin = process.env.CORS_ORIGIN
     ? process.env.CORS_ORIGIN.split(",").map((origin) => origin.trim()).filter(Boolean)
-    : true;
+    : ["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:4173", "http://127.0.0.1:4173"];
 
   app.register(cors, { origin: corsOrigin });
 

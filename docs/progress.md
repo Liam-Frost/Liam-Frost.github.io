@@ -11,7 +11,7 @@ Status: complete.
 
 ### Stage 1: Repository and API Foundation
 
-Status: implementation complete; external Claude Code review is blocked by local authentication.
+Status: implementation complete; Claude Code review complete and fixes applied.
 
 - Moved the current front-end into `apps/web`.
 - Added `apps/api` Fastify service scaffold.
@@ -22,14 +22,15 @@ Status: implementation complete; external Claude Code review is blocked by local
 - Verified `npm run typecheck` passes.
 - Verified `npm run build` passes.
 - Verified API runtime endpoints: `/api/health` and `/api/photos` returned successfully with 40 photos.
-- Attempted Claude Code CLI review via local `claude`, local `claude-code`, and `npx @anthropic-ai/claude-code`.
-- Claude Code CLI review could not complete because the environment is not logged in: `Not logged in · Please run /login`.
+- Ran Claude Code CLI review via `npx @anthropic-ai/claude-code` after authentication was available.
+- Fixed review findings for Spotify API error handling, Spotify URL validation, default API CORS origins, GH Pages API fetch disablement, SpotifyDock touch dismissal, SpotifyCard cover accessibility, CI typecheck, and a misleading featured photo comment.
+- Re-verified `npm run typecheck` passes after review fixes.
+- Re-verified `npm run build` passes after review fixes.
+- Re-verified API route behavior with Fastify `inject`: `/api/health` returned `200`, `/api/photos` returned `200` with 40 photos.
 
 ### Upcoming
 
-- Run Claude Code CLI review after authentication is available.
-- Fix any external review findings.
-- Prepare PR after external review is complete, or create it earlier if the user approves proceeding without that review.
+- Push `dev` and create PR.
 
 ## Future Stages
 

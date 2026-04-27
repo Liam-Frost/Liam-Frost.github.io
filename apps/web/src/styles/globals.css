@@ -1652,6 +1652,58 @@ html[data-theme="light"] .aboutSection {
   height: 30px;
 }
 
+.spotifyDockClose {
+  position: absolute;
+  right: -6px;
+  top: -6px;
+  z-index: 2;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+  color: rgba(255, 255, 255, 0.76);
+  background: rgba(8, 14, 11, 0.86);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.25);
+  cursor: pointer;
+  transition:
+    opacity 180ms var(--ease),
+    transform 180ms var(--ease),
+    color 180ms var(--ease),
+    border-color 180ms var(--ease);
+}
+
+.spotifyDock.isCollapsed .spotifyDockClose {
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.9);
+}
+
+.spotifyDockClose:hover,
+.spotifyDockClose:focus-visible {
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.42);
+  transform: translateY(-1px) scale(1.03);
+}
+
+.spotifyDockClose:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.spotifyDockClose svg {
+  width: 15px;
+  height: 15px;
+}
+
+.spotifyDockClose path {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+}
+
 .spotifyCard {
   position: relative;
   width: 100%;
@@ -1867,6 +1919,7 @@ html[data-theme="light"] .aboutSection {
   .spotifyDock,
   .spotifyDockPanel,
   .spotifyDockButton,
+  .spotifyDockClose,
   .spotifyCardCover,
   .spotifyCardDisc,
   .spotifyCardDisc svg,

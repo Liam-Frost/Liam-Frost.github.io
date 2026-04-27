@@ -9,6 +9,7 @@ This folder is the source of truth for the migration from a static portfolio to 
 - `development-log.md`: chronological development log.
 - `decisions.md`: user decisions and model-made implementation decisions.
 - `performance.md`: performance and adaptive image quality notes from the original front-end.
+- `reviews/`: external review records and follow-up notes.
 
 ## Documentation Rule
 

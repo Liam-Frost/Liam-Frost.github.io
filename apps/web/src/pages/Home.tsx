@@ -37,7 +37,7 @@ export default function HomePage() {
     "crowd-and-lights",                       // 大阪印象
     "hanabi-scatter",                         // 散落
     "jellyfish",                              // 水母
-    "vancouver-locarno-pier-2025",            // 京都印象
+    "vancouver-locarno-pier-2025",            // 洛迦诺码头
     "shibuya-sky-arena"                       // 东京折叠
   ];
 

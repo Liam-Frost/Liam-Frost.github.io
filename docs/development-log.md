@@ -15,6 +15,9 @@
 - The model started the API temporarily and verified `/api/health` plus `/api/photos`; the API returned 40 photos.
 - The model attempted Claude Code CLI review. Local `claude` and `claude-code` commands were unavailable; `npx @anthropic-ai/claude-code` resolved version `2.1.119` but could not run the review because the environment is not logged in.
 - The model performed a local self-check and changed API startup so importing `buildServer()` will not automatically bind a port.
+- After the user logged into Claude Code, the model ran a full `main..dev` Claude Code review.
+- The model fixed the review findings: added Spotify URL validation and external-call error handling, changed default CORS from allow-all to local dev origins, disabled API fetching for the GH Pages workflow, added a touch-accessible SpotifyDock close control, avoided rendering a no-op Spotify cover button without audio, added CI typecheck, and corrected a misleading homepage photo comment.
+- The model re-ran `npm run typecheck`, `npm run build`, and Fastify route injection checks for `/api/health` plus `/api/photos`; all passed.
 
 ## Notes
 

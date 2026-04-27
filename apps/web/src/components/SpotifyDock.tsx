@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type FocusEvent } from "react";
 
 import { SpotifyCard } from "./spotify-card";
 
@@ -67,11 +67,20 @@ export default function SpotifyDock({ tracks = [] }: SpotifyDockProps) {
     setIsExpanded(false);
   };
 
+  const handleBlur = (event: FocusEvent<HTMLElement>) => {
+    if (event.relatedTarget instanceof Node && event.currentTarget.contains(event.relatedTarget)) {
+      return;
+    }
+
+    collapse();
+  };
+
   return (
     <aside
       className={`spotifyDock ${isExpanded ? "isExpanded" : "isCollapsed"}`}
       aria-label="Spotify tracks"
       onFocus={expand}
+      onBlur={handleBlur}
       onMouseEnter={expand}
       onMouseLeave={collapse}
     >
@@ -83,6 +92,18 @@ export default function SpotifyDock({ tracks = [] }: SpotifyDockProps) {
           onPlaybackChange={setIsPlaybackActive}
         />
       </div>
+
+      <button
+        className="spotifyDockClose"
+        type="button"
+        aria-label={isPlaybackActive ? "Pause preview before hiding Spotify player" : "Hide Spotify player"}
+        disabled={isPlaybackActive}
+        onClick={collapse}
+      >
+        <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+          <path d="M4.2 4.2 8 8m0 0 3.8 3.8M8 8l3.8-3.8M8 8l-3.8 3.8" />
+        </svg>
+      </button>
 
       <button
         className="spotifyDockButton"
