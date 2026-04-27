@@ -39,6 +39,35 @@ export const site = {
     { label: "Blog", href: "#" }
   ],
 
+  spotify: {
+    tracks: [
+      {
+        url: "https://open.spotify.com/track/2BHj31ufdEqVK5CkYDp9mA?si=d9a81c1c28ed415d",
+        title: "Mayonaka no Door / Stay With Me",
+        artist: "Miki Matsubara",
+        image: "https://image-cdn-ak.spotifycdn.com/image/ab67616d0000b273d2d1c44c2767567810b051ef",
+        link: "https://open.spotify.com/track/2BHj31ufdEqVK5CkYDp9mA",
+        audio: "https://p.scdn.co/mp3-preview/af7fe78032f34791e4123006fd2d578797226aa2"
+      },
+      {
+        url: "https://open.spotify.com/track/7rU6Iebxzlvqy5t857bKFq?si=31ef1bb15eec466a",
+        title: "Plastic Love",
+        artist: "Mariya Takeuchi",
+        image: "https://image-cdn-ak.spotifycdn.com/image/ab67616d0000b273d4740e0434aefcf13a748af8",
+        link: "https://open.spotify.com/track/7rU6Iebxzlvqy5t857bKFq",
+        audio: "https://p.scdn.co/mp3-preview/3a2c572a309635ce6ae0ee0cc8f26e9eaebfb640"
+      },
+      {
+        url: "https://open.spotify.com/track/2p8IUWQDrpjuFltbdgLOag?si=081994f693d84565",
+        title: "After Hours",
+        artist: "The Weeknd",
+        image: "https://image-cdn-ak.spotifycdn.com/image/ab67616d0000b2738863bc11d2aa12b54f5aeb36",
+        link: "https://open.spotify.com/track/2p8IUWQDrpjuFltbdgLOag",
+        audio: "https://p.scdn.co/mp3-preview/2375bc6998d765b02b229ff44e5c3d7b75fff74a"
+      }
+    ]
+  },
+
   stats: [
     { value: "40+", label: { zh: "作品", "zh-Hant": "作品", en: "Shots", fr: "Photos", ja: "作品" } satisfies L },
     { value: "5y", label: { zh: "经验", "zh-Hant": "經驗", en: "Years", fr: "Années", ja: "年" } satisfies L },

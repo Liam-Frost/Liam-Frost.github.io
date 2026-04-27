@@ -295,8 +295,7 @@ html[data-perf-filters="off"] .photoCard,
 html[data-perf-filters="off"] .photoOverlay,
 html[data-perf-filters="off"] .metaItem,
 html[data-perf-filters="off"] .input,
-html[data-perf-filters="off"] .select,
-html[data-perf-filters="off"] .navLinks {
+html[data-perf-filters="off"] .select {
   background: rgba(234, 224, 207, 0.12);
 }
 
@@ -304,8 +303,7 @@ html[data-theme="light"][data-perf-filters="off"] .photoCard,
 html[data-theme="light"][data-perf-filters="off"] .photoOverlay,
 html[data-theme="light"][data-perf-filters="off"] .metaItem,
 html[data-theme="light"][data-perf-filters="off"] .input,
-html[data-theme="light"][data-perf-filters="off"] .select,
-html[data-theme="light"][data-perf-filters="off"] .navLinks {
+html[data-theme="light"][data-perf-filters="off"] .select {
   background: rgba(255, 255, 255, 0.82);
 }
 
@@ -462,6 +460,7 @@ html[data-theme="light"] .siteHeader {
   display: flex;
   align-items: center;
   gap: 12px;
+  border-radius: 18px;
 }
 
 .navLink {
@@ -1566,6 +1565,316 @@ html[data-theme="light"] .aboutSection {
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
+}
+
+/* Spotify dock */
+.spotifyDock {
+  position: fixed;
+  right: max(18px, env(safe-area-inset-right));
+  bottom: max(18px, env(safe-area-inset-bottom));
+  width: min(360px, calc(100vw - 36px));
+  height: 100px;
+  z-index: 120;
+  transition:
+    width 180ms var(--ease),
+    height 180ms var(--ease);
+}
+
+.spotifyDock.isCollapsed {
+  width: 54px;
+  height: 54px;
+}
+
+.spotifyDockPanel {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: min(360px, calc(100vw - 36px));
+  height: 100px;
+  overflow: hidden;
+  border-radius: 16px;
+  background: rgba(8, 14, 11, 0.78);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.34);
+  transform-origin: right bottom;
+  transition:
+    opacity 180ms var(--ease),
+    transform 180ms var(--ease);
+}
+
+.spotifyDock.isCollapsed .spotifyDockPanel {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(8px) scale(0.96);
+}
+
+.spotifyDockButton {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 54px;
+  height: 54px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(30, 215, 96, 0.5);
+  border-radius: 999px;
+  color: #1ed760;
+  background: rgba(8, 14, 11, 0.6);
+  box-shadow: 0 16px 44px rgba(0, 0, 0, 0.3);
+  opacity: 0;
+  pointer-events: none;
+  cursor: pointer;
+  transition:
+    opacity 180ms var(--ease),
+    transform 180ms var(--ease),
+    border-color 180ms var(--ease),
+    background 180ms var(--ease);
+}
+
+.spotifyDock.isCollapsed .spotifyDockButton {
+  opacity: 0.18;
+  pointer-events: auto;
+}
+
+.spotifyDock.isCollapsed .spotifyDockButton:hover,
+.spotifyDock.isCollapsed .spotifyDockButton:focus-visible {
+  opacity: 1;
+}
+
+.spotifyDockButton:hover,
+.spotifyDockButton:focus-visible {
+  transform: translateY(-2px) scale(1.03);
+  border-color: rgba(30, 215, 96, 0.92);
+  background: rgba(8, 14, 11, 0.82);
+}
+
+.spotifyDockButton svg {
+  width: 30px;
+  height: 30px;
+}
+
+.spotifyCard {
+  position: relative;
+  width: 100%;
+  height: 100px;
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: inherit;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 12px;
+  transition: border-color 180ms var(--ease);
+}
+
+.spotifyCardBackdrop {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 0;
+  width: 120%;
+  aspect-ratio: 1;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
+
+.spotifyCardBackdrop img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  filter: blur(50px) brightness(1.5);
+}
+
+.spotifyCardBackdropShade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.8));
+}
+
+.spotifyCardCoverButton {
+  position: relative;
+  z-index: 1;
+  width: 75px;
+  min-width: 75px;
+  align-self: center;
+  border: 0;
+  padding: 0;
+  background: transparent;
+}
+
+.spotifyCardCoverButton.hasAudio {
+  cursor: pointer;
+}
+
+.spotifyCardCover {
+  position: relative;
+  z-index: 1;
+  width: 75px;
+  height: 75px;
+  display: block;
+  object-fit: cover;
+  border-radius: 8px;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.28);
+  pointer-events: none;
+  user-select: none;
+  transition: transform 300ms ease-out;
+}
+
+.spotifyCardCoverButton.hasAudio:hover .spotifyCardCover,
+.spotifyCardCoverButton.isPlaying .spotifyCardCover {
+  transform: translateX(-2px);
+}
+
+.spotifyCardDisc {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 0;
+  width: 60px;
+  height: 60px;
+  transform: translate(-50%, -50%);
+  transition: transform 300ms ease-out;
+}
+
+.spotifyCardCoverButton.hasAudio:hover .spotifyCardDisc,
+.spotifyCardDisc.isPlaying {
+  transform: translate(-10%, -50%);
+}
+
+.spotifyCardDisc svg {
+  width: 100%;
+  height: 100%;
+  animation: spotifyCardSpin 3s linear infinite;
+  animation-play-state: paused;
+}
+
+.spotifyCardDisc.isPlaying svg {
+  animation-play-state: running;
+}
+
+.spotifyCardContent {
+  z-index: 1;
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.spotifyCardIconRow {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.spotifyCardIcon {
+  color: #baaeba;
+}
+
+.spotifyCardText {
+  min-width: 0;
+  padding-left: 24px;
+  text-align: right;
+}
+
+.spotifyCardText h2,
+.spotifyCardText p {
+  margin: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  letter-spacing: -0.006em;
+}
+
+.spotifyCardText h2 {
+  color: #d6d1d4;
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.spotifyCardText p {
+  color: #baaeba;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.spotifyCardSkeleton,
+.spotifyCardError {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.spotifyCardSkeletonCover {
+  width: 75px;
+  height: 75px;
+  flex: 0 0 auto;
+  align-self: center;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.16);
+  animation: spotifyCardPulse 1.4s ease-in-out infinite;
+}
+
+.spotifyCardSkeletonLine {
+  width: 64px;
+  height: 16px;
+  margin-left: auto;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  animation: spotifyCardPulse 1.4s ease-in-out infinite;
+}
+
+.spotifyCardSkeletonLine.isLong {
+  width: 96px;
+}
+
+.spotifyCardBody {
+  z-index: 1;
+  flex: 1;
+  display: grid;
+  align-content: end;
+  gap: 6px;
+  padding-left: 24px;
+}
+
+.spotifyCardError {
+  align-items: center;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 14px;
+}
+
+.spotifyCardError p {
+  margin: 0;
+}
+
+@keyframes spotifyCardPulse {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes spotifyCardSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spotifyDock,
+  .spotifyDockPanel,
+  .spotifyDockButton,
+  .spotifyCardCover,
+  .spotifyCardDisc,
+  .spotifyCardDisc svg,
+  .spotifyCardSkeletonCover,
+  .spotifyCardSkeletonLine {
+    transition: none;
+    animation: none;
+  }
 }
 
 /* Footer */
