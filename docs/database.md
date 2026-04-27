@@ -35,6 +35,12 @@ Generate Prisma client:
 npm run db:generate
 ```
 
+Run development migrations, then seed photos:
+
+```bash
+npm run db:migrate
+```
+
 Push schema to a development database:
 
 ```bash

@@ -29,6 +29,9 @@
 - The model upgraded Prisma from 6.19.0 to 6.19.3 after `npm audit` found a high-severity issue in the Prisma CLI dependency chain; `npm audit --audit-level=high` then reported 0 vulnerabilities.
 - The model verified `npm run db:generate`, `npm run typecheck`, `npm run build`, and seed-fallback photo API behavior with Fastify `inject`.
 - Docker is not installed in the current shell, so the real PostgreSQL container verification is deferred.
+- The model ran Claude Code CLI review for Stage 2.
+- The model fixed Stage 2 review findings by binding Postgres to localhost only, replacing string visibility with a Prisma enum, improving seed error handling, making `db:migrate` seed after migration, pinning Prisma versions exactly, and documenting `db:migrate`.
+- The model re-ran `npm run db:generate`, `npm run typecheck`, `npm run build`, `npm audit --audit-level=high`, and seed-fallback route checks; all passed.
 
 ## Notes
 

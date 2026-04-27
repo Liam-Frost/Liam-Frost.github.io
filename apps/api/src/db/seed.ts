@@ -31,7 +31,7 @@ async function main() {
       alt: photo.alt,
       width: photo.width,
       height: photo.height,
-      visibility: "public",
+      visibility: "PUBLIC",
       sortOrder: index
     };
 
@@ -43,11 +43,15 @@ async function main() {
   }
 }
 
-main()
-  .finally(async () => {
-    await prisma.$disconnect();
-  })
-  .catch((error) => {
+async function run() {
+  try {
+    await main();
+  } catch (error) {
     console.error(error);
-    process.exit(1);
-  });
+    process.exitCode = 1;
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+
+await run();
