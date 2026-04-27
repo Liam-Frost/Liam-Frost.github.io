@@ -1,5 +1,6 @@
 import cors from "@fastify/cors";
 import Fastify from "fastify";
+import { pathToFileURL } from "node:url";
 
 import { registerPhotoRoutes } from "./routes/photos";
 import { registerSpotifyRoutes } from "./routes/spotify";
@@ -28,11 +29,19 @@ export function buildServer() {
   return app;
 }
 
-const app = buildServer();
+export async function startServer() {
+  const app = buildServer();
 
-try {
-  await app.listen({ host, port });
-} catch (error) {
-  app.log.error(error);
-  process.exit(1);
+  try {
+    await app.listen({ host, port });
+  } catch (error) {
+    app.log.error(error);
+    process.exit(1);
+  }
+}
+
+const entryPoint = process.argv[1] ? pathToFileURL(process.argv[1]).href : "";
+
+if (import.meta.url === entryPoint) {
+  await startServer();
 }
