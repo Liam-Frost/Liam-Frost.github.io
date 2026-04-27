@@ -1,59 +1,24 @@
-# Personal Photo Portfolio
+# Liam Frost Personal Site
 
-🌐 Live site: http://twilightfrosty.com/
+Personal site migration from a static React portfolio to a full-stack application for photography, projects, and future media collections.
 
-A personal portfolio built as a **static front-end application**, combining my work as a **full-stack engineer** and a **photographer**.
+## Structure
 
-This site is designed not only to showcase photographs, but also to reflect how I think about **systems, interaction, performance, and visual storytelling**.
+- `apps/web`: React + Vite front-end. The visual UI is preserved from the original static site.
+- `apps/api`: Fastify API service. Current first-stage API exposes health, photos, and Spotify metadata endpoints.
+- `packages/content`: Shared content seed data and content types used by both web and API.
+- `docs`: Project documentation, progress, logs, and decision records.
+- `scripts`: One-off maintenance helpers.
 
----
+## Commands
 
-## About
+- `npm run dev:web`: run the front-end dev server.
+- `npm run dev:api`: run the API dev server on `localhost:8787` by default.
+- `npm run build`: build/type-check all workspaces that participate in this stage.
+- `npm run typecheck`: run workspace type checks.
 
-I’m a full-stack engineer with a strong focus on front-end architecture, UI systems, accessibility, and performance — and a photographer who cares deeply about structure, rhythm, and narrative in images.
+## Migration Notes
 
-This portfolio sits at the intersection of those two practices:
-- Photography as content
-- Engineering as the medium
+The front-end initializes from the shared static photo seed and then fetches `/api/photos`. This keeps the page stable if the API is not running during early migration, while allowing the VPS deployment to use the backend API.
 
----
-
-## Features
-
-- Responsive photo portfolio with masonry layout
-- Full-screen image viewer with adaptive layout logic for horizontal and vertical photos
-- i18n (multi-language support)
-- Light / dark / system theme
-- Subtle motion and background effects with respect for reduced-motion preferences
-- Static, CDN-friendly asset loading
-
----
-
-## Tech Stack
-
-- **Vite**
-- **React**
-- **TypeScript**
-- CSS (custom design system, no UI framework)
-
-This is a **pure front-end static site** — no backend, no database — suitable for deployment on GitHub Pages or any static hosting platform.
-
----
-
-## Philosophy
-
-- Minimal UI, strong structure
-- Avoid unnecessary cropping of images
-- Let content define layout, not the other way around
-- Treat performance and accessibility as first-class concerns
-
----
-
-## Deployment
-
-Deployed as a static site via GitHub Pages.
-
----
-
-© Liam  
-Full-stack Engineer · Photographer
+See `docs/README.md` for the full project record.
