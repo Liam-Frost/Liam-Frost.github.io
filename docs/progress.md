@@ -75,10 +75,11 @@ Status: implementation complete; Claude Code review complete and fixes applied.
 - Ran Claude Code CLI review for Stage 3.
 - Fixed review findings: added real login rate limiting, converted `requireAdmin` into a preHandler-style guard, added in-memory session revocation on logout, documented scrypt parameters explicitly, and strengthened production cookie documentation.
 - Re-ran `npm run typecheck`, `npm run build`, `npm audit --audit-level=high`, admin auth flow checks, session revocation checks, and login rate-limit checks after review fixes.
+- Created Stage 3 PR #3: https://github.com/Liam-Frost/Liam-Frost.github.io/pull/3
 
 ### Upcoming
 
-- Create Stage 3 PR.
+- Review and merge Stage 3 PR #3.
 
 ## Future Stages
 
