@@ -1,10 +1,12 @@
 import "dotenv/config";
 
+import cookie from "@fastify/cookie";
 import cors from "@fastify/cors";
 import Fastify from "fastify";
 import { pathToFileURL } from "node:url";
 
 import { hasDatabaseUrl } from "./db/client";
+import { registerAdminRoutes } from "./routes/admin";
 import { registerPhotoRoutes } from "./routes/photos";
 import { registerSpotifyRoutes } from "./routes/spotify";
 import { readStorageConfig } from "./storage/config";
@@ -18,7 +20,8 @@ export function buildServer() {
     ? process.env.CORS_ORIGIN.split(",").map((origin) => origin.trim()).filter(Boolean)
     : ["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:4173", "http://127.0.0.1:4173"];
 
-  app.register(cors, { origin: corsOrigin });
+  app.register(cors, { credentials: true, origin: corsOrigin });
+  app.register(cookie);
 
   app.get("/api/health", async () => ({
     ok: true,
@@ -27,6 +30,7 @@ export function buildServer() {
     storage: readStorageConfig().driver
   }));
 
+  registerAdminRoutes(app);
   registerPhotoRoutes(app);
   registerSpotifyRoutes(app);
 

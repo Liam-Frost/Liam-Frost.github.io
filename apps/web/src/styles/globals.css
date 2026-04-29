@@ -1567,6 +1567,51 @@ html[data-theme="light"] .aboutSection {
   flex-wrap: wrap;
 }
 
+/* Admin */
+.adminPage {
+  min-height: calc(100vh - var(--header-h) - 120px);
+  display: grid;
+  align-items: center;
+}
+
+.adminShell {
+  max-width: 720px;
+}
+
+.adminCard {
+  padding: clamp(24px, 4vw, 40px);
+}
+
+.adminForm,
+.adminPanel {
+  display: grid;
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.adminField {
+  display: grid;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.adminStatusCard {
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: rgba(234, 224, 207, 0.08);
+}
+
+html[data-theme="light"] .adminStatusCard {
+  background: rgba(255, 255, 255, 0.58);
+}
+
+.adminMessage {
+  margin-top: 18px;
+}
+
 /* Spotify dock */
 .spotifyDock {
   position: fixed;

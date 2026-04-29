@@ -108,6 +108,18 @@ The model added `dotenv` loading to the API server and database seed script.
 
 Reason: Prisma CLI commands read local `.env` files, but the API runtime and direct seed script do not automatically load `DATABASE_URL`; loading `apps/api/.env` keeps local development consistent.
 
+### 2026-04-26: Use Single-Admin Environment-Based Authentication First
+
+The model chose a single admin account configured by environment variables instead of creating an admin user database table in Stage 3.
+
+Reason: the current goal is to establish a protected admin boundary before CRUD exists. A database-backed user system would add complexity before roles, user management, and recovery requirements are clear.
+
+### 2026-04-26: Use HttpOnly Cookie Sessions
+
+The model chose HttpOnly cookie sessions signed with an HMAC token for admin authentication.
+
+Reason: the front-end and API are intended to be same-origin behind a VPS reverse proxy, and HttpOnly cookies reduce exposure compared with storing bearer tokens in local storage.
+
 ### 2026-04-26: Remove Tracked `my-app` Scaffold
 
 The model chose to remove the tracked `my-app` Vite starter scaffold.

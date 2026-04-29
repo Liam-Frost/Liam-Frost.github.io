@@ -26,10 +26,13 @@ The first-stage API uses Fastify and TypeScript. It currently provides:
 - `GET /api/photos`
 - `GET /api/photos/:id`
 - `GET /api/spotify?url=...`
+- `GET /api/admin/session`
+- `POST /api/admin/login`
+- `POST /api/admin/logout`
 
 The API has a PostgreSQL/Prisma foundation for photos. During migration, photo routes use the database when `DATABASE_URL` is configured and reachable, then fall back to shared seed data when the database is not configured or unavailable. This keeps the existing front-end stable while the admin/database workflow is built out.
 
-Admin authentication, CRUD, media metadata import, and upload processing are planned for later stages.
+Admin authentication is in place with an HttpOnly cookie session and a reusable backend guard for future protected routes. CRUD, media metadata import, and upload processing are planned for later stages.
 
 ## Content
 

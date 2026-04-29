@@ -4,6 +4,7 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
+    "auth:hash": "tsx src/auth/hash-password.ts",
     "db:generate": "prisma generate --schema prisma/schema.prisma",
     "db:migrate": "prisma migrate dev --schema prisma/schema.prisma && npm run db:seed",
     "db:push": "prisma db push --schema prisma/schema.prisma",
@@ -15,6 +16,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@fastify/cookie": "^11.0.2",
     "@fastify/cors": "^11.0.0",
     "@liam-frost/content": "^0.1.0",
     "@prisma/client": "6.19.3",
