@@ -1,7 +1,8 @@
-import { createHmac, timingSafeEqual } from "node:crypto";
+import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 
 export type AdminSession = {
   sub: string;
+  jti: string;
   exp: number;
   iat: number;
 };
@@ -25,6 +26,7 @@ export function createSessionToken(username: string, secret: string, ttlSeconds:
   const now = Math.floor(Date.now() / 1000);
   const session: AdminSession = {
     sub: username,
+    jti: randomBytes(16).toString("base64url"),
     iat: now,
     exp: now + ttlSeconds
   };
@@ -47,7 +49,7 @@ export function verifySessionToken(token: string | undefined, secret: string): A
     const session = JSON.parse(Buffer.from(payload, "base64url").toString("utf8")) as AdminSession;
     const now = Math.floor(Date.now() / 1000);
 
-    if (!session.sub || !Number.isInteger(session.exp) || session.exp <= now) {
+    if (!session.sub || !session.jti || !Number.isInteger(session.exp) || session.exp <= now) {
       return null;
     }
 

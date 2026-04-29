@@ -58,7 +58,7 @@ Status: implementation complete; Claude Code review complete and fixes applied.
 
 ### Stage 3: Admin Authentication Foundation
 
-Status: in progress.
+Status: implementation complete; Claude Code review complete and fixes applied.
 
 - Added admin password hashing command: `npm run auth:hash -- your-password`.
 - Added API admin auth configuration using `ADMIN_USERNAME`, `ADMIN_PASSWORD_HASH`, and `ADMIN_SESSION_SECRET`.
@@ -72,11 +72,13 @@ Status: in progress.
 - Ran `npm audit --audit-level=high`; result: 0 vulnerabilities.
 - Verified `npm run auth:hash -- test-password` generates a scrypt password hash.
 - Verified admin API flow with Fastify `inject`: unauthenticated session, failed login, successful login with cookie session, authenticated session, logout, and unconfigured auth response.
+- Ran Claude Code CLI review for Stage 3.
+- Fixed review findings: added real login rate limiting, converted `requireAdmin` into a preHandler-style guard, added in-memory session revocation on logout, documented scrypt parameters explicitly, and strengthened production cookie documentation.
+- Re-ran `npm run typecheck`, `npm run build`, `npm audit --audit-level=high`, admin auth flow checks, session revocation checks, and login rate-limit checks after review fixes.
 
 ### Upcoming
 
-- Run Claude Code CLI review for Stage 3.
-- Fix review findings and create Stage 3 PR.
+- Create Stage 3 PR.
 
 ## Future Stages
 

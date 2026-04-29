@@ -38,6 +38,9 @@
 - The model started Stage 3 by adding admin authentication endpoints, password hashing, signed HttpOnly session cookies, and a hidden `/admin` front-end login page.
 - The model documented admin setup and Stage 3 scope in `docs/admin.md`.
 - The model verified Stage 3 with `npm run typecheck`, `npm run build`, `npm audit --audit-level=high`, `npm run auth:hash -- test-password`, and Fastify `inject` checks for configured and unconfigured admin auth flows.
+- The model ran Claude Code CLI review for Stage 3.
+- The model fixed Stage 3 review findings by adding manual login rate limiting, making `requireAdmin` a preHandler-style guard, adding in-memory session revocation on logout, documenting explicit scrypt parameters, and strengthening production cookie documentation.
+- The model re-ran verification after review fixes, including a login rate-limit check where the 9th bad attempt returned `429`.
 
 ## Notes
 
