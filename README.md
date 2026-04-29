@@ -16,6 +16,10 @@ Personal site migration from a static React portfolio to a full-stack applicatio
 - `npm run dev:api`: run the API dev server on `localhost:8787` by default.
 - `npm run build`: build/type-check all workspaces that participate in this stage.
 - `npm run typecheck`: run workspace type checks.
+- `npm run db:generate`: generate the Prisma client for the API.
+- `npm run db:migrate`: run Prisma development migrations, then seed photo data.
+- `npm run db:push`: push the Prisma schema to a local/development PostgreSQL database.
+- `npm run db:seed`: seed the database from the shared photo content package.
 
 ## Migration Notes
 

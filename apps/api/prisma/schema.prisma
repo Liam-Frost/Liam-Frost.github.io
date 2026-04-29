@@ -1,0 +1,39 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Visibility {
+  PUBLIC  @map("public")
+  PRIVATE @map("private")
+}
+
+model Photo {
+  id          String   @id
+  slug        String   @unique
+  title       Json
+  date        String
+  category    Json
+  location    Json?
+  camera      String?
+  lens        String?
+  settings    String?
+  description Json?
+  tags        Json
+  src         String
+  alt         Json
+  width       Int
+  height      Int
+  featured    Boolean  @default(false)
+  visibility  Visibility @default(PUBLIC)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([visibility, sortOrder])
+  @@index([date])
+}

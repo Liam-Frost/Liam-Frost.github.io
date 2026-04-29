@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: liam-frost-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: liam_frost_site
+      POSTGRES_USER: liam_frost
+      POSTGRES_PASSWORD: liam_frost_dev
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U liam_frost -d liam_frost_site"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:

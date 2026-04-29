@@ -78,6 +78,36 @@ The model changed the default API CORS behavior from allow-all to localhost and 
 
 Reason: public deployment should not accidentally expose permissive CORS by default; production origins can be configured explicitly through `CORS_ORIGIN`.
 
+### 2026-04-26: Database-First With Seed Fallback
+
+The model chose to make photo routes read from PostgreSQL when `DATABASE_URL` is configured, but fall back to `packages/content` seed data when the database is missing, unavailable, or empty.
+
+Reason: the user requires the migrated page to keep working and looking the same during migration; a hard database dependency would make local/static workflows fragile before the admin and deployment layers exist.
+
+### 2026-04-26: Store Localized Photo Fields as JSON
+
+The model chose JSON fields for localized photo content in Prisma instead of splitting translations into a separate table.
+
+Reason: the existing content shape is already localized JSON-like objects, and a translation-table design would add complexity before the admin editing model is finalized.
+
+### 2026-04-26: Pin Prisma to 6.19.3
+
+The model chose Prisma 6.19.3 instead of the latest major version 7.x.
+
+Reason: Prisma 7 is a major upgrade with migration implications; 6.19.3 avoids the known audit issue encountered in 6.19.0 while minimizing framework churn in this stage.
+
+### 2026-04-26: Keep Photo Slug Mirrored to Seed ID Temporarily
+
+The model kept `Photo.slug` as a unique database field but seeds it with the existing photo `id`.
+
+Reason: future public detail/admin routes will likely need a stable slug, but the current seed content has stable URL-safe IDs and no separate slug copy yet. This keeps the schema ready without inventing new slugs prematurely.
+
+### 2026-04-26: Load API Environment From `apps/api/.env`
+
+The model added `dotenv` loading to the API server and database seed script.
+
+Reason: Prisma CLI commands read local `.env` files, but the API runtime and direct seed script do not automatically load `DATABASE_URL`; loading `apps/api/.env` keeps local development consistent.
+
 ### 2026-04-26: Remove Tracked `my-app` Scaffold
 
 The model chose to remove the tracked `my-app` Vite starter scaffold.

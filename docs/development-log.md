@@ -21,6 +21,18 @@
 - The model pushed `dev` to `origin/dev`.
 - The model attempted `gh pr create`, but GitHub CLI was not initially available in the shell PATH. GitHub returned the branch PR creation URL for manual continuation.
 - After the user installed GitHub CLI, the model found `gh.exe` at `C:\Program Files\GitHub CLI\gh.exe`, removed the empty untracked root `src/` directory, and retried PR creation. The retry is blocked because GitHub CLI is installed but not authenticated in this environment.
+- After GitHub CLI authentication became available, the model created PR #1.
+- The user asked to continue the next stage.
+- The model started Stage 2 by adding Prisma/PostgreSQL foundations while preserving seed fallback behavior.
+- The model added a local PostgreSQL `compose.yaml`, Prisma `Photo` model, DB client helpers, photo repository, and seed script.
+- The model added `dotenv` loading so local `apps/api/.env` values are available to the API server and seed script.
+- The model upgraded Prisma from 6.19.0 to 6.19.3 after `npm audit` found a high-severity issue in the Prisma CLI dependency chain; `npm audit --audit-level=high` then reported 0 vulnerabilities.
+- The model verified `npm run db:generate`, `npm run typecheck`, `npm run build`, and seed-fallback photo API behavior with Fastify `inject`.
+- Docker is not installed in the current shell, so the real PostgreSQL container verification is deferred.
+- The model ran Claude Code CLI review for Stage 2.
+- The model fixed Stage 2 review findings by binding Postgres to localhost only, replacing string visibility with a Prisma enum, improving seed error handling, making `db:migrate` seed after migration, pinning Prisma versions exactly, and documenting `db:migrate`.
+- The model re-ran `npm run db:generate`, `npm run typecheck`, `npm run build`, `npm audit --audit-level=high`, and seed-fallback route checks; all passed.
+- PR #1 had already been merged, so Stage 2 changes were opened as PR #2: https://github.com/Liam-Frost/Liam-Frost.github.io/pull/2
 
 ## Notes
 
