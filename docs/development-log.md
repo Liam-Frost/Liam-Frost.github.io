@@ -41,6 +41,7 @@
 - The model ran Claude Code CLI review for Stage 3.
 - The model fixed Stage 3 review findings by adding manual login rate limiting, making `requireAdmin` a preHandler-style guard, adding in-memory session revocation on logout, documenting explicit scrypt parameters, and strengthening production cookie documentation.
 - The model re-ran verification after review fixes, including a login rate-limit check where the 9th bad attempt returned `429`.
+- The model created Stage 3 PR #3: https://github.com/Liam-Frost/Liam-Frost.github.io/pull/3
 
 ## Notes
 
