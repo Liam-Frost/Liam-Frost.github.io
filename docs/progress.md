@@ -56,12 +56,31 @@ Status: implementation complete; Claude Code review complete and fixes applied.
 
 ### Upcoming
 
-- Review and merge Stage 2 PR #2.
+### Stage 3: Admin Authentication Foundation
+
+Status: in progress.
+
+- Added admin password hashing command: `npm run auth:hash -- your-password`.
+- Added API admin auth configuration using `ADMIN_USERNAME`, `ADMIN_PASSWORD_HASH`, and `ADMIN_SESSION_SECRET`.
+- Added scrypt password verification and HMAC-signed HttpOnly session cookies.
+- Added API routes: `GET /api/admin/session`, `POST /api/admin/login`, and `POST /api/admin/logout`.
+- Added reusable `requireAdmin()` guard for future admin CRUD routes.
+- Added hidden front-end `/admin` route with login form and authenticated placeholder dashboard.
+- Added `docs/admin.md` with setup and scope.
+- Ran `npm run typecheck`; result: passed.
+- Ran `npm run build`; result: passed.
+- Ran `npm audit --audit-level=high`; result: 0 vulnerabilities.
+- Verified `npm run auth:hash -- test-password` generates a scrypt password hash.
+- Verified admin API flow with Fastify `inject`: unauthenticated session, failed login, successful login with cookie session, authenticated session, logout, and unconfigured auth response.
+
+### Upcoming
+
+- Run Claude Code CLI review for Stage 3.
+- Fix review findings and create Stage 3 PR.
 
 ## Future Stages
 
 - Verify PostgreSQL path with Docker or a real VPS database.
-- Add `/admin` authentication.
 - Add photo CRUD and image upload processing.
 - Add projects module.
 - Add books, movies, TV, and anime module with metadata import.

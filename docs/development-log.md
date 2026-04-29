@@ -33,6 +33,11 @@
 - The model fixed Stage 2 review findings by binding Postgres to localhost only, replacing string visibility with a Prisma enum, improving seed error handling, making `db:migrate` seed after migration, pinning Prisma versions exactly, and documenting `db:migrate`.
 - The model re-ran `npm run db:generate`, `npm run typecheck`, `npm run build`, `npm audit --audit-level=high`, and seed-fallback route checks; all passed.
 - PR #1 had already been merged, so Stage 2 changes were opened as PR #2: https://github.com/Liam-Frost/Liam-Frost.github.io/pull/2
+- PR #2 was merged before Stage 3 work began.
+- The model fast-forwarded local `dev` to latest `origin/main` and pushed `dev` so the next stage starts from the merged state.
+- The model started Stage 3 by adding admin authentication endpoints, password hashing, signed HttpOnly session cookies, and a hidden `/admin` front-end login page.
+- The model documented admin setup and Stage 3 scope in `docs/admin.md`.
+- The model verified Stage 3 with `npm run typecheck`, `npm run build`, `npm audit --audit-level=high`, `npm run auth:hash -- test-password`, and Fastify `inject` checks for configured and unconfigured admin auth flows.
 
 ## Notes
 
