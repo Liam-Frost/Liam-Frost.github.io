@@ -1,41 +1,11 @@
 import { photos as seedPhotos, type Photo } from "@liam-frost/content";
-import type { PrismaClient } from "@prisma/client";
 
+import type { Photo as PhotoRecord } from "../generated/prisma/client";
 import { getPrismaClient } from "./client";
 
 type Logger = {
   warn: (data: unknown, message?: string) => void;
 };
-
-type PhotoRecord = {
-  id: string;
-  title: unknown;
-  date: string;
-  category: unknown;
-  location: unknown | null;
-  camera: string | null;
-  lens: string | null;
-  settings: string | null;
-  description: unknown | null;
-  tags: unknown;
-  src: string;
-  alt: unknown;
-  width: number;
-  height: number;
-};
-
-type PhotoDelegate = {
-  findMany: (args: unknown) => Promise<PhotoRecord[]>;
-  findUnique: (args: unknown) => Promise<PhotoRecord | null>;
-};
-
-type PhotoPrismaClient = PrismaClient & {
-  photo: PhotoDelegate;
-};
-
-function getPhotoDelegate(client: PrismaClient) {
-  return (client as PhotoPrismaClient).photo;
-}
 
 function localized(value: unknown) {
   return value as Photo["title"];
@@ -75,7 +45,7 @@ export async function listPhotos(logger?: Logger): Promise<Photo[]> {
   }
 
   try {
-    const records = await getPhotoDelegate(client).findMany({
+    const records = await client.photo.findMany({
       where: { visibility: "PUBLIC" },
       orderBy: [{ sortOrder: "asc" }, { date: "desc" }, { id: "asc" }]
     });
@@ -94,7 +64,7 @@ export async function getPhoto(id: string, logger?: Logger): Promise<Photo | nul
   }
 
   try {
-    const record = await getPhotoDelegate(client).findUnique({
+    const record = await client.photo.findUnique({
       where: { id }
     });
 
