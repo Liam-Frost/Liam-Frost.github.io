@@ -112,17 +112,19 @@ Requires `DATABASE_URL`. Searching films and series needs `TMDB_API_KEY` (a TMDB
 
 API: `GET /api/admin/media`, `GET /api/admin/media/search?kind&source&q`, `POST /api/admin/media/import`, `POST /api/admin/media`, `GET/PATCH/DELETE /api/admin/media/:id`, `POST /api/admin/media/:id/poster`, `GET/PUT /api/admin/collection/settings`. Posters: `/uploads/media/<id>/<imageId>/<n>.webp`.
 
-## Music (Spotify Player)
+## Music (Songs and the Player)
 
-The "音乐" page configures the player in the site's bottom-right corner. Changing settings needs `DATABASE_URL`; without a database the site still plays the default playlist (cached in memory).
+Songs are collection entries (收藏 → 音乐; kind `track`). The site's player in the bottom-right corner plays the songs that are public, marked 加入播放器 and have a 30-second preview, in the order they were added (or shuffled). Without such songs it plays the fallback tracks in `apps/web/src/data/site.ts`.
 
-- **Settings**: show/hide the player, the playlist link (`https://open.spotify.com/playlist/<id>`; `?si=` is dropped), shuffle or playlist order, default volume, and how many seconds after page load the player collapses (0 = stays open).
-- **Sync**: the API reads the playlist from Spotify's public embed page (the official Web API no longer serves editorial playlists or preview URLs to new apps). Track covers come from oEmbed and are cached between syncs. Only tracks with a 30-second preview are kept. The playlist refreshes every 6 hours when visited; "立即同步" refreshes it now, and saving a new link syncs it right away. A failed sync keeps the last good playlist and shows the error on the page; visitors do not retry a failed playlist for 10 minutes.
-- **Player**: plays previews one after another (shuffled, reshuffled each round, or in playlist order) and loops; previous/next buttons and media keys work; hiding the player keeps the music playing. Static builds (GitHub Pages) and an API without a playlist fall back to the tracks in `apps/web/src/data/site.ts`.
-- **Proxy**: when `HTTPS_PROXY` is set (e.g. a local proxy needed to reach Spotify), the API sends its requests through it (Node 24.14+/25.4+; on older Node set `NODE_USE_ENV_PROXY=1`). `NO_PROXY` is respected.
-- The embed page is not a public contract. If Spotify changes it, syncs fail with "无法解析 Spotify 歌单页面" and the site keeps the last synced playlist.
+- **添加歌曲**: searches the iTunes store chosen in the dialog (Japanese songs are easiest to find in the Japan store); adding fetches the song's 600 px cover, album, length, preview and Apple Music link. Songs with a preview go into the player.
+- **导入 Spotify 歌单**: imports a public playlist from its share link as a background job with progress (100 songs take under a minute). Songs come with their Spotify preview, cover and link; songs without a preview are added but stay out of the player. Songs already in the collection are skipped, so a playlist can be imported again to add new songs. One playlist imports at a time.
+- **Song list**: preview button, 播放器 switch, and 找试听 for songs without a preview (iTunes search; choosing a result sets the preview and puts the song in the player). Filters: all, in the player, not in the player, without a preview.
+- **Song editor**: rating, short review (per language), title, singers, album, year, genres, cover, preview (换一个试听), Spotify / Apple Music links, player / public / featured switches.
+- **播放器 page** (`<ADMIN_PATH>/music`): show/hide the player, shuffle, default volume, seconds before it collapses (0 = stays open), and how many songs it plays.
+- Previews may only come from `audio-ssl.itunes.apple.com` or `p.scdn.co`; a song cannot be in the player without one.
+- Spotify playlists are read from Spotify's public embed page (the official Web API does not serve editorial playlists or previews to new apps). If Spotify changes that page, imports fail with a message; songs already imported are unaffected. Importing your Liked Songs needs a Spotify developer app (Stage 13b).
 
-API: `GET/PUT /api/admin/spotify`, `POST /api/admin/spotify/sync`. Public: `GET /api/spotify/player`. Settings and the cached playlist are stored in the `Setting` table (`spotify`, `spotify.playlist`).
+API: `GET /api/admin/music/search?q&country`, `POST /api/admin/music/import`, `POST /api/admin/music/playlist-import`, `GET /api/admin/music/jobs/:id`, `GET/PUT /api/admin/spotify` (player settings). Public: `GET /api/spotify/player`. Player settings are stored in the `Setting` table (`spotify`).
 
 ## Running the Admin App
 

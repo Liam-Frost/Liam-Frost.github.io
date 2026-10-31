@@ -6,7 +6,7 @@ import { HttpError, notFound } from "../lib/errors";
 import { musicImportSchema, musicJobParamsSchema, musicSearchQuerySchema, parseInput, playlistImportSchema } from "../lib/validation";
 import type { MusicSource } from "../media/itunes";
 import { toAdminMedia } from "../media/mapping";
-import { importItunesSong, type PlaylistImports } from "../media/music-import";
+import { ImportBusyError, importItunesSong, type PlaylistImports } from "../media/music-import";
 import { SourceError, type MediaSources } from "../media/sources";
 import { DuplicateMediaError, type MediaRepository } from "../media/types";
 import { PlaylistError } from "../spotify/playlist";
@@ -57,6 +57,7 @@ export function registerAdminMusicRoutes(
       job = repo().imports.start(playlistUrl);
     } catch (error) {
       if (error instanceof PlaylistError) throw new HttpError(400, "VALIDATION", error.message);
+      if (error instanceof ImportBusyError) throw new HttpError(409, "IMPORT_BUSY", error.message);
       throw error;
     }
     reply.code(202);

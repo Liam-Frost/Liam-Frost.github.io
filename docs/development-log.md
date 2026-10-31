@@ -95,6 +95,10 @@
 - The model ran Claude Code review for Stage 12 and fixed four findings.
 - The user reported a blank home page after adding an anime. It was unrelated: reloading with 繁體中文 selected crashed the app (`zh-Hant` normalized to `zh-hant`, missing from the translation tables). The bug dates back to when Traditional Chinese was added and also affects the live GitHub Pages site until this is deployed.
 
+- PR #12 was merged; Stage 13 was split so the parts that need no Spotify credentials (13a) could start right away.
+- Importing City Pop Best in the browser test took 37 s for 100 songs; covers load lazily, so a first screenshot showed none.
+- The model ran Claude Code review for Stage 13a and fixed five findings.
+
 ## Notes
 
 - A direct Windows directory rename of `src` failed with `Permission denied`; the migration continued by moving source subdirectories individually.

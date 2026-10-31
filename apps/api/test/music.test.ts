@@ -199,6 +199,26 @@ describe("admin music", () => {
     expect(again).toMatchObject({ state: "done", added: 0, skipped: 5 });
   });
 
+  it("refuses a second playlist while one is importing", async () => {
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const { app, headers } = await setup({
+      fetchPlaylist: async () => {
+        await gate;
+        return playlist(1);
+      }
+    });
+    const start = (playlistUrl: string) => app.inject({ method: "POST", url: "/api/admin/music/playlist-import", headers, payload: { playlistUrl } });
+    const first = (await start("spotify:playlist:37i9dQZF1DX9AUX5YVf3hc")).json().job;
+    expect((await start("https://open.spotify.com/playlist/37i9dQZF1DX9AUX5YVf3hc")).json().job.id).toBe(first.id);
+    const other = await start("spotify:playlist:0123456789abcdefghijkl");
+    expect(other.statusCode).toBe(409);
+    expect(other.json().error.code).toBe("IMPORT_BUSY");
+    release();
+  });
+
   it("reports bad links and failed playlist reads", async () => {
     const { app, headers, cookie } = await setup({
       fetchPlaylist: async () => {
@@ -223,6 +243,12 @@ describe("admin music", () => {
     for (const payload of [{ music: { previewUrl: "https://evil.example/a.mp3" } }, { music: { appleUrl: "https://evil.example" } }, { status: "done" }, { progress: { watched: 1, total: 2 } }]) {
       expect((await patch(item.id, payload)).statusCode, JSON.stringify(payload)).toBe(400);
     }
+
+    // The player only plays songs with a preview.
+    expect((await patch(item.id, { music: { previewUrl: null } })).statusCode).toBe(200);
+    expect((await patch(item.id, { inPlayer: true })).statusCode).toBe(400);
+    expect((await patch(item.id, { inPlayer: true, music: { previewUrl: "https://audio-ssl.itunes.apple.com/x.m4a" } })).json().item.inPlayer).toBe(true);
+    expect((await patch(item.id, { music: { previewUrl: null } })).statusCode).toBe(400);
 
     const film = (await app.inject({ method: "POST", url: "/api/admin/media", headers, payload: { kind: "movie", title: { zh: "电影" } } })).json().item;
     expect((await patch(film.id, { inPlayer: true })).statusCode).toBe(400);

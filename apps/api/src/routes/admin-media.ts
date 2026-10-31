@@ -17,7 +17,7 @@ import {
 } from "../lib/validation";
 import type { CollectionSettingsStore } from "../media/collection-settings";
 import { importMedia, storePoster } from "../media/import";
-import { toAdminMedia } from "../media/mapping";
+import { musicOf, toAdminMedia } from "../media/mapping";
 import { SourceError, type MediaSources } from "../media/sources";
 import { DuplicateMediaError, type MediaPatch, type MediaRepository, type MediaRow } from "../media/types";
 import type { StoredImage } from "../projects/types";
@@ -126,6 +126,9 @@ export function registerAdminMediaRoutes(
       if (!isMusic && (music !== undefined || patch.inPlayer !== undefined)) throw badRequest("Only songs have music details", "VALIDATION");
       const next: MediaPatch = { ...patch };
       if (music) next.extra = { ...row.extra, music: { ...(row.extra.music as object | undefined), ...music } };
+      if (isMusic && (next.inPlayer ?? row.inPlayer) && !musicOf({ kind: row.kind, extra: next.extra ?? row.extra })?.previewUrl) {
+        throw badRequest("Songs need a preview to be in the player", "VALIDATION");
+      }
       return respond(await save(id, next));
     });
   });

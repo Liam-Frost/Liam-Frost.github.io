@@ -48,6 +48,12 @@ React and related dependencies should be upgraded to the latest versions. This u
 
 ## Model Decisions
 
+### 2026-11-01: The Player Plays the Collection's Songs
+
+Songs are collection entries; the player plays the public ones marked "in player" that have a preview. A Spotify playlist is imported once (background job) instead of being synced at runtime, and iTunes provides search, covers and previews for single songs and for songs without a Spotify preview.
+
+Reason: the site no longer depends on Spotify's embed page while visitors browse; the collection is the single list the admin manages, as planned in `docs/plan-collection.md`. Stage 13 is split: 13a needs no credentials; 13b (Liked Songs) needs the user's Spotify developer app.
+
 ### 2026-10-31: Romaji Titles for Anime From AniList
 
 Anime imports look up the Japanese original title on AniList (public GraphQL API, no key) and use the romaji name as the English and French title; the match must have the same title (ignoring width and punctuation) or a year within one. Lookup failures do not block an import. `npm run db:backfill:romaji` updates existing entries.
