@@ -12,6 +12,7 @@ type Props = {
 
 /**
  * Modal on the native <dialog>: the browser provides focus trapping, Esc to close and top-layer rendering.
+ * Mark the field that should receive focus on open with `data-autofocus`.
  */
 export function Dialog({ open, title, onClose, children, footer, size = "lg" }: Props) {
   const ref = useRef<HTMLDialogElement>(null);
@@ -20,7 +21,12 @@ export function Dialog({ open, title, onClose, children, footer, size = "lg" }: 
   useEffect(() => {
     const dialog = ref.current;
     if (!dialog) return;
-    if (open && !dialog.open) dialog.showModal();
+    if (open && !dialog.open) {
+      dialog.showModal();
+      // showModal focuses the first focusable element (the close button); React's autoFocus does not
+      // reach the native dialog, so fields that should get focus are marked with data-autofocus.
+      dialog.querySelector<HTMLElement>("[data-autofocus]")?.focus();
+    }
     if (!open && dialog.open) dialog.close();
   }, [open]);
 

@@ -193,3 +193,96 @@ export type SpotifySyncStatus = {
 };
 
 export type AdminSpotifyResponse = { settings: SpotifySettings; sync: SpotifySyncStatus };
+
+/** Collection entries: films, series and anime now; music (track/album) in a later stage. */
+export type MediaKind = "movie" | "tv" | "anime" | "track" | "album";
+/** Watch status for films, series and anime. */
+export type MediaStatus = "want" | "watching" | "done" | "dropped";
+/** Where an entry's details came from. */
+export type MediaSource = "tmdb" | "bangumi" | "spotify" | "itunes" | "manual";
+
+/** Episodes watched out of the total (unknown total: null). */
+export type MediaProgress = { watched: number; total: number | null };
+
+export type AdminMediaItem = {
+  id: string;
+  kind: MediaKind;
+  source: MediaSource;
+  sourceId: string | null;
+  /** The entry on TMDB / Bangumi / ..., when imported. */
+  sourceUrl: string | null;
+  title: LocalizedText;
+  originalTitle: string | null;
+  year: number | null;
+  genres: LocalizedText[];
+  /** Directors, studios, creators. */
+  credits: string[];
+  overview: LocalizedText;
+  poster: ProjectImage | null;
+  status: MediaStatus | null;
+  /** 1-5; null when not rated. */
+  rating: number | null;
+  review: LocalizedText;
+  /** YYYY-MM-DD */
+  watchedOn: string | null;
+  rewatchCount: number;
+  progress: MediaProgress | null;
+  featured: boolean;
+  visibility: PhotoVisibility;
+  createdAt: string;
+  updatedAt: string;
+};
+
+/** Manual entry without a source. */
+export type AdminMediaCreate = { kind: MediaKind; title: LocalizedText };
+/** Import from a source search result. */
+export type AdminMediaImport = { kind: MediaKind; source: "tmdb" | "bangumi"; sourceId: string };
+
+/** Editable fields; `null` clears an optional field. */
+export type AdminMediaUpdate = Partial<{
+  title: LocalizedText;
+  originalTitle: string | null;
+  year: number | null;
+  genres: LocalizedText[];
+  credits: string[];
+  overview: LocalizedText;
+  status: MediaStatus;
+  rating: number | null;
+  review: LocalizedText;
+  watchedOn: string | null;
+  rewatchCount: number;
+  progress: MediaProgress | null;
+  featured: boolean;
+  visibility: PhotoVisibility;
+}>;
+
+export type MediaSearchResult = {
+  source: "tmdb" | "bangumi";
+  sourceId: string;
+  /** Movie or series, for TMDB anime searches. */
+  mediaType: "movie" | "tv";
+  title: string;
+  originalTitle: string | null;
+  year: number | null;
+  /** Small remote poster for the result list; imports download their own copy. */
+  posterUrl: string | null;
+  overview: string;
+  /** Already in the collection. */
+  existingId: string | null;
+};
+
+export type CollectionSettings = {
+  /** Which kinds the site shows. */
+  show: { movie: boolean; tv: boolean; anime: boolean; music: boolean };
+  /** Off: "want" entries never appear on the site, whatever their own visibility. */
+  showWant: boolean;
+};
+
+export type AdminMediaListResponse = { items: AdminMediaItem[] };
+export type AdminMediaResponse = { item: AdminMediaItem };
+export type AdminMediaSearchResponse = { results: MediaSearchResult[] };
+export type AdminCollectionSettingsResponse = {
+  settings: CollectionSettings;
+  /** Sources that can be searched (TMDB needs TMDB_API_KEY). */
+  sources: { tmdb: boolean; bangumi: boolean };
+};

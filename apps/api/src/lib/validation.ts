@@ -158,3 +158,82 @@ export const projectOrderSchema = z
   .refine((value) => new Set(value.ids).size === value.ids.length, "Duplicate ids in order");
 
 export const projectImageSlotSchema = z.object({ slot: z.enum(["cover", "gallery"]) });
+
+const mediaKind = z.enum(["movie", "tv", "anime", "track", "album"]);
+/** Films, series and anime; music comes in a later stage. */
+const watchKind = z.enum(["movie", "tv", "anime"]);
+
+export const mediaIdSchema = projectIdSchema;
+export const mediaListQuerySchema = z.object({ kind: mediaKind.optional() });
+
+export const mediaCreateSchema = z
+  .object({
+    kind: watchKind,
+    title: requiredText(200, "Title is required in at least one language")
+  })
+  .strict();
+
+export const mediaImportSchema = z
+  .object({
+    kind: watchKind,
+    source: z.enum(["tmdb", "bangumi"]),
+    sourceId: z.string().trim().regex(/^((movie|tv):)?\d{1,12}$/, "Invalid source id")
+  })
+  .strict();
+
+export const mediaSearchQuerySchema = z.object({
+  kind: watchKind,
+  source: z.enum(["tmdb", "bangumi"]),
+  q: z.string().trim().min(1, "Enter a title to search").max(100)
+});
+
+/** YYYY-MM-DD; null or "" clears it. */
+const isoDate = z
+  .string()
+  .trim()
+  .regex(/^$|^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/, "Dates must be YYYY-MM-DD")
+  // The format allows 2026-02-31; a real date survives a round trip through Date. (Refinements also run
+  // after a failed regex, so invalid input must not throw here.)
+  .refine((value) => {
+    if (!value) return true;
+    const date = new Date(`${value}T00:00:00Z`);
+    return !Number.isNaN(date.getTime()) && date.toISOString().startsWith(value);
+  }, "Invalid date")
+  .nullable()
+  .transform((value) => value || null);
+
+export const mediaUpdateSchema = z
+  .object({
+    title: requiredText(200, "Title is required in at least one language"),
+    originalTitle: z
+      .string()
+      .trim()
+      .max(200)
+      .nullable()
+      .transform((value) => value || null),
+    year: z.number().int().min(1870).max(2100).nullable(),
+    genres: z.array(requiredText(40, "Genre names cannot be empty")).max(20, "At most 20 genres"),
+    credits: z.array(z.string().trim().min(1).max(100)).max(20, "At most 20 credits"),
+    overview: localizedText(5000),
+    status: z.enum(["want", "watching", "done", "dropped"]),
+    rating: z.number().int().min(1, "Ratings are 1-5").max(5, "Ratings are 1-5").nullable(),
+    review: localizedText(5000),
+    watchedOn: isoDate,
+    rewatchCount: z.number().int().min(0).max(999),
+    progress: z
+      .object({ watched: z.number().int().min(0).max(100_000), total: z.number().int().min(1).max(100_000).nullable() })
+      .strict()
+      .refine((value) => value.total === null || value.watched <= value.total, "Watched episodes exceed the total")
+      .nullable(),
+    featured: z.boolean(),
+    visibility: z.enum(["public", "private"])
+  })
+  .partial()
+  .strict();
+
+export const collectionSettingsSchema = z
+  .object({
+    show: z.object({ movie: z.boolean(), tv: z.boolean(), anime: z.boolean(), music: z.boolean() }).strict(),
+    showWant: z.boolean()
+  })
+  .strict();

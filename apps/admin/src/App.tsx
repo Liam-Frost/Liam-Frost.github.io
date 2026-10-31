@@ -7,6 +7,8 @@ import { sessionKey, useSession } from "./hooks/useSession";
 import { ApiError } from "./lib/api";
 import { ADMIN_BASE } from "./lib/adminBase";
 import { CenteredCard, LoginPage, NotConfiguredPage } from "./pages/LoginPage";
+import { CollectionPage } from "./pages/CollectionPage";
+import { MediaEditPage } from "./pages/MediaEditPage";
 import { MusicPage } from "./pages/MusicPage";
 import { PhotosPage } from "./pages/PhotosPage";
 import { ProjectEditPage } from "./pages/ProjectEditPage";
@@ -72,6 +74,8 @@ function SessionGate() {
         <Route path="photos" element={<PhotosPage />} />
         <Route path="projects" element={<ProjectsPage />} />
         <Route path="projects/:id" element={<ProjectEditPage />} />
+        <Route path="collection" element={<CollectionPage />} />
+        <Route path="collection/:id" element={<MediaEditPage />} />
         <Route path="music" element={<MusicPage />} />
         <Route path="*" element={<SectionNotFound />} />
       </Route>

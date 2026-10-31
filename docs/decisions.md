@@ -2,6 +2,10 @@
 
 ## User Decisions
 
+### 2026-10-31: Collection Module Scope
+
+Movies, TV, anime and music get a collection module (`docs/plan-collection.md`). Mainland China accessibility is not a concern. There are no existing records for films, series or anime, so they are added one by one (search to prefill); music comes from a Spotify Liked Songs import plus manual additions. Ratings are out of five; short reviews are multilingual. Whether "want to watch" items show on the site is a global switch in the admin, plus each item's own visibility.
+
 ### 2026-10-31: Spotify Player Managed in the Admin (Option B)
 
 The site keeps its own Spotify card. The API syncs a configurable playlist and the player loops through its 30-second previews (shuffled by default). The admin's "音乐" page sets the playlist, shuffle, volume and auto-collapse. The official Spotify embed player (option A) was not chosen: it cannot shuffle and does not match the site's style.
@@ -43,6 +47,22 @@ The admin login address should be configurable like `internal-developer-tools-po
 React and related dependencies should be upgraded to the latest versions. This upgrade is exempt from the "Preserve Existing UI" decision.
 
 ## Model Decisions
+
+### 2026-10-31: One MediaItem Table for the Collection
+
+Films, series, anime and (later) music share one table with a `kind` column, localized fields as JSON (like photos and projects) and kind-specific data in `extra`. Imports are unique per source entry.
+
+Reason: the kinds share almost every field and every screen (list, editor, public page); separate tables would duplicate them.
+
+### 2026-10-31: Server-Side Imports With Local Posters
+
+The admin only names a source entry; the server fetches its details and downloads the poster from the source's image host (allowlisted, no redirects) into the existing WebP pipeline.
+
+Reason: visitors only load images from this site, posters keep working if the source changes URLs, and the client cannot make the server fetch arbitrary URLs.
+
+### 2026-10-31: Bangumi for Anime, TMDB for Films and Series
+
+TMDB has titles and synopses in all five site languages; Bangumi has the most complete Chinese and Japanese anime data and needs no key. Anime can use either.
 
 ### 2026-10-31: Bundle the API With esbuild
 

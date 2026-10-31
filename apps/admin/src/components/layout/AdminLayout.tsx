@@ -1,5 +1,5 @@
 import type { AdminUser } from "@liam-frost/shared";
-import { FolderKanban, Images, LayoutDashboard, LogOut, Music } from "lucide-react";
+import { Clapperboard, FolderKanban, Images, LayoutDashboard, LogOut, Music } from "lucide-react";
 import { NavLink, Outlet } from "react-router";
 
 import { useLogout } from "../../hooks/useSession";
@@ -9,6 +9,7 @@ const NAV = [
   { to: "/", label: "概览", icon: LayoutDashboard, end: true },
   { to: "/photos", label: "照片", icon: Images, end: false },
   { to: "/projects", label: "项目", icon: FolderKanban, end: false },
+  { to: "/collection", label: "收藏", icon: Clapperboard, end: false },
   { to: "/music", label: "音乐", icon: Music, end: false }
 ];
 
