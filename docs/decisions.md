@@ -22,7 +22,43 @@ Development should commit frequently to `dev`. After a major stage, run Claude C
 
 The future image storage direction is Cloudflare R2, but the system should also allow local paths and existing image-host URLs.
 
+### 2026-10-31: Standalone Admin App
+
+The admin UI should be a separate app (`apps/admin`), borrowing auth, upload and admin UI patterns from `internal-developer-tools-portal`. The full stack should run locally first, then deploy to a VPS with CI/CD. Plan: `docs/plan-admin-projects-deploy.md`.
+
+### 2026-10-31: Configurable Admin Path
+
+The admin login address should be configurable like `internal-developer-tools-portal` (`ADMIN_PATH`), and must not be exposed to non-admin visitors.
+
+### 2026-10-31: Upgrade React to Latest
+
+React and related dependencies should be upgraded to the latest versions. This upgrade is exempt from the "Preserve Existing UI" decision.
+
 ## Model Decisions
+
+### 2026-10-31: Use `react-router` 8 Instead of `react-router-dom`
+
+React Router 8 no longer publishes `react-router-dom`; all router APIs are imported from `react-router`.
+
+Reason: the user asked for the latest React stack, and v8 is the current release line.
+
+### 2026-10-31: Upgrade Vite to 8 With the Front-End Stack
+
+The model upgraded Vite from 6 to 8 together with React, keeping `@vitejs/plugin-react-swc`.
+
+Reason: Vite 8 builds the existing app without config changes, and the plugin supports Vite 4-8, so there was no reason to defer it.
+
+### 2026-10-31: Require Node 22.22+
+
+The model set CI to Node 22 and the root `engines.node` to `>=22.22.0`.
+
+Reason: React Router 8 requires Node 22.22 or newer; the VPS should use the same major version.
+
+### 2026-10-31: Defer Prisma Major Upgrade
+
+The remaining high audit findings come from the Prisma 6 CLI dependency chain; fixing them requires Prisma 7+.
+
+Reason: a Prisma major upgrade affects schema, client generation, and migrations, and is unrelated to the front-end upgrade. It will be evaluated separately.
 
 ### 2026-04-26: Incremental Migration Instead of Rewrite
 
