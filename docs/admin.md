@@ -11,7 +11,8 @@ Current admin features:
 - API logout: `POST /api/admin/logout`.
 - Signed-in check: `GET /api/admin/me`.
 - Reusable backend guard: `AdminAuthService.requireAdmin` (Fastify `preHandler`).
-- Standalone admin app `apps/admin` (Stage 6), served by the API at `ADMIN_PATH`: login, layout with Overview / Photos / Projects navigation, logout. Photos and Projects pages are placeholders until Stages 7 and 8.
+- Standalone admin app `apps/admin` (Stage 6), served by the API at `ADMIN_PATH`: login, layout with Overview / Photos / Projects navigation, logout.
+- Photo management (Stage 7): upload, edit in five languages, publish/hide, home-page featured flag, drag-and-drop or button reordering, delete. The Projects page is a placeholder until Stage 8.
 
 Photo CRUD, uploads, project management, and media collection management come in later stages.
 
@@ -68,6 +69,22 @@ On Windows Git Bash, a value like `ADMIN_PATH=/studio` on the command line is re
 
 Rate-limit counters and revoked sessions live in process memory, so the API must run as a single instance.
 
+## Photo Management
+
+Requires `DATABASE_URL` (see `database.md`).
+
+- **Upload**: the button or drag-and-drop anywhere on the Photos page; files upload one at a time with progress. Accepted: JPEG, PNG, WebP, AVIF, TIFF up to `UPLOAD_MAX_MB` (default 40 MB) and 120 megapixels.
+- **Processing**: the image is auto-rotated from EXIF and rendered as WebP at 640, 1280, 2048 and 3072 px on the longest edge (never upscaled; smaller images get their own size instead). Generated files carry no metadata, so GPS and camera serial data are not published. The original file is kept next to them but is never served.
+- **New photos are hidden**: an upload becomes a private photo prefilled from EXIF (camera, lens, "1/200 · f/2.8 · ISO 400", capture date) with the file name as its title. Edit it, then switch on "公开显示". Nothing is left behind on failure, and deleting a photo removes its files.
+- **Editing**: title, category, location, description, alt text and tags per language (missing languages fall back on the site); date, camera, lens, settings; public and featured switches. A title in at least one language is required.
+- **Featured**: the home page "featured" section shows photos with "首页精选" on, in gallery order.
+- **Order**: drag cards (or use the arrow buttons) in the "全部" view. The server only accepts the complete current list, so two tabs cannot silently overwrite each other's order.
+- **Existing Flickr photos** stay as remote URLs; their texts and flags are editable, their image is not replaced.
+
+Files live in `UPLOAD_DIR` (default `apps/api/uploads`) under `photos/<id>/` and are served from `/uploads/photos/<id>/<size>.webp` with a one-year immutable cache. Only those generated sizes are reachable. Because URLs are cached for a year, a deleted photo's image can remain in browsers that already loaded it.
+
+API: `GET/POST /api/admin/photos`, `GET/PATCH/DELETE /api/admin/photos/:id`, `PUT /api/admin/photos/order`.
+
 ## Running the Admin App
 
 Development (API, web and admin dev servers):
@@ -99,4 +116,4 @@ Codes used by admin routes: `VALIDATION`, `REQUEST_ERROR`, `CSRF`, `UNAUTHORIZED
 
 ## Tests
 
-`npm test` runs the API tests (Vitest + Fastify `inject`) covering configuration validation, admin path rules, IP lists, login, CSRF, rate limiting, session revocation, cookie tampering, the IP allowlist, `TRUST_PROXY`, and admin app hosting (path injection, asset allowlist, traversal attempts, IP hiding).
+`npm test` runs the API tests (Vitest + Fastify `inject`) covering configuration validation, admin path rules, IP lists, login, CSRF, rate limiting, session revocation, cookie tampering, the IP allowlist, `TRUST_PROXY`, admin app hosting (path injection, asset allowlist, traversal attempts, IP hiding), and photos (public visibility, seed fallback, upload processing with EXIF orientation, size limits, invalid files, edit/publish/delete, ordering, `/uploads` file allowlist).

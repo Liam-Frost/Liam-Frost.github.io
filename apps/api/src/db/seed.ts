@@ -31,6 +31,7 @@ async function main() {
       alt: photo.alt,
       width: photo.width,
       height: photo.height,
+      featured: photo.featured ?? false,
       visibility: "PUBLIC",
       sortOrder: index
     };

@@ -7,6 +7,7 @@
     "auth:hash": "tsx src/auth/hash-password.ts",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev && prisma generate && npm run db:seed",
+    "db:deploy": "prisma migrate deploy && prisma generate",
     "db:push": "prisma db push && prisma generate",
     "db:seed": "tsx src/db/seed.ts",
     "db:studio": "prisma studio",
@@ -19,12 +20,15 @@
   "dependencies": {
     "@fastify/cookie": "^11.0.2",
     "@fastify/cors": "^11.0.0",
+    "@fastify/multipart": "^10.1.6",
     "@liam-frost/content": "^0.1.0",
     "@liam-frost/shared": "^0.1.0",
     "@prisma/adapter-pg": "7.10.1",
     "@prisma/client": "7.10.1",
     "dotenv": "^16.6.1",
+    "exif-reader": "^2.0.3",
     "fastify": "^5.0.0",
+    "sharp": "^0.35.5",
     "spotify-url-info": "^3.3.0",
     "zod": "^4.6.7"
   },

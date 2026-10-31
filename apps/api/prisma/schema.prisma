@@ -12,6 +12,14 @@ enum Visibility {
   PRIVATE @map("private")
 }
 
+/// Where a photo's image files live.
+enum ImageStorage {
+  /// `src` is an external URL (existing Flickr photos).
+  REMOTE_URL @map("remote-url")
+  /// Files under UPLOAD_DIR at `storageKey`, served from /uploads.
+  LOCAL      @map("local")
+}
+
 model Photo {
   id          String   @id
   slug        String   @unique
@@ -24,7 +32,13 @@ model Photo {
   settings    String?
   description Json?
   tags        Json
+  /// External URL for REMOTE_URL photos; empty for uploaded photos (URLs come from storageKey + variants).
   src         String
+  storage     ImageStorage @default(REMOTE_URL)
+  /// Folder of the uploaded files, e.g. "photos/<id>".
+  storageKey  String?
+  /// Generated WebP sizes for uploaded photos: [{ "width": 640, "height": 427 }, ...], smallest first.
+  variants    Json?
   alt         Json
   width       Int
   height      Int

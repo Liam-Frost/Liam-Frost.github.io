@@ -36,6 +36,48 @@ React and related dependencies should be upgraded to the latest versions. This u
 
 ## Model Decisions
 
+### 2026-10-31: Uploads Create Hidden Photos
+
+Uploading an image immediately creates a private photo prefilled from EXIF instead of returning a loose file for a later "create" call.
+
+Reason: no orphaned files when an upload is abandoned; deleting the photo is the single way to remove files.
+
+### 2026-10-31: WebP Sizes 640/1280/2048/3072, Private Originals
+
+Uploads are rendered to WebP at four longest-edge sizes (no upscaling) with metadata stripped; the original is stored but never served.
+
+Reason: matches the roles of Flickr's n/z/b/k-3k sizes used by the existing image component, keeps GPS data private, and keeps the original for future re-processing or R2 migration.
+
+### 2026-10-31: Derive Upload URLs at Read Time
+
+The database stores `storageKey` and variant dimensions, not URLs.
+
+Reason: moving files to R2 or a CDN later only changes URL construction, not stored data.
+
+### 2026-10-31: No Seed Fallback for an Empty Database
+
+With a reachable database, the public API returns exactly the database's public photos, even if none.
+
+Reason: planned in the execution plan; otherwise deleting all photos in the admin would show the seed photos again.
+
+### 2026-10-31: Featured Section Follows the `featured` Flag
+
+The home page shows photos with `featured` set, in gallery order, instead of a hard-coded id list.
+
+Reason: the admin's "首页精选" switch has to drive it. The seed content marks the same ten photos as before; their order now follows gallery order.
+
+### 2026-10-31: Reorder Requires the Complete Current List
+
+`PUT /api/admin/photos/order` rejects a list that does not contain every photo exactly once (409).
+
+Reason: a stale tab cannot silently overwrite a newer order or drop photos from the ordering.
+
+### 2026-10-31: Commit Migrations, Add `db:deploy`
+
+The first Prisma migrations are committed and `npm run db:deploy` applies them.
+
+Reason: the VPS (Stage 10) must apply schema changes without `migrate dev` or `db push`.
+
 ### 2026-10-31: Serve the Admin Build With a Fixed File Allowlist
 
 The API serves `apps/admin/dist` itself instead of using `@fastify/static`: `index.html` (with the mount path injected), `assets/<hashed-name>` and `favicon.svg` only.

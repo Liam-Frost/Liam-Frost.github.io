@@ -2,30 +2,50 @@ import "dotenv/config";
 
 import cookie from "@fastify/cookie";
 import cors from "@fastify/cors";
+import multipart from "@fastify/multipart";
 import Fastify from "fastify";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 import { AdminAuthService } from "./auth/service";
 import { ConfigError, loadConfig, type AppConfig } from "./config/env";
-import { hasDatabaseUrl } from "./db/client";
+import { getPrismaClient, hasDatabaseUrl } from "./db/client";
 import { HttpError, notFound } from "./lib/errors";
 import { registerAdminRoutes } from "./routes/admin";
 import { registerAdminApp } from "./routes/admin-app";
+import { registerAdminPhotoRoutes } from "./routes/admin-photos";
 import { registerPhotoRoutes } from "./routes/photos";
 import { registerSpotifyRoutes } from "./routes/spotify";
-import { readStorageConfig } from "./storage/config";
+import { registerUploadRoutes } from "./routes/uploads";
+import { PrismaPhotoRepository } from "./photos/prisma-repository";
+import type { PhotoRepository } from "./photos/types";
+import { LocalImageStore } from "./storage/local";
 
 /** apps/admin/dist relative to this file (apps/api/src). */
 const DEFAULT_ADMIN_DIST_DIR = fileURLToPath(new URL("../../admin/dist", import.meta.url));
+/** apps/api/uploads, used when UPLOAD_DIR is not set. */
+const DEFAULT_UPLOAD_DIR = fileURLToPath(new URL("../uploads", import.meta.url));
+
+/** The Prisma-backed photo store when DATABASE_URL is set, otherwise none (public routes use seed data). */
+function defaultPhotoRepository(): PhotoRepository | null {
+  const client = getPrismaClient();
+  return client ? new PrismaPhotoRepository(client) : null;
+}
 
 export type BuildServerOptions = {
   config?: AppConfig;
   logger?: boolean;
   /** Where the admin app build lives; defaults to apps/admin/dist. */
   adminDistDir?: string;
+  /** Photo storage; defaults to Prisma when DATABASE_URL is set. Pass null for none. */
+  photos?: PhotoRepository | null;
 };
 
-export function buildServer({ config = loadConfig(), logger = true, adminDistDir = DEFAULT_ADMIN_DIST_DIR }: BuildServerOptions = {}) {
+export function buildServer({
+  config = loadConfig(),
+  logger = true,
+  adminDistDir = DEFAULT_ADMIN_DIST_DIR,
+  photos = defaultPhotoRepository()
+}: BuildServerOptions = {}) {
   const app = Fastify({
     logger: logger && {
       // Never log credentials or session cookies.
@@ -36,9 +56,11 @@ export function buildServer({ config = loadConfig(), logger = true, adminDistDir
   });
 
   const auth = new AdminAuthService(config.admin);
+  const store = new LocalImageStore(config.uploads.dir ?? DEFAULT_UPLOAD_DIR);
 
   app.register(cors, { credentials: true, origin: config.corsOrigins });
   app.register(cookie);
+  app.register(multipart, { limits: { fileSize: config.uploads.maxBytes, files: 1, fields: 0, parts: 1 } });
 
   app.addHook("onSend", async (_request, reply, payload) => {
     reply.header("x-content-type-options", "nosniff");
@@ -69,12 +91,14 @@ export function buildServer({ config = loadConfig(), logger = true, adminDistDir
     ok: true,
     service: "liam-frost-api",
     database: hasDatabaseUrl() ? "configured" : "seed",
-    storage: readStorageConfig().driver
+    storage: "local"
   }));
 
   registerAdminRoutes(app, auth);
   registerAdminApp(app, auth, adminDistDir);
-  registerPhotoRoutes(app);
+  registerAdminPhotoRoutes(app, auth, photos, store, config.uploads.maxBytes);
+  registerPhotoRoutes(app, photos, store);
+  registerUploadRoutes(app, store);
   registerSpotifyRoutes(app);
 
   return app;

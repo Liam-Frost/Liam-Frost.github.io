@@ -2,14 +2,16 @@
 
 ## Current Scope
 
-Stage 2 adds a PostgreSQL/Prisma foundation for photography data without making the site depend on a running database.
+PostgreSQL (via Prisma) stores photos once `DATABASE_URL` is set; the admin app manages them (Stage 7).
 
-The API behavior is:
+The public photo routes behave as follows:
 
-- If `DATABASE_URL` is not set, photo routes use `packages/content` seed data.
-- If `DATABASE_URL` is set and the database returns public photos, photo routes use PostgreSQL.
-- If the database is configured but unavailable, photo routes log a warning and fall back to seed data.
-- If the database is configured but empty, `GET /api/photos` falls back to seed data to preserve the current page during migration.
+- `DATABASE_URL` not set: serve `packages/content` seed data (static/GitHub Pages builds and local work without a database).
+- Database configured and reachable: serve the database's **public** photos only. An empty database means an empty gallery; seed data is no longer mixed in once photos are managed in the admin.
+- Database configured but unreachable: log a warning and fall back to seed data so the site keeps working.
+- `GET /api/photos/:id` answers 404 for hidden photos, exactly like a missing one.
+
+Admin photo routes need the database and answer `503 DATABASE_NOT_CONFIGURED` without it.
 
 ## Local PostgreSQL
 
@@ -41,6 +43,17 @@ Copy it into `apps/api/.env` for local API and seed commands. The API and seed s
 
 Without Docker, `npx prisma dev` (run in `apps/api`) starts a local Prisma Postgres server and prints a `postgres://` URL that can be used as `DATABASE_URL`.
 
+## Migrations
+
+Migrations are committed under `apps/api/prisma/migrations`:
+
+- `20261031064710_init`: the original `Photo` table and `Visibility` enum.
+- `20261031064800_photo_uploads`: `ImageStorage` enum and the `storage`, `storageKey`, `variants` columns for uploaded photos.
+
+Development: `npm run db:migrate` (creates/applies migrations, regenerates the client, seeds). Production: `npm run db:deploy` (applies committed migrations only).
+
+A database created earlier with `npm run db:push` has no migration history; recreate it (or baseline it with `prisma migrate resolve --applied 20261031064710_init`) before using `db:migrate`/`db:deploy`.
+
 ## Commands
 
 Generate Prisma client:
@@ -61,7 +74,13 @@ Push schema to a development database and regenerate the client:
 npm run db:push
 ```
 
-Seed photos from `packages/content`:
+Apply committed migrations (production):
+
+```bash
+npm run db:deploy
+```
+
+Seed photos from `packages/content` (also marks the original home-page selection as featured):
 
 ```bash
 npm run db:seed
