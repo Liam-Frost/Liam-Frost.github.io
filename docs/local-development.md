@@ -30,6 +30,12 @@ Requirements: Node.js 22.22 or newer, and a PostgreSQL database for photos, proj
    npm run db:seed
    ```
 
+   For sample collection entries (films, series, anime from TMDB / Bangumi with ratings and reviews; needs `TMDB_API_KEY` for films and series, and can be run again):
+
+   ```bash
+   npm run db:seed:collection
+   ```
+
 4. Start everything:
 
    ```bash
