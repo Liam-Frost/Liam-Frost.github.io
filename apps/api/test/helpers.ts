@@ -5,6 +5,8 @@ import { join } from "node:path";
 
 import { hashPassword } from "../src/auth/password";
 import { loadConfig } from "../src/config/env";
+import { SourceError, type MediaSources } from "../src/media/sources";
+import type { MediaRepository } from "../src/media/types";
 import type { PhotoRepository } from "../src/photos/types";
 import type { ProjectRepository } from "../src/projects/types";
 import { buildServer } from "../src/server";
@@ -22,6 +24,9 @@ export function passwordHash() {
   return cachedHash;
 }
 
+const offline = () => Promise.reject(new SourceError("no network in tests"));
+const offlineMediaSources: MediaSources = { available: () => ({ tmdb: false, bangumi: false }), search: offline, details: offline, download: offline };
+
 export type TestServerOptions = {
   adminDistDir?: string;
   webDistDir?: string;
@@ -29,6 +34,10 @@ export type TestServerOptions = {
   photos?: PhotoRepository | null;
   /** Defaults to none. */
   projects?: ProjectRepository | null;
+  /** Defaults to none. */
+  media?: MediaRepository | null;
+  /** Defaults to sources that fail, so tests never reach TMDB or Bangumi. */
+  mediaSources?: MediaSources;
   /** Defaults to none (in-memory defaults). */
   settings?: SettingsRepository | null;
   /** Defaults to one that fails, so tests never reach Spotify. */
@@ -54,6 +63,8 @@ export async function buildTestServer(env: Record<string, string | undefined> = 
     webDistDir: options.webDistDir ?? "/nonexistent-web-dist",
     photos: options.photos ?? null,
     projects: options.projects ?? null,
+    media: options.media ?? null,
+    mediaSources: options.mediaSources ?? offlineMediaSources,
     settings: options.settings ?? null,
     fetchPlaylist: options.fetchPlaylist ?? (() => Promise.reject(new Error("no network in tests")))
   });

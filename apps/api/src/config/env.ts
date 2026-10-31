@@ -60,7 +60,8 @@ const envSchema = z.object({
   ADMIN_ALLOWED_IPS: csv,
 
   UPLOAD_DIR: optionalString,
-  UPLOAD_MAX_MB: optionalNumber.pipe(z.number().int().min(1).max(200).default(40))
+  UPLOAD_MAX_MB: optionalNumber.pipe(z.number().int().min(1).max(200).default(40)),
+  TMDB_API_KEY: optionalString
 });
 
 export type AdminConfig = {
@@ -89,6 +90,8 @@ export type AppConfig = {
     dir?: string;
     maxBytes: number;
   };
+  /** TMDB API key (v3) or read access token (v4) for collection searches; empty disables TMDB. */
+  tmdbApiKey: string;
 };
 
 export class ConfigError extends Error {
@@ -167,6 +170,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     uploads: {
       dir: values.UPLOAD_DIR,
       maxBytes: values.UPLOAD_MAX_MB * 1024 * 1024
-    }
+    },
+    tmdbApiKey: values.TMDB_API_KEY ?? ""
   };
 }

@@ -40,6 +40,7 @@ services:
       # Secure unless .env says otherwise (local plain-HTTP runs set false there).
       ADMIN_COOKIE_SECURE: ${ADMIN_COOKIE_SECURE:-true}
       UPLOAD_MAX_MB: ${UPLOAD_MAX_MB:-40}
+      TMDB_API_KEY: ${TMDB_API_KEY:-}
     volumes:
       - uploads:/data/uploads
 
