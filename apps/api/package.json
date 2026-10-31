@@ -12,7 +12,7 @@
     "db:studio": "prisma studio",
     "dev": "prisma generate && tsx watch src/server.ts",
     "build": "prisma generate && tsc --noEmit",
-    "start": "prisma generate && tsx src/server.ts",
+    "start": "tsx src/server.ts",
     "typecheck": "prisma generate && tsc --noEmit"
   },
   "dependencies": {

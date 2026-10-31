@@ -82,7 +82,7 @@ Reason: `prisma-client-js` is deprecated in v7 and driver adapters are required.
 
 `dev`, `start`, `build`, and `typecheck` in `apps/api` run `prisma generate` first, and `prisma.config.ts` only sets a datasource when `DATABASE_URL` is present.
 
-Reason: the generated client is no longer in `node_modules` and is not committed; generating in the scripts keeps CI (`npm run typecheck`) and fresh checkouts working without a database or an extra step.
+Reason: the generated client is no longer in `node_modules` and is not committed; generating in the scripts keeps CI (`npm run typecheck`) and fresh checkouts working without a database or an extra step. `start` does not regenerate, so production does not need the Prisma CLI at runtime.
 
 ### 2026-04-26: Incremental Migration Instead of Rewrite
 
