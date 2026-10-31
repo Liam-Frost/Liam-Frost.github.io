@@ -1,5 +1,12 @@
 import {
   ADMIN_REQUEST_HEADER,
+  type AdminCollectionSettingsResponse,
+  type AdminMediaCreate,
+  type AdminMediaImport,
+  type AdminMediaListResponse,
+  type AdminMediaResponse,
+  type AdminMediaSearchResponse,
+  type AdminMediaUpdate,
   type AdminPhotoResponse,
   type AdminPhotosResponse,
   type AdminPhotoUpdate,
@@ -10,6 +17,8 @@ import {
   type AdminSessionResponse,
   type AdminSpotifyResponse,
   type ApiErrorBody,
+  type CollectionSettings,
+  type MediaKind,
   type SpotifySettings
 } from "@liam-frost/shared";
 
@@ -109,6 +118,7 @@ export function uploadPhoto(file: File, onProgress: (fraction: number) => void) 
 
 const photoPath = (id: string) => `/api/admin/photos/${encodeURIComponent(id)}`;
 const projectPath = (id: string) => `/api/admin/projects/${encodeURIComponent(id)}`;
+const mediaPath = (id: string) => `/api/admin/media/${encodeURIComponent(id)}`;
 
 export const api = {
   session: () => request<AdminSessionResponse>("/api/admin/session"),
@@ -134,5 +144,18 @@ export const api = {
 
   spotify: () => request<AdminSpotifyResponse>("/api/admin/spotify"),
   updateSpotify: (settings: SpotifySettings) => request<AdminSpotifyResponse>("/api/admin/spotify", { method: "PUT", json: settings }),
-  syncSpotify: () => request<AdminSpotifyResponse>("/api/admin/spotify/sync", { method: "POST" })
+  syncSpotify: () => request<AdminSpotifyResponse>("/api/admin/spotify/sync", { method: "POST" }),
+
+  media: () => request<AdminMediaListResponse>("/api/admin/media"),
+  mediaItem: (id: string) => request<AdminMediaResponse>(mediaPath(id)),
+  searchMedia: (kind: MediaKind, source: "tmdb" | "bangumi", q: string) =>
+    request<AdminMediaSearchResponse>(`/api/admin/media/search?${new URLSearchParams({ kind, source, q })}`),
+  importMedia: (body: AdminMediaImport) => request<AdminMediaResponse>("/api/admin/media/import", { method: "POST", json: body }),
+  createMedia: (body: AdminMediaCreate) => request<AdminMediaResponse>("/api/admin/media", { method: "POST", json: body }),
+  updateMedia: (id: string, update: AdminMediaUpdate) => request<AdminMediaResponse>(mediaPath(id), { method: "PATCH", json: update }),
+  deleteMedia: (id: string) => request<void>(mediaPath(id), { method: "DELETE" }),
+  uploadMediaPoster: (id: string, file: File) => uploadFile<AdminMediaResponse>(`${mediaPath(id)}/poster`, file),
+  collectionSettings: () => request<AdminCollectionSettingsResponse>("/api/admin/collection/settings"),
+  updateCollectionSettings: (settings: CollectionSettings) =>
+    request<AdminCollectionSettingsResponse>("/api/admin/collection/settings", { method: "PUT", json: settings })
 };

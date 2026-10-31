@@ -95,3 +95,58 @@ model Setting {
   value     Json
   updatedAt DateTime @updatedAt
 }
+
+enum MediaKind {
+  MOVIE @map("movie")
+  TV    @map("tv")
+  ANIME @map("anime")
+  TRACK @map("track")
+  ALBUM @map("album")
+}
+
+enum MediaStatus {
+  WANT     @map("want")
+  WATCHING @map("watching")
+  DONE     @map("done")
+  DROPPED  @map("dropped")
+}
+
+/// A collection entry: film, series, anime, or (later) a track or album.
+model MediaItem {
+  id            String       @id
+  kind          MediaKind
+  /// tmdb, bangumi, spotify, itunes or manual.
+  source        String
+  /// The entry's id at the source (TMDB ids are prefixed "movie:" / "tv:").
+  sourceId      String?
+  sourceUrl     String?
+  title         Json
+  originalTitle String?
+  year          Int?
+  /// Localized genre names: [{ "zh": "剧情", "en": "Drama" }, ...]
+  genres        Json
+  /// Directors, studios, creators.
+  credits       Json
+  overview      Json
+  /// Local poster: { id, key, width, height, variants }, like project covers.
+  poster        Json?
+  /// Films, series and anime; null for music.
+  status        MediaStatus?
+  /// 1-5
+  rating        Int?
+  review        Json
+  /// YYYY-MM-DD
+  watchedOn     String?
+  rewatchCount  Int          @default(0)
+  /// { watched, total } episodes.
+  progress      Json?
+  /// Kind-specific data (e.g. preview URLs for music).
+  extra         Json
+  featured      Boolean      @default(false)
+  visibility    Visibility   @default(PUBLIC)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@unique([source, sourceId])
+  @@index([kind, visibility])
+}
