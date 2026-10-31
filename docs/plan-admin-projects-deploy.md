@@ -60,7 +60,7 @@
 - 接口:`GET /api/admin/session`、`POST /api/admin/login`、`POST /api/admin/logout`。
 - `apps/web` 内固定的 `/admin` 登录页(Stage 6 迁移到 `apps/admin` 后删除)。
 
-### Stage 4:前台依赖升级
+### Stage 4:前台依赖升级(已完成,PR #4,含 Prisma 7 升级)
 
 - `apps/web` 升级到 React 19.3、React Router 8(导入从 `react-router-dom` 改为 `react-router`),同步 `@types/react` 19。
 - 评估并升级 Vite 8、`@vitejs/plugin-react-swc`、`lucide-react` 等相关依赖;不兼容的记录原因后暂缓。
@@ -69,7 +69,7 @@
 
 完成标准:`typecheck`、`build` 通过;首页、作品集、照片弹窗、全屏查看、主题切换、多语言、Spotify 浮窗逐项手动验证正常。
 
-### Stage 5:后端基础与认证完善
+### Stage 5:后端基础与认证完善(已完成)
 
 在 Stage 3 的认证代码基础上补齐,不推倒重来。
 

@@ -36,6 +36,42 @@ React and related dependencies should be upgraded to the latest versions. This u
 
 ## Model Decisions
 
+### 2026-10-31: Validate Configuration at Startup With Zod
+
+The API parses all environment variables once in `config/env.ts` and refuses to start on invalid values, listing every problem.
+
+Reason: misconfigured security settings (short secrets, half-configured auth, a bad admin path or IP list) should fail loudly rather than silently weaken the admin.
+
+### 2026-10-31: Per-Server Auth State
+
+Login rate limits and session revocations moved from module globals into `AdminAuthService`, created per `buildServer()`.
+
+Reason: isolated state per server keeps tests independent and makes the single-instance limitation explicit in one place.
+
+### 2026-10-31: CSRF Header Plus SameSite=Strict
+
+Admin writes require `x-admin-request: 1`, and the session cookie moved from `SameSite=Lax` to `Strict`.
+
+Reason: same approach as `internal-developer-tools-portal`; custom headers cannot be sent by cross-site forms, and the admin is same-origin so `Strict` costs nothing.
+
+### 2026-10-31: Hide Admin API by IP With an Identical 404
+
+When `ADMIN_ALLOWED_IPS` is set, `/api/admin/*` answers other IPs with exactly the same body as an unknown route, before CSRF or auth checks.
+
+Reason: matches the user's request to make the admin address configurable like the portal; outsiders should not be able to discover that an admin exists.
+
+### 2026-10-31: Add `packages/shared`
+
+Admin path rules, the CSRF header name and API types live in a new `packages/shared` package instead of `packages/content`.
+
+Reason: `packages/content` holds site content; the admin app (Stage 6), web and API all need the same protocol constants, which are not content.
+
+### 2026-10-31: Validation Messages Without Field Prefixes
+
+Validation errors return the first Zod issue's message as written in the schema.
+
+Reason: the schema messages already name the field ("Username is required", "Invalid Spotify URL"), and the front end shows them directly.
+
 ### 2026-10-31: Use `react-router` 8 Instead of `react-router-dom`
 
 React Router 8 no longer publishes `react-router-dom`; all router APIs are imported from `react-router`.

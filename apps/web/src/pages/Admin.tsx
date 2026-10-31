@@ -1,24 +1,17 @@
 import { FormEvent, useEffect, useState } from "react";
 
+import { ADMIN_REQUEST_HEADER, type AdminSessionResponse, type ApiErrorBody } from "@liam-frost/shared";
+
 import { apiFetchEnabled, apiUrl } from "../lib/api";
 
-type AdminUser = {
-  username: string;
-};
-
-type SessionResponse = {
-  authenticated: boolean;
-  configured?: boolean;
-  user?: AdminUser | null;
-  message?: string;
-};
+type SessionResponse = Partial<AdminSessionResponse> & { authenticated: boolean };
 
 type Status = "checking" | "ready" | "submitting" | "error";
 
 async function parseJson(response: Response) {
-  const data = (await response.json().catch(() => ({}))) as SessionResponse;
+  const data = (await response.json().catch(() => ({}))) as SessionResponse & Partial<ApiErrorBody>;
   if (!response.ok) {
-    throw new Error(data.message || "Request failed");
+    throw new Error(data.error?.message || "Request failed");
   }
   return data;
 }
@@ -61,7 +54,7 @@ export default function AdminPage() {
       const data = await fetch(apiUrl("/api/admin/login"), {
         body: JSON.stringify({ username, password }),
         credentials: "include",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", [ADMIN_REQUEST_HEADER]: "1" },
         method: "POST"
       }).then(parseJson);
 
@@ -80,8 +73,9 @@ export default function AdminPage() {
     try {
       await fetch(apiUrl("/api/admin/logout"), {
         credentials: "include",
+        headers: { [ADMIN_REQUEST_HEADER]: "1" },
         method: "POST"
-      });
+      }).then(parseJson);
       setSession({ authenticated: false, configured: true });
       setStatus("ready");
     } catch (error) {

@@ -6,33 +6,45 @@ type AttemptWindow = {
   resetAt: number;
 };
 
-const attempts = new Map<string, AttemptWindow>();
+/** In-memory login limiter: at most 8 attempts per key (client IP) per 15 minutes. Single-instance only. */
+export class LoginRateLimiter {
+  private readonly attempts = new Map<string, AttemptWindow>();
 
-function readWindow(key: string, now: number) {
-  const current = attempts.get(key);
-  if (!current || current.resetAt <= now) {
-    const next = { count: 0, resetAt: now + windowMs };
-    attempts.set(key, next);
-    return next;
-  }
-  return current;
-}
-
-export function consumeLoginAttempt(key: string) {
-  const now = Date.now();
-  const current = readWindow(key, now);
-
-  if (current.count >= maxAttempts) {
-    return {
-      allowed: false,
-      retryAfterSeconds: Math.max(1, Math.ceil((current.resetAt - now) / 1000))
-    };
+  private readWindow(key: string, now: number) {
+    const current = this.attempts.get(key);
+    if (!current || current.resetAt <= now) {
+      const next = { count: 0, resetAt: now + windowMs };
+      this.attempts.set(key, next);
+      return next;
+    }
+    return current;
   }
 
-  current.count += 1;
-  return { allowed: true, retryAfterSeconds: 0 };
-}
+  consume(key: string) {
+    const now = Date.now();
+    this.prune(now);
+    const current = this.readWindow(key, now);
 
-export function resetLoginAttempts(key: string) {
-  attempts.delete(key);
+    if (current.count >= maxAttempts) {
+      return {
+        allowed: false,
+        retryAfterSeconds: Math.max(1, Math.ceil((current.resetAt - now) / 1000))
+      };
+    }
+
+    current.count += 1;
+    return { allowed: true, retryAfterSeconds: 0 };
+  }
+
+  reset(key: string) {
+    this.attempts.delete(key);
+  }
+
+  private prune(now: number) {
+    for (const [key, window] of this.attempts) {
+      if (window.resetAt <= now) {
+        this.attempts.delete(key);
+      }
+    }
+  }
 }

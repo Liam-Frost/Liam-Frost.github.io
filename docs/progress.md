@@ -108,7 +108,30 @@ Status: implementation complete; Claude Code review complete and fixes applied.
 
 ### Upcoming
 
-- Review and merge Stage 4 PR #4.
+- Stage 4 PR #4 merged on 2026-10-31.
+
+### Stage 5: Back-End Foundation and Admin Auth Hardening
+
+Status: implementation complete; Claude Code review complete and fixes applied.
+
+- Added `apps/api/src/config/env.ts`: Zod-validated configuration, reporting every problem at once and stopping startup on invalid values.
+- Added unified error handling (`HttpError`, `{ error: { code, message } }` for all errors including 404 and Fastify client errors), security response headers, and log redaction of auth headers and cookies.
+- Added Zod input validation for login, photo params and the Spotify query.
+- Refactored admin auth into a per-server `AdminAuthService` (rate limiter and revocations are no longer module globals).
+- Added CSRF protection (`x-admin-request: 1` on admin writes) and switched the session cookie to `SameSite=Strict`.
+- Added configurable `ADMIN_PATH` (validated, only revealed to a signed-in admin) and `ADMIN_ALLOWED_IPS` (IPv4/IPv6/CIDR; other IPs get the same 404 as an unknown route), plus `TRUST_PROXY`.
+- Required `ADMIN_PASSWORD_HASH` and `ADMIN_SESSION_SECRET` to be set together; the secret must be at least 32 characters; `ADMIN_USERNAME` defaults to `admin`.
+- Added `packages/shared` (admin path rules, CSRF header name, API types) for the API, web and the upcoming admin app.
+- Updated the temporary `apps/web` `#/admin` page for the CSRF header and new error shape.
+- Added Vitest with 27 API tests; root `npm test` runs workspace tests and CI now runs `npm test`.
+- Ran `npm test` (27 passed), `npm run typecheck`, `npm run build`.
+- Ran Claude Code review for Stage 5 (`docs/reviews/2026-10-31-claude-code-stage-5.md`) and fixed its findings: `TRUST_PROXY` accepts a proxy IP/CIDR list so a directly reachable API cannot be fooled by a spoofed `X-Forwarded-For`; blank numeric settings fall back to defaults; removed the unused `databaseUrl` config field and a duplicate configured check. Tests: 30 passed.
+- Verified in the browser against a running API with a throwaway test password and `ADMIN_PATH=studio`: wrong password shows the server message, login works, `adminPath` is returned only after login, logout works, a POST without the CSRF header gets 403.
+
+### Upcoming
+
+- Review and merge Stage 5 PR #5: https://github.com/Liam-Frost/Liam-Frost.github.io/pull/5
+- Stage 6: `apps/admin` scaffold served at `ADMIN_PATH`.
 - Stage 5: back-end foundation and admin auth refinement (`ADMIN_PATH`, IP allowlist, CSRF, Zod, tests). See `docs/plan-admin-projects-deploy.md`.
 
 ## Future Stages
