@@ -5,11 +5,12 @@ import { useRef, useState, type DragEvent } from "react";
 import { PageHeader } from "../components/layout/AdminLayout";
 import { PhotoEditor } from "../components/photos/PhotoEditor";
 import { UploadQueue, type UploadItem } from "../components/photos/UploadQueue";
+import { DatabaseNotice } from "../components/ui/DatabaseNotice";
 import { Dialog } from "../components/ui/Dialog";
 import { IconButton } from "../components/ui/IconButton";
 import { useToast } from "../components/ui/Toast";
 import { useDeletePhoto, usePhotos, useReorderPhotos, useSetPhoto } from "../hooks/usePhotos";
-import { ApiError, uploadPhoto } from "../lib/api";
+import { uploadPhoto } from "../lib/api";
 import { pickText } from "../lib/i18n";
 
 type Filter = "all" | "public" | "private";
@@ -75,22 +76,10 @@ export function PhotosPage() {
 
   if (isPending) return <p className="py-10 text-center text-[13px] text-subtle">加载中…</p>;
   if (error) {
-    const noDatabase = error instanceof ApiError && error.code === "DATABASE_NOT_CONFIGURED";
     return (
       <>
         <PageHeader title="照片" />
-        <div className="card p-6 text-[13.5px] leading-relaxed text-muted">
-          {noDatabase ? (
-            <>
-              照片管理需要数据库。请在 <code className="chip">apps/api/.env</code> 中设置 <code className="chip">DATABASE_URL</code>，运行{" "}
-              <code className="chip">npm run db:migrate</code> 后重启 API（见 <code className="chip">docs/database.md</code>）。
-            </>
-          ) : (
-            <span role="alert" className="text-status-error">
-              {error.message}
-            </span>
-          )}
-        </div>
+        <DatabaseNotice error={error} subject="照片管理" />
       </>
     );
   }

@@ -95,6 +95,13 @@ Open Prisma Studio:
 npm run db:studio
 ```
 
+## Setting Model
+
+`Setting` stores site-wide settings as one validated JSON document per key (migration `20261031120000_settings`):
+
+- `spotify`: player settings edited in the admin (validated with Zod on save; unreadable values fall back to defaults).
+- `spotify.playlist`: the last synced playlist (tracks with preview URLs and covers) and the last sync attempt and error.
+
 ## Photo Model
 
 The `Photo` table keeps localized fields as JSON:

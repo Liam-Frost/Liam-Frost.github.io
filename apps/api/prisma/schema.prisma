@@ -88,3 +88,10 @@ model Project {
 
   @@index([visibility, sortOrder])
 }
+
+/// Site-wide settings as validated JSON documents, one row per key (e.g. "spotify").
+model Setting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt
+}

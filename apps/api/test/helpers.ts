@@ -8,6 +8,8 @@ import { loadConfig } from "../src/config/env";
 import type { PhotoRepository } from "../src/photos/types";
 import type { ProjectRepository } from "../src/projects/types";
 import { buildServer } from "../src/server";
+import type { SettingsRepository } from "../src/settings/types";
+import type { PlaylistFetcher } from "../src/spotify/playlist";
 
 export const USERNAME = "liam";
 export const PASSWORD = "correct horse battery staple";
@@ -26,6 +28,10 @@ export type TestServerOptions = {
   photos?: PhotoRepository | null;
   /** Defaults to none. */
   projects?: ProjectRepository | null;
+  /** Defaults to none (in-memory defaults). */
+  settings?: SettingsRepository | null;
+  /** Defaults to one that fails, so tests never reach Spotify. */
+  fetchPlaylist?: PlaylistFetcher;
 };
 
 /**
@@ -45,7 +51,9 @@ export async function buildTestServer(env: Record<string, string | undefined> = 
     logger: false,
     adminDistDir: options.adminDistDir ?? "/nonexistent-admin-dist",
     photos: options.photos ?? null,
-    projects: options.projects ?? null
+    projects: options.projects ?? null,
+    settings: options.settings ?? null,
+    fetchPlaylist: options.fetchPlaylist ?? (() => Promise.reject(new Error("no network in tests")))
   });
 }
 

@@ -6,7 +6,7 @@ Personal site migration from a static React portfolio to a full-stack applicatio
 
 - `apps/web`: React + Vite front-end. The visual UI is preserved from the original static site.
 - `apps/admin`: standalone admin app (React + Tailwind), served by the API at `ADMIN_PATH` (default `/admin`).
-- `apps/api`: Fastify API service: health, photos, Spotify metadata, admin auth, and hosting of the admin build.
+- `apps/api`: Fastify API service: health, photos, projects, the Spotify player playlist, admin auth, and hosting of the admin build.
 - `packages/content`: Shared content seed data and content types used by both web and API.
 - `packages/shared`: Constants and API types shared by API, web and admin.
 - `docs`: Project documentation, progress, logs, and decision records.

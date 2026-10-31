@@ -27,7 +27,7 @@ The first-stage API uses Fastify and TypeScript. It currently provides:
 - `GET /api/health`
 - `GET /api/photos`
 - `GET /api/photos/:id`
-- `GET /api/spotify?url=...`
+- `GET /api/spotify/player` (player settings and the synced playlist; see `admin.md`)
 - `GET /api/admin/session`
 - `POST /api/admin/login`
 - `POST /api/admin/logout`

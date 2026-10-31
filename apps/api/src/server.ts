@@ -4,12 +4,13 @@ import cookie from "@fastify/cookie";
 import cors from "@fastify/cors";
 import multipart from "@fastify/multipart";
 import Fastify from "fastify";
+import * as http from "node:http";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 import { AdminAuthService } from "./auth/service";
 import { ConfigError, loadConfig, type AppConfig } from "./config/env";
 import { getPrismaClient, hasDatabaseUrl } from "./db/client";
-import { HttpError, notFound } from "./lib/errors";
+import { HttpError, isDatabaseUnavailable, notFound } from "./lib/errors";
 import { registerAdminRoutes } from "./routes/admin";
 import { registerAdminApp } from "./routes/admin-app";
 import { registerAdminPhotoRoutes } from "./routes/admin-photos";
@@ -22,6 +23,10 @@ import { PrismaPhotoRepository } from "./photos/prisma-repository";
 import type { PhotoRepository } from "./photos/types";
 import { PrismaProjectRepository } from "./projects/prisma-repository";
 import type { ProjectRepository } from "./projects/types";
+import { PrismaSettingsRepository } from "./settings/prisma-repository";
+import { MemorySettingsRepository, type SettingsRepository } from "./settings/types";
+import { createPlaylistFetcher, type PlaylistFetcher } from "./spotify/playlist";
+import { SpotifyService } from "./spotify/service";
 import { LocalImageStore } from "./storage/local";
 
 /** apps/admin/dist relative to this file (apps/api/src). */
@@ -41,6 +46,12 @@ function defaultProjectRepository(): ProjectRepository | null {
   return client ? new PrismaProjectRepository(client) : null;
 }
 
+/** Prisma-backed settings when DATABASE_URL is set, otherwise none (defaults, kept in memory). */
+function defaultSettingsRepository(): SettingsRepository | null {
+  const client = getPrismaClient();
+  return client ? new PrismaSettingsRepository(client) : null;
+}
+
 export type BuildServerOptions = {
   config?: AppConfig;
   logger?: boolean;
@@ -50,6 +61,10 @@ export type BuildServerOptions = {
   photos?: PhotoRepository | null;
   /** Project storage; defaults to Prisma when DATABASE_URL is set. Pass null for none. */
   projects?: ProjectRepository | null;
+  /** Settings storage; defaults to Prisma when DATABASE_URL is set. Pass null for none. */
+  settings?: SettingsRepository | null;
+  /** Loads Spotify playlists; defaults to Spotify's embed page. */
+  fetchPlaylist?: PlaylistFetcher;
 };
 
 export function buildServer({
@@ -57,7 +72,9 @@ export function buildServer({
   logger = true,
   adminDistDir = DEFAULT_ADMIN_DIST_DIR,
   photos = defaultPhotoRepository(),
-  projects = defaultProjectRepository()
+  projects = defaultProjectRepository(),
+  settings = defaultSettingsRepository(),
+  fetchPlaylist = createPlaylistFetcher()
 }: BuildServerOptions = {}) {
   const app = Fastify({
     logger: logger && {
@@ -70,6 +87,9 @@ export function buildServer({
 
   const auth = new AdminAuthService(config.admin);
   const store = new LocalImageStore(config.uploads.dir ?? DEFAULT_UPLOAD_DIR);
+  const spotify = new SpotifyService(settings ?? new MemorySettingsRepository(), fetchPlaylist, (error) =>
+    app.log.warn({ err: error }, "Spotify playlist sync failed")
+  );
 
   app.register(cors, { credentials: true, origin: config.corsOrigins });
   app.register(cookie);
@@ -94,6 +114,13 @@ export function buildServer({
       return reply.code(status).send(new HttpError(status, "REQUEST_ERROR", err.message).toBody());
     }
 
+    if (isDatabaseUnavailable(err)) {
+      request.log.error({ err }, "Database unavailable");
+      return reply
+        .code(503)
+        .send(new HttpError(503, "DATABASE_UNAVAILABLE", "Cannot connect to the database; check that it is running and DATABASE_URL is correct").toBody());
+    }
+
     request.log.error({ err }, "Request failed");
     return reply.code(500).send(new HttpError(500, "INTERNAL", "Internal server error").toBody());
   });
@@ -114,7 +141,7 @@ export function buildServer({
   registerPhotoRoutes(app, photos, store);
   registerProjectRoutes(app, projects, store);
   registerUploadRoutes(app, store, { photos, projects }, auth);
-  registerSpotifyRoutes(app);
+  registerSpotifyRoutes(app, auth, spotify, settings !== null);
 
   return app;
 }
@@ -130,6 +157,12 @@ export async function startServer() {
     }
     throw error;
   }
+
+  // fetch() ignores HTTPS_PROXY unless asked; honour it when set, e.g. a local proxy needed to reach
+  // Spotify. setGlobalProxyFromEnv exists from Node 24.14/25.4; older versions can set NODE_USE_ENV_PROXY=1.
+  const proxyEnv = process.env.HTTPS_PROXY || process.env.https_proxy || process.env.HTTP_PROXY || process.env.http_proxy;
+  const setGlobalProxyFromEnv = (http as { setGlobalProxyFromEnv?: () => void }).setGlobalProxyFromEnv;
+  if (proxyEnv && typeof setGlobalProxyFromEnv === "function") setGlobalProxyFromEnv();
 
   const app = buildServer({ config });
   if (!config.admin.configured) {

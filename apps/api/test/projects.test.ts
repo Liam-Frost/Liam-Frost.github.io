@@ -63,6 +63,17 @@ describe("admin project management", () => {
     expect((await app.inject({ url: "/api/admin/projects", headers: { cookie } })).statusCode).toBe(503);
   });
 
+  it("reports an unreachable database as 503 DATABASE_UNAVAILABLE", async () => {
+    const { app, projects, cookie } = await setup();
+    const refused = Object.assign(new Error("connect ECONNREFUSED 127.0.0.1:5432"), { code: "ECONNREFUSED" });
+    projects.list = async () => {
+      throw refused;
+    };
+    const response = await app.inject({ url: "/api/admin/projects", headers: { cookie } });
+    expect(response.statusCode).toBe(503);
+    expect(response.json().error.code).toBe("DATABASE_UNAVAILABLE");
+  });
+
   it("creates hidden projects with unique, normalized slugs", async () => {
     const { create } = await setup();
     const created = await create("My-Site");
