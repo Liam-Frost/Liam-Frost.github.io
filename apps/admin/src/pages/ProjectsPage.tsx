@@ -4,6 +4,7 @@ import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router";
 
 import { PageHeader } from "../components/layout/AdminLayout";
+import { DatabaseNotice } from "../components/ui/DatabaseNotice";
 import { Dialog } from "../components/ui/Dialog";
 import { Field } from "../components/ui/Field";
 import { IconButton } from "../components/ui/IconButton";
@@ -22,22 +23,10 @@ export function ProjectsPage() {
 
   if (isPending) return <p className="py-10 text-center text-[13px] text-subtle">加载中…</p>;
   if (error) {
-    const noDatabase = error instanceof ApiError && error.code === "DATABASE_NOT_CONFIGURED";
     return (
       <>
         <PageHeader title="项目" />
-        <div className="card p-6 text-[13.5px] leading-relaxed text-muted">
-          {noDatabase ? (
-            <>
-              项目管理需要数据库。请在 <code className="chip">apps/api/.env</code> 中设置 <code className="chip">DATABASE_URL</code>，运行{" "}
-              <code className="chip">npm run db:migrate</code> 后重启 API（见 <code className="chip">docs/database.md</code>）。
-            </>
-          ) : (
-            <span role="alert" className="text-status-error">
-              {error.message}
-            </span>
-          )}
-        </div>
+        <DatabaseNotice error={error} subject="项目管理" />
       </>
     );
   }
