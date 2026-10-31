@@ -14,12 +14,16 @@ import { HttpError, isDatabaseUnavailable, notFound } from "./lib/errors";
 import { registerAdminRoutes } from "./routes/admin";
 import { registerAdminApp } from "./routes/admin-app";
 import { registerAdminPhotoRoutes } from "./routes/admin-photos";
+import { registerAdminMediaRoutes } from "./routes/admin-media";
 import { registerAdminProjectRoutes } from "./routes/admin-projects";
 import { registerPhotoRoutes } from "./routes/photos";
 import { registerProjectRoutes } from "./routes/projects";
 import { registerSpotifyRoutes } from "./routes/spotify";
 import { registerUploadRoutes } from "./routes/uploads";
 import { registerWebApp } from "./routes/web-app";
+import { PrismaMediaRepository } from "./media/prisma-repository";
+import { createMediaSources, type MediaSources } from "./media/sources";
+import type { MediaRepository } from "./media/types";
 import { PrismaPhotoRepository } from "./photos/prisma-repository";
 import type { PhotoRepository } from "./photos/types";
 import { PrismaProjectRepository } from "./projects/prisma-repository";
@@ -49,6 +53,12 @@ function defaultProjectRepository(): ProjectRepository | null {
   return client ? new PrismaProjectRepository(client) : null;
 }
 
+/** The Prisma-backed collection when DATABASE_URL is set, otherwise none. */
+function defaultMediaRepository(): MediaRepository | null {
+  const client = getPrismaClient();
+  return client ? new PrismaMediaRepository(client) : null;
+}
+
 /** Prisma-backed settings when DATABASE_URL is set, otherwise none (defaults, kept in memory). */
 function defaultSettingsRepository(): SettingsRepository | null {
   const client = getPrismaClient();
@@ -66,6 +76,10 @@ export type BuildServerOptions = {
   photos?: PhotoRepository | null;
   /** Project storage; defaults to Prisma when DATABASE_URL is set. Pass null for none. */
   projects?: ProjectRepository | null;
+  /** Collection storage; defaults to Prisma when DATABASE_URL is set. Pass null for none. */
+  media?: MediaRepository | null;
+  /** TMDB / Bangumi access; defaults to the real services. */
+  mediaSources?: MediaSources;
   /** Settings storage; defaults to Prisma when DATABASE_URL is set. Pass null for none. */
   settings?: SettingsRepository | null;
   /** Loads Spotify playlists; defaults to Spotify's embed page. */
@@ -79,6 +93,8 @@ export function buildServer({
   webDistDir = DEFAULT_WEB_DIST_DIR,
   photos = defaultPhotoRepository(),
   projects = defaultProjectRepository(),
+  media = defaultMediaRepository(),
+  mediaSources = createMediaSources({ tmdbKey: config.tmdbApiKey }),
   settings = defaultSettingsRepository(),
   fetchPlaylist = createPlaylistFetcher()
 }: BuildServerOptions = {}) {
@@ -146,7 +162,8 @@ export function buildServer({
   registerAdminProjectRoutes(app, auth, projects, store, config.uploads.maxBytes);
   registerPhotoRoutes(app, photos, store);
   registerProjectRoutes(app, projects, store);
-  registerUploadRoutes(app, store, { photos, projects }, auth);
+  registerAdminMediaRoutes(app, auth, { media, settings, sources: mediaSources, store, maxUploadBytes: config.uploads.maxBytes });
+  registerUploadRoutes(app, store, { photos, projects, media, settings }, auth);
   registerSpotifyRoutes(app, auth, spotify, settings !== null);
   registerWebApp(app, webDistDir);
 

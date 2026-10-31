@@ -3,8 +3,11 @@ import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import type { AdminAuthService } from "../auth/service";
 import { notFound } from "../lib/errors";
 import { photoIdSchema, projectImageParamsSchema } from "../lib/validation";
+import { readCollectionSettings } from "../media/collection-settings";
+import { isMediaPublic, type MediaRepository } from "../media/types";
 import type { PhotoRepository } from "../photos/types";
 import type { ProjectRepository } from "../projects/types";
+import type { SettingsRepository } from "../settings/types";
 import type { LocalImageStore } from "../storage/local";
 
 /**
@@ -16,7 +19,7 @@ import type { LocalImageStore } from "../storage/local";
 export function registerUploadRoutes(
   app: FastifyInstance,
   store: LocalImageStore,
-  repos: { photos: PhotoRepository | null; projects: ProjectRepository | null },
+  repos: { photos: PhotoRepository | null; projects: ProjectRepository | null; media: MediaRepository | null; settings: SettingsRepository | null },
   auth: AdminAuthService
 ) {
   const send = async (request: FastifyRequest, reply: FastifyReply, key: string, isPublic: boolean) => {
@@ -47,5 +50,17 @@ export function registerUploadRoutes(
     const image = row && [row.cover, ...row.gallery].find((candidate) => candidate?.id === imageId);
     if (!row || !image) throw notFound();
     return send(request, reply, image.key, row.visibility === "public");
+  });
+
+  // Collection posters follow the site's rules: the entry's visibility, its kind's switch and the "want" switch.
+  app.get("/uploads/media/:id/:imageId/:file", async (request, reply) => {
+    const parsed = projectImageParamsSchema.safeParse(request.params);
+    if (!parsed.success || !repos.media || !repos.settings) throw notFound();
+    const { id, imageId } = parsed.data;
+
+    const row = await repos.media.imageAccess(id).catch(() => null);
+    if (!row?.poster || row.poster.id !== imageId) throw notFound();
+    const settings = await readCollectionSettings(repos.settings).catch(() => null);
+    return send(request, reply, row.poster.key, settings !== null && isMediaPublic(row, settings));
   });
 }
