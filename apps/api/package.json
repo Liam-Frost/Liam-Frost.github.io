@@ -13,22 +13,26 @@
     "dev": "prisma generate && tsx watch src/server.ts",
     "build": "prisma generate && tsc --noEmit",
     "start": "tsx src/server.ts",
-    "typecheck": "prisma generate && tsc --noEmit"
+    "typecheck": "prisma generate && tsc --noEmit",
+    "test": "vitest run"
   },
   "dependencies": {
     "@fastify/cookie": "^11.0.2",
     "@fastify/cors": "^11.0.0",
     "@liam-frost/content": "^0.1.0",
+    "@liam-frost/shared": "^0.1.0",
     "@prisma/adapter-pg": "7.10.1",
     "@prisma/client": "7.10.1",
     "dotenv": "^16.6.1",
     "fastify": "^5.0.0",
-    "spotify-url-info": "^3.3.0"
+    "spotify-url-info": "^3.3.0",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",
     "prisma": "7.10.1",
     "tsx": "^4.19.0",
-    "typescript": "^5.5.4"
+    "typescript": "^5.5.4",
+    "vitest": "^5.0.5"
   }
 }

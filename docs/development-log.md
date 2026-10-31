@@ -52,6 +52,11 @@
 - The model created Stage 4 PR #4: https://github.com/Liam-Frost/Liam-Frost.github.io/pull/4
 - The user asked to do the Prisma major upgrade in PR #4 instead of deferring it. The model upgraded to Prisma 7.10.1 (Prisma 8 is still an RC), followed the official v7 upgrade guide (fetched from the prisma/docs GitHub repo because prisma.io was unreachable), and verified against a local `prisma dev` database because Docker is still unavailable.
 
+- PR #4 was merged; the model started Stage 5 (back-end foundation and admin auth hardening) on top of the Stage 3 auth code rather than rewriting it.
+- While testing, Git Bash rewrote `ADMIN_PATH=/studio` into a Windows path; the new config validation rejected it at startup. Documented in `admin.md`.
+- The PR #4 deploy run succeeded on Node 22 with Prisma 7 client generation in CI.
+- The model ran Claude Code review for Stage 5, fixed the `TRUST_PROXY` spoofing risk and three smaller findings, and created Stage 5 PR #5: https://github.com/Liam-Frost/Liam-Frost.github.io/pull/5
+
 ## Notes
 
 - A direct Windows directory rename of `src` failed with `Permission denied`; the migration continued by moving source subdirectories individually.
