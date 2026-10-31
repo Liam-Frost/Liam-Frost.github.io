@@ -1687,11 +1687,6 @@ html[data-theme="light"] .aboutSection {
   transform: translateY(-1px) scale(1.03);
 }
 
-.spotifyDockClose:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
 .spotifyDockClose svg {
   width: 15px;
   height: 15px;
@@ -1817,7 +1812,50 @@ html[data-theme="light"] .aboutSection {
 
 .spotifyCardIconRow {
   display: flex;
+  align-items: center;
   justify-content: flex-end;
+  gap: 4px;
+}
+
+.spotifyCardSkip {
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 999px;
+  padding: 0;
+  color: #baaeba;
+  background: transparent;
+  cursor: pointer;
+  transition:
+    color 180ms var(--ease),
+    background 180ms var(--ease);
+}
+
+.spotifyCardSkip:hover,
+.spotifyCardSkip:focus-visible {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.spotifyCardSkip svg {
+  width: 14px;
+  height: 14px;
+}
+
+.spotifyCardSkip path {
+  fill: currentColor;
+  stroke: currentColor;
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.spotifyCardIconRow a {
+  display: grid;
+  place-items: center;
+  margin-left: 4px;
 }
 
 .spotifyCardIcon {
@@ -1851,61 +1889,24 @@ html[data-theme="light"] .aboutSection {
   font-weight: 500;
 }
 
-.spotifyCardSkeleton,
-.spotifyCardError {
-  background: rgba(255, 255, 255, 0.08);
+/* While a preview plays, the collapsed button stays visible and pulses. */
+.spotifyDock.isCollapsed.isPlaying .spotifyDockButton {
+  opacity: 0.9;
+  animation: spotifyDockPulse 2.4s ease-out infinite;
 }
 
-.spotifyCardSkeletonCover {
-  width: 75px;
-  height: 75px;
-  flex: 0 0 auto;
-  align-self: center;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.16);
-  animation: spotifyCardPulse 1.4s ease-in-out infinite;
-}
-
-.spotifyCardSkeletonLine {
-  width: 64px;
-  height: 16px;
-  margin-left: auto;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.16);
-  animation: spotifyCardPulse 1.4s ease-in-out infinite;
-}
-
-.spotifyCardSkeletonLine.isLong {
-  width: 96px;
-}
-
-.spotifyCardBody {
-  z-index: 1;
-  flex: 1;
-  display: grid;
-  align-content: end;
-  gap: 6px;
-  padding-left: 24px;
-}
-
-.spotifyCardError {
-  align-items: center;
-  color: rgba(255, 255, 255, 0.72);
-  font-size: 14px;
-}
-
-.spotifyCardError p {
-  margin: 0;
-}
-
-@keyframes spotifyCardPulse {
-  0%,
-  100% {
-    opacity: 0.55;
+@keyframes spotifyDockPulse {
+  0% {
+    box-shadow:
+      0 16px 44px rgba(0, 0, 0, 0.3),
+      0 0 0 0 rgba(30, 215, 96, 0.45);
   }
 
-  50% {
-    opacity: 1;
+  70%,
+  100% {
+    box-shadow:
+      0 16px 44px rgba(0, 0, 0, 0.3),
+      0 0 0 12px rgba(30, 215, 96, 0);
   }
 }
 
@@ -1923,9 +1924,12 @@ html[data-theme="light"] .aboutSection {
   .spotifyCardCover,
   .spotifyCardDisc,
   .spotifyCardDisc svg,
-  .spotifyCardSkeletonCover,
-  .spotifyCardSkeletonLine {
+  .spotifyCardSkip {
     transition: none;
+    animation: none;
+  }
+
+  .spotifyDock.isCollapsed.isPlaying .spotifyDockButton {
     animation: none;
   }
 }

@@ -1,10 +1,11 @@
 import type { AdminProject, AdminProjectUpdate, LocalizedText, ProjectImage, ProjectLinks, ProjectStatus } from "@liam-frost/shared";
 import { ArrowLeft, ExternalLink, ImagePlus, Trash2, X } from "lucide-react";
-import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link, useParams } from "react-router";
 
 import { Field, Switch } from "../components/ui/Field";
 import { IconButton } from "../components/ui/IconButton";
+import { Panel } from "../components/ui/Panel";
 import { useToast } from "../components/ui/Toast";
 import { useProject, useProjectImages, useUpdateProject } from "../hooks/useProjects";
 import { ApiError } from "../lib/api";
@@ -288,15 +289,6 @@ function ProjectEditor({ project }: { project: AdminProject }) {
         </div>
       </div>
     </form>
-  );
-}
-
-function Panel({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <section className="card space-y-3.5 p-4" aria-label={title}>
-      <h2 className="text-[11px] font-bold tracking-[1px] text-brand-secondary">{title}</h2>
-      {children}
-    </section>
   );
 }
 

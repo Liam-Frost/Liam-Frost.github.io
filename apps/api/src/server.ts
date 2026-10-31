@@ -4,6 +4,7 @@ import cookie from "@fastify/cookie";
 import cors from "@fastify/cors";
 import multipart from "@fastify/multipart";
 import Fastify from "fastify";
+import * as http from "node:http";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 import { AdminAuthService } from "./auth/service";
@@ -156,6 +157,12 @@ export async function startServer() {
     }
     throw error;
   }
+
+  // fetch() ignores HTTPS_PROXY unless asked; honour it when set, e.g. a local proxy needed to reach
+  // Spotify. setGlobalProxyFromEnv exists from Node 24.14/25.4; older versions can set NODE_USE_ENV_PROXY=1.
+  const proxyEnv = process.env.HTTPS_PROXY || process.env.https_proxy || process.env.HTTP_PROXY || process.env.http_proxy;
+  const setGlobalProxyFromEnv = (http as { setGlobalProxyFromEnv?: () => void }).setGlobalProxyFromEnv;
+  if (proxyEnv && typeof setGlobalProxyFromEnv === "function") setGlobalProxyFromEnv();
 
   const app = buildServer({ config });
   if (!config.admin.configured) {
