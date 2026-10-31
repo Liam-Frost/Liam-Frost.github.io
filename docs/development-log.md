@@ -48,6 +48,8 @@
 - The model started Stage 4 (front-end dependency upgrade): React 19.3, React Router 8, Vite 8, Node 22 in CI.
 - The first install left a hoisted React 18 copy used by `lucide-react` and simple-icons, plus a nested Vite 6 under the SWC plugin; `npm dedupe` resolved both.
 - The model verified typecheck, build, and the main UI flows in the browser.
+- The model ran Claude Code review for Stage 4, fixed the photo modal key handling and the language-dependent category filter, and documented the Fastify upgrade.
+- The model created Stage 4 PR #4: https://github.com/Liam-Frost/Liam-Frost.github.io/pull/4
 
 ## Notes
 
