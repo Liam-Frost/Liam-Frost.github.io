@@ -81,3 +81,71 @@ export type AdminPhotoUpdate = Partial<{
 
 export type AdminPhotosResponse = { photos: AdminPhoto[] };
 export type AdminPhotoResponse = { photo: AdminPhoto };
+
+export type ProjectStatus = "in-progress" | "completed" | "archived";
+
+export type ProjectLinks = {
+  repo?: string;
+  demo?: string;
+  docs?: string;
+};
+
+/** An uploaded project image with its generated sizes (smallest first). */
+export type ProjectImage = {
+  id: string;
+  width: number;
+  height: number;
+  /** Largest size. */
+  src: string;
+  variants: PhotoVariantInfo[];
+};
+
+/** Project fields shown in lists (home page, /projects). */
+export type PublicProjectSummary = {
+  slug: string;
+  title: LocalizedText;
+  summary: LocalizedText;
+  cover: ProjectImage | null;
+  techStack: string[];
+  links: ProjectLinks;
+  status: ProjectStatus;
+  startedAt: string | null;
+  endedAt: string | null;
+  featured: boolean;
+};
+
+/** A project's detail page. */
+export type PublicProject = PublicProjectSummary & {
+  /** Markdown per language. */
+  body: LocalizedText;
+  gallery: ProjectImage[];
+};
+
+export type AdminProject = PublicProject & {
+  id: string;
+  visibility: PhotoVisibility;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type AdminProjectCreate = { title: LocalizedText; slug: string };
+
+/** Editable fields; `null` clears an optional field. `gallery` is the new order of existing image ids. */
+export type AdminProjectUpdate = Partial<{
+  slug: string;
+  title: LocalizedText;
+  summary: LocalizedText;
+  body: LocalizedText;
+  techStack: string[];
+  links: ProjectLinks;
+  status: ProjectStatus;
+  startedAt: string | null;
+  endedAt: string | null;
+  featured: boolean;
+  visibility: PhotoVisibility;
+  gallery: string[];
+}>;
+
+export type AdminProjectsResponse = { projects: AdminProject[] };
+export type AdminProjectResponse = { project: AdminProject };

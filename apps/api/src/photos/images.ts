@@ -1,6 +1,8 @@
 import sharp from "sharp";
 
+import type { LocalImageStore } from "../storage/local";
 import { readExif, type ExifSuggestions } from "./exif";
+import { variantFileName } from "./mapping";
 
 // Keep file handles short-lived (Windows cannot delete files sharp still holds).
 sharp.cache(false);
@@ -76,4 +78,12 @@ export async function processImage(input: Buffer): Promise<ProcessedImage> {
     original: { data: input, extension: ORIGINAL_EXTENSIONS[meta.format] },
     exif: readExif(meta.exif)
   };
+}
+
+/** Writes every generated size and the private original under `key`. Callers remove `key` on later failures. */
+export async function saveImage(store: LocalImageStore, key: string, image: ProcessedImage) {
+  for (const variant of image.variants) {
+    await store.write(key, variantFileName(variant.width), variant.data);
+  }
+  await store.write(key, `original.${image.original.extension}`, image.original.data);
 }

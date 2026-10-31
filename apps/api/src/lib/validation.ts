@@ -98,3 +98,79 @@ export const photoOrderSchema = z
   })
   .strict()
   .refine((value) => new Set(value.ids).size === value.ids.length, "Duplicate ids in order");
+
+const uuid = z.string().regex(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/, "Invalid id");
+
+export const projectIdSchema = z.object({ id: uuid });
+export const projectImageParamsSchema = z.object({ id: uuid, imageId: z.string().regex(/^[a-z0-9]{12}$/, "Invalid image id") });
+
+export const slugSchema = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Slug may only contain lowercase letters, digits and single hyphens")
+  .max(80, "Slug is at most 80 characters");
+
+export const projectSlugParamsSchema = z.object({ slug: slugSchema });
+
+/** Year and month, e.g. "2025-06"; null or "" clears it. */
+const yearMonth = z
+  .string()
+  .trim()
+  .regex(/^$|^\d{4}-(0[1-9]|1[0-2])$/, "Dates must be YYYY-MM")
+  .nullable()
+  .transform((value) => value || null);
+
+/** http(s) link; "" clears it. */
+const link = z
+  .string()
+  .trim()
+  .max(2048)
+  .refine((value) => {
+    if (!value) return true;
+    try {
+      const url = new URL(value);
+      return url.protocol === "https:" || url.protocol === "http:";
+    } catch {
+      return false;
+    }
+  }, "Links must be http(s) URLs")
+  .optional();
+
+export const projectCreateSchema = z
+  .object({
+    title: requiredText(120, "Title is required in at least one language"),
+    slug: slugSchema
+  })
+  .strict();
+
+export const projectUpdateSchema = z
+  .object({
+    slug: slugSchema,
+    title: requiredText(120, "Title is required in at least one language"),
+    summary: localizedText(300),
+    body: localizedText(20_000),
+    techStack: z
+      .array(z.string().trim().min(1).max(30))
+      .max(20, "At most 20 technologies")
+      .refine((list) => new Set(list.map((t) => t.toLowerCase())).size === list.length, "Duplicate technology"),
+    links: z
+      .object({ repo: link, demo: link, docs: link })
+      .strict()
+      .transform((value) => Object.fromEntries(Object.entries(value).filter(([, url]) => url)) as { repo?: string; demo?: string; docs?: string }),
+    status: z.enum(["in-progress", "completed", "archived"]),
+    startedAt: yearMonth,
+    endedAt: yearMonth,
+    featured: z.boolean(),
+    visibility: z.enum(["public", "private"]),
+    gallery: z.array(projectImageParamsSchema.shape.imageId).max(30)
+  })
+  .partial()
+  .strict();
+
+export const projectOrderSchema = z
+  .object({ ids: z.array(uuid).max(1000) })
+  .strict()
+  .refine((value) => new Set(value.ids).size === value.ids.length, "Duplicate ids in order");
+
+export const projectImageSlotSchema = z.object({ slot: z.enum(["cover", "gallery"]) });

@@ -3,12 +3,13 @@ import type { FastifyInstance, FastifyRequest } from "fastify";
 import { randomBytes } from "node:crypto";
 
 import type { AdminAuthService } from "../auth/service";
-import { badRequest, HttpError, notFound } from "../lib/errors";
+import { HttpError, notFound } from "../lib/errors";
 import { parseInput, photoIdSchema, photoOrderSchema, photoUpdateSchema } from "../lib/validation";
-import { InvalidImageError, processImage } from "../photos/images";
-import { toAdminPhoto, variantFileName } from "../photos/mapping";
+import { saveImage } from "../photos/images";
+import { toAdminPhoto } from "../photos/mapping";
 import type { PhotoRepository } from "../photos/types";
 import type { LocalImageStore } from "../storage/local";
+import { readUploadedImage } from "./read-upload";
 
 /** "IMG_1234 (2).JPG" -> "img-1234-2-k3f9a1": readable, URL-safe and unique. */
 export function photoIdFromFileName(fileName: string) {
@@ -60,37 +61,14 @@ export function registerAdminPhotoRoutes(
    */
   app.post("/api/admin/photos", admin, async (request, reply): Promise<AdminPhotoResponse> => {
     const photos = repo();
-    if (!request.isMultipart()) throw badRequest("Upload the image as multipart/form-data");
-    const file = await request.file({ limits: { fileSize: maxUploadBytes, files: 1, fields: 0 } });
-    if (!file) throw badRequest("Choose an image to upload");
+    const { fileName, image, bytes } = await readUploadedImage(request, maxUploadBytes);
 
-    let input: Buffer;
-    try {
-      input = await file.toBuffer();
-    } catch (error) {
-      if ((error as { code?: string }).code === "FST_REQ_FILE_TOO_LARGE") {
-        throw new HttpError(413, "FILE_TOO_LARGE", `Images must be at most ${Math.round(maxUploadBytes / 1024 / 1024)} MB`);
-      }
-      throw badRequest("The upload was interrupted; try again", "UPLOAD_INTERRUPTED");
-    }
-
-    let image;
-    try {
-      image = await processImage(input);
-    } catch (error) {
-      if (error instanceof InvalidImageError) throw badRequest(error.message, "INVALID_IMAGE");
-      throw error;
-    }
-
-    const id = photoIdFromFileName(file.filename);
+    const id = photoIdFromFileName(fileName);
     const storageKey = `photos/${id}`;
     try {
-      for (const variant of image.variants) {
-        await store.write(storageKey, variantFileName(variant.width), variant.data);
-      }
-      await store.write(storageKey, `original.${image.original.extension}`, image.original.data);
+      await saveImage(store, storageKey, image);
 
-      const title = file.filename.replace(/\.[^.]*$/, "").trim().slice(0, 120) || id;
+      const title = fileName.replace(/\.[^.]*$/, "").trim().slice(0, 120) || id;
       const row = await photos.create({
         id,
         slug: id,
@@ -113,7 +91,7 @@ export function registerAdminPhotoRoutes(
         visibility: "private",
         featured: false
       });
-      request.log.info({ photoId: id, bytes: input.length, by: request.adminUser?.username }, "Photo uploaded");
+      request.log.info({ photoId: id, bytes, by: request.adminUser?.username }, "Photo uploaded");
       reply.code(201);
       return { photo: toAdminPhoto(row, store) };
     } catch (error) {
