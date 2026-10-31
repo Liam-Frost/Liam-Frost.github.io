@@ -7,7 +7,7 @@ const SECTIONS = [
   { to: "/photos", title: "照片", description: "上传照片、编辑多语言信息、排序与隐藏。", icon: Images },
   { to: "/projects", title: "项目", description: "创建项目、上传封面、管理链接与技术栈。", icon: FolderKanban },
   { to: "/collection", title: "收藏", description: "记录看过、在看和想看的电影、剧集与动漫，评分和短评。", icon: Clapperboard },
-  { to: "/music", title: "音乐", description: "设置右下角 Spotify 播放器的歌单、随机播放和音量。", icon: Music }
+  { to: "/music", title: "播放器", description: "右下角音乐播放器的开关、随机播放和音量；歌曲在“收藏 → 音乐”里管理。", icon: Music }
 ];
 
 export function OverviewPage() {

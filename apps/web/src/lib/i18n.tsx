@@ -177,7 +177,10 @@ const zh = {
   "collection.close": "关闭",
   "collection.open": "查看：{title}",
   "collection.notFound": "这个条目不存在或尚未公开。",
-  "collection.attribution": "电影和剧集资料来自 TMDB，动漫资料来自 Bangumi。本网站使用 TMDB API，但未获得 TMDB 的认可或认证。"
+  "collection.attribution": "电影和剧集资料来自 TMDB，动漫资料来自 Bangumi。本网站使用 TMDB API，但未获得 TMDB 的认可或认证。",
+  "collection.kind.track": "音乐",
+  "collection.artists": "歌手",
+  "collection.album": "专辑：{album}"
 } as const;
 
 export type Key = keyof typeof zh;
@@ -335,7 +338,10 @@ const en: Record<Key, string> = {
   "collection.close": "Close",
   "collection.open": "Open: {title}",
   "collection.notFound": "This entry doesn't exist or isn't public.",
-  "collection.attribution": "Film and series data from TMDB, anime data from Bangumi. This product uses the TMDB API but is not endorsed or certified by TMDB."
+  "collection.attribution": "Film and series data from TMDB, anime data from Bangumi. This product uses the TMDB API but is not endorsed or certified by TMDB.",
+  "collection.kind.track": "Music",
+  "collection.artists": "Artists",
+  "collection.album": "Album: {album}"
 };
 
 const fr: Record<Key, string> = {
@@ -491,7 +497,10 @@ const fr: Record<Key, string> = {
   "collection.close": "Fermer",
   "collection.open": "Ouvrir : {title}",
   "collection.notFound": "Cette entrée n'existe pas ou n'est pas publique.",
-  "collection.attribution": "Données des films et séries : TMDB ; données des anime : Bangumi. Ce produit utilise l'API TMDB mais n'est ni approuvé ni certifié par TMDB."
+  "collection.attribution": "Données des films et séries : TMDB ; données des anime : Bangumi. Ce produit utilise l'API TMDB mais n'est ni approuvé ni certifié par TMDB.",
+  "collection.kind.track": "Musique",
+  "collection.artists": "Artistes",
+  "collection.album": "Album : {album}"
 };
 
 const ja: Record<Key, string> = {
@@ -647,7 +656,10 @@ const ja: Record<Key, string> = {
   "collection.close": "閉じる",
   "collection.open": "開く：{title}",
   "collection.notFound": "この作品は存在しないか、公開されていません。",
-  "collection.attribution": "映画・ドラマの情報は TMDB、アニメの情報は Bangumi より。本サイトは TMDB API を使用していますが、TMDB による承認・認定は受けていません。"
+  "collection.attribution": "映画・ドラマの情報は TMDB、アニメの情報は Bangumi より。本サイトは TMDB API を使用していますが、TMDB による承認・認定は受けていません。",
+  "collection.kind.track": "音楽",
+  "collection.artists": "アーティスト",
+  "collection.album": "アルバム：{album}"
 };
 
 const zhHant: Record<Key, string> = {
@@ -814,7 +826,10 @@ const zhHant: Record<Key, string> = {
   "collection.close": "關閉",
   "collection.open": "查看：{title}",
   "collection.notFound": "這個項目不存在或尚未公開。",
-  "collection.attribution": "電影和影集資料來自 TMDB，動畫資料來自 Bangumi。本網站使用 TMDB API，但未獲得 TMDB 的認可或認證。"
+  "collection.attribution": "電影和影集資料來自 TMDB，動畫資料來自 Bangumi。本網站使用 TMDB API，但未獲得 TMDB 的認可或認證。",
+  "collection.kind.track": "音樂",
+  "collection.artists": "歌手",
+  "collection.album": "專輯：{album}"
 };
 
 const DICT: Record<Lang, Record<Key, string>> = { zh, "zh-Hant": zhHant, en, fr, ja };

@@ -16,8 +16,3 @@ export function useUpdateSpotify() {
     onSuccess: (data) => qc.setQueryData<AdminSpotifyResponse>(spotifyKey, data)
   });
 }
-
-export function useSyncSpotify() {
-  const qc = useQueryClient();
-  return useMutation({ mutationFn: api.syncSpotify, onSuccess: (data) => qc.setQueryData<AdminSpotifyResponse>(spotifyKey, data) });
-}
