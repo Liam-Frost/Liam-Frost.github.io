@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router";
 
+import MediaCard from "../components/MediaCard";
 import PhotoCard from "../components/PhotoCard";
 import ProjectCard from "../components/ProjectCard";
 import Reveal from "../components/Reveal";
@@ -8,6 +9,7 @@ import SkillStack from "../components/SkillStack";
 import TypingAnimation from "../components/TypingAnimation";
 import type { Photo } from "@liam-frost/content";
 import { site } from "../data/site";
+import { useCollection } from "../data/useCollection";
 import { usePhotos } from "../data/usePhotos";
 import { useProjects } from "../data/useProjects";
 import { pickLocalized, useI18n, type Lang } from "../lib/i18n";
@@ -35,6 +37,16 @@ export default function HomePage() {
   // Between the introduction and the photos; hidden when there are no featured projects (or no API).
   const { projects } = useProjects();
   const featuredProjects = useMemo(() => projects.filter((p) => p.featured).slice(0, 4), [projects]);
+  // After the projects: the latest finished or ongoing entries (not "want to watch"); hidden when empty.
+  const { items: collection } = useCollection();
+  const recentMedia = useMemo(
+    () =>
+      collection
+        .filter((item) => item.status === "done" || item.status === "watching")
+        .sort((a, b) => (b.watchedOn ?? b.updatedAt.slice(0, 10)).localeCompare(a.watchedOn ?? a.updatedAt.slice(0, 10)) || b.updatedAt.localeCompare(a.updatedAt))
+        .slice(0, 6),
+    [collection]
+  );
 
   const navigate = useNavigate();
 
@@ -251,6 +263,31 @@ export default function HomePage() {
             <div style={{ marginTop: 14, display: "flex", gap: 12, flexWrap: "wrap" }}>
               <Link className="btn btnPrimary" to="/projects">
                 {t("projects.cta.all")}
+              </Link>
+            </div>
+          </div>
+        </section>
+      ) : null}
+
+      {recentMedia.length ? (
+        <section className="section" id="watching">
+          <div className="container">
+            <Reveal>
+              <h2 className="sectionTitle">{t("collection.home.title")}</h2>
+              <p className="sectionSubtitle">{t("collection.home.subtitle")}</p>
+            </Reveal>
+
+            <div className="mediaGrid mediaGridHome">
+              {recentMedia.map((item, idx) => (
+                <Reveal key={item.id} delayMs={idx * 50}>
+                  <MediaCard item={item} to={`/collection?kind=${item.kind}&item=${item.id}`} />
+                </Reveal>
+              ))}
+            </div>
+
+            <div style={{ marginTop: 14, display: "flex", gap: 12, flexWrap: "wrap" }}>
+              <Link className="btn btnPrimary" to="/collection">
+                {t("collection.cta.all")}
               </Link>
             </div>
           </div>

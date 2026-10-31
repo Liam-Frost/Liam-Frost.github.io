@@ -120,6 +120,26 @@ describe("TMDB", () => {
     expect(result.genres).toEqual([{ zh: "剧情" }]);
   });
 
+  it("uses the original title for the work's own language", async () => {
+    const fetchImpl = fakeFetch((url) => {
+      if (url.pathname.startsWith("/3/genre/")) return Response.json({ genres: [] });
+      return Response.json({
+        id: 1396,
+        name: "绝命毒师",
+        original_name: "Breaking Bad",
+        original_language: "en",
+        translations: {
+          translations: [
+            { iso_639_1: "zh", iso_3166_1: "CN", data: { name: "绝命毒师" } },
+            { iso_639_1: "en", iso_3166_1: "US", data: { name: "", overview: "A chemistry teacher..." } }
+          ]
+        }
+      });
+    });
+    const result = await createMediaSources({ tmdbKey: "abc123", fetchImpl }).details("tmdb", "tv", "tv:1396");
+    expect(result.title).toEqual({ zh: "绝命毒师", en: "Breaking Bad" });
+  });
+
   it("treats a response without results as no results", async () => {
     const sources = createMediaSources({ tmdbKey: "abc123", fetchImpl: fakeFetch(() => Response.json({ status_message: "busy" })) });
     expect(await sources.search("tmdb", "movie", "x")).toEqual([]);
