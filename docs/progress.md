@@ -83,7 +83,7 @@ Status: implementation complete; Claude Code review complete and fixes applied.
 
 ### Stage 4: Front-End Dependency Upgrade
 
-Status: implementation complete; awaiting Claude Code review.
+Status: implementation complete; Claude Code review complete and fixes applied.
 
 - Upgraded `apps/web` to React 19.3.1 and React DOM 19.3.1, with `@types/react` / `@types/react-dom` 19.3.0.
 - Replaced `react-router-dom` 6 with `react-router` 8.5.1 (v8 ships a single package); updated all imports.
@@ -93,13 +93,16 @@ Status: implementation complete; awaiting Claude Code review.
 - Added `.claude/launch.json` for local web/API dev servers.
 - Ran `npm run typecheck`; result: passed.
 - Ran `npm run build`; result: passed (Vite 8).
-- Ran `npm audit fix` (non-breaking). Remaining: 3 high findings in the Prisma 6 CLI dependency chain (`deepmerge-ts` via `@prisma/config`); the fix requires a Prisma major upgrade and is deferred.
+- Ran `npm audit fix` (non-breaking). Remaining: 3 high findings in the Prisma 6 CLI dependency chain (`deepmerge-ts` via `@prisma/config`); the fix requires a Prisma major upgrade and is deferred. The non-breaking fix also upgraded the API's Fastify 5.8.5 to 5.12.7 and `fast-uri`; the API was re-checked in dev (`/api/photos`, `/api/spotify`, `/api/admin/session` returned 200).
 - Manually verified in the browser with the API running in seed mode: home page, portfolio, category filter, photo modal, fullscreen viewer, theme switching (light/dark), language switching, 404 page, `/admin` login page, Spotify dock. No React errors in the console; 404 console entries come from the existing Flickr size fallback chain.
-- Found two pre-existing issues (not caused by the upgrade, not fixed in this stage): a single Escape closes both the fullscreen viewer and the photo modal; the portfolio category filter stores a localized label, so switching language while filtered shows 0 photos.
+- Found two pre-existing issues during verification: a single Escape closed both the fullscreen viewer and the photo modal; the portfolio category filter stored a localized label, so switching language while filtered showed 0 photos.
+- Ran Claude Code review for Stage 4 (`docs/reviews/2026-10-31-claude-code-stage-4.md`).
+- Fixed review findings: the photo modal ignores keys while the fullscreen viewer is open; the category filter uses a language-independent key; documented the Fastify upgrade.
+- Re-ran `npm run typecheck`, `npm run build`, and browser checks for both fixes.
 
 ### Upcoming
 
-- Claude Code review of Stage 4, then PR.
+- Review and merge the Stage 4 PR.
 - Stage 5: back-end foundation and admin auth refinement (`ADMIN_PATH`, IP allowlist, CSRF, Zod, tests). See `docs/plan-admin-projects-deploy.md`.
 
 ## Future Stages

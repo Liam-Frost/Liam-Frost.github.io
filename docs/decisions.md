@@ -54,6 +54,18 @@ The model set CI to Node 22 and the root `engines.node` to `>=22.22.0`.
 
 Reason: React Router 8 requires Node 22.22 or newer; the VPS should use the same major version.
 
+### 2026-10-31: Accept Fastify 5.12 From `npm audit fix`
+
+The non-breaking `npm audit fix` upgraded the API's Fastify from 5.8.5 to 5.12.7 to pull in a patched `fast-uri`.
+
+Reason: it is a minor version within Fastify 5, fixes high-severity `fast-uri` advisories, and the API typechecks and serves its routes unchanged.
+
+### 2026-10-31: Filter Portfolio Categories by English Value
+
+The portfolio category filter keys on the English category value instead of the current-language label.
+
+Reason: the selection must survive a language switch; every photo category has an English value (falling back to Chinese), so it works as a stable key without changing the content schema.
+
 ### 2026-10-31: Defer Prisma Major Upgrade
 
 The remaining high audit findings come from the Prisma 6 CLI dependency chain; fixing them requires Prisma 7+.
