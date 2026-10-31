@@ -6,7 +6,6 @@ import Footer from "../components/Footer";
 import Header from "../components/Header";
 import SpotifyDock from "../components/SpotifyDock";
 import { site } from "../data/site";
-import AdminPage from "../pages/Admin";
 import HomePage from "../pages/Home";
 import NotFoundPage from "../pages/NotFound";
 import PortfolioPage from "../pages/Portfolio";
@@ -35,7 +34,6 @@ export default function App() {
       <main id="main">
         <Routes>
           <Route path="/" element={<HomePage />} />
-          <Route path="/admin" element={<AdminPage />} />
           <Route path="/portfolio" element={<PortfolioPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
