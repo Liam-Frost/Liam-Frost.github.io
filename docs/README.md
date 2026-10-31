@@ -7,6 +7,7 @@ This folder is the source of truth for the migration from a static portfolio to 
 - `architecture.md`: current architecture and intended direction.
 - `admin.md`: admin authentication setup and current admin scope.
 - `database.md`: PostgreSQL/Prisma setup and seed workflow.
+- `plan-admin-projects-deploy.md`: execution plan for the admin app, projects module, local run, and VPS CI/CD (Chinese).
 - `progress.md`: migration progress by stage.
 - `development-log.md`: chronological development log.
 - `decisions.md`: user decisions and model-made implementation decisions.
