@@ -2,6 +2,10 @@
 
 ## User Decisions
 
+### 2026-10-31: Spotify Player Managed in the Admin (Option B)
+
+The site keeps its own Spotify card. The API syncs a configurable playlist and the player loops through its 30-second previews (shuffled by default). The admin's "音乐" page sets the playlist, shuffle, volume and auto-collapse. The official Spotify embed player (option A) was not chosen: it cannot shuffle and does not match the site's style.
+
 ### 2026-10-31: Projects Section Placement and Defaults
 
 The home-page projects section goes between the introduction and the photos. The other proposed defaults were accepted: localized title, summary and Markdown body; cover and screenshots; tech stack; repo/demo/docs links; status and months; public/featured; a `/projects` list with tech filters and a `/projects/:slug` detail page; cards in the existing style.
@@ -39,6 +43,16 @@ The admin login address should be configurable like `internal-developer-tools-po
 React and related dependencies should be upgraded to the latest versions. This upgrade is exempt from the "Preserve Existing UI" decision.
 
 ## Model Decisions
+
+### 2026-10-31: Read Playlists From Spotify's Embed Page
+
+Since November 2024 Spotify's Web API does not return editorial playlists (such as City Pop Best) or preview URLs to new apps, and `spotify-url-info` no longer parses Spotify's pages. The API reads the playlist from the public embed page's `__NEXT_DATA__` and track covers from oEmbed, caches the result in the database, and keeps the last good playlist when a sync fails. The broken `GET /api/spotify?url=` route and the `spotify-url-info` dependency were removed.
+
+Reason: it is the only way to get the configured playlist with previews without asking visitors to sign in. The format is not a public contract, so failures are visible in the admin and never break the site.
+
+### 2026-10-31: Unreachable Database Answers 503
+
+Connection errors (Prisma P1000-P1003, P1017, P2024, socket errors) map to `503 DATABASE_UNAVAILABLE` instead of `500 INTERNAL`, and the admin explains how to start the database.
 
 ### 2026-10-31: Serialize Project Image Changes per Project
 

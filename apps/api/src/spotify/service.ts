@@ -9,8 +9,10 @@ const STATE_KEY = "spotify.playlist";
 
 /** Successful syncs are refreshed after this long. */
 export const REFRESH_MS = 6 * 60 * 60 * 1000;
-/** After a failed sync, visitors do not trigger another attempt for this long. */
+/** After a failed sync, visitors do not trigger another attempt for that playlist for this long. */
 export const RETRY_MS = 10 * 60 * 1000;
+/** A visitor waits at most this long for a playlist's first sync; it then finishes in the background. */
+export const FIRST_SYNC_WAIT_MS = 8000;
 
 export const DEFAULT_SPOTIFY_SETTINGS: SpotifySettings = {
   enabled: true,
@@ -38,11 +40,15 @@ export const spotifySettingsSchema = z
 type SyncState = {
   syncedAt: string | null;
   attemptedAt: string | null;
+  /** The playlist the last attempt was for. */
+  attemptedId: string | null;
   error: string | null;
   playlist: FetchedPlaylist | null;
 };
 
-const EMPTY_STATE: SyncState = { syncedAt: null, attemptedAt: null, error: null, playlist: null };
+const EMPTY_STATE: SyncState = { syncedAt: null, attemptedAt: null, attemptedId: null, error: null, playlist: null };
+
+const playlistInfo = ({ id, name, image, link }: FetchedPlaylist) => ({ id, name, image, link });
 
 /** Player settings plus the cached playlist, synced from Spotify on demand. */
 export class SpotifyService {
@@ -66,7 +72,10 @@ export class SpotifyService {
   async saveSettings(settings: SpotifySettings) {
     const previous = await this.settings();
     await this.repo.set(SETTINGS_KEY, settings);
-    if (settings.playlistUrl !== previous.playlistUrl) await this.sync();
+    if (settings.playlistUrl === previous.playlistUrl) return;
+    // A sync already running read the old settings; let it finish, then sync the new playlist.
+    await this.inflight?.catch(() => {});
+    await this.sync();
   }
 
   private async state(): Promise<SyncState> {
@@ -86,36 +95,40 @@ export class SpotifyService {
     const [settings, previous] = await Promise.all([this.settings(), this.state()]);
     const id = playlistIdFromUrl(settings.playlistUrl)!;
     const attemptedAt = new Date(this.now()).toISOString();
-    const knownCovers = new Map((previous.playlist?.tracks ?? []).map((track) => [track.id, track.image] as const));
+    // Tracks showing the playlist cover had no cover of their own last time; look them up again.
+    const knownCovers = new Map(
+      (previous.playlist?.tracks ?? []).filter((track) => track.image !== previous.playlist?.image).map((track) => [track.id, track.image] as const)
+    );
 
     let next: SyncState;
     try {
       const playlist = await this.fetchPlaylist(id, knownCovers);
-      next = { syncedAt: attemptedAt, attemptedAt, error: null, playlist };
+      next = { syncedAt: attemptedAt, attemptedAt, attemptedId: id, error: null, playlist };
     } catch (error) {
       this.onSyncError(error);
-      next = { ...previous, attemptedAt, error: error instanceof PlaylistError ? error.message : "同步失败" };
+      next = { ...previous, attemptedAt, attemptedId: id, error: error instanceof PlaylistError ? error.message : "同步失败" };
     }
     await this.repo.set(STATE_KEY, next);
     return next;
   }
 
   /** Sync details for the admin; a playlist cached for another URL does not count. */
-  async status(): Promise<SpotifySyncStatus> {
-    const [settings, state] = await Promise.all([this.settings(), this.state()]);
-    const current = state.playlist?.id === playlistIdFromUrl(settings.playlistUrl) ? state.playlist : null;
+  async status(settings?: SpotifySettings): Promise<SpotifySyncStatus> {
+    const [current, state] = await Promise.all([settings ?? this.settings(), this.state()]);
+    const id = playlistIdFromUrl(current.playlistUrl);
+    const playlist = state.playlist?.id === id ? state.playlist : null;
     return {
-      syncedAt: current ? state.syncedAt : null,
+      syncedAt: playlist ? state.syncedAt : null,
       attemptedAt: state.attemptedAt,
-      error: state.error,
-      playlist: current && { id: current.id, name: current.name, image: current.image, link: current.link },
-      tracks: current?.tracks ?? []
+      error: state.attemptedId === id ? state.error : null,
+      playlist: playlist && playlistInfo(playlist),
+      tracks: playlist?.tracks ?? []
     };
   }
 
   /**
-   * The site's player. The first request for a playlist waits for its sync; later ones get the cached
-   * playlist and refresh it in the background once it is old.
+   * The site's player. The first request for a playlist waits (briefly) for its sync; later ones get
+   * the cached playlist and refresh it in the background once it is old.
    */
   async player(): Promise<PublicSpotifyPlayer> {
     const settings = await this.settings();
@@ -125,20 +138,22 @@ export class SpotifyService {
     let state = await this.state();
     const id = playlistIdFromUrl(settings.playlistUrl);
     const now = this.now();
-    const mayRetry = !state.error || !state.attemptedAt || now - Date.parse(state.attemptedAt) > RETRY_MS;
+    const failedRecently = state.error !== null && state.attemptedId === id && !!state.attemptedAt && now - Date.parse(state.attemptedAt) <= RETRY_MS;
     const current = state.playlist?.id === id;
 
-    if (!current && mayRetry) {
-      state = await this.sync();
-    } else if (current && mayRetry && (!state.syncedAt || now - Date.parse(state.syncedAt) > REFRESH_MS)) {
+    if (!current && !failedRecently) {
+      const sync = this.sync();
+      sync.catch(this.onSyncError);
+      let timer: NodeJS.Timeout | undefined;
+      const timeout = new Promise<null>((resolve) => {
+        timer = setTimeout(() => resolve(null), FIRST_SYNC_WAIT_MS);
+      });
+      state = (await Promise.race([sync, timeout]).finally(() => clearTimeout(timer))) ?? state;
+    } else if (current && !failedRecently && (!state.syncedAt || now - Date.parse(state.syncedAt) > REFRESH_MS)) {
       this.sync().catch(this.onSyncError);
     }
 
     const playlist = state.playlist?.id === id ? state.playlist : null;
-    return {
-      ...options,
-      playlist: playlist && { id: playlist.id, name: playlist.name, image: playlist.image, link: playlist.link },
-      tracks: playlist?.tracks ?? []
-    };
+    return { ...options, playlist: playlist && playlistInfo(playlist), tracks: playlist?.tracks ?? [] };
   }
 }

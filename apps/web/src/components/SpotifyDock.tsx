@@ -67,6 +67,8 @@ function Dock({ player }: { player: PublicSpotifyPlayer }) {
     const audio = new Audio();
     audio.preload = "none";
     audio.volume = player.volume / 100;
+    // With one track there is nothing to advance to; let the browser repeat it.
+    audio.loop = tracks.length === 1;
     audio.addEventListener("ended", () => handlers.current.next());
     audio.addEventListener("playing", () => {
       failuresRef.current = 0;
@@ -115,7 +117,17 @@ function Dock({ player }: { player: PublicSpotifyPlayer }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- only a track change should restart playback
   }, [track.previewUrl]);
 
-  useEffect(() => () => audioRef.current?.pause(), []);
+  useEffect(
+    () => () => {
+      audioRef.current?.pause();
+      if ("mediaSession" in navigator) {
+        navigator.mediaSession.metadata = null;
+        navigator.mediaSession.setActionHandler("nexttrack", null);
+        navigator.mediaSession.setActionHandler("previoustrack", null);
+      }
+    },
+    []
+  );
 
   // Lock-screen and media-key controls.
   useEffect(() => {
