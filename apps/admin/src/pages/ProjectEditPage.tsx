@@ -1,14 +1,14 @@
 import type { AdminProject, AdminProjectUpdate, LocalizedText, ProjectImage, ProjectLinks, ProjectStatus } from "@liam-frost/shared";
 import { ArrowLeft, ExternalLink, ImagePlus, Trash2, X } from "lucide-react";
-import { useRef, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { Link, useParams } from "react-router";
 
 import { Field, Switch } from "../components/ui/Field";
+import { IconButton } from "../components/ui/IconButton";
 import { useToast } from "../components/ui/Toast";
 import { useProject, useProjectImages, useUpdateProject } from "../hooks/useProjects";
 import { ApiError } from "../lib/api";
 import { LANG_LABELS, LANGS, pickText, STATUS_LABELS, type Lang } from "../lib/i18n";
-import { IconButton } from "./ProjectsPage";
 
 const ACCEPT = "image/jpeg,image/png,image/webp,image/avif,image/tiff";
 
@@ -65,11 +65,22 @@ export function ProjectEditPage() {
 
 function ProjectEditor({ project }: { project: AdminProject }) {
   const [draft, setDraft] = useState(() => toDraft(project));
+  // Last saved state; texts are saved explicitly, so unsaved edits are tracked against it.
+  const [saved, setSaved] = useState(draft);
+  const dirty = JSON.stringify(draft) !== JSON.stringify(saved);
   const [lang, setLang] = useState<Lang>("zh");
   const [error, setError] = useState("");
   const [techInput, setTechInput] = useState("");
   const update = useUpdateProject(project.id);
   const toast = useToast();
+
+  // Closing or reloading the tab with unsaved texts asks for confirmation.
+  useEffect(() => {
+    if (!dirty) return;
+    const onBeforeUnload = (event: BeforeUnloadEvent) => event.preventDefault();
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+  }, [dirty]);
 
   const set = <K extends keyof Draft>(key: K, value: Draft[K]) => setDraft((d) => ({ ...d, [key]: value }));
   const setText = (field: "title" | "summary" | "body", value: string) => setDraft((d) => ({ ...d, [field]: { ...d[field], [lang]: value } }));
@@ -100,7 +111,13 @@ function ProjectEditor({ project }: { project: AdminProject }) {
       endedAt: draft.endedAt || null
     };
     update.mutate(body, {
-      onSuccess: () => toast("已保存"),
+      onSuccess: ({ project: next }) => {
+        // Adopt the server's normalized values (trimmed slug, dropped empty links) as the new baseline.
+        const normalized = toDraft(next);
+        setDraft(normalized);
+        setSaved(normalized);
+        toast("已保存");
+      },
       onError: (e) => setError(e instanceof ApiError && e.code === "SLUG_TAKEN" ? "这个网址名已被其它项目使用" : e.message)
     });
   };
@@ -110,7 +127,14 @@ function ProjectEditor({ project }: { project: AdminProject }) {
   return (
     <form onSubmit={submit} noValidate>
       <div className="mb-6 flex flex-wrap items-center gap-3">
-        <Link to="/projects" className="rounded-full p-1.5 text-subtle hover:bg-brand-secondary/12 hover:text-brand" aria-label="返回项目列表">
+        <Link
+          to="/projects"
+          className="rounded-full p-1.5 text-subtle hover:bg-brand-secondary/12 hover:text-brand"
+          aria-label="返回项目列表"
+          onClick={(e) => {
+            if (dirty && !window.confirm("有未保存的修改，确定离开吗？")) e.preventDefault();
+          }}
+        >
           <ArrowLeft aria-hidden="true" className="size-5" />
         </Link>
         <h1 className="min-w-0 flex-1 truncate text-[22px] font-semibold text-brand-dark">{title}</h1>
@@ -118,6 +142,11 @@ function ProjectEditor({ project }: { project: AdminProject }) {
           <a href={`/#/projects/${project.slug}`} target="_blank" rel="noreferrer" className="btn-secondary">
             <ExternalLink aria-hidden="true" className="size-4" /> 查看页面
           </a>
+        ) : null}
+        {dirty ? (
+          <span className="text-[12.5px] text-status-warn" role="status">
+            有未保存的修改
+          </span>
         ) : null}
         <button type="submit" className="btn-primary" disabled={update.isPending}>
           {update.isPending ? "保存中…" : "保存"}

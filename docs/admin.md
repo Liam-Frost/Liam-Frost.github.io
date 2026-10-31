@@ -91,7 +91,7 @@ API: `GET/POST /api/admin/photos`, `GET/PATCH/DELETE /api/admin/photos/:id`, `PU
 Requires `DATABASE_URL`.
 
 - **Create**: "新建项目" asks for a title and a slug (suggested from an ASCII title). New projects are hidden.
-- **Editor** (`<ADMIN_PATH>/projects/<id>`): title, one-line summary and Markdown body per language; slug (`/projects/<slug>`, unique), status (进行中 / 已完成 / 已归档), start and end month, tech stack, links (code, demo, docs; http(s) only); public and featured switches. Text changes are saved with "保存".
+- **Editor** (`<ADMIN_PATH>/projects/<id>`): title, one-line summary and Markdown body per language; slug (`/projects/<slug>`, unique), status (进行中 / 已完成 / 已归档), start and end month, tech stack, links (code, demo, docs; http(s) only); public and featured switches. Text changes are saved with "保存"; unsaved edits are marked, and leaving via the back arrow or closing the tab asks first.
 - **Images** save immediately: uploading a cover replaces (and deletes) the previous one; screenshots (up to 30) can be reordered and deleted. They go through the same pipeline as photos (WebP sizes, metadata stripped, private originals) under `UPLOAD_DIR/projects/<id>/<imageId>/`.
 - **Visibility**: hidden projects and their images are only visible to the admin, exactly like photos.
 - **Home page**: up to four public projects with "首页精选" appear between the introduction (about and tech stack) and the featured photos, in list order. Without public featured projects (or without the API, e.g. GitHub Pages builds) the section is hidden.

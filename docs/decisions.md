@@ -40,6 +40,12 @@ React and related dependencies should be upgraded to the latest versions. This u
 
 ## Model Decisions
 
+### 2026-10-31: Serialize Project Image Changes per Project
+
+Updates that rewrite a project's cover or screenshot list run one at a time per project in the API process.
+
+Reason: the image lists are JSON on the project row, so concurrent read-modify-write updates would lose changes. A per-project in-process lock fits the existing single-instance design; image processing stays outside the lock.
+
 ### 2026-10-31: Projects Section After the Tech Stack
 
 The home section is placed after `#skills` and before `#featured`.
