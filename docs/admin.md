@@ -99,6 +99,18 @@ Requires `DATABASE_URL`.
 
 API: `GET/POST /api/admin/projects`, `GET/PATCH/DELETE /api/admin/projects/:id`, `POST /api/admin/projects/:id/images?slot=cover|gallery`, `DELETE /api/admin/projects/:id/images/:imageId`, `PUT /api/admin/projects/order`. Public: `GET /api/projects` (summaries), `GET /api/projects/:slug`.
 
+## Collection (Films, Series, Anime)
+
+Requires `DATABASE_URL`. Searching films and series needs `TMDB_API_KEY` (a TMDB v3 API key or v4 read access token) in `apps/api/.env`; without it they can only be added by hand. Anime is searched on Bangumi (no key) or TMDB.
+
+- **Add**: "添加电影 / 剧集 / 动漫" searches the source; choosing a result makes the server fetch its details (titles in every site language TMDB has, original title, year, genres, directors / studios, synopsis, episode count) and download the poster into the image pipeline. Entries already in the collection are marked and open instead. Entries can also be created by hand with just a title.
+- **Editor** (`<ADMIN_PATH>/collection/<id>`): status (想看 / 在看 / 看过 / 弃了), five-star rating (click the current star to clear), date finished, rewatch count, episode progress for series and anime; title, short review and synopsis per language; original title, year, genres, credits; poster replacement; public and featured switches.
+- **Display settings**: which kinds the site shows, and a global switch for "want to watch" entries. An entry appears on the site only if it is public, its kind is shown, and it is not a "want" entry while that switch is off. Posters follow the same rule (the admin always sees them).
+- New entries are public with status 看过; posters are stored under `UPLOAD_DIR/media/<id>/`.
+- The public collection page comes in Stage 12 (`docs/plan-collection.md`).
+
+API: `GET /api/admin/media`, `GET /api/admin/media/search?kind&source&q`, `POST /api/admin/media/import`, `POST /api/admin/media`, `GET/PATCH/DELETE /api/admin/media/:id`, `POST /api/admin/media/:id/poster`, `GET/PUT /api/admin/collection/settings`. Posters: `/uploads/media/<id>/<imageId>/<n>.webp`.
+
 ## Music (Spotify Player)
 
 The "音乐" page configures the player in the site's bottom-right corner. Changing settings needs `DATABASE_URL`; without a database the site still plays the default playlist (cached in memory).

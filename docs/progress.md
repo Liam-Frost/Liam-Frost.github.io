@@ -218,11 +218,24 @@ Status: implementation complete; Claude Code review complete and fixes applied.
 - This machine has no Docker or WSL: the stack was verified by the smoke test on GitHub Actions (passed), and the same production build ran here outside Docker against a temporary PostgreSQL (migrations with the Prisma CLI, seed, admin login, project with uploaded cover, single-origin site/admin/API in the browser).
 - Ran Claude Code review for Stage 9 (`docs/reviews/2026-10-31-claude-code-stage-9.md`) and fixed five findings. Tests: 79 passed.
 
+### Stage 11: Collection Data and Admin (Films, Series, Anime)
+
+Status: implementation complete; Claude Code review complete and fixes applied.
+
+- User decisions (see `docs/plan-collection.md`): no mainland China accessibility requirement; films, series and anime added one by one; ratings out of five; multilingual short reviews; "want" entries controlled by a global switch plus per-entry visibility.
+- `MediaItem` model and migration `20261031150000_media` (checked against a real database with `prisma migrate diff`: empty).
+- TMDB (v3 key or v4 token) and Bangumi sources: search, details in every site language TMDB provides, localized genres, credits, episode counts; posters downloaded from allowlisted hosts into the WebP pipeline.
+- Admin routes for listing, searching, importing, manual creation, editing, poster replacement, deletion and display settings; poster visibility follows the entry, its kind and the "want" switch.
+- Admin UI: 收藏 page (kind tabs, status filters, title filter, display settings), add dialog (search, already-added marks, manual entry), editor (status, stars, date, rewatches, progress, multilingual title/review/synopsis, details, poster, publish switches).
+- Tests: 98 passed.
+- Verified in the browser against a temporary PostgreSQL with live Bangumi data: searched and imported two anime (titles, year, credits, genres, 12 / 28 episodes, poster), edited status, rating, progress and reviews in two languages, featured; status filter, display settings, manual entry, duplicate import (409), deletion; phone width. The "TMDB not configured" path was checked; real TMDB requests are not verified yet because `TMDB_API_KEY` is not set locally.
+- Ran Claude Code review for Stage 11 (`docs/reviews/2026-10-31-claude-code-stage-11.md`) and fixed six findings.
+
 ### Upcoming
 
-- Review and merge the Stage 9 PR.
+- Verify TMDB search and import once `TMDB_API_KEY` is set in `apps/api/.env`.
+- Review and merge the Stage 11 PR, then Stage 12 (public collection page).
 - Stage 10: VPS deployment and CI/CD (needs the VPS provider/OS/specs, DNS manager and domain from the user).
-- Collection module (movies, TV, anime, music): plan drafted in `docs/plan-collection.md` (Stages 11-14), waiting for the user's confirmation.
 - Stage 5: back-end foundation and admin auth refinement (`ADMIN_PATH`, IP allowlist, CSRF, Zod, tests). See `docs/plan-admin-projects-deploy.md`.
 
 ## Future Stages

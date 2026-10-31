@@ -48,6 +48,22 @@ React and related dependencies should be upgraded to the latest versions. This u
 
 ## Model Decisions
 
+### 2026-10-31: One MediaItem Table for the Collection
+
+Films, series, anime and (later) music share one table with a `kind` column, localized fields as JSON (like photos and projects) and kind-specific data in `extra`. Imports are unique per source entry.
+
+Reason: the kinds share almost every field and every screen (list, editor, public page); separate tables would duplicate them.
+
+### 2026-10-31: Server-Side Imports With Local Posters
+
+The admin only names a source entry; the server fetches its details and downloads the poster from the source's image host (allowlisted, no redirects) into the existing WebP pipeline.
+
+Reason: visitors only load images from this site, posters keep working if the source changes URLs, and the client cannot make the server fetch arbitrary URLs.
+
+### 2026-10-31: Bangumi for Anime, TMDB for Films and Series
+
+TMDB has titles and synopses in all five site languages; Bangumi has the most complete Chinese and Japanese anime data and needs no key. Anime can use either.
+
 ### 2026-10-31: Bundle the API With esbuild
 
 The production API is bundled with esbuild into `apps/api/dist` (`scripts/build.mjs`): the workspace packages, which export TypeScript source, and the generated Prisma client are included; npm dependencies stay external. `prisma` moved to `dependencies` because the image runs `prisma migrate deploy` on start.

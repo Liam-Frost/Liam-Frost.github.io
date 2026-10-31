@@ -91,6 +91,28 @@ describe("TMDB", () => {
     expect(hits[0].posterUrl).toBe("https://image.tmdb.org/t/p/w185/a.jpg");
   });
 
+  it("keeps Simplified and Traditional Chinese apart, and imports without genre lists", async () => {
+    const fetchImpl = fakeFetch((url) => {
+      if (url.pathname.startsWith("/3/genre/")) return new Response("", { status: 500 });
+      return Response.json({
+        id: 7,
+        title: "简体名",
+        release_date: "2020-01-01",
+        genres: [{ id: 18, name: "剧情" }],
+        translations: { translations: [{ iso_639_1: "zh", iso_3166_1: "CN", data: { title: "简体名", overview: "简体简介" } }] }
+      });
+    });
+    const result = await createMediaSources({ tmdbKey: "abc123", fetchImpl }).details("tmdb", "movie", "movie:7");
+    expect(result.title).toEqual({ zh: "简体名" });
+    expect(result.overview).toEqual({ zh: "简体简介" });
+    expect(result.genres).toEqual([{ zh: "剧情" }]);
+  });
+
+  it("treats a response without results as no results", async () => {
+    const sources = createMediaSources({ tmdbKey: "abc123", fetchImpl: fakeFetch(() => Response.json({ status_message: "busy" })) });
+    expect(await sources.search("tmdb", "movie", "x")).toEqual([]);
+  });
+
   it("explains a missing or rejected key", async () => {
     await expect(createMediaSources({}).search("tmdb", "movie", "x")).rejects.toThrow("未配置 TMDB_API_KEY");
     const rejected = createMediaSources({ tmdbKey: "bad", fetchImpl: fakeFetch(() => new Response("", { status: 401 })) });
@@ -149,6 +171,8 @@ describe("Bangumi", () => {
   it("rejects malformed ids and non-https poster URLs", async () => {
     const sources = createMediaSources({ fetchImpl: fakeFetch(() => Response.json({})) });
     await expect(sources.details("bangumi", "anime", "../1")).rejects.toThrow("无效");
-    await expect(sources.download("http://example.com/p.jpg")).rejects.toThrow("海报地址无效");
+    await expect(sources.download("http://image.tmdb.org/t/p/w780/p.jpg")).rejects.toThrow("海报地址无效");
+    await expect(sources.download("https://internal.example/p.jpg")).rejects.toThrow("海报地址无效");
+    expect(await sources.search("bangumi", "anime", "x")).toEqual([]);
   });
 });
