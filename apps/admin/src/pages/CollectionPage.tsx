@@ -4,6 +4,7 @@ import { useState, type FormEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
 
 import { PageHeader } from "../components/layout/AdminLayout";
+import { MusicList, MusicSearchDialog, PlaylistImportDialog } from "../components/music/MusicTools";
 import { DatabaseNotice } from "../components/ui/DatabaseNotice";
 import { Dialog } from "../components/ui/Dialog";
 import { Field, Switch } from "../components/ui/Field";
@@ -11,21 +12,21 @@ import { StarRating } from "../components/ui/StarRating";
 import { useToast } from "../components/ui/Toast";
 import { useCollectionSettings, useCreateMedia, useImportMedia, useMediaList, useUpdateCollectionSettings } from "../hooks/useMedia";
 import { api, ApiError } from "../lib/api";
-import { KIND_LABELS, MEDIA_STATUS_LABELS, pickText, WATCH_KINDS, type WatchKind } from "../lib/i18n";
+import { COLLECTION_KIND_LABELS, COLLECTION_KINDS, KIND_LABELS, MEDIA_STATUS_LABELS, pickText, WATCH_KINDS, type CollectionKind, type WatchKind } from "../lib/i18n";
 
 const STATUSES = Object.keys(MEDIA_STATUS_LABELS) as MediaStatus[];
 
 export function CollectionPage() {
   const [params, setParams] = useSearchParams();
-  const kind: WatchKind = WATCH_KINDS.find((k) => k === params.get("kind")) ?? "movie";
+  const kind: CollectionKind = COLLECTION_KINDS.find((k) => k === params.get("kind")) ?? "movie";
   const status = STATUSES.find((s) => s === params.get("status")) ?? null;
-  const [filter, setFilter] = useState("");
   const [adding, setAdding] = useState(false);
+  const [importing, setImporting] = useState(false);
   const [editingSettings, setEditingSettings] = useState(false);
   const { data: items, isPending, error } = useMediaList();
   const { data: settings } = useCollectionSettings();
 
-  const select = (next: { kind?: WatchKind; status?: MediaStatus | null }) => {
+  const select = (next: { kind?: CollectionKind; status?: MediaStatus | null }) => {
     const value = new URLSearchParams();
     value.set("kind", next.kind ?? kind);
     const nextStatus = next.status === undefined ? status : next.status;
@@ -44,6 +45,64 @@ export function CollectionPage() {
   }
 
   const ofKind = (items ?? []).filter((item) => item.kind === kind);
+
+  return (
+    <>
+      <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
+        <PageHeader title="收藏" description="看过、在看和想看的电影、剧集与动漫，以及喜欢的歌。搜索添加时会自动填好资料和海报。" />
+        <div className="flex flex-wrap gap-2">
+          <button type="button" className="btn-secondary" onClick={() => setEditingSettings(true)} disabled={!settings}>
+            <Settings2 aria-hidden="true" className="size-4" /> 显示设置
+          </button>
+          {kind === "track" ? (
+            <button type="button" className="btn-secondary" onClick={() => setImporting(true)}>
+              导入 Spotify 歌单
+            </button>
+          ) : null}
+          <button type="button" className="btn-primary" onClick={() => setAdding(true)}>
+            <Plus aria-hidden="true" className="size-4" /> {kind === "track" ? "添加歌曲" : `添加${KIND_LABELS[kind]}`}
+          </button>
+        </div>
+      </div>
+
+      {settings && !settings.sources.tmdb && kind !== "track" ? (
+        <p className="mb-4 rounded-xl border border-status-warn/30 bg-status-warn/8 px-4 py-2.5 text-[12.5px] leading-relaxed text-status-warn">
+          未配置 TMDB：电影和剧集暂时只能手动添加。在 <code className="chip">apps/api/.env</code> 中设置 <code className="chip">TMDB_API_KEY</code> 后重启 API。
+        </p>
+      ) : null}
+
+      <div role="tablist" aria-label="类型" className="mb-3 flex flex-wrap gap-1.5">
+        {COLLECTION_KINDS.map((k) => (
+          <button
+            key={k}
+            type="button"
+            role="tab"
+            aria-selected={kind === k}
+            onClick={() => select({ kind: k })}
+            className={`rounded-full px-3.5 py-1.5 text-[13px] transition-colors ${kind === k ? "bg-brand text-white" : "bg-brand-secondary/10 text-brand hover:bg-brand-secondary/18"}`}
+          >
+            {COLLECTION_KIND_LABELS[k]} <span className="opacity-70">{(items ?? []).filter((item) => item.kind === k).length}</span>
+          </button>
+        ))}
+      </div>
+
+      {kind === "track" ? (
+        <MusicList items={ofKind} />
+      ) : (
+        <WatchList kind={kind} items={ofKind} status={status} onStatus={(s) => select({ status: s })} />
+      )}
+
+      {adding && kind === "track" ? <MusicSearchDialog mode="add" onClose={() => setAdding(false)} /> : null}
+      {adding && kind !== "track" ? <AddMediaDialog kind={kind} tmdbReady={settings?.sources.tmdb ?? false} onClose={() => setAdding(false)} /> : null}
+      {importing ? <PlaylistImportDialog onClose={() => setImporting(false)} /> : null}
+      {editingSettings && settings ? <SettingsDialog settings={settings.settings} onClose={() => setEditingSettings(false)} /> : null}
+    </>
+  );
+}
+
+/** Films, series or anime: status filters, title filter and the poster grid. */
+function WatchList({ kind, items: ofKind, status, onStatus }: { kind: WatchKind; items: AdminMediaItem[]; status: MediaStatus | null; onStatus: (status: MediaStatus | null) => void }) {
+  const [filter, setFilter] = useState("");
   const needle = filter.trim().toLowerCase();
   const visible = ofKind.filter(
     (item) =>
@@ -53,46 +112,13 @@ export function CollectionPage() {
 
   return (
     <>
-      <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
-        <PageHeader title="收藏" description="看过、在看和想看的电影、剧集与动漫。搜索添加时会自动填好资料和海报。" />
-        <div className="flex gap-2">
-          <button type="button" className="btn-secondary" onClick={() => setEditingSettings(true)} disabled={!settings}>
-            <Settings2 aria-hidden="true" className="size-4" /> 显示设置
-          </button>
-          <button type="button" className="btn-primary" onClick={() => setAdding(true)}>
-            <Plus aria-hidden="true" className="size-4" /> 添加{KIND_LABELS[kind]}
-          </button>
-        </div>
-      </div>
-
-      {settings && !settings.sources.tmdb ? (
-        <p className="mb-4 rounded-xl border border-status-warn/30 bg-status-warn/8 px-4 py-2.5 text-[12.5px] leading-relaxed text-status-warn">
-          未配置 TMDB：电影和剧集暂时只能手动添加。在 <code className="chip">apps/api/.env</code> 中设置 <code className="chip">TMDB_API_KEY</code> 后重启 API。
-        </p>
-      ) : null}
-
-      <div role="tablist" aria-label="类型" className="mb-3 flex flex-wrap gap-1.5">
-        {WATCH_KINDS.map((k) => (
-          <button
-            key={k}
-            type="button"
-            role="tab"
-            aria-selected={kind === k}
-            onClick={() => select({ kind: k })}
-            className={`rounded-full px-3.5 py-1.5 text-[13px] transition-colors ${kind === k ? "bg-brand text-white" : "bg-brand-secondary/10 text-brand hover:bg-brand-secondary/18"}`}
-          >
-            {KIND_LABELS[k]} <span className="opacity-70">{(items ?? []).filter((item) => item.kind === k).length}</span>
-          </button>
-        ))}
-      </div>
-
       <div className="mb-5 flex flex-wrap items-center gap-2">
         {[null, ...STATUSES].map((s) => (
           <button
             key={s ?? "all"}
             type="button"
             aria-pressed={status === s}
-            onClick={() => select({ status: s })}
+            onClick={() => onStatus(s)}
             className={`chip ${status === s ? "border-brand bg-brand/10 text-brand" : ""}`}
           >
             {s ? MEDIA_STATUS_LABELS[s] : "全部"} {s ? ofKind.filter((item) => item.status === s).length : ofKind.length}
@@ -117,9 +143,6 @@ export function CollectionPage() {
           ))}
         </ul>
       )}
-
-      {adding ? <AddMediaDialog kind={kind} tmdbReady={settings?.sources.tmdb ?? false} onClose={() => setAdding(false)} /> : null}
-      {editingSettings && settings ? <SettingsDialog settings={settings.settings} onClose={() => setEditingSettings(false)} /> : null}
     </>
   );
 }

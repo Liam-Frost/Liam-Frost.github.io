@@ -2565,6 +2565,17 @@ html[data-theme="light"] .aboutSection {
   background: rgba(148, 180, 193, 0.14);
 }
 
+.mediaRowPoster.isSquare,
+.mediaDrawerPoster.isSquare {
+  aspect-ratio: 1;
+}
+
+.mediaListenLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .mediaRowPoster .mediaPosterEmpty {
   font-size: 20px;
 }

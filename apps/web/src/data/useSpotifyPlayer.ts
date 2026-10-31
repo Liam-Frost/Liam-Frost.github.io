@@ -10,7 +10,6 @@ const FALLBACK: PublicSpotifyPlayer = {
   shuffle: true,
   volume: 30,
   autoCollapseSeconds: 3,
-  playlist: null,
   tracks: site.spotify.tracks
 };
 

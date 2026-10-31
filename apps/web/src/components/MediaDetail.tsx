@@ -51,6 +51,7 @@ export default function MediaDetail({ id, onClose }: { id: string; onClose: () =
   const overview = item ? pickLocalized(item.overview, lang) : "";
   const genres = item ? item.genres.map((genre) => pickLocalized(genre, lang)).filter(Boolean) : [];
   const progress = item?.progress;
+  const isMusic = item?.kind === "track";
 
   return (
     <div className="backdrop mediaDrawerBackdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
@@ -67,7 +68,7 @@ export default function MediaDetail({ id, onClose }: { id: string; onClose: () =
         {item ? (
           <>
             <div className="mediaDrawerHead">
-              <div className="mediaDrawerPoster">
+              <div className={isMusic ? "mediaDrawerPoster isSquare" : "mediaDrawerPoster"}>
                 {item.poster ? (
                   <img src={item.poster.variants[item.poster.variants.length - 1].url} srcSet={imageSrcSet(item.poster)} sizes="180px" alt="" />
                 ) : (
@@ -81,7 +82,8 @@ export default function MediaDetail({ id, onClose }: { id: string; onClose: () =
                   {title}
                 </h2>
                 {item.originalTitle && item.originalTitle !== title ? <p className="mediaRowOriginal">{item.originalTitle}</p> : null}
-                <p className="mediaRowMeta">{[t(`collection.kind.${item.kind as "movie" | "tv" | "anime"}`), item.year].filter(Boolean).join(" · ")}</p>
+                <p className="mediaRowMeta">{[t(`collection.kind.${item.kind as "movie" | "tv" | "anime" | "track"}`), item.year].filter(Boolean).join(" · ")}</p>
+                {item.music?.album ? <p className="mediaRowMeta">{t("collection.album", { album: item.music.album })}</p> : null}
                 <div className="mediaDrawerFacts">
                   {item.status ? <span className={`mediaBadge mediaBadge-${item.status}`}>{t(statusKey(item.status))}</span> : null}
                   <Stars rating={item.rating} />
@@ -115,7 +117,7 @@ export default function MediaDetail({ id, onClose }: { id: string; onClose: () =
 
             {item.credits.length ? (
               <section className="mediaDrawerSection">
-                <h3>{t("collection.credits")}</h3>
+                <h3>{t(isMusic ? "collection.artists" : "collection.credits")}</h3>
                 <p>{item.credits.join(" · ")}</p>
               </section>
             ) : null}
@@ -131,6 +133,20 @@ export default function MediaDetail({ id, onClose }: { id: string; onClose: () =
               <a className="btn btnSoft btnSmall mediaSourceLink" href={item.sourceUrl} target="_blank" rel="noopener noreferrer">
                 {t("collection.source", { source: SOURCE_NAMES[item.source] })}
               </a>
+            ) : null}
+            {item.music?.spotifyUrl || item.music?.appleUrl ? (
+              <div className="mediaListenLinks">
+                {item.music.spotifyUrl ? (
+                  <a className="btn btnSoft btnSmall" href={item.music.spotifyUrl} target="_blank" rel="noopener noreferrer">
+                    Spotify
+                  </a>
+                ) : null}
+                {item.music.appleUrl ? (
+                  <a className="btn btnSoft btnSmall" href={item.music.appleUrl} target="_blank" rel="noopener noreferrer">
+                    Apple Music
+                  </a>
+                ) : null}
+              </div>
             ) : null}
           </>
         ) : null}

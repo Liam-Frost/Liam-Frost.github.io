@@ -28,6 +28,29 @@ export type WatchKind = (typeof WATCH_KINDS)[number];
 
 export const KIND_LABELS: Record<WatchKind, string> = { movie: "电影", tv: "剧集", anime: "动漫" };
 
+/** Tabs of the collection page: films, series, anime and songs. */
+export const COLLECTION_KINDS = [...WATCH_KINDS, "track"] as const;
+export type CollectionKind = (typeof COLLECTION_KINDS)[number];
+export const COLLECTION_KIND_LABELS: Record<CollectionKind, string> = { ...KIND_LABELS, track: "音乐" };
+
+/** iTunes stores to search (songs are listed under that store's names). */
+export const MUSIC_STORES = [
+  ["US", "美国"],
+  ["JP", "日本"],
+  ["GB", "英国"],
+  ["FR", "法国"],
+  ["TW", "台湾"],
+  ["HK", "香港"],
+  ["CN", "中国大陆"]
+] as const;
+
+/** "4:54" */
+export function formatDuration(ms: number | null) {
+  if (!ms) return "";
+  const seconds = Math.round(ms / 1000);
+  return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
+}
+
 export const MEDIA_STATUS_LABELS = {
   want: "想看",
   watching: "在看",
