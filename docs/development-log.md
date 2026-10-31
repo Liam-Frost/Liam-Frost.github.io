@@ -68,6 +68,11 @@
 - During browser verification the web dev server lacked a `/uploads` proxy, and the editor's two switches shared one line; both fixed.
 - The model ran Claude Code review for Stage 7, fixed five findings, and created Stage 7 PR #7: https://github.com/Liam-Frost/Liam-Frost.github.io/pull/7
 
+- PR #7 was merged; the model started Stage 8 (projects). The user placed the home-page projects section between the introduction and the photos and accepted the other defaults.
+- The usage limit interrupted the stage after the back end and the admin list page; that part was committed as a WIP commit, then the editor page, web pages, verification and docs followed.
+- `react-markdown` grew the web bundle from 428 kB to 600 kB, so the project detail page is lazy-loaded (main bundle back to 437 kB).
+- The model ran Claude Code review for Stage 8, fixed five findings (including lost updates from concurrent project image changes), and created Stage 8 PR #8: https://github.com/Liam-Frost/Liam-Frost.github.io/pull/8
+
 ## Notes
 
 - A direct Windows directory rename of `src` failed with `Permission denied`; the migration continued by moving source subdirectories individually.

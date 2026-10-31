@@ -49,6 +49,9 @@ Migrations are committed under `apps/api/prisma/migrations`:
 
 - `20261031064710_init`: the original `Photo` table and `Visibility` enum.
 - `20261031064800_photo_uploads`: `ImageStorage` enum and the `storage`, `storageKey`, `variants` columns for uploaded photos.
+- `20261031090000_projects`: `ProjectStatus` enum and the `Project` table (localized JSON texts, cover/gallery image JSON, tech stack, links, status, months, featured, visibility, order).
+
+The `photo_uploads` and `projects` SQL was written by hand (`prisma migrate diff` printed nothing in the development environment) and verified by applying all migrations to a fresh PostgreSQL and exercising the tables end to end.
 
 Development: `npm run db:migrate` (creates/applies migrations, regenerates the client, seeds). Production: `npm run db:deploy` (applies committed migrations only).
 

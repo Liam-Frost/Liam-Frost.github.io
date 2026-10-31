@@ -73,6 +73,10 @@ export default function Header({ theme, onCycleTheme }: Props) {
           {t("nav.home")}
         </NavLink>
 
+        <NavLink to="/projects" className={({ isActive }) => cx("navLink", isActive && "navLinkActive")}>
+          {t("nav.projects")}
+        </NavLink>
+
         <NavLink to="/portfolio" className={({ isActive }) => cx("navLink", isActive && "navLinkActive")}>
           {t("nav.portfolio")}
         </NavLink>

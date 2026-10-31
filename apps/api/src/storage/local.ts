@@ -4,8 +4,11 @@ import { join, resolve, sep } from "node:path";
 /** Public URL prefix for files under UPLOAD_DIR. */
 export const UPLOADS_PREFIX = "/uploads";
 
-/** Keys look like "photos/<id>": lowercase letters, digits and '-' only, so they can never escape the root. */
-const KEY = /^photos\/[a-z0-9][a-z0-9-]{0,80}$/;
+/**
+ * Keys: "photos/<id>", "projects/<projectId>" (a project's folder) or "projects/<projectId>/<imageId>".
+ * Lowercase letters, digits and '-' only, so they can never escape the root.
+ */
+const KEY = /^(photos\/[a-z0-9][a-z0-9-]{0,80}|projects\/[a-z0-9][a-z0-9-]{0,80}(\/[a-z0-9][a-z0-9-]{0,40})?)$/;
 /** Served file names: generated sizes only ("1280.webp"). Originals are stored but never served. */
 const PUBLIC_FILE = /^\d{1,5}\.webp$/;
 
