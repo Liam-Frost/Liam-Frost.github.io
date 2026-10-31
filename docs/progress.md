@@ -104,6 +104,7 @@ Status: implementation complete; Claude Code review complete and fixes applied.
 - Replaced the hand-written Prisma delegate shims in `photos.ts` / `seed.ts` with the generated types. This exposed a seed bug: nullable Json fields were written as `null`, which Prisma rejects; the seed now uses `Prisma.DbNull`.
 - Ran `npm audit`; result: 0 vulnerabilities.
 - Verified the real PostgreSQL path for the first time (no Docker; used `prisma dev` local Prisma Postgres): `prisma db push`, `npm run db:seed` (40 photos), API reads from the database (an edited row is returned, hiding a photo drops the public list to 39), missing photo returns 404, refused connection falls back to seed data in ~150 ms, unreachable host falls back after ~5 s.
+- Ran a second Claude Code review for the Prisma upgrade and fixed its findings: honor `?schema=` in `DATABASE_URL`, log idle pool errors, stop regenerating the client in `start`, share the `DATABASE_URL` check, document the SSL behavior change. Verified a non-`public` schema end to end with `prisma dev`.
 
 ### Upcoming
 

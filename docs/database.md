@@ -32,7 +32,10 @@ Copy it into `apps/api/.env` for local API and seed commands. The API and seed s
 - Prisma ORM 7.10.1 with the `prisma-client` generator. The client is generated into `apps/api/src/generated/prisma` (git-ignored) and imported from `../generated/prisma/client`.
 - `apps/api/prisma.config.ts` holds the schema path, migrations path, seed command, and the datasource URL (read from `DATABASE_URL` via `dotenv`). The schema no longer contains `url`.
 - The client connects through the `@prisma/adapter-pg` driver adapter (`node-pg`) with a 5s connect timeout, matching Prisma 6, so an unreachable database falls back to seed data quickly.
-- `dev`, `start`, `build`, and `typecheck` run `prisma generate` first, so a fresh checkout or CI does not need a separate generate step and does not need `DATABASE_URL`.
+- `dev`, `build`, and `typecheck` run `prisma generate` first, so a fresh checkout or CI does not need a separate generate step and does not need `DATABASE_URL`. `start` does not regenerate; run `build` (or `db:generate`) before it.
+- The `?schema=` parameter in `DATABASE_URL` is read by the API and passed to the adapter (node-pg itself ignores it).
+- SSL: node-pg verifies server certificates (Prisma 6 ignored invalid ones). A database with `sslmode=require` and a self-signed certificate fails with `P1010`; install the CA via `NODE_EXTRA_CA_CERTS` rather than disabling verification. The planned VPS setup runs Postgres in the same Compose network without SSL.
+- Idle connection errors from the pool are logged as warnings.
 - Prisma 7 no longer seeds or generates automatically after `migrate dev` / `db push`; the `db:*` scripts below run those steps explicitly.
 - Nullable Json columns (`location`, `description`) must be written with `Prisma.DbNull`, not `null`.
 
