@@ -16,12 +16,30 @@ export default function MediaDetail({ id, onClose }: { id: string; onClose: () =
 
   useScrollLock(true);
 
+  const panelRef = useRef<HTMLElement | null>(null);
+
   useEffect(() => {
     closeRef.current?.focus();
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         event.preventDefault();
         onClose();
+        return;
+      }
+      // Keep Tab inside the panel: the page behind is covered and scroll-locked.
+      if (event.key === "Tab" && panelRef.current) {
+        const focusable = [...panelRef.current.querySelectorAll<HTMLElement>("a[href], button:not([disabled])")];
+        if (!focusable.length) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        const active = document.activeElement;
+        if (event.shiftKey && (active === first || !panelRef.current.contains(active))) {
+          event.preventDefault();
+          last.focus();
+        } else if (!event.shiftKey && (active === last || !panelRef.current.contains(active))) {
+          event.preventDefault();
+          first.focus();
+        }
       }
     };
     window.addEventListener("keydown", onKeyDown);
@@ -36,7 +54,7 @@ export default function MediaDetail({ id, onClose }: { id: string; onClose: () =
 
   return (
     <div className="backdrop mediaDrawerBackdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
-      <aside className="card mediaDrawer" role="dialog" aria-modal="true" aria-labelledby="media-detail-title">
+      <aside ref={panelRef} className="card mediaDrawer" role="dialog" aria-modal="true" aria-labelledby="media-detail-title">
         <div className="mediaDrawerTop">
           <button ref={closeRef} className="btn btnGhost btnSmall" type="button" onClick={onClose}>
             {t("collection.close")}

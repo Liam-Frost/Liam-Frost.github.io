@@ -2626,6 +2626,8 @@ html[data-theme="light"] .aboutSection {
 .mediaDrawerBackdrop {
   place-items: stretch end;
   padding: 0;
+  /* Above the Spotify dock (120), which would otherwise cover the panel's corner. */
+  z-index: 130;
 }
 
 .mediaDrawer {

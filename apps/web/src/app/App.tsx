@@ -6,7 +6,6 @@ import BackgroundFX from "../components/BackgroundFX";
 import Footer from "../components/Footer";
 import Header from "../components/Header";
 import SpotifyDock from "../components/SpotifyDock";
-import CollectionPage from "../pages/Collection";
 import HomePage from "../pages/Home";
 import NotFoundPage from "../pages/NotFound";
 import PortfolioPage from "../pages/Portfolio";
@@ -16,6 +15,8 @@ import { useTheme } from "../lib/useTheme";
 
 // The Markdown renderer is only needed on project pages; keep it out of the main bundle.
 const ProjectDetailPage = lazy(() => import("../pages/ProjectDetail"));
+// Only /collection needs the collection page and its detail panel.
+const CollectionPage = lazy(() => import("../pages/Collection"));
 
 export default function App() {
   const { t } = useI18n();
@@ -41,7 +42,14 @@ export default function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/portfolio" element={<PortfolioPage />} />
           <Route path="/projects" element={<ProjectsPage />} />
-          <Route path="/collection" element={<CollectionPage />} />
+          <Route
+            path="/collection"
+            element={
+              <Suspense fallback={null}>
+                <CollectionPage />
+              </Suspense>
+            }
+          />
           <Route
             path="/projects/:slug"
             element={

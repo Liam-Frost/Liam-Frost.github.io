@@ -231,9 +231,22 @@ Status: implementation complete; Claude Code review complete and fixes applied.
 - Verified in the browser against a temporary PostgreSQL with live Bangumi data: searched and imported two anime (titles, year, credits, genres, 12 / 28 episodes, poster), edited status, rating, progress and reviews in two languages, featured; status filter, display settings, manual entry, duplicate import (409), deletion; phone width. The "TMDB not configured" path was checked. With the user's TMDB read access token, real searches and imports were checked for a film, a series and an anime film (titles in all five languages where TMDB has them, localized genres, directors, 20 episodes, 780x1170 posters); TMDB's zh-TW genre names turned out to be Simplified and are now left out.
 - Ran Claude Code review for Stage 11 (`docs/reviews/2026-10-31-claude-code-stage-11.md`) and fixed six findings.
 
+### Stage 12: Public Collection Page
+
+Status: implementation complete; Claude Code review complete and fixes applied.
+
+- Public API: `GET /api/collection` (shown kinds and entry summaries, without synopsis and review) and `GET /api/collection/:id` (synopsis, review, source link); both apply the visibility rules; an unreachable database gives an empty collection or 503.
+- `/collection` page: kind tabs with counts, status buttons (in the URL), genre / year / minimum-rating filters, poster and list views (remembered per browser), detail panel addressed by `?item=` (Back and Esc close it; Tab stays inside), TMDB / Bangumi attribution; lazy-loaded.
+- Home "最近在看" section after the projects and before the featured photos: up to six finished or ongoing entries, newest first, hidden when empty.
+- Nav link 收藏 and about 40 strings in each of the five languages.
+- TMDB imports use the original title for the work's own language (found in the browser: Breaking Bad had no English title).
+- Tests: 103 passed.
+- Verified in the browser with a temporary PostgreSQL and real TMDB / Bangumi imports (films, series, anime, a hidden entry, a "want" entry): home section, collection page, tabs, filters, list view, detail panel, Esc / Back, English, phone width (two columns, full-screen panel, no horizontal scroll).
+- Ran Claude Code review for Stage 12 (`docs/reviews/2026-10-31-claude-code-stage-12.md`) and fixed four findings.
+
 ### Upcoming
 
-- Review and merge the Stage 11 PR, then Stage 12 (public collection page).
+- Review and merge the Stage 12 PR, then Stage 13 (music collection and player; needs a Spotify developer app).
 - Stage 10: VPS deployment and CI/CD (needs the VPS provider/OS/specs, DNS manager and domain from the user).
 - Stage 5: back-end foundation and admin auth refinement (`ADMIN_PATH`, IP allowlist, CSRF, Zod, tests). See `docs/plan-admin-projects-deploy.md`.
 
