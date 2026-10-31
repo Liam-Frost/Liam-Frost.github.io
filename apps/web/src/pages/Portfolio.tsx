@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router";
 
 import PhotoCard from "../components/PhotoCard";
 import PhotoModal from "../components/PhotoModal";
@@ -10,6 +10,10 @@ import { cx } from "../lib/cx";
 import { useI18n, type Lang } from "../lib/i18n";
 
 type SortMode = "new" | "old";
+
+function categoryKey(photo: Photo) {
+  return getPhotoField(photo.category, "en");
+}
 
 function sortByDate(mode: SortMode, list: Photo[], lang: Lang) {
   const factor = mode === "new" ? -1 : 1;
@@ -31,10 +35,15 @@ export default function PortfolioPage() {
 
   const ALL = "__all__";
 
+  // Filter by a language-independent key so the selection survives a language switch.
   const categories = useMemo(() => {
-    const set = new Set(photos.map((p) => getPhotoField(p.category, lang)));
-    return [ALL, ...Array.from(set).sort((a, b) => a.localeCompare(b))];
-  }, [photos, lang]);
+    const labels = new Map<string, string>();
+    for (const p of photos) labels.set(categoryKey(p), getPhotoField(p.category, lang));
+    const sorted = Array.from(labels, ([key, label]) => ({ key, label })).sort((a, b) =>
+      a.label.localeCompare(b.label)
+    );
+    return [{ key: ALL, label: t("skills.filterAll") }, ...sorted];
+  }, [photos, lang, t]);
 
   const [category, setCategory] = useState<string>(ALL);
   const [query, setQuery] = useState<string>("");
@@ -48,8 +57,8 @@ export default function PortfolioPage() {
     return sortByDate(
       sort,
       photos.filter((p) => {
+        if (category !== ALL && categoryKey(p) !== category) return false;
         const cat = getPhotoField(p.category, lang);
-        if (category !== ALL && cat !== category) return false;
         if (!q) return true;
 
         const haystack = [
@@ -124,12 +133,12 @@ export default function PortfolioPage() {
             <div className="filters" aria-label="Categories">
               {categories.map((c) => (
                 <button
-                  key={c}
+                  key={c.key}
                   type="button"
-                  className={cx("btn", c === category ? "btnSoft" : "btnGhost")}
-                  onClick={() => setCategory(c)}
+                  className={cx("btn", c.key === category ? "btnSoft" : "btnGhost")}
+                  onClick={() => setCategory(c.key)}
                 >
-                  {c === ALL ? t("skills.filterAll") : c}
+                  {c.label}
                 </button>
               ))}
             </div>

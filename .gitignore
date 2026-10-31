@@ -15,6 +15,9 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
+# generated Prisma client
+apps/api/src/generated
+
 # runtime uploads
 uploads
 apps/api/uploads
