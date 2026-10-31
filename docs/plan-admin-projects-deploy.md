@@ -93,7 +93,7 @@
 
 完成标准:本地可以在 `http://localhost:5174<ADMIN_PATH>` 登录和登出;改 `ADMIN_PATH` 后旧地址不可用、新地址可用;前台不受影响。
 
-### Stage 7:照片管理与上传
+### Stage 7:照片管理与上传(已完成)
 
 - Prisma:`Photo` 新增 `storageDriver`、`storageKey`、`variants`(JSON,宽度 → 地址)、占位图字段;生成迁移。
 - 上传接口 `POST /api/admin/uploads`:Sharp 校验格式白名单与像素上限,按 EXIF 自动旋转,生成多尺寸 WebP(例如长边 640 / 1280 / 2048),读取宽高与 EXIF(相机、镜头、曝光参数)用于预填表单。

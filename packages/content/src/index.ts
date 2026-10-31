@@ -1,2 +1,2 @@
-export { getPhotoField, getPhotoTags, photos, type Photo } from "./photos";
+export { getPhotoField, getPhotoTags, photos, type Photo, type PhotoVariant } from "./photos";
 export type { Lang, LocalizedString } from "./types";

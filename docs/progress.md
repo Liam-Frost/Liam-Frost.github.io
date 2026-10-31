@@ -150,8 +150,27 @@ Status: implementation complete; Claude Code review complete and fixes applied.
 
 ### Upcoming
 
-- Review and merge Stage 6 PR #6: https://github.com/Liam-Frost/Liam-Frost.github.io/pull/6
-- Stage 7: photo management and upload pipeline.
+- Stage 6 PR #6 merged on 2026-10-31.
+
+### Stage 7: Photo Management and Upload Pipeline
+
+Status: implementation complete; awaiting Claude Code review.
+
+- Prisma: `ImageStorage` enum, `storage`, `storageKey`, `variants` on `Photo`. Committed the first migrations (`init`, `photo_uploads`) and added `npm run db:deploy`.
+- `PhotoRepository` interface with a Prisma implementation (in-memory one for tests); replaced `db/photos.ts` and the unused `storage/config.ts` / `storage/images.ts`.
+- Upload pipeline (`sharp` 0.35, `exif-reader`, `@fastify/multipart`): format and pixel limits, EXIF auto-rotation, WebP sizes 640/1280/2048/3072 without upscaling, metadata stripped from outputs, private original kept, EXIF suggestions for camera/lens/settings/date.
+- Local storage under `UPLOAD_DIR`; `/uploads/photos/<id>/<n>.webp` served with an immutable cache, nothing else reachable.
+- Admin API: list, get, upload (creates a hidden photo), patch (Zod-validated localized fields), delete (removes files), complete-list reorder (409 when stale).
+- Public API: database photos are public-only, `GET /api/photos/:id` no longer returns hidden photos (it did before), no seed fallback for an empty database, `featured` and `variants` in the response.
+- Admin UI: Photos page with upload (button or drop, sequential with progress), filters, grid with Flickr thumbnails, drag-and-drop and arrow reordering, delete confirmation; editor dialog with five language tabs, tags per language, public/featured switches. Ported Dialog and Switch from the portal.
+- Web: uploaded photos use their generated sizes (`srcset`, 1280 px lightbox medium, viewport-sized full image); the home "featured" section now follows the `featured` flag (seed content marks the original ten); dev server proxies `/uploads`.
+- Tests: 47 passed (12 new for photos).
+- Verified end to end against a local Prisma Postgres (`prisma dev`) with seeded data and a throwaway admin password: 40 seed photos listed with Flickr thumbnails; a 3000x2000 upload produced 640/1280/2048/3000 sizes and a hidden photo; editing in two languages, publishing and featuring saved correctly; the public portfolio, home featured section and lightbox (1280 medium then 3000 full) showed it; arrow and drag-and-drop reordering persisted; delete removed the row and files. Mobile width without horizontal scroll.
+
+### Upcoming
+
+- Claude Code review of Stage 7, then PR.
+- Stage 8: projects module.
 - Stage 5: back-end foundation and admin auth refinement (`ADMIN_PATH`, IP allowlist, CSRF, Zod, tests). See `docs/plan-admin-projects-deploy.md`.
 
 ## Future Stages

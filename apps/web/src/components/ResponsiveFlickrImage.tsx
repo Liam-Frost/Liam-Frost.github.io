@@ -1,3 +1,4 @@
+import type { PhotoVariant } from "@liam-frost/content";
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 
 import { buildFlickrStaticUrl, capThumbSuffix, longestEdgeBySuffix, parseFlickrStaticUrl, pickBestSuffixForEdge, type FlickrSizeSuffix } from "../images/flickr";
@@ -28,6 +29,9 @@ type Props = {
 
   // For lightbox only: contain (default) or cover.
   fit?: "contain" | "cover";
+
+  // Generated sizes of an uploaded (non-Flickr) photo, smallest first.
+  variants?: PhotoVariant[];
 };
 
 type ThumbSuffix = "n" | "z" | "c" | "b";
@@ -72,6 +76,23 @@ function cssAspectRatio(w: number, h: number) {
   const sw = safeNumber(w, 1);
   const sh = safeNumber(h, 1);
   return `${sw} / ${sh}`;
+}
+
+function longestEdge(v: PhotoVariant) {
+  return Math.max(v.width, v.height);
+}
+
+/** Generated sizes whose longest edge fits within `edge`; always at least the smallest one. */
+function sizesUpTo(sized: PhotoVariant[], edge: number) {
+  const fit = sized.filter((v) => longestEdge(v) <= edge);
+  return fit.length ? fit : sized.slice(0, 1);
+}
+
+/** Lightbox medium for uploaded photos: matches Flickr's "b" role but uses the 1280px size. */
+const SIZED_MEDIUM_EDGE = 1280;
+
+function last<T>(list: T[]) {
+  return list[list.length - 1];
 }
 
 function useImageLoadedFlag(src: string) {
@@ -121,7 +142,8 @@ export default function ResponsiveFlickrImage({
   priority,
   sizes,
   onLoadNaturalSize,
-  fit = "contain"
+  fit = "contain",
+  variants
 }: Props) {
   const { config, tier } = useQuality();
 
@@ -131,6 +153,8 @@ export default function ResponsiveFlickrImage({
 
   const parsed = useMemo(() => parseFlickrStaticUrl(baseUrl), [baseUrl]);
   const isFlickr = Boolean(parsed);
+  // Uploaded photos come with generated sizes instead of Flickr URL suffixes.
+  const sized = !isFlickr && variants && variants.length > 0 ? variants : null;
 
   // --- GRID ---
   const maxThumbSuffix: ThumbSuffix = useMemo(() => {
@@ -166,18 +190,24 @@ export default function ResponsiveFlickrImage({
   const thumbSuffix = thumbFallbackList[Math.min(thumbFallbackIndex, thumbFallbackList.length - 1)];
 
   const gridSrc = useMemo(() => {
+    if (sized) return last(sizesUpTo(sized, longestEdgeBySuffix[maxThumbSuffix])).url;
     if (!isFlickr) return baseUrl;
     return buildFlickrStaticUrl(baseUrl, thumbSuffix);
-  }, [baseUrl, isFlickr, thumbSuffix]);
+  }, [baseUrl, isFlickr, thumbSuffix, sized, maxThumbSuffix]);
 
   const gridSrcSet = useMemo(() => {
+    if (sized) {
+      return sizesUpTo(sized, longestEdgeBySuffix[maxThumbSuffix])
+        .map((v) => `${v.url} ${v.width}w`)
+        .join(", ");
+    }
     if (!isFlickr) return undefined;
     if (thumbCandidates.length === 0) return undefined;
 
     return thumbCandidates
       .map((c) => `${buildFlickrStaticUrl(baseUrl, c.suffix)} ${c.width}w`)
       .join(", ");
-  }, [isFlickr, thumbCandidates, baseUrl]);
+  }, [isFlickr, thumbCandidates, baseUrl, sized, maxThumbSuffix]);
 
   // --- LIGHTBOX ---
   const [showFull, setShowFull] = useState(false);
@@ -209,9 +239,10 @@ export default function ResponsiveFlickrImage({
   }, [baseUrl, variant, mediumSuffix]);
 
   const lightboxMediumSrc = useMemo(() => {
+    if (sized) return last(sizesUpTo(sized, SIZED_MEDIUM_EDGE)).url;
     if (!isFlickr) return baseUrl;
     return buildFlickrStaticUrl(baseUrl, lightboxMediumSuffix);
-  }, [isFlickr, baseUrl, lightboxMediumSuffix]);
+  }, [isFlickr, baseUrl, lightboxMediumSuffix, sized]);
 
   const fullSuffix: FlickrSizeSuffix = useMemo(() => {
     const desired = getLightboxDesiredFullEdge();
@@ -237,9 +268,13 @@ export default function ResponsiveFlickrImage({
   const fullSuffixActive = fullFallbackChain[Math.min(fullFallbackIndex, fullFallbackChain.length - 1)] ?? "b";
 
   const fullSrc = useMemo(() => {
+    if (sized) {
+      const desired = getLightboxDesiredFullEdge();
+      return (sized.find((v) => longestEdge(v) >= desired) ?? last(sized)).url;
+    }
     if (!isFlickr) return baseUrl;
     return buildFlickrStaticUrl(baseUrl, fullSuffixActive);
-  }, [isFlickr, baseUrl, fullSuffixActive]);
+  }, [isFlickr, baseUrl, fullSuffixActive, sized]);
 
   const { loaded: mediumLoaded, setLoaded: setMediumLoaded } = useImageLoadedFlag(lightboxMediumSrc);
   const { loaded: fullLoaded, setLoaded: setFullLoaded } = useImageLoadedFlag(fullSrc);
@@ -247,8 +282,10 @@ export default function ResponsiveFlickrImage({
   // Start loading full once medium is visible enough.
   useEffect(() => {
     if (variant !== "lightbox") return;
-    if (!isFlickr) return;
+    if (!isFlickr && !sized) return;
     if (fullAttemptedRef.current) return;
+    // Small uploads: the medium already is the largest size.
+    if (sized && fullSrc === lightboxMediumSrc) return;
 
     // Don’t fetch full until the medium at least starts loading.
     // (Avoids double-download races.)
@@ -260,11 +297,13 @@ export default function ResponsiveFlickrImage({
         setShowFull(true);
       })
       .catch(() => {
+        // Uploaded photos have no smaller fallback URL: keep the medium instead of retrying forever.
+        if (sized) return;
         // On failure, try next fallback, without affecting global tier.
         setFullFallbackIndex((i) => Math.min(i + 1, fullFallbackChain.length - 1));
         fullAttemptedRef.current = false;
       });
-  }, [variant, isFlickr, fullSrc, fullFallbackChain.length]);
+  }, [variant, isFlickr, sized, fullSrc, lightboxMediumSrc, fullFallbackChain.length]);
 
   const gridImgStyle: CSSProperties = useMemo(
     () => ({
@@ -347,8 +386,9 @@ export default function ResponsiveFlickrImage({
             }}
             onLoad={() => setFullLoaded(true)}
             onError={() => {
-              setFullFallbackIndex((i) => Math.min(i + 1, fullFallbackChain.length - 1));
               setShowFull(false);
+              if (sized) return;
+              setFullFallbackIndex((i) => Math.min(i + 1, fullFallbackChain.length - 1));
               fullAttemptedRef.current = false;
             }}
           />

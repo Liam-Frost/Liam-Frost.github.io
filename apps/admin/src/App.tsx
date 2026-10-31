@@ -7,6 +7,7 @@ import { sessionKey, useSession } from "./hooks/useSession";
 import { ApiError } from "./lib/api";
 import { ADMIN_BASE } from "./lib/adminBase";
 import { CenteredCard, LoginPage, NotConfiguredPage } from "./pages/LoginPage";
+import { PhotosPage } from "./pages/PhotosPage";
 import { ComingSoonPage, NotFoundPage, OverviewPage, SectionNotFound } from "./pages/OverviewPage";
 
 // Any 401 (session expired or revoked elsewhere) sends the app back to the login screen.
@@ -65,7 +66,7 @@ function SessionGate() {
     <Routes>
       <Route element={<AdminLayout user={session.user} />}>
         <Route index element={<OverviewPage />} />
-        <Route path="photos" element={<ComingSoonPage title="照片" />} />
+        <Route path="photos" element={<PhotosPage />} />
         <Route path="projects" element={<ComingSoonPage title="项目" />} />
         <Route path="*" element={<SectionNotFound />} />
       </Route>

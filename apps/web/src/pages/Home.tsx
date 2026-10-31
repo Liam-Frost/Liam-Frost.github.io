@@ -28,25 +28,8 @@ export default function HomePage() {
   const { photos } = usePhotos();
 
   // Featured photo IDs for homepage
-  const FEATURED_IDS = [
-    "tokyo-tower",                            // 东京之塔
-    "glico-night-icon",                       // 奔跑
-    "tokyo-night-anchor",                     // 东京印象
-    "rome-alley-dome-006",                    // 穹顶之间
-    "beijing-temple-003",                     // 敬天
-    "crowd-and-lights",                       // 大阪印象
-    "hanabi-scatter",                         // 散落
-    "jellyfish",                              // 水母
-    "vancouver-locarno-pier-2025",            // 洛迦诺码头
-    "shibuya-sky-arena"                       // 东京折叠
-  ];
-
-  const featured = useMemo(() => {
-    const photoMap = new Map(photos.map(p => [p.id, p]));
-    return FEATURED_IDS
-      .map(id => photoMap.get(id))
-      .filter((p): p is Photo => p !== undefined);
-  }, [photos]);
+  // Marked in the admin ("首页精选"); the seed content marks the original selection.
+  const featured = useMemo(() => photos.filter((p) => p.featured), [photos]);
 
   const navigate = useNavigate();
 
