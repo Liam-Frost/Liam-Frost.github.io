@@ -98,7 +98,7 @@ export function buildServer({
   registerAdminApp(app, auth, adminDistDir);
   registerAdminPhotoRoutes(app, auth, photos, store, config.uploads.maxBytes);
   registerPhotoRoutes(app, photos, store);
-  registerUploadRoutes(app, store);
+  registerUploadRoutes(app, store, photos, auth);
   registerSpotifyRoutes(app);
 
   return app;

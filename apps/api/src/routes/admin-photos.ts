@@ -67,8 +67,11 @@ export function registerAdminPhotoRoutes(
     let input: Buffer;
     try {
       input = await file.toBuffer();
-    } catch {
-      throw new HttpError(413, "FILE_TOO_LARGE", `Images must be at most ${Math.round(maxUploadBytes / 1024 / 1024)} MB`);
+    } catch (error) {
+      if ((error as { code?: string }).code === "FST_REQ_FILE_TOO_LARGE") {
+        throw new HttpError(413, "FILE_TOO_LARGE", `Images must be at most ${Math.round(maxUploadBytes / 1024 / 1024)} MB`);
+      }
+      throw badRequest("The upload was interrupted; try again", "UPLOAD_INTERRUPTED");
     }
 
     let image;
