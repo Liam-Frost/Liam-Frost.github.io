@@ -54,6 +54,22 @@ Status: implementation complete; Claude Code review complete and fixes applied.
 - Re-ran `npm run db:generate`, `npm run typecheck`, `npm run build`, `npm audit --audit-level=high`, and Fastify seed-fallback route checks after review fixes.
 - Created Stage 2 PR #2: https://github.com/Liam-Frost/Liam-Frost.github.io/pull/2
 
+### Music Player and Database Error Message
+
+Status: implementation complete; Claude Code review complete and fixes applied.
+
+- Database connection errors answer `503 DATABASE_UNAVAILABLE`; the admin shows "数据库连接失败" with setup steps instead of a bare 500.
+- User decision: option B (keep the site's card, configure the playlist in the admin).
+- `Setting` model (migration `20261031120000_settings`) and `SettingsRepository` (Prisma, in-memory).
+- Playlist sync from Spotify's embed page with oEmbed covers (cached, 20 s budget per sync), failures keep the last good playlist; 6-hour refresh, 10-minute retry backoff per playlist; the first visitor waits at most 8 s.
+- Routes: `GET /api/spotify/player`, `GET/PUT /api/admin/spotify`, `POST /api/admin/spotify/sync`. Removed the broken `/api/spotify?url=` route and `spotify-url-info`.
+- The API honours `HTTPS_PROXY` (`http.setGlobalProxyFromEnv`); found because Node's fetch bypassed the local proxy that curl used.
+- Admin "音乐" page: settings form and playlist status with the synced track list.
+- Web player: plays the playlist (shuffled per round or in order) and loops; previous/next, media keys; hiding keeps the music playing (pulsing button); the two-second track rotation is gone. Static builds fall back to `site.ts` tracks.
+- Tests: 74 passed.
+- Verified with a temporary local PostgreSQL and a throwaway admin account: the real City Pop Best playlist synced (100 tracks, about 13 s the first time and 1.5 s with cached covers); the site played a preview, skipped to the next track, advanced on its own at the end of a preview, kept playing when hidden; the admin rejected a non-playlist link, normalized a link with `?si=`, saved sequential order and volume 50 (the site's player followed), and "立即同步" reported 100 tracks.
+- Ran Claude Code review (`docs/reviews/2026-10-31-claude-code-music-player.md`) and fixed ten findings.
+
 ### Upcoming
 
 ### Stage 3: Admin Authentication Foundation
@@ -191,7 +207,7 @@ Status: implementation complete; Claude Code review complete and fixes applied.
 
 ### Upcoming
 
-- Review and merge Stage 8 PR #8: https://github.com/Liam-Frost/Liam-Frost.github.io/pull/8
+- Review and merge the music player PR.
 - Stage 9: full local run with Docker Compose.
 - Stage 5: back-end foundation and admin auth refinement (`ADMIN_PATH`, IP allowlist, CSRF, Zod, tests). See `docs/plan-admin-projects-deploy.md`.
 

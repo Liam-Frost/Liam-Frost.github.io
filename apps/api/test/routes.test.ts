@@ -33,17 +33,6 @@ describe("public routes", () => {
     expect(route.json()).toEqual({ error: { code: "NOT_FOUND", message: "Not found" } });
   });
 
-  it("validates the Spotify URL before fetching", async () => {
-    const app = await buildTestServer();
-    const missing = await app.inject("/api/spotify");
-    expect(missing.statusCode).toBe(400);
-    expect(missing.json().error.message).toBe("Missing Spotify URL");
-
-    const other = await app.inject(`/api/spotify?url=${encodeURIComponent("https://evil.example/track/1")}`);
-    expect(other.statusCode).toBe(400);
-    expect(other.json().error.message).toBe("Invalid Spotify URL");
-  });
-
   it("sets security headers on every response", async () => {
     const app = await buildTestServer();
     const response = await app.inject("/api/health");
