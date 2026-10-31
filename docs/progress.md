@@ -244,6 +244,12 @@ Status: implementation complete; Claude Code review complete and fixes applied.
 - Verified in the browser with a temporary PostgreSQL and real TMDB / Bangumi imports (films, series, anime, a hidden entry, a "want" entry): home section, collection page, tabs, filters, list view, detail panel, Esc / Back, English, phone width (two columns, full-screen panel, no horizontal scroll).
 - Ran Claude Code review for Stage 12 (`docs/reviews/2026-10-31-claude-code-stage-12.md`) and fixed four findings.
 
+### Stage 12 Follow-Up: Sample Data, Proxy, Romaji
+
+- `npm run db:seed:collection`: sample films, series and anime with ratings, reviews and statuses (13 entries imported into the user's local database for testing).
+- The user's collection searches failed with "无法连接": `HTTPS_PROXY` existed only in the Claude app's environment, not in the user's terminal. The proxy now goes in `apps/api/.env` (added for the user), and the error message says so. Verified both ways with real TMDB and Bangumi searches.
+- Anime titles in English and French now use the romaji name from AniList (new imports, and `npm run db:backfill:romaji` for existing ones; 4 entries updated in the user's database). Tests: 107 passed.
+
 ### Upcoming
 
 - Review and merge the Stage 12 PR, then Stage 13 (music collection and player; needs a Spotify developer app).

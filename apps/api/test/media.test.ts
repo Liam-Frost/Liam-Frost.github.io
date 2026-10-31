@@ -39,6 +39,7 @@ function fakeSources(overrides: Partial<MediaSources> = {}): MediaSources {
     ],
     details: async (_source, _kind, sourceId) => details({ sourceId }),
     download: async () => png,
+    romaji: async () => null,
     ...overrides
   };
 }
@@ -128,6 +129,17 @@ describe("admin collection", () => {
     expect(response.statusCode).toBe(201);
     expect(response.json().item.poster).toBeNull();
     expect(response.json().item.progress).toEqual({ watched: 0, total: 12 });
+  });
+
+  it("puts the romaji name of anime in English and French", async () => {
+    const { importEntry } = await setup(
+      fakeSources({
+        details: async (_s, _k, sourceId) => details({ sourceId, title: { zh: "孤独摇滚！", ja: "ぼっち・ざ・ろっく！" }, originalTitle: "ぼっち・ざ・ろっく！" }),
+        romaji: async (native) => (native === "ぼっち・ざ・ろっく！" ? "Bocchi the Rock!" : null)
+      })
+    );
+    const { item } = (await importEntry("tv:9", "anime")).json();
+    expect(item.title).toEqual({ zh: "孤独摇滚！", ja: "ぼっち・ざ・ろっく！", en: "Bocchi the Rock!", fr: "Bocchi the Rock!" });
   });
 
   it("only imports from source entries the server looks up", async () => {

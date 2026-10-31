@@ -32,6 +32,12 @@ export async function importMedia(
   const details = await sources.details(source, kind, sourceId);
   const id = randomUUID();
 
+  // Anime keeps its romaji name in English and French rather than falling back to Chinese.
+  if (kind === "anime" && details.originalTitle) {
+    const romaji = await sources.romaji(details.originalTitle, details.year);
+    if (romaji) details.title = { ...details.title, en: romaji, fr: romaji };
+  }
+
   let poster: StoredImage | null = null;
   if (details.posterUrl) {
     try {

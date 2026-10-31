@@ -153,6 +153,26 @@ describe("TMDB", () => {
   });
 });
 
+describe("AniList romaji", () => {
+  const anilist = (media: object | null) => fakeFetch(() => Response.json({ data: { Media: media } }));
+
+  it("returns the romaji title of the same work", async () => {
+    const sources = createMediaSources({ fetchImpl: anilist({ title: { romaji: "Bocchi the Rock!", native: "ぼっち・ざ・ろっく！" }, startDate: { year: 2022 } }) });
+    expect(await sources.romaji("ぼっち・ざ・ろっく!", null)).toBe("Bocchi the Rock!");
+  });
+
+  it("accepts a different spelling of the same year, and rejects other works", async () => {
+    const match = createMediaSources({ fetchImpl: anilist({ title: { romaji: "Sousou no Frieren", native: "葬送のフリーレン" }, startDate: { year: 2023 } }) });
+    expect(await match.romaji("葬送的芙莉莲", 2023)).toBe("Sousou no Frieren");
+    expect(await match.romaji("別の作品", 2010)).toBeNull();
+  });
+
+  it("gives up quietly when AniList fails", async () => {
+    expect(await createMediaSources({ fetchImpl: fakeFetch(() => new Response("", { status: 500 })) }).romaji("x", 2020)).toBeNull();
+    expect(await createMediaSources({ fetchImpl: anilist(null) }).romaji("x", 2020)).toBeNull();
+  });
+});
+
 describe("Bangumi", () => {
   it("searches anime with a user agent and maps subject details", async () => {
     const fetchImpl = fakeFetch((url, init) => {

@@ -48,6 +48,16 @@ React and related dependencies should be upgraded to the latest versions. This u
 
 ## Model Decisions
 
+### 2026-10-31: Romaji Titles for Anime From AniList
+
+Anime imports look up the Japanese original title on AniList (public GraphQL API, no key) and use the romaji name as the English and French title; the match must have the same title (ignoring width and punctuation) or a year within one. Lookup failures do not block an import. `npm run db:backfill:romaji` updates existing entries.
+
+Reason: the user prefers romaji over a Chinese fallback for English and French visitors; Bangumi has no romaji, and AniList has it for nearly every series.
+
+### 2026-10-31: Outgoing Proxy From apps/api/.env
+
+Node ignores the Windows system proxy. `HTTPS_PROXY` in `apps/api/.env` is loaded before startup enables Node's proxy support, and connection errors to TMDB / Bangumi now say to set it.
+
 ### 2026-10-31: One MediaItem Table for the Collection
 
 Films, series, anime and (later) music share one table with a `kind` column, localized fields as JSON (like photos and projects) and kind-specific data in `extra`. Imports are unique per source entry.
