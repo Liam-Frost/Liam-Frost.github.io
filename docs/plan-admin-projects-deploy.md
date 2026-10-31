@@ -83,7 +83,7 @@
 
 完成标准:`typecheck`、`test`、`build` 通过;未登录访问管理接口被拒绝。
 
-### Stage 6:`apps/admin` 骨架
+### Stage 6:`apps/admin` 骨架(已完成)
 
 - Vite 应用(`base: "./"`)、Tailwind 4 设计令牌、开发代理、`ADMIN_PATH` 开发插件。
 - 移植 UI 基础组件:`Dialog`、`Field`、`Select`、`Combobox`、`Toast`、`Tooltip`。

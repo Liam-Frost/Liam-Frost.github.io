@@ -16,14 +16,14 @@ export function passwordHash() {
 }
 
 /** Builds a server from env-style overrides, with admin auth configured unless overridden. */
-export async function buildTestServer(env: Record<string, string | undefined> = {}) {
+export async function buildTestServer(env: Record<string, string | undefined> = {}, adminDistDir = "/nonexistent-admin-dist") {
   const config = loadConfig({
     ADMIN_USERNAME: USERNAME,
     ADMIN_PASSWORD_HASH: await passwordHash(),
     ADMIN_SESSION_SECRET: SESSION_SECRET,
     ...env
   });
-  return buildServer({ config, logger: false });
+  return buildServer({ config, logger: false, adminDistDir });
 }
 
 export const csrf = { [ADMIN_REQUEST_HEADER]: "1" };

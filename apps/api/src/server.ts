@@ -3,23 +3,29 @@ import "dotenv/config";
 import cookie from "@fastify/cookie";
 import cors from "@fastify/cors";
 import Fastify from "fastify";
-import { pathToFileURL } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 import { AdminAuthService } from "./auth/service";
 import { ConfigError, loadConfig, type AppConfig } from "./config/env";
 import { hasDatabaseUrl } from "./db/client";
 import { HttpError, notFound } from "./lib/errors";
 import { registerAdminRoutes } from "./routes/admin";
+import { registerAdminApp } from "./routes/admin-app";
 import { registerPhotoRoutes } from "./routes/photos";
 import { registerSpotifyRoutes } from "./routes/spotify";
 import { readStorageConfig } from "./storage/config";
 
+/** apps/admin/dist relative to this file (apps/api/src). */
+const DEFAULT_ADMIN_DIST_DIR = fileURLToPath(new URL("../../admin/dist", import.meta.url));
+
 export type BuildServerOptions = {
   config?: AppConfig;
   logger?: boolean;
+  /** Where the admin app build lives; defaults to apps/admin/dist. */
+  adminDistDir?: string;
 };
 
-export function buildServer({ config = loadConfig(), logger = true }: BuildServerOptions = {}) {
+export function buildServer({ config = loadConfig(), logger = true, adminDistDir = DEFAULT_ADMIN_DIST_DIR }: BuildServerOptions = {}) {
   const app = Fastify({
     logger: logger && {
       // Never log credentials or session cookies.
@@ -67,6 +73,7 @@ export function buildServer({ config = loadConfig(), logger = true }: BuildServe
   }));
 
   registerAdminRoutes(app, auth);
+  registerAdminApp(app, auth, adminDistDir);
   registerPhotoRoutes(app);
   registerSpotifyRoutes(app);
 

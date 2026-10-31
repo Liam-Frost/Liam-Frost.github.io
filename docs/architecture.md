@@ -5,7 +5,8 @@
 The project is migrating to a full-stack personal site deployed on a VPS.
 
 ```txt
-apps/web        React + Vite front-end
+apps/web        React + Vite front-end (public site)
+apps/admin      React + Vite + Tailwind admin app
 apps/api        Fastify API service
 packages/content Shared content seed and content types
 packages/shared  Shared constants and API types
@@ -51,6 +52,16 @@ packages/shared     constants and API types shared by API, web and admin (admin 
 ```
 
 `buildServer({ config })` takes an explicit configuration, so tests build isolated servers without touching `process.env`. Every error response has the shape `{ "error": { "code", "message" } }`, and every response carries `nosniff`, `DENY` framing and a strict referrer policy.
+
+## Admin App
+
+`apps/admin` is a separate Vite app so the admin UI (Tailwind, TanStack Query, components adapted from `internal-developer-tools-portal`) never touches the public site's CSS or bundle.
+
+- **Mount path**: built with relative asset URLs (`base: "./"`). The API serves `apps/admin/dist` at `ADMIN_PATH` and injects `<base href="<ADMIN_PATH>/">` plus `<meta name="lf-admin-path">` into `index.html`, so changing `ADMIN_PATH` needs only a restart, and nested routes such as `/admin/photos` still resolve `./assets/...`.
+- **Not found by default**: the app reads the mount path from that `<meta>`; without it (any other URL) it renders a bare 404 and never calls the API.
+- **Hosting** (`apps/api/src/routes/admin-app.ts`): only `index.html`, Vite's hashed `assets/*` files and `favicon.svg` are served; any other file-like path is 404. The page gets a strict CSP and `no-store`; hashed assets are cached for a year. IPs outside `ADMIN_ALLOWED_IPS` get the unknown-route 404. Without a build, nothing is registered.
+- **Development**: `npm run dev:admin` (port 5174) proxies `/api` and `/uploads` to `127.0.0.1:8787` (override with `ADMIN_API_PROXY`) and injects the same `<meta>` from `ADMIN_PATH` in `apps/api/.env`.
+- **Session**: TanStack Query holds `/api/admin/session`; any 401 returns the app to the login screen; logout drops all other cached admin data.
 
 ## Content
 
