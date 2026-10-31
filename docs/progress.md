@@ -130,7 +130,7 @@ Status: implementation complete; Claude Code review complete and fixes applied.
 
 ### Upcoming
 
-- Review and merge the Stage 5 PR.
+- Review and merge Stage 5 PR #5: https://github.com/Liam-Frost/Liam-Frost.github.io/pull/5
 - Stage 6: `apps/admin` scaffold served at `ADMIN_PATH`.
 - Stage 5: back-end foundation and admin auth refinement (`ADMIN_PATH`, IP allowlist, CSRF, Zod, tests). See `docs/plan-admin-projects-deploy.md`.
 

@@ -54,6 +54,8 @@
 
 - PR #4 was merged; the model started Stage 5 (back-end foundation and admin auth hardening) on top of the Stage 3 auth code rather than rewriting it.
 - While testing, Git Bash rewrote `ADMIN_PATH=/studio` into a Windows path; the new config validation rejected it at startup. Documented in `admin.md`.
+- The PR #4 deploy run succeeded on Node 22 with Prisma 7 client generation in CI.
+- The model ran Claude Code review for Stage 5, fixed the `TRUST_PROXY` spoofing risk and three smaller findings, and created Stage 5 PR #5: https://github.com/Liam-Frost/Liam-Frost.github.io/pull/5
 
 ## Notes
 
