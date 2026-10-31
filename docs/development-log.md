@@ -57,6 +57,10 @@
 - The PR #4 deploy run succeeded on Node 22 with Prisma 7 client generation in CI.
 - The model ran Claude Code review for Stage 5, fixed the `TRUST_PROXY` spoofing risk and three smaller findings, and created Stage 5 PR #5: https://github.com/Liam-Frost/Liam-Frost.github.io/pull/5
 
+- PR #5 was merged; the model started Stage 6 (standalone `apps/admin`).
+- `@fastify/static` pulled in a `glob` version with moderate advisories, so the API serves the small, fixed set of admin build files itself.
+- Two bugs were found in the browser and fixed before commit: the admin dev proxy looping to itself (Vite `loadEnv` includes `process.env.PORT`) and logout not returning to the login screen (`queryClient.clear()` detaching the session observer).
+
 ## Notes
 
 - A direct Windows directory rename of `src` failed with `Permission denied`; the migration continued by moving source subdirectories individually.

@@ -36,6 +36,30 @@ React and related dependencies should be upgraded to the latest versions. This u
 
 ## Model Decisions
 
+### 2026-10-31: Serve the Admin Build With a Fixed File Allowlist
+
+The API serves `apps/admin/dist` itself instead of using `@fastify/static`: `index.html` (with the mount path injected), `assets/<hashed-name>` and `favicon.svg` only.
+
+Reason: `@fastify/static` 10 depends on a `glob` version with moderate advisories, and the admin build is a small fixed set of files. A strict file-name pattern (no `/`, no leading `.`) rules out path traversal without a general static server.
+
+### 2026-10-31: Relative Admin Build Plus Injected `<base>`
+
+The admin app is built with `base: "./"`, and the API injects `<base href="<ADMIN_PATH>/">` and `<meta name="lf-admin-path">`.
+
+Reason: one build works under any `ADMIN_PATH`, so changing the path needs only a restart; `<base>` keeps `./assets/...` correct on nested routes.
+
+### 2026-10-31: Use `@vitejs/plugin-react` for the Admin App
+
+The admin app uses `@vitejs/plugin-react` 6 rather than the SWC plugin used by `apps/web`.
+
+Reason: Vite 8 recommends it when no SWC plugins are needed. `apps/web` is left unchanged to keep this stage's scope to the admin app.
+
+### 2026-10-31: Port Admin UI Components When First Used
+
+Stage 6 ports only the components the scaffold uses (Field, Toast, button/card styles). Dialog, Select, Combobox, Switch and Tooltip from the portal come with the photo editor in Stage 7.
+
+Reason: avoids unused code in the scaffold; the components are ported as-is when needed.
+
 ### 2026-10-31: Validate Configuration at Startup With Zod
 
 The API parses all environment variables once in `config/env.ts` and refuses to start on invalid values, listing every problem.

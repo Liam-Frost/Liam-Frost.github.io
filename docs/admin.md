@@ -11,7 +11,7 @@ Current admin features:
 - API logout: `POST /api/admin/logout`.
 - Signed-in check: `GET /api/admin/me`.
 - Reusable backend guard: `AdminAuthService.requireAdmin` (Fastify `preHandler`).
-- Temporary front-end login page at `#/admin` in `apps/web`. It is replaced by the standalone `apps/admin` app in Stage 6.
+- Standalone admin app `apps/admin` (Stage 6), served by the API at `ADMIN_PATH`: login, layout with Overview / Photos / Projects navigation, logout. Photos and Projects pages are placeholders until Stages 7 and 8.
 
 Photo CRUD, uploads, project management, and media collection management come in later stages.
 
@@ -63,10 +63,29 @@ On Windows Git Bash, a value like `ADMIN_PATH=/studio` on the command line is re
 - **CSRF**: every non-GET `/api/admin/*` request must send `x-admin-request: 1` (`ADMIN_REQUEST_HEADER` in `@liam-frost/shared`). Cross-site forms cannot set custom headers, and cross-origin scripts need a CORS preflight that only configured origins pass.
 - **Rate limit**: 8 login attempts per IP per 15 minutes, then `429` with `Retry-After`.
 - **IP allowlist**: when `ADMIN_ALLOWED_IPS` is set, every `/api/admin/*` route answers other IPs with the exact same `404` as an unknown route, before any other check, so the admin API's existence is not revealed.
-- **Admin path**: `ADMIN_PATH` is never returned by public endpoints; only a signed-in admin gets it from `/api/admin/session`. The admin app itself is served at that path from Stage 6.
+- **Admin path**: `ADMIN_PATH` is never returned by public endpoints; only a signed-in admin gets it from `/api/admin/session`. The admin app is served only at that path; other URLs never receive the admin page or its path.
 - **Logs**: `authorization`, `cookie` and `set-cookie` headers are redacted.
 
 Rate-limit counters and revoked sessions live in process memory, so the API must run as a single instance.
+
+## Running the Admin App
+
+Development (API, web and admin dev servers):
+
+```bash
+npm run dev
+```
+
+Then open `http://localhost:5174/admin` (or your `ADMIN_PATH`). The admin dev server reads `ADMIN_PATH` from `apps/api/.env`.
+
+Served by the API (production-like):
+
+```bash
+npm run build:admin
+npm run dev:api
+```
+
+Then open `http://localhost:8787/admin`. The API registers the admin routes at startup only if `apps/admin/dist` exists; later rebuilds are picked up without a restart.
 
 ## Error Format
 
@@ -80,4 +99,4 @@ Codes used by admin routes: `VALIDATION`, `REQUEST_ERROR`, `CSRF`, `UNAUTHORIZED
 
 ## Tests
 
-`npm test` runs the API tests (Vitest + Fastify `inject`) covering configuration validation, admin path rules, IP lists, login, CSRF, rate limiting, session revocation, cookie tampering, the IP allowlist and `TRUST_PROXY`.
+`npm test` runs the API tests (Vitest + Fastify `inject`) covering configuration validation, admin path rules, IP lists, login, CSRF, rate limiting, session revocation, cookie tampering, the IP allowlist, `TRUST_PROXY`, and admin app hosting (path injection, asset allowlist, traversal attempts, IP hiding).

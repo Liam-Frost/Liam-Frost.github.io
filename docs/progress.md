@@ -130,8 +130,27 @@ Status: implementation complete; Claude Code review complete and fixes applied.
 
 ### Upcoming
 
-- Review and merge Stage 5 PR #5: https://github.com/Liam-Frost/Liam-Frost.github.io/pull/5
-- Stage 6: `apps/admin` scaffold served at `ADMIN_PATH`.
+- Stage 5 PR #5 merged on 2026-10-31.
+
+### Stage 6: Admin App Scaffold
+
+Status: implementation complete; awaiting Claude Code review.
+
+- Added `apps/admin`: React 19.3, React Router 8, TanStack Query 5, Tailwind 4, Vite 8 with `@vitejs/plugin-react`; design tokens and components (Field, Toast, buttons, cards) adapted from `internal-developer-tools-portal`.
+- Login page, "not configured" notice, layout with Overview / Photos / Projects navigation (sidebar on desktop, top bar on mobile), logout, placeholders for Photos (Stage 7) and Projects (Stage 8).
+- API client with CSRF header and the shared error shape; any 401 returns to the login screen; logout drops cached admin data.
+- API hosts the admin build at `ADMIN_PATH` (`routes/admin-app.ts`): injects `<base>` and the mount-path `<meta>`, serves only hashed assets and the favicon, strict CSP, IP allowlist 404. Implemented without `@fastify/static` (its `glob` dependency had moderate advisories).
+- Admin dev server injects the same `<meta>` from `ADMIN_PATH` and proxies `/api` and `/uploads` to the API.
+- Removed the temporary `apps/web` `#/admin` page, its route and CSS, and the web dependency on `@liam-frost/shared`.
+- Root `npm run dev` starts API, web and admin with `concurrently`; `npm run build` also builds the admin app; `.claude/launch.json` has an `admin` entry.
+- Added 5 API tests for admin hosting; `npm test`: 35 passed. `npm run typecheck`, `npm run build`, `npm audit` (0 vulnerabilities) passed.
+- Browser checks with a throwaway test password: dev server (root URL shows a bare 404, `/admin/photos` shows login, wrong password shows the server message, login, navigation, mobile width without horizontal scroll, logout returns to login) and the API-served build at `http://localhost:8787/admin/photos` (assets load on a nested route, no CSP errors, login works, favicon served, session cookie not visible to scripts).
+- Fixed during verification: the admin dev proxy read `PORT` from `loadEnv`, which includes the dev server's own `PORT`, so it proxied to itself; logout used `queryClient.clear()`, which detached the mounted session query so the UI stayed on the dashboard.
+
+### Upcoming
+
+- Claude Code review of Stage 6, then PR.
+- Stage 7: photo management and upload pipeline.
 - Stage 5: back-end foundation and admin auth refinement (`ADMIN_PATH`, IP allowlist, CSRF, Zod, tests). See `docs/plan-admin-projects-deploy.md`.
 
 ## Future Stages
