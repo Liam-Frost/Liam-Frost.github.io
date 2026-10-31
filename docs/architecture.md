@@ -8,6 +8,7 @@ The project is migrating to a full-stack personal site deployed on a VPS.
 apps/web        React + Vite front-end
 apps/api        Fastify API service
 packages/content Shared content seed and content types
+packages/shared  Shared constants and API types
 docs            Project documentation
 scripts         Maintenance helpers
 ```
@@ -29,10 +30,27 @@ The first-stage API uses Fastify and TypeScript. It currently provides:
 - `GET /api/admin/session`
 - `POST /api/admin/login`
 - `POST /api/admin/logout`
+- `GET /api/admin/me`
 
 The API has a PostgreSQL/Prisma foundation for photos. During migration, photo routes use the database when `DATABASE_URL` is configured and reachable, then fall back to shared seed data when the database is not configured or unavailable. This keeps the existing front-end stable while the admin/database workflow is built out.
 
-Admin authentication is in place with an HttpOnly cookie session and a reusable backend guard for future protected routes. CRUD, media metadata import, and upload processing are planned for later stages.
+Admin authentication is in place with an HttpOnly cookie session and a reusable backend guard for future protected routes. CRUD, media metadata import, and upload processing are planned for later stages. See `admin.md` for the security model.
+
+API structure:
+
+```txt
+apps/api/src
+  config/env.ts     Zod-validated environment (fails fast on bad config)
+  auth/             password hashing, signed sessions, AdminAuthService (CSRF, IP allowlist, rate limit, revocation)
+  lib/              HttpError, Zod input validation, IP/CIDR lists
+  routes/           admin, photos, spotify
+  db/               Prisma client and photo repository
+  generated/prisma  generated Prisma client (git-ignored)
+apps/api/test       Vitest + Fastify inject tests
+packages/shared     constants and API types shared by API, web and admin (admin path rules, CSRF header, error shape)
+```
+
+`buildServer({ config })` takes an explicit configuration, so tests build isolated servers without touching `process.env`. Every error response has the shape `{ "error": { "code", "message" } }`, and every response carries `nosniff`, `DENY` framing and a strict referrer policy.
 
 ## Content
 

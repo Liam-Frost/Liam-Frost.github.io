@@ -1,96 +1,44 @@
+import type { AdminSessionResponse } from "@liam-frost/shared";
 import type { FastifyInstance } from "fastify";
 
-import { getAdminAuthConfig } from "../auth/config";
-import { consumeLoginAttempt, resetLoginAttempts } from "../auth/login-rate-limit";
-import { verifyPassword } from "../auth/password";
-import { requireAdmin } from "../auth/require-admin";
-import { isSessionRevoked, revokeSession } from "../auth/revocation";
-import { createSessionToken, verifySessionToken } from "../auth/session";
+import type { AdminAuthService } from "../auth/service";
+import { loginSchema, parseInput } from "../lib/validation";
 
-type LoginBody = {
-  username?: unknown;
-  password?: unknown;
-};
+export function registerAdminRoutes(app: FastifyInstance, auth: AdminAuthService) {
+  // Every /api/admin route: hidden from IPs outside ADMIN_ALLOWED_IPS, and writes need the CSRF header.
+  // Runs in onRequest so the IP check happens before body parsing or any other validation.
+  // Uses the matched route pattern rather than the raw URL so encoding tricks cannot skip it.
+  app.addHook("onRequest", async (request) => {
+    if (!request.routeOptions.url?.startsWith("/api/admin/")) return;
+    auth.assertIpAllowed(request);
+    auth.assertCsrfHeader(request);
+  });
 
-function adminUser(username: string) {
-  return { username };
-}
-
-export function registerAdminRoutes(app: FastifyInstance) {
-  app.get("/api/admin/session", async (request) => {
-    const config = getAdminAuthConfig();
-    if (!config.configured) {
-      return { authenticated: false, configured: false };
-    }
-
-    const session = verifySessionToken(request.cookies[config.cookieName], config.sessionSecret);
-    const authenticated = Boolean(session && session.sub === config.username && !isSessionRevoked(session));
-
+  app.get("/api/admin/session", async (request, reply): Promise<AdminSessionResponse> => {
+    reply.header("cache-control", "no-store");
+    const user = auth.identify(request);
     return {
-      authenticated,
-      configured: true,
-      user: authenticated ? adminUser(config.username) : null
+      authenticated: Boolean(user),
+      configured: auth.configured,
+      user,
+      // The admin path is only revealed to a signed-in admin.
+      ...(user ? { adminPath: auth.config.path } : {})
     };
   });
 
-  app.post<{ Body: LoginBody }>(
-    "/api/admin/login",
-    async (request, reply) => {
-      const config = getAdminAuthConfig();
-      if (!config.configured) {
-        return reply.code(503).send({ message: "Admin authentication is not configured" });
-      }
-
-      const { username, password } = request.body ?? {};
-      if (typeof username !== "string" || typeof password !== "string") {
-        return reply.code(400).send({ message: "Username and password are required" });
-      }
-
-      const rateLimit = consumeLoginAttempt(request.ip);
-      if (!rateLimit.allowed) {
-        reply.header("Retry-After", String(rateLimit.retryAfterSeconds));
-        return reply.code(429).send({ message: "Too many login attempts. Try again later." });
-      }
-
-      const usernameMatches = username === config.username;
-      const passwordMatches = await verifyPassword(password, config.passwordHash);
-
-      if (!usernameMatches || !passwordMatches) {
-        return reply.code(401).send({ message: "Invalid username or password" });
-      }
-
-      resetLoginAttempts(request.ip);
-
-      const token = createSessionToken(config.username, config.sessionSecret, config.sessionTtlSeconds);
-      reply.setCookie(config.cookieName, token, {
-        httpOnly: true,
-        maxAge: config.sessionTtlSeconds,
-        path: "/",
-        sameSite: "lax",
-        secure: config.cookieSecure
-      });
-
-      return {
-        authenticated: true,
-        configured: true,
-        user: adminUser(config.username)
-      };
-    }
-  );
-
-  app.get("/api/admin/me", { preHandler: requireAdmin }, async (request) => ({
-    user: request.adminUser
-  }));
+  app.post("/api/admin/login", async (request, reply): Promise<AdminSessionResponse> => {
+    auth.assertConfigured();
+    const { username, password } = parseInput(loginSchema, request.body);
+    const user = await auth.login(request, reply, username, password);
+    return { authenticated: true, configured: true, user, adminPath: auth.config.path };
+  });
 
   app.post("/api/admin/logout", async (request, reply) => {
-    const config = getAdminAuthConfig();
-    const session = verifySessionToken(request.cookies[config.cookieName], config.sessionSecret);
-
-    if (session) {
-      revokeSession(session);
-    }
-
-    reply.clearCookie(config.cookieName, { path: "/" });
+    auth.logout(request, reply);
     return { authenticated: false };
   });
+
+  app.get("/api/admin/me", { preHandler: auth.requireAdmin }, async (request) => ({
+    user: request.adminUser
+  }));
 }
