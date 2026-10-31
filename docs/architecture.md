@@ -44,8 +44,9 @@ apps/api/src
   config/env.ts     Zod-validated environment (fails fast on bad config)
   auth/             password hashing, signed sessions, AdminAuthService (CSRF, IP allowlist, rate limit, revocation)
   lib/              HttpError, Zod input validation, IP/CIDR lists
-  routes/           admin, admin-app, admin-photos, photos, uploads, spotify
+  routes/           admin, admin-app, admin-photos, admin-projects, photos, projects, uploads, spotify
   photos/           PhotoRepository interface + Prisma implementation, image processing (sharp), EXIF, DTO mapping
+  projects/         ProjectRepository interface + Prisma implementation, DTO mapping
   storage/local.ts  uploaded files under UPLOAD_DIR
   db/               Prisma client and seed script
   generated/prisma  generated Prisma client (git-ignored)
@@ -71,6 +72,13 @@ packages/shared     constants and API types shared by API, web and admin (admin 
 - **Repository**: routes depend on the `PhotoRepository` interface; the API uses the Prisma implementation when `DATABASE_URL` is set, tests use an in-memory one.
 - **Public shape**: `packages/content`'s `Photo` gained `featured` and optional `variants` (`{ width, height, url }`, smallest first). `src` stays the largest image, so the fullscreen viewer works unchanged.
 - **Front end**: `ResponsiveFlickrImage` keeps its Flickr suffix logic and, for photos with `variants`, builds `srcset` from them (capped by the adaptive quality tier), uses the 1280 px size as the lightbox medium and swaps in the size that covers the viewport.
+
+## Projects
+
+- **Data**: `Project` rows hold localized JSON texts (Markdown body), `cover` and `gallery` as image JSON (`{ id, key, width, height, variants }`; URLs derived at read time like photos), tech stack, links, status and `YYYY-MM` months. `id` is a UUID and never changes; `slug` is the editable URL segment.
+- **Images**: `routes/read-upload.ts` and `saveImage` are shared with photos; project files live under `projects/<projectId>/<imageId>/`, so deleting a project removes one folder.
+- **No seed data**: projects exist only in the database. Without the API the web app shows no project sections.
+- **Web**: `/projects` (filter by technologies used in more than one project) and `/projects/:slug`. The detail page is lazy-loaded so `react-markdown` stays out of the main bundle (main bundle 437 kB; the detail chunk 164 kB).
 
 ## Content
 
