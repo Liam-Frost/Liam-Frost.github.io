@@ -22,7 +22,67 @@ Development should commit frequently to `dev`. After a major stage, run Claude C
 
 The future image storage direction is Cloudflare R2, but the system should also allow local paths and existing image-host URLs.
 
+### 2026-10-31: Standalone Admin App
+
+The admin UI should be a separate app (`apps/admin`), borrowing auth, upload and admin UI patterns from `internal-developer-tools-portal`. The full stack should run locally first, then deploy to a VPS with CI/CD. Plan: `docs/plan-admin-projects-deploy.md`.
+
+### 2026-10-31: Configurable Admin Path
+
+The admin login address should be configurable like `internal-developer-tools-portal` (`ADMIN_PATH`), and must not be exposed to non-admin visitors.
+
+### 2026-10-31: Upgrade React to Latest
+
+React and related dependencies should be upgraded to the latest versions. This upgrade is exempt from the "Preserve Existing UI" decision.
+
 ## Model Decisions
+
+### 2026-10-31: Use `react-router` 8 Instead of `react-router-dom`
+
+React Router 8 no longer publishes `react-router-dom`; all router APIs are imported from `react-router`.
+
+Reason: the user asked for the latest React stack, and v8 is the current release line.
+
+### 2026-10-31: Upgrade Vite to 8 With the Front-End Stack
+
+The model upgraded Vite from 6 to 8 together with React, keeping `@vitejs/plugin-react-swc`.
+
+Reason: Vite 8 builds the existing app without config changes, and the plugin supports Vite 4-8, so there was no reason to defer it.
+
+### 2026-10-31: Require Node 22.22+
+
+The model set CI to Node 22 and the root `engines.node` to `>=22.22.0`.
+
+Reason: React Router 8 requires Node 22.22 or newer; the VPS should use the same major version.
+
+### 2026-10-31: Accept Fastify 5.12 From `npm audit fix`
+
+The non-breaking `npm audit fix` upgraded the API's Fastify from 5.8.5 to 5.12.7 to pull in a patched `fast-uri`.
+
+Reason: it is a minor version within Fastify 5, fixes high-severity `fast-uri` advisories, and the API typechecks and serves its routes unchanged.
+
+### 2026-10-31: Filter Portfolio Categories by English Value
+
+The portfolio category filter keys on the English category value instead of the current-language label.
+
+Reason: the selection must survive a language switch; every photo category has an English value (falling back to Chinese), so it works as a stable key without changing the content schema.
+
+### 2026-10-31: Upgrade Prisma to 7.10.1 in Stage 4
+
+The user asked to do the Prisma major upgrade in the same PR instead of deferring it. The model chose Prisma 7.10.1 (exact pin), superseding "Pin Prisma to 6.19.3".
+
+Reason: 7.10.1 is the newest stable release and clears the remaining high audit findings (`deepmerge-ts` via `@prisma/config`). Prisma 8 is still a release candidate (npm `latest` points at `8.0.0-rc.29`), so it is not used yet.
+
+### 2026-10-31: Use the `prisma-client` Generator With `@prisma/adapter-pg`
+
+The schema uses the new `prisma-client` generator with output in `apps/api/src/generated/prisma` (git-ignored), and the client connects via `@prisma/adapter-pg` with `connectionTimeoutMillis: 5000`.
+
+Reason: `prisma-client-js` is deprecated in v7 and driver adapters are required. node-pg has no connect timeout by default; keeping Prisma 6's 5s keeps the seed fallback responsive when the database host is unreachable.
+
+### 2026-10-31: Generate the Prisma Client Inside API Scripts
+
+`dev`, `start`, `build`, and `typecheck` in `apps/api` run `prisma generate` first, and `prisma.config.ts` only sets a datasource when `DATABASE_URL` is present.
+
+Reason: the generated client is no longer in `node_modules` and is not committed; generating in the scripts keeps CI (`npm run typecheck`) and fresh checkouts working without a database or an extra step. `start` does not regenerate, so production does not need the Prisma CLI at runtime.
 
 ### 2026-04-26: Incremental Migration Instead of Rewrite
 

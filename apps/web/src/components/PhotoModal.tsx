@@ -108,6 +108,9 @@ export default function PhotoModal({
   useScrollLock(true);
 
   useEffect(() => {
+    // The fullscreen viewer handles its own keys; don't also close/navigate the modal underneath.
+    if (viewerOpen) return;
+
     closeBtnRef.current?.focus();
 
     const onKeyDown = (e: KeyboardEvent) => {
@@ -127,7 +130,7 @@ export default function PhotoModal({
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [hasNext, hasPrev, onClose, onNext, onPrev]);
+  }, [hasNext, hasPrev, onClose, onNext, onPrev, viewerOpen]);
 
   const meta = [
     location ? { k: t("photo.meta.location"), v: location } : null,
