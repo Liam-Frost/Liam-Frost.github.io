@@ -12,7 +12,8 @@ Current admin features:
 - Signed-in check: `GET /api/admin/me`.
 - Reusable backend guard: `AdminAuthService.requireAdmin` (Fastify `preHandler`).
 - Standalone admin app `apps/admin` (Stage 6), served by the API at `ADMIN_PATH`: login, layout with Overview / Photos / Projects navigation, logout.
-- Photo management (Stage 7): upload, edit in five languages, publish/hide, home-page featured flag, drag-and-drop or button reordering, delete. The Projects page is a placeholder until Stage 8.
+- Photo management (Stage 7): upload, edit in five languages, publish/hide, home-page featured flag, drag-and-drop or button reordering, delete.
+- Project management (Stage 8): create, edit (texts and Markdown body in five languages, slug, status, months, tech stack, links), cover and screenshots, publish/hide, home-page featured flag, reorder, delete.
 
 Photo CRUD, uploads, project management, and media collection management come in later stages.
 
@@ -85,6 +86,19 @@ Files live in `UPLOAD_DIR` (default `apps/api/uploads`) under `photos/<id>/` and
 
 API: `GET/POST /api/admin/photos`, `GET/PATCH/DELETE /api/admin/photos/:id`, `PUT /api/admin/photos/order`.
 
+## Project Management
+
+Requires `DATABASE_URL`.
+
+- **Create**: "新建项目" asks for a title and a slug (suggested from an ASCII title). New projects are hidden.
+- **Editor** (`<ADMIN_PATH>/projects/<id>`): title, one-line summary and Markdown body per language; slug (`/projects/<slug>`, unique), status (进行中 / 已完成 / 已归档), start and end month, tech stack, links (code, demo, docs; http(s) only); public and featured switches. Text changes are saved with "保存".
+- **Images** save immediately: uploading a cover replaces (and deletes) the previous one; screenshots (up to 30) can be reordered and deleted. They go through the same pipeline as photos (WebP sizes, metadata stripped, private originals) under `UPLOAD_DIR/projects/<id>/<imageId>/`.
+- **Visibility**: hidden projects and their images are only visible to the admin, exactly like photos.
+- **Home page**: up to four public projects with "首页精选" appear between the introduction (about and tech stack) and the featured photos, in list order. Without public featured projects (or without the API, e.g. GitHub Pages builds) the section is hidden.
+- **Markdown**: rendered with `react-markdown` + GFM (tables, task lists). Raw HTML is not rendered, so the body cannot inject markup or scripts; links open in a new tab with `noopener`.
+
+API: `GET/POST /api/admin/projects`, `GET/PATCH/DELETE /api/admin/projects/:id`, `POST /api/admin/projects/:id/images?slot=cover|gallery`, `DELETE /api/admin/projects/:id/images/:imageId`, `PUT /api/admin/projects/order`. Public: `GET /api/projects` (summaries), `GET /api/projects/:slug`.
+
 ## Running the Admin App
 
 Development (API, web and admin dev servers):
@@ -116,4 +130,4 @@ Codes used by admin routes: `VALIDATION`, `REQUEST_ERROR`, `CSRF`, `UNAUTHORIZED
 
 ## Tests
 
-`npm test` runs the API tests (Vitest + Fastify `inject`) covering configuration validation, admin path rules, IP lists, login, CSRF, rate limiting, session revocation, cookie tampering, the IP allowlist, `TRUST_PROXY`, admin app hosting (path injection, asset allowlist, traversal attempts, IP hiding), and photos (public visibility, seed fallback, upload processing with EXIF orientation, size limits, invalid files, edit/publish/delete, ordering, `/uploads` file allowlist).
+`npm test` runs the API tests (Vitest + Fastify `inject`) covering configuration validation, admin path rules, IP lists, login, CSRF, rate limiting, session revocation, cookie tampering, the IP allowlist, `TRUST_PROXY`, admin app hosting (path injection, asset allowlist, traversal attempts, IP hiding), photos (public visibility, seed fallback, upload processing with EXIF orientation, size limits, invalid files, edit/publish/delete, ordering, `/uploads` file allowlist), and projects (public listing, slugs, validation, cover replacement, screenshots, image visibility, delete with files, ordering).

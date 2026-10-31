@@ -170,8 +170,28 @@ Status: implementation complete; Claude Code review complete and fixes applied.
 
 ### Upcoming
 
-- Review and merge Stage 7 PR #7: https://github.com/Liam-Frost/Liam-Frost.github.io/pull/7
-- Stage 8: projects module.
+- Stage 7 PR #7 merged on 2026-10-31.
+
+### Stage 8: Projects Module
+
+Status: implementation complete; awaiting Claude Code review.
+
+- User decisions: the home-page projects section sits between the introduction and the photos; everything else follows the proposed defaults (fields, list page, detail page, card style).
+- Prisma `Project` model and `ProjectStatus` enum; migration `20261031090000_projects`.
+- `ProjectRepository` with Prisma implementation (in-memory one for tests).
+- Admin API: create (hidden, unique slug), edit (Zod: localized texts, slug, status, months with end >= start, tech stack without duplicates, http(s) links), cover upload (replaces and deletes the old one), screenshots (add, reorder, delete), delete (removes the project folder), complete-list reorder.
+- Public API: `GET /api/projects` (public summaries, no body), `GET /api/projects/:slug` (public only).
+- `/uploads/projects/<id>/<imageId>/<n>.webp` with the same visibility rules as photos.
+- Shared upload reading and image saving between photos and projects (`routes/read-upload.ts`, `saveImage`).
+- Admin UI: Projects list (create dialog with slug suggestion, reorder, delete) and a full editor page (language tabs, Markdown body, publish panel, info, tech stack chips, links, cover and screenshots).
+- Web: home "projects" section after the tech stack and before the featured photos (up to four featured projects, hidden when none), nav link, `/projects` with tech filters, `/projects/:slug` with cover, meta, links, Markdown body (no raw HTML), screenshots and fullscreen viewer; strings in five languages; detail page lazy-loaded.
+- Tests: 55 passed (8 new for projects).
+- Verified end to end against a fresh local PostgreSQL (all three migrations applied with `db:deploy`, seed, throwaway admin password): created a project from the admin (slug suggested), filled two languages, Markdown with a table, code block and a `<script>` line, status, months, tech stack, repo link, public and featured; uploaded a cover (640/1280/2048/2400) and two screenshots, reordered them; the home page showed the section between `skills` and `featured`; `/projects` listed it; the detail page rendered the Markdown (script shown as text, links with `noopener`), screenshots in the new order and the fullscreen viewer; an unknown slug showed the 404 message; mobile width without horizontal scroll; deleting the project removed its files.
+
+### Upcoming
+
+- Claude Code review of Stage 8, then PR.
+- Stage 9: full local run with Docker Compose.
 - Stage 5: back-end foundation and admin auth refinement (`ADMIN_PATH`, IP allowlist, CSRF, Zod, tests). See `docs/plan-admin-projects-deploy.md`.
 
 ## Future Stages

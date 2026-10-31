@@ -21,6 +21,7 @@
   },
   "include": [
     "src",
-    "../../packages/content/src"
+    "../../packages/content/src",
+    "../../packages/shared/src"
   ]
 }
