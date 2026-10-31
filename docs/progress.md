@@ -99,10 +99,11 @@ Status: implementation complete; Claude Code review complete and fixes applied.
 - Ran Claude Code review for Stage 4 (`docs/reviews/2026-10-31-claude-code-stage-4.md`).
 - Fixed review findings: the photo modal ignores keys while the fullscreen viewer is open; the category filter uses a language-independent key; documented the Fastify upgrade.
 - Re-ran `npm run typecheck`, `npm run build`, and browser checks for both fixes.
+- Created Stage 4 PR #4: https://github.com/Liam-Frost/Liam-Frost.github.io/pull/4
 
 ### Upcoming
 
-- Review and merge the Stage 4 PR.
+- Review and merge Stage 4 PR #4.
 - Stage 5: back-end foundation and admin auth refinement (`ADMIN_PATH`, IP allowlist, CSRF, Zod, tests). See `docs/plan-admin-projects-deploy.md`.
 
 ## Future Stages
