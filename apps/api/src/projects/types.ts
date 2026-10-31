@@ -38,11 +38,16 @@ export type ProjectPatch = Partial<Omit<ProjectRow, "id" | "sortOrder" | "create
 
 export class SlugTakenError extends Error {}
 
+/** What /uploads needs to decide whether to serve a project image. */
+export type ProjectImageAccess = Pick<ProjectRow, "visibility" | "cover" | "gallery">;
+
 export interface ProjectRepository {
   /** Ordered by sortOrder, then newest first. */
   list(options?: { includePrivate?: boolean }): Promise<ProjectRow[]>;
   get(id: string): Promise<ProjectRow | null>;
   getBySlug(slug: string): Promise<ProjectRow | null>;
+  /** Visibility and images only (no texts), for image requests. */
+  imageAccess(id: string): Promise<ProjectImageAccess | null>;
   /** New projects are hidden and go first. Throws SlugTakenError. */
   create(project: NewProject): Promise<ProjectRow>;
   /** Throws SlugTakenError. */

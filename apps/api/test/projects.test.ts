@@ -144,6 +144,17 @@ describe("admin project management", () => {
     expect((await app.inject(`/uploads/projects/${id}/${a.id}/640.webp`)).statusCode).toBe(404);
   });
 
+  it("keeps every screenshot when uploads run concurrently", async () => {
+    const { create, upload } = await setup();
+    const { id } = (await create()).json().project;
+    const responses = await Promise.all([upload(id, "gallery"), upload(id, "gallery"), upload(id, "gallery")]);
+    expect(responses.map((r) => r.statusCode)).toEqual([201, 201, 201]);
+    const ids = responses.map((r) => r.json().project.gallery.at(-1).id);
+    const last = responses.map((r) => r.json().project.gallery.length).sort();
+    expect(last).toEqual([1, 2, 3]);
+    expect(new Set(ids).size).toBe(3);
+  });
+
   it("deletes a project with all its files", async () => {
     const { app, uploadDir, create, upload, headers } = await setup();
     const { id } = (await create()).json().project;

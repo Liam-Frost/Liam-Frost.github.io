@@ -6,6 +6,7 @@ import { PageHeader } from "../components/layout/AdminLayout";
 import { PhotoEditor } from "../components/photos/PhotoEditor";
 import { UploadQueue, type UploadItem } from "../components/photos/UploadQueue";
 import { Dialog } from "../components/ui/Dialog";
+import { IconButton } from "../components/ui/IconButton";
 import { useToast } from "../components/ui/Toast";
 import { useDeletePhoto, usePhotos, useReorderPhotos, useSetPhoto } from "../hooks/usePhotos";
 import { ApiError, uploadPhoto } from "../lib/api";
@@ -269,20 +270,5 @@ export function PhotosPage() {
         </p>
       </Dialog>
     </div>
-  );
-}
-
-function IconButton({ label, onClick, disabled, danger, children }: { label: string; onClick: () => void; disabled?: boolean; danger?: boolean; children: React.ReactNode }) {
-  return (
-    <button
-      type="button"
-      aria-label={label}
-      title={label}
-      onClick={onClick}
-      disabled={disabled}
-      className={`rounded-full p-1.5 text-faint transition-colors disabled:opacity-30 ${danger ? "hover:bg-status-error/10 hover:text-status-error" : "hover:bg-brand-secondary/12 hover:text-brand"}`}
-    >
-      {children}
-    </button>
   );
 }

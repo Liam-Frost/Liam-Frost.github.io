@@ -18,6 +18,11 @@ export class MemoryProjectRepository implements ProjectRepository {
     return this.rows.get(id) ?? null;
   }
 
+  async imageAccess(id: string) {
+    const row = this.rows.get(id);
+    return row ? { visibility: row.visibility, cover: row.cover, gallery: row.gallery } : null;
+  }
+
   async getBySlug(slug: string) {
     return [...this.rows.values()].find((row) => row.slug === slug) ?? null;
   }

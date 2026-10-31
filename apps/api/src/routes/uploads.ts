@@ -43,7 +43,7 @@ export function registerUploadRoutes(
     if (!parsed.success || !repos.projects) throw notFound();
     const { id, imageId } = parsed.data;
 
-    const row = await repos.projects.get(id).catch(() => null);
+    const row = await repos.projects.imageAccess(id).catch(() => null);
     const image = row && [row.cover, ...row.gallery].find((candidate) => candidate?.id === imageId);
     if (!row || !image) throw notFound();
     return send(request, reply, image.key, row.visibility === "public");

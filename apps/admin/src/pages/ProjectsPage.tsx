@@ -6,6 +6,7 @@ import { Link, useNavigate } from "react-router";
 import { PageHeader } from "../components/layout/AdminLayout";
 import { Dialog } from "../components/ui/Dialog";
 import { Field } from "../components/ui/Field";
+import { IconButton } from "../components/ui/IconButton";
 import { useToast } from "../components/ui/Toast";
 import { useCreateProject, useDeleteProject, useProjects, useReorderProjects } from "../hooks/useProjects";
 import { ApiError } from "../lib/api";
@@ -225,32 +226,5 @@ function CreateProjectDialog({ onClose }: { onClose: () => void }) {
         ) : null}
       </form>
     </Dialog>
-  );
-}
-
-export function IconButton({
-  label,
-  onClick,
-  disabled,
-  danger,
-  children
-}: {
-  label: string;
-  onClick: () => void;
-  disabled?: boolean;
-  danger?: boolean;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      aria-label={label}
-      title={label}
-      onClick={onClick}
-      disabled={disabled}
-      className={`rounded-full p-1.5 text-faint transition-colors disabled:opacity-30 ${danger ? "hover:bg-status-error/10 hover:text-status-error" : "hover:bg-brand-secondary/12 hover:text-brand"}`}
-    >
-      {children}
-    </button>
   );
 }

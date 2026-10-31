@@ -174,7 +174,7 @@ Status: implementation complete; Claude Code review complete and fixes applied.
 
 ### Stage 8: Projects Module
 
-Status: implementation complete; awaiting Claude Code review.
+Status: implementation complete; Claude Code review complete and fixes applied.
 
 - User decisions: the home-page projects section sits between the introduction and the photos; everything else follows the proposed defaults (fields, list page, detail page, card style).
 - Prisma `Project` model and `ProjectStatus` enum; migration `20261031090000_projects`.
@@ -187,10 +187,11 @@ Status: implementation complete; awaiting Claude Code review.
 - Web: home "projects" section after the tech stack and before the featured photos (up to four featured projects, hidden when none), nav link, `/projects` with tech filters, `/projects/:slug` with cover, meta, links, Markdown body (no raw HTML), screenshots and fullscreen viewer; strings in five languages; detail page lazy-loaded.
 - Tests: 55 passed (8 new for projects).
 - Verified end to end against a fresh local PostgreSQL (all three migrations applied with `db:deploy`, seed, throwaway admin password): created a project from the admin (slug suggested), filled two languages, Markdown with a table, code block and a `<script>` line, status, months, tech stack, repo link, public and featured; uploaded a cover (640/1280/2048/2400) and two screenshots, reordered them; the home page showed the section between `skills` and `featured`; `/projects` listed it; the detail page rendered the Markdown (script shown as text, links with `noopener`), screenshots in the new order and the fullscreen viewer; an unknown slug showed the 404 message; mobile width without horizontal scroll; deleting the project removed its files.
+- Ran Claude Code review for Stage 8 (`docs/reviews/2026-10-31-claude-code-stage-8.md`) and fixed: lost updates from concurrent project image changes (per-project lock, new test), lighter image visibility lookup, 503 instead of 500 for the project detail without a database, shared `IconButton`, unsaved-changes indicator and confirmations in the editor. Tests: 56 passed.
 
 ### Upcoming
 
-- Claude Code review of Stage 8, then PR.
+- Review and merge the Stage 8 PR.
 - Stage 9: full local run with Docker Compose.
 - Stage 5: back-end foundation and admin auth refinement (`ADMIN_PATH`, IP allowlist, CSRF, Zod, tests). See `docs/plan-admin-projects-deploy.md`.
 

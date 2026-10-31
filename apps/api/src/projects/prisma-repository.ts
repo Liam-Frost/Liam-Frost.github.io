@@ -57,6 +57,16 @@ export class PrismaProjectRepository implements ProjectRepository {
     return record ? toRow(record) : null;
   }
 
+  async imageAccess(id: string) {
+    const record = await this.prisma.project.findUnique({ where: { id }, select: { visibility: true, cover: true, gallery: true } });
+    if (!record) return null;
+    return {
+      visibility: record.visibility === "PRIVATE" ? ("private" as const) : ("public" as const),
+      cover: record.cover as StoredImage | null,
+      gallery: record.gallery as StoredImage[]
+    };
+  }
+
   async getBySlug(slug: string) {
     const record = await this.prisma.project.findUnique({ where: { slug } });
     return record ? toRow(record) : null;
