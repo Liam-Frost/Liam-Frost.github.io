@@ -52,6 +52,7 @@ export function AdminLayout({ user }: { user: AdminUser }) {
             type="button"
             onClick={onLogout}
             disabled={logout.isPending}
+            aria-label="退出登录"
             className="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-[13px] text-white/85 transition-colors hover:bg-white/12 disabled:opacity-50"
           >
             <LogOut aria-hidden="true" className="size-4" />
