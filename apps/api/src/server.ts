@@ -9,7 +9,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { AdminAuthService } from "./auth/service";
 import { ConfigError, loadConfig, type AppConfig } from "./config/env";
 import { getPrismaClient, hasDatabaseUrl } from "./db/client";
-import { HttpError, notFound } from "./lib/errors";
+import { HttpError, isDatabaseUnavailable, notFound } from "./lib/errors";
 import { registerAdminRoutes } from "./routes/admin";
 import { registerAdminApp } from "./routes/admin-app";
 import { registerAdminPhotoRoutes } from "./routes/admin-photos";
@@ -92,6 +92,13 @@ export function buildServer({
     if (status < 500) {
       // Fastify's own client errors (bad JSON, body too large, unsupported media type).
       return reply.code(status).send(new HttpError(status, "REQUEST_ERROR", err.message).toBody());
+    }
+
+    if (isDatabaseUnavailable(err)) {
+      request.log.error({ err }, "Database unavailable");
+      return reply
+        .code(503)
+        .send(new HttpError(503, "DATABASE_UNAVAILABLE", "Cannot connect to the database; check that it is running and DATABASE_URL is correct").toBody());
     }
 
     request.log.error({ err }, "Request failed");

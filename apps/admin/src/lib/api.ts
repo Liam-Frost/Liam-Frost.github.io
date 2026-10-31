@@ -53,8 +53,7 @@ export async function request<T>(path: string, { json, headers: initHeaders, ...
   }
 
   if (!response.ok) {
-    const error = (data as Partial<ApiErrorBody> | undefined)?.error;
-    throw new ApiError(response.status, error?.code ?? "HTTP", error?.message ?? `请求失败（HTTP ${response.status}）`);
+    throw apiError(response.status, data as Partial<ApiErrorBody> | undefined);
   }
   return data as T;
 }
@@ -66,7 +65,16 @@ function toApiError(status: number, body: string) {
   } catch {
     data = undefined;
   }
-  return new ApiError(status, data?.error?.code ?? "HTTP", data?.error?.message ?? `请求失败（HTTP ${status}）`);
+  return apiError(status, data);
+}
+
+const DATABASE_UNAVAILABLE_MESSAGE = "数据库连接失败：请确认数据库已启动，并检查 apps/api/.env 中的 DATABASE_URL";
+
+function apiError(status: number, data: Partial<ApiErrorBody> | undefined) {
+  const code = data?.error?.code ?? "HTTP";
+  // Shown in toasts and inline errors anywhere in the admin, so it is translated here once.
+  if (code === "DATABASE_UNAVAILABLE") return new ApiError(status, code, DATABASE_UNAVAILABLE_MESSAGE);
+  return new ApiError(status, code, data?.error?.message ?? `请求失败（HTTP ${status}）`);
 }
 
 /** Uploads one file with progress (fetch cannot report upload progress). */
