@@ -22,6 +22,10 @@ import { PrismaPhotoRepository } from "./photos/prisma-repository";
 import type { PhotoRepository } from "./photos/types";
 import { PrismaProjectRepository } from "./projects/prisma-repository";
 import type { ProjectRepository } from "./projects/types";
+import { PrismaSettingsRepository } from "./settings/prisma-repository";
+import { MemorySettingsRepository, type SettingsRepository } from "./settings/types";
+import { createPlaylistFetcher, type PlaylistFetcher } from "./spotify/playlist";
+import { SpotifyService } from "./spotify/service";
 import { LocalImageStore } from "./storage/local";
 
 /** apps/admin/dist relative to this file (apps/api/src). */
@@ -41,6 +45,12 @@ function defaultProjectRepository(): ProjectRepository | null {
   return client ? new PrismaProjectRepository(client) : null;
 }
 
+/** Prisma-backed settings when DATABASE_URL is set, otherwise none (defaults, kept in memory). */
+function defaultSettingsRepository(): SettingsRepository | null {
+  const client = getPrismaClient();
+  return client ? new PrismaSettingsRepository(client) : null;
+}
+
 export type BuildServerOptions = {
   config?: AppConfig;
   logger?: boolean;
@@ -50,6 +60,10 @@ export type BuildServerOptions = {
   photos?: PhotoRepository | null;
   /** Project storage; defaults to Prisma when DATABASE_URL is set. Pass null for none. */
   projects?: ProjectRepository | null;
+  /** Settings storage; defaults to Prisma when DATABASE_URL is set. Pass null for none. */
+  settings?: SettingsRepository | null;
+  /** Loads Spotify playlists; defaults to Spotify's embed page. */
+  fetchPlaylist?: PlaylistFetcher;
 };
 
 export function buildServer({
@@ -57,7 +71,9 @@ export function buildServer({
   logger = true,
   adminDistDir = DEFAULT_ADMIN_DIST_DIR,
   photos = defaultPhotoRepository(),
-  projects = defaultProjectRepository()
+  projects = defaultProjectRepository(),
+  settings = defaultSettingsRepository(),
+  fetchPlaylist = createPlaylistFetcher()
 }: BuildServerOptions = {}) {
   const app = Fastify({
     logger: logger && {
@@ -70,6 +86,9 @@ export function buildServer({
 
   const auth = new AdminAuthService(config.admin);
   const store = new LocalImageStore(config.uploads.dir ?? DEFAULT_UPLOAD_DIR);
+  const spotify = new SpotifyService(settings ?? new MemorySettingsRepository(), fetchPlaylist, (error) =>
+    app.log.warn({ err: error }, "Spotify playlist sync failed")
+  );
 
   app.register(cors, { credentials: true, origin: config.corsOrigins });
   app.register(cookie);
@@ -121,7 +140,7 @@ export function buildServer({
   registerPhotoRoutes(app, photos, store);
   registerProjectRoutes(app, projects, store);
   registerUploadRoutes(app, store, { photos, projects }, auth);
-  registerSpotifyRoutes(app);
+  registerSpotifyRoutes(app, auth, spotify, settings !== null);
 
   return app;
 }

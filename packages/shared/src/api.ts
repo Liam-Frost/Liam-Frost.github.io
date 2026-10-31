@@ -149,3 +149,47 @@ export type AdminProjectUpdate = Partial<{
 
 export type AdminProjectsResponse = { projects: AdminProject[] };
 export type AdminProjectResponse = { project: AdminProject };
+
+/** Spotify player settings, edited in the admin. */
+export type SpotifySettings = {
+  enabled: boolean;
+  /** https://open.spotify.com/playlist/<id> */
+  playlistUrl: string;
+  shuffle: boolean;
+  /** Initial preview volume, 0-100. */
+  volume: number;
+  /** Seconds before the player collapses after the page loads; 0 keeps it open. */
+  autoCollapseSeconds: number;
+};
+
+/** A playlist track with its 30-second preview. */
+export type SpotifyTrack = {
+  id: string;
+  title: string;
+  artist: string;
+  image: string;
+  /** The track on open.spotify.com. */
+  link: string;
+  previewUrl: string;
+};
+
+export type SpotifyPlaylistInfo = { id: string; name: string; image: string; link: string };
+
+/** What the site's player needs. */
+export type PublicSpotifyPlayer = Omit<SpotifySettings, "playlistUrl"> & {
+  playlist: SpotifyPlaylistInfo | null;
+  tracks: SpotifyTrack[];
+};
+
+export type SpotifySyncStatus = {
+  /** Last successful sync of the configured playlist. */
+  syncedAt: string | null;
+  /** Last attempt, successful or not. */
+  attemptedAt: string | null;
+  /** Why the last attempt failed; null after a success. */
+  error: string | null;
+  playlist: SpotifyPlaylistInfo | null;
+  tracks: SpotifyTrack[];
+};
+
+export type AdminSpotifyResponse = { settings: SpotifySettings; sync: SpotifySyncStatus };
