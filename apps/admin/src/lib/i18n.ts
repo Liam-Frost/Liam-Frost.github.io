@@ -15,3 +15,20 @@ export function pickText(value: LocalizedText | null | undefined, fallback = "")
   if (!value) return fallback;
   return value.zh || value.en || LANGS.map((lang) => value[lang]).find(Boolean) || fallback;
 }
+
+export const STATUS_LABELS = {
+  "in-progress": "进行中",
+  completed: "已完成",
+  archived: "已归档"
+} as const;
+
+/** URL-friendly slug suggestion from a title: ASCII letters and digits only. */
+export function suggestSlug(text: string) {
+  return text
+    .normalize("NFKD")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 60)
+    .replace(/-+$/, "");
+}

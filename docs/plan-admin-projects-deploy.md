@@ -105,7 +105,7 @@
 
 完成标准:后台上传一张新照片后,作品集页面正确显示;现有 41 张照片显示不变。
 
-### Stage 8:项目模块
+### Stage 8:项目模块(已完成)
 
 - Prisma `Project`:`slug`,多语言的 `title` / `summary` / `body`(Markdown),`coverImage`(复用图片处理流程),可选 `gallery`,`techStack`,`links`(仓库 / 演示 / 文档),`status`,`startedAt` / `endedAt`,`featured`,`visibility`,`sortOrder`。
 - 公开接口:`GET /api/projects`、`GET /api/projects/:slug`。

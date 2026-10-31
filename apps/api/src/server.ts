@@ -13,11 +13,15 @@ import { HttpError, notFound } from "./lib/errors";
 import { registerAdminRoutes } from "./routes/admin";
 import { registerAdminApp } from "./routes/admin-app";
 import { registerAdminPhotoRoutes } from "./routes/admin-photos";
+import { registerAdminProjectRoutes } from "./routes/admin-projects";
 import { registerPhotoRoutes } from "./routes/photos";
+import { registerProjectRoutes } from "./routes/projects";
 import { registerSpotifyRoutes } from "./routes/spotify";
 import { registerUploadRoutes } from "./routes/uploads";
 import { PrismaPhotoRepository } from "./photos/prisma-repository";
 import type { PhotoRepository } from "./photos/types";
+import { PrismaProjectRepository } from "./projects/prisma-repository";
+import type { ProjectRepository } from "./projects/types";
 import { LocalImageStore } from "./storage/local";
 
 /** apps/admin/dist relative to this file (apps/api/src). */
@@ -31,6 +35,12 @@ function defaultPhotoRepository(): PhotoRepository | null {
   return client ? new PrismaPhotoRepository(client) : null;
 }
 
+/** The Prisma-backed project store when DATABASE_URL is set, otherwise none (no projects are shown). */
+function defaultProjectRepository(): ProjectRepository | null {
+  const client = getPrismaClient();
+  return client ? new PrismaProjectRepository(client) : null;
+}
+
 export type BuildServerOptions = {
   config?: AppConfig;
   logger?: boolean;
@@ -38,13 +48,16 @@ export type BuildServerOptions = {
   adminDistDir?: string;
   /** Photo storage; defaults to Prisma when DATABASE_URL is set. Pass null for none. */
   photos?: PhotoRepository | null;
+  /** Project storage; defaults to Prisma when DATABASE_URL is set. Pass null for none. */
+  projects?: ProjectRepository | null;
 };
 
 export function buildServer({
   config = loadConfig(),
   logger = true,
   adminDistDir = DEFAULT_ADMIN_DIST_DIR,
-  photos = defaultPhotoRepository()
+  photos = defaultPhotoRepository(),
+  projects = defaultProjectRepository()
 }: BuildServerOptions = {}) {
   const app = Fastify({
     logger: logger && {
@@ -97,8 +110,10 @@ export function buildServer({
   registerAdminRoutes(app, auth);
   registerAdminApp(app, auth, adminDistDir);
   registerAdminPhotoRoutes(app, auth, photos, store, config.uploads.maxBytes);
+  registerAdminProjectRoutes(app, auth, projects, store, config.uploads.maxBytes);
   registerPhotoRoutes(app, photos, store);
-  registerUploadRoutes(app, store, photos, auth);
+  registerProjectRoutes(app, projects, store);
+  registerUploadRoutes(app, store, { photos, projects }, auth);
   registerSpotifyRoutes(app);
 
   return app;

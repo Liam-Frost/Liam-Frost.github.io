@@ -6,6 +6,7 @@ import { join } from "node:path";
 import { hashPassword } from "../src/auth/password";
 import { loadConfig } from "../src/config/env";
 import type { PhotoRepository } from "../src/photos/types";
+import type { ProjectRepository } from "../src/projects/types";
 import { buildServer } from "../src/server";
 
 export const USERNAME = "liam";
@@ -23,6 +24,8 @@ export type TestServerOptions = {
   adminDistDir?: string;
   /** Defaults to none (seed mode). */
   photos?: PhotoRepository | null;
+  /** Defaults to none. */
+  projects?: ProjectRepository | null;
 };
 
 /**
@@ -41,7 +44,8 @@ export async function buildTestServer(env: Record<string, string | undefined> = 
     config,
     logger: false,
     adminDistDir: options.adminDistDir ?? "/nonexistent-admin-dist",
-    photos: options.photos ?? null
+    photos: options.photos ?? null,
+    projects: options.projects ?? null
   });
 }
 

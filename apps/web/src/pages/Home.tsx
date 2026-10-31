@@ -2,12 +2,14 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router";
 
 import PhotoCard from "../components/PhotoCard";
+import ProjectCard from "../components/ProjectCard";
 import Reveal from "../components/Reveal";
 import SkillStack from "../components/SkillStack";
 import TypingAnimation from "../components/TypingAnimation";
 import type { Photo } from "@liam-frost/content";
 import { site } from "../data/site";
 import { usePhotos } from "../data/usePhotos";
+import { useProjects } from "../data/useProjects";
 import { pickLocalized, useI18n, type Lang } from "../lib/i18n";
 
 // Greeting messages (Japanese uses \n for forced line break)
@@ -30,6 +32,9 @@ export default function HomePage() {
   // Featured photo IDs for homepage
   // Marked in the admin ("首页精选"); the seed content marks the original selection.
   const featured = useMemo(() => photos.filter((p) => p.featured), [photos]);
+  // Between the introduction and the photos; hidden when there are no featured projects (or no API).
+  const { projects } = useProjects();
+  const featuredProjects = useMemo(() => projects.filter((p) => p.featured).slice(0, 4), [projects]);
 
   const navigate = useNavigate();
 
@@ -226,6 +231,31 @@ export default function HomePage() {
           </Reveal>
         </div>
       </section>
+
+      {featuredProjects.length ? (
+        <section className="section" id="projects">
+          <div className="container">
+            <Reveal>
+              <h2 className="sectionTitle">{t("projects.title")}</h2>
+              <p className="sectionSubtitle">{t("projects.home.subtitle")}</p>
+            </Reveal>
+
+            <div className="projectGrid">
+              {featuredProjects.map((project, idx) => (
+                <Reveal key={project.slug} delayMs={idx * 60}>
+                  <ProjectCard project={project} />
+                </Reveal>
+              ))}
+            </div>
+
+            <div style={{ marginTop: 14, display: "flex", gap: 12, flexWrap: "wrap" }}>
+              <Link className="btn btnPrimary" to="/projects">
+                {t("projects.cta.all")}
+              </Link>
+            </div>
+          </div>
+        </section>
+      ) : null}
 
       <section className="section" id="featured">
         <div className="container">

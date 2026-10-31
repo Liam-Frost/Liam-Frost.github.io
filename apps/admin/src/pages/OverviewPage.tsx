@@ -25,15 +25,6 @@ export function OverviewPage() {
   );
 }
 
-/** Sections that arrive in later stages (photos: Stage 7, projects: Stage 8). */
-export function ComingSoonPage({ title }: { title: string }) {
-  return (
-    <>
-      <PageHeader title={title} />
-      <div className="card p-8 text-center text-[13.5px] text-muted">该功能即将推出。</div>
-    </>
-  );
-}
 
 /** Unknown route inside the signed-in admin. */
 export function SectionNotFound() {

@@ -115,7 +115,28 @@ const zh = {
   "notFound.title": "404",
   "notFound.subtitle": "这个页面不存在，可能被移动或删除了。",
   "notFound.home": "返回主页",
-  "notFound.portfolio": "去作品集"
+  "notFound.portfolio": "去作品集",
+
+  // Projects
+  "nav.projects": "项目",
+  "projects.title": "项目",
+  "projects.subtitle": "做过的产品、工具与实验，以及它们背后的取舍。",
+  "projects.home.subtitle": "精选的几个项目，点击查看细节。",
+  "projects.cta.all": "查看全部项目",
+  "projects.empty": "还没有公开的项目。",
+  "projects.filterAll": "全部",
+  "projects.status.in-progress": "进行中",
+  "projects.status.completed": "已完成",
+  "projects.status.archived": "已归档",
+  "projects.present": "至今",
+  "projects.links.repo": "代码",
+  "projects.links.demo": "在线演示",
+  "projects.links.docs": "文档",
+  "projects.back": "返回项目列表",
+  "projects.notFound": "这个项目不存在或尚未公开。",
+  "projects.gallery": "截图",
+  "projects.loading": "加载中…",
+  "projects.open": "查看项目：{title}"
 } as const;
 
 type Key = keyof typeof zh;
@@ -211,7 +232,28 @@ const en: Record<Key, string> = {
   "notFound.title": "404",
   "notFound.subtitle": "This page doesn't exist. It may have moved.",
   "notFound.home": "Go home",
-  "notFound.portfolio": "Go to gallery"
+  "notFound.portfolio": "Go to gallery",
+
+  // Projects
+  "nav.projects": "Projects",
+  "projects.title": "Projects",
+  "projects.subtitle": "Products, tools and experiments I've built, and the trade-offs behind them.",
+  "projects.home.subtitle": "A few selected projects. Open one for the details.",
+  "projects.cta.all": "All projects",
+  "projects.empty": "No public projects yet.",
+  "projects.filterAll": "All",
+  "projects.status.in-progress": "In progress",
+  "projects.status.completed": "Completed",
+  "projects.status.archived": "Archived",
+  "projects.present": "Present",
+  "projects.links.repo": "Code",
+  "projects.links.demo": "Live demo",
+  "projects.links.docs": "Docs",
+  "projects.back": "Back to projects",
+  "projects.notFound": "This project doesn't exist or isn't public yet.",
+  "projects.gallery": "Screenshots",
+  "projects.loading": "Loading…",
+  "projects.open": "Open project: {title}"
 };
 
 const fr: Record<Key, string> = {
@@ -305,7 +347,28 @@ const fr: Record<Key, string> = {
   "notFound.title": "404",
   "notFound.subtitle": "Cette page n'existe pas (ou a été déplacée).",
   "notFound.home": "Retour à l'accueil",
-  "notFound.portfolio": "Aller à la galerie"
+  "notFound.portfolio": "Aller à la galerie",
+
+  // Projects
+  "nav.projects": "Projets",
+  "projects.title": "Projets",
+  "projects.subtitle": "Produits, outils et expériences que j'ai construits, et les choix derrière eux.",
+  "projects.home.subtitle": "Quelques projets choisis. Ouvre-en un pour les détails.",
+  "projects.cta.all": "Tous les projets",
+  "projects.empty": "Aucun projet public pour l'instant.",
+  "projects.filterAll": "Tous",
+  "projects.status.in-progress": "En cours",
+  "projects.status.completed": "Terminé",
+  "projects.status.archived": "Archivé",
+  "projects.present": "Aujourd'hui",
+  "projects.links.repo": "Code",
+  "projects.links.demo": "Démo",
+  "projects.links.docs": "Docs",
+  "projects.back": "Retour aux projets",
+  "projects.notFound": "Ce projet n'existe pas ou n'est pas encore public.",
+  "projects.gallery": "Captures",
+  "projects.loading": "Chargement…",
+  "projects.open": "Voir le projet : {title}"
 };
 
 const ja: Record<Key, string> = {
@@ -399,7 +462,28 @@ const ja: Record<Key, string> = {
   "notFound.title": "404",
   "notFound.subtitle": "ページが見つかりません。移動または削除された可能性があります。",
   "notFound.home": "ホームへ",
-  "notFound.portfolio": "ギャラリーへ"
+  "notFound.portfolio": "ギャラリーへ",
+
+  // Projects
+  "nav.projects": "プロジェクト",
+  "projects.title": "プロジェクト",
+  "projects.subtitle": "作ってきたプロダクト、ツール、実験と、その裏にある判断。",
+  "projects.home.subtitle": "選んだいくつかのプロジェクト。詳細はクリックで。",
+  "projects.cta.all": "すべてのプロジェクト",
+  "projects.empty": "公開中のプロジェクトはまだありません。",
+  "projects.filterAll": "すべて",
+  "projects.status.in-progress": "進行中",
+  "projects.status.completed": "完了",
+  "projects.status.archived": "アーカイブ",
+  "projects.present": "現在",
+  "projects.links.repo": "コード",
+  "projects.links.demo": "デモ",
+  "projects.links.docs": "ドキュメント",
+  "projects.back": "プロジェクト一覧へ",
+  "projects.notFound": "このプロジェクトは存在しないか、まだ公開されていません。",
+  "projects.gallery": "スクリーンショット",
+  "projects.loading": "読み込み中…",
+  "projects.open": "プロジェクトを開く：{title}"
 };
 
 const zhHant: Record<Key, string> = {
@@ -504,7 +588,28 @@ const zhHant: Record<Key, string> = {
   "notFound.title": "404",
   "notFound.subtitle": "這個頁面不存在，可能被移動或刪除了。",
   "notFound.home": "返回首頁",
-  "notFound.portfolio": "去作品集"
+  "notFound.portfolio": "去作品集",
+
+  // Projects
+  "nav.projects": "專案",
+  "projects.title": "專案",
+  "projects.subtitle": "做過的產品、工具與實驗，以及它們背後的取捨。",
+  "projects.home.subtitle": "精選的幾個專案，點擊查看細節。",
+  "projects.cta.all": "查看全部專案",
+  "projects.empty": "還沒有公開的專案。",
+  "projects.filterAll": "全部",
+  "projects.status.in-progress": "進行中",
+  "projects.status.completed": "已完成",
+  "projects.status.archived": "已封存",
+  "projects.present": "至今",
+  "projects.links.repo": "程式碼",
+  "projects.links.demo": "線上展示",
+  "projects.links.docs": "文件",
+  "projects.back": "返回專案列表",
+  "projects.notFound": "這個專案不存在或尚未公開。",
+  "projects.gallery": "截圖",
+  "projects.loading": "載入中…",
+  "projects.open": "查看專案：{title}"
 };
 
 const DICT: Record<Lang, Record<Key, string>> = { zh, "zh-Hant": zhHant, en, fr, ja };

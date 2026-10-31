@@ -2,6 +2,10 @@
 
 ## User Decisions
 
+### 2026-10-31: Projects Section Placement and Defaults
+
+The home-page projects section goes between the introduction and the photos. The other proposed defaults were accepted: localized title, summary and Markdown body; cover and screenshots; tech stack; repo/demo/docs links; status and months; public/featured; a `/projects` list with tech filters and a `/projects/:slug` detail page; cards in the existing style.
+
 ### 2026-04-26: Full-Stack VPS Migration
 
 The project should move away from a pure static GitHub Pages site and become a full personal site deployed to a VPS with front-end and back-end separation.
@@ -35,6 +39,42 @@ The admin login address should be configurable like `internal-developer-tools-po
 React and related dependencies should be upgraded to the latest versions. This upgrade is exempt from the "Preserve Existing UI" decision.
 
 ## Model Decisions
+
+### 2026-10-31: Serialize Project Image Changes per Project
+
+Updates that rewrite a project's cover or screenshot list run one at a time per project in the API process.
+
+Reason: the image lists are JSON on the project row, so concurrent read-modify-write updates would lose changes. A per-project in-process lock fits the existing single-instance design; image processing stays outside the lock.
+
+### 2026-10-31: Projects Section After the Tech Stack
+
+The home section is placed after `#skills` and before `#featured`.
+
+Reason: the user asked for it between the introduction and the photos; the about and tech-stack sections together form the introduction, so it goes right before the photos.
+
+### 2026-10-31: Project Images as JSON on the Project Row
+
+Cover and screenshots are stored as JSON on `Project` rather than in a separate table.
+
+Reason: images belong to exactly one project, are always loaded with it and are few (cover plus at most 30 screenshots); a table would add joins and ordering columns without a query that needs them.
+
+### 2026-10-31: Stable UUID Ids, Editable Slugs
+
+Projects have an immutable UUID `id` (used in admin URLs and storage paths) and an editable unique `slug` for public URLs.
+
+Reason: renaming a project's URL must not move its files or break the admin.
+
+### 2026-10-31: Markdown Without Raw HTML
+
+Project bodies are Markdown rendered by `react-markdown` with GFM; raw HTML is not rendered.
+
+Reason: rich enough for project write-ups while making it impossible for stored text to inject markup or scripts into the public site.
+
+### 2026-10-31: Lazy-Load the Project Detail Page
+
+`/projects/:slug` is a separate chunk.
+
+Reason: `react-markdown` added ~170 kB; only visitors opening a project need it.
 
 ### 2026-10-31: Uploads Create Hidden Photos
 

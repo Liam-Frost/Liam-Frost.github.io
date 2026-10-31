@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { Route, Routes } from "react-router";
 
 import ScrollManager from "./ScrollManager";
@@ -9,8 +10,12 @@ import { site } from "../data/site";
 import HomePage from "../pages/Home";
 import NotFoundPage from "../pages/NotFound";
 import PortfolioPage from "../pages/Portfolio";
+import ProjectsPage from "../pages/Projects";
 import { useI18n } from "../lib/i18n";
 import { useTheme } from "../lib/useTheme";
+
+// The Markdown renderer is only needed on project pages; keep it out of the main bundle.
+const ProjectDetailPage = lazy(() => import("../pages/ProjectDetail"));
 
 export default function App() {
   const { t } = useI18n();
@@ -35,6 +40,15 @@ export default function App() {
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/portfolio" element={<PortfolioPage />} />
+          <Route path="/projects" element={<ProjectsPage />} />
+          <Route
+            path="/projects/:slug"
+            element={
+              <Suspense fallback={null}>
+                <ProjectDetailPage />
+              </Suspense>
+            }
+          />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </main>
