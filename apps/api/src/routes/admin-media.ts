@@ -115,12 +115,19 @@ export function registerAdminMediaRoutes(
 
   app.patch("/api/admin/media/:id", admin, async (request): Promise<AdminMediaResponse> => {
     const id = mediaId(request);
-    const patch = parseInput(mediaUpdateSchema, request.body);
-    if (patch.progress !== undefined || patch.status !== undefined) {
+    const { music, ...patch } = parseInput(mediaUpdateSchema, request.body);
+    // Music details merge into `extra`; read and write under the entry's lock.
+    return lock.run(id, async () => {
       const row = await get(id);
-      if (row.kind === "track" || row.kind === "album") throw badRequest("Music entries have no watch status or progress", "VALIDATION");
-    }
-    return respond(await save(id, patch));
+      const isMusic = row.kind === "track" || row.kind === "album";
+      if (isMusic && (patch.progress !== undefined || patch.status !== undefined)) {
+        throw badRequest("Music entries have no watch status or progress", "VALIDATION");
+      }
+      if (!isMusic && (music !== undefined || patch.inPlayer !== undefined)) throw badRequest("Only songs have music details", "VALIDATION");
+      const next: MediaPatch = { ...patch };
+      if (music) next.extra = { ...row.extra, music: { ...(row.extra.music as object | undefined), ...music } };
+      return respond(await save(id, next));
+    });
   });
 
   app.delete("/api/admin/media/:id", admin, async (request, reply) => {

@@ -1,9 +1,12 @@
-import type { SpotifyPlaylistInfo, SpotifyTrack } from "@liam-frost/shared";
+import type { SpotifyTrack } from "@liam-frost/shared";
 
-export type FetchedPlaylist = SpotifyPlaylistInfo & { tracks: SpotifyTrack[] };
+export type FetchedPlaylist = { id: string; name: string; image: string; link: string; tracks: SpotifyTrack[] };
 
-/** Loads a playlist; `knownCovers` maps track ids to cover URLs from earlier syncs. */
-export type PlaylistFetcher = (playlistId: string, knownCovers: ReadonlyMap<string, string>) => Promise<FetchedPlaylist>;
+/**
+ * Loads a playlist; `knownCovers` maps track ids to cover URLs already known. Cover lookups stop after
+ * `coverBudgetMs` (default 20 s); tracks without their own cover get the playlist's.
+ */
+export type PlaylistFetcher = (playlistId: string, knownCovers: ReadonlyMap<string, string>, options?: { coverBudgetMs?: number }) => Promise<FetchedPlaylist>;
 
 /** Errors worth showing in the admin as they are. */
 export class PlaylistError extends Error {}
@@ -112,7 +115,7 @@ async function trackCover(fetchImpl: typeof fetch, id: string) {
 }
 
 export function createPlaylistFetcher(fetchImpl: typeof fetch = fetch): PlaylistFetcher {
-  return async (playlistId, knownCovers) => {
+  return async (playlistId, knownCovers, options = {}) => {
     let response: Response;
     try {
       response = await get(fetchImpl, `https://open.spotify.com/embed/playlist/${playlistId}`);
@@ -130,7 +133,7 @@ export function createPlaylistFetcher(fetchImpl: typeof fetch = fetch): Playlist
     // Covers from earlier syncs are reused; only new tracks are looked up, within a time budget.
     const covers = new Map(knownCovers);
     const missing = parsed.tracks.filter((track) => !covers.has(track.id));
-    const deadline = Date.now() + COVER_BUDGET_MS;
+    const deadline = Date.now() + (options.coverBudgetMs ?? COVER_BUDGET_MS);
     for (let i = 0; i < missing.length && Date.now() < deadline; i += COVER_CONCURRENCY) {
       const batch = missing.slice(i, i + COVER_CONCURRENCY);
       const found = await Promise.all(batch.map((track) => trackCover(fetchImpl, track.id)));

@@ -265,7 +265,7 @@ describe("public collection", () => {
     await app.inject({ method: "PUT", url: "/api/admin/collection/settings", headers, payload: { show: { movie: true, tv: false, anime: true, music: true }, showWant: false } });
 
     const body = (await app.inject("/api/collection")).json();
-    expect(body.kinds).toEqual(["movie", "anime"]);
+    expect(body.kinds).toEqual(["movie", "anime", "track"]);
     expect(body.items.map((item: { id: string }) => item.id)).toEqual([shown.id]);
     expect(body.items[0]).toMatchObject({ rating: 5, hasReview: true });
     expect(body.items[0]).not.toHaveProperty("review");

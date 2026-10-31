@@ -7,8 +7,8 @@ import { parseInput } from "../lib/validation";
 import { spotifySettingsSchema, type SpotifyService } from "../spotify/service";
 
 /**
- * The site's Spotify player. The public route works without a database (default settings, playlist
- * cached in memory); changing settings needs one so they survive restarts.
+ * The site's music player. Its songs come from the collection; changing the player's settings needs a
+ * database so they survive restarts.
  */
 export function registerSpotifyRoutes(app: FastifyInstance, auth: AdminAuthService, spotify: SpotifyService, persistent: boolean) {
   const admin = { preHandler: auth.requireAdmin };
@@ -18,8 +18,8 @@ export function registerSpotifyRoutes(app: FastifyInstance, auth: AdminAuthServi
     }
   };
   const respond = async (): Promise<AdminSpotifyResponse> => {
-    const settings = await spotify.settings();
-    return { settings, sync: await spotify.status(settings) };
+    const [settings, tracks] = await Promise.all([spotify.settings(), spotify.tracks()]);
+    return { settings, playerTracks: tracks.length };
   };
 
   app.get("/api/spotify/player", async (): Promise<PublicSpotifyPlayer> => spotify.player());
@@ -32,12 +32,6 @@ export function registerSpotifyRoutes(app: FastifyInstance, auth: AdminAuthServi
   app.put("/api/admin/spotify", admin, async (request) => {
     requirePersistent();
     await spotify.saveSettings(parseInput(spotifySettingsSchema, request.body));
-    return respond();
-  });
-
-  app.post("/api/admin/spotify/sync", admin, async () => {
-    requirePersistent();
-    await spotify.sync();
     return respond();
   });
 }

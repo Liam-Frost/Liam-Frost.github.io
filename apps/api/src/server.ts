@@ -15,6 +15,7 @@ import { registerAdminRoutes } from "./routes/admin";
 import { registerAdminApp } from "./routes/admin-app";
 import { registerAdminPhotoRoutes } from "./routes/admin-photos";
 import { registerAdminMediaRoutes } from "./routes/admin-media";
+import { registerAdminMusicRoutes } from "./routes/admin-music";
 import { registerAdminProjectRoutes } from "./routes/admin-projects";
 import { registerCollectionRoutes } from "./routes/collection";
 import { registerPhotoRoutes } from "./routes/photos";
@@ -23,6 +24,8 @@ import { registerSpotifyRoutes } from "./routes/spotify";
 import { registerUploadRoutes } from "./routes/uploads";
 import { registerWebApp } from "./routes/web-app";
 import { CollectionSettingsStore } from "./media/collection-settings";
+import { createMusicSource, type MusicSource } from "./media/itunes";
+import { PlaylistImports } from "./media/music-import";
 import { PrismaMediaRepository } from "./media/prisma-repository";
 import { createMediaSources, type MediaSources } from "./media/sources";
 import type { MediaRepository } from "./media/types";
@@ -84,7 +87,9 @@ export type BuildServerOptions = {
   mediaSources?: MediaSources;
   /** Settings storage; defaults to Prisma when DATABASE_URL is set. Pass null for none. */
   settings?: SettingsRepository | null;
-  /** Loads Spotify playlists; defaults to Spotify's embed page. */
+  /** iTunes song search; defaults to the real service. */
+  musicSource?: MusicSource;
+  /** Loads Spotify playlists for imports; defaults to Spotify's embed page. */
   fetchPlaylist?: PlaylistFetcher;
 };
 
@@ -98,7 +103,8 @@ export function buildServer({
   media = defaultMediaRepository(),
   mediaSources = createMediaSources({ tmdbKey: config.tmdbApiKey }),
   settings = defaultSettingsRepository(),
-  fetchPlaylist = createPlaylistFetcher()
+  fetchPlaylist = createPlaylistFetcher(),
+  musicSource = createMusicSource()
 }: BuildServerOptions = {}) {
   const app = Fastify({
     logger: logger && {
@@ -111,9 +117,11 @@ export function buildServer({
 
   const auth = new AdminAuthService(config.admin);
   const store = new LocalImageStore(config.uploads.dir ?? DEFAULT_UPLOAD_DIR);
-  const spotify = new SpotifyService(settings ?? new MemorySettingsRepository(), fetchPlaylist, (error) =>
-    app.log.warn({ err: error }, "Spotify playlist sync failed")
-  );
+  const collection = settings ? new CollectionSettingsStore(settings) : null;
+  const spotify = new SpotifyService(settings ?? new MemorySettingsRepository(), media, collection, store);
+  const playlistImports = media
+    ? new PlaylistImports({ media, sources: mediaSources, store }, fetchPlaylist, (error) => app.log.warn({ err: error }, "Playlist import failed"))
+    : null;
 
   app.register(cors, { credentials: true, origin: config.corsOrigins });
   app.register(cookie);
@@ -164,8 +172,8 @@ export function buildServer({
   registerAdminProjectRoutes(app, auth, projects, store, config.uploads.maxBytes);
   registerPhotoRoutes(app, photos, store);
   registerProjectRoutes(app, projects, store);
-  const collection = settings ? new CollectionSettingsStore(settings) : null;
   registerAdminMediaRoutes(app, auth, { media, collection, sources: mediaSources, store, maxUploadBytes: config.uploads.maxBytes });
+  registerAdminMusicRoutes(app, auth, { media, sources: mediaSources, music: musicSource, store, imports: playlistImports });
   registerCollectionRoutes(app, { media, collection, store });
   registerUploadRoutes(app, store, { photos, projects, media, collection }, auth);
   registerSpotifyRoutes(app, auth, spotify, settings !== null);

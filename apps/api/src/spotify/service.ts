@@ -1,159 +1,84 @@
-import type { PublicSpotifyPlayer, SpotifySettings, SpotifySyncStatus } from "@liam-frost/shared";
+import type { PublicSpotifyPlayer, SpotifySettings, SpotifyTrack } from "@liam-frost/shared";
 import { z } from "zod";
 
+import type { CollectionSettingsStore } from "../media/collection-settings";
+import { DEFAULT_COLLECTION_SETTINGS } from "../media/collection-settings";
+import { musicOf } from "../media/mapping";
+import { isMediaPublic, type MediaRepository, type MediaRow } from "../media/types";
 import type { SettingsRepository } from "../settings/types";
-import { PlaylistError, playlistIdFromUrl, playlistUrl, type FetchedPlaylist, type PlaylistFetcher } from "./playlist";
+import type { LocalImageStore } from "../storage/local";
+import { variantFileName } from "../photos/mapping";
 
 const SETTINGS_KEY = "spotify";
-const STATE_KEY = "spotify.playlist";
-
-/** Successful syncs are refreshed after this long. */
-export const REFRESH_MS = 6 * 60 * 60 * 1000;
-/** After a failed sync, visitors do not trigger another attempt for that playlist for this long. */
-export const RETRY_MS = 10 * 60 * 1000;
-/** A visitor waits at most this long for a playlist's first sync; it then finishes in the background. */
-export const FIRST_SYNC_WAIT_MS = 8000;
 
 export const DEFAULT_SPOTIFY_SETTINGS: SpotifySettings = {
   enabled: true,
-  playlistUrl: playlistUrl("37i9dQZF1DX9AUX5YVf3hc"),
   shuffle: true,
   volume: 30,
   autoCollapseSeconds: 3
 };
 
-export const spotifySettingsSchema = z
-  .object({
-    enabled: z.boolean(),
-    playlistUrl: z
-      .string()
-      .trim()
-      .max(500)
-      .refine((value) => playlistIdFromUrl(value) !== null, "请填写 Spotify 歌单链接，例如 https://open.spotify.com/playlist/…")
-      .transform((value) => playlistUrl(playlistIdFromUrl(value)!)),
-    shuffle: z.boolean(),
-    volume: z.number().int().min(0).max(100),
-    autoCollapseSeconds: z.number().int().min(0).max(120)
-  })
-  .strict();
-
-type SyncState = {
-  syncedAt: string | null;
-  attemptedAt: string | null;
-  /** The playlist the last attempt was for. */
-  attemptedId: string | null;
-  error: string | null;
-  playlist: FetchedPlaylist | null;
+const settingsShape = {
+  enabled: z.boolean(),
+  shuffle: z.boolean(),
+  volume: z.number().int().min(0).max(100),
+  autoCollapseSeconds: z.number().int().min(0).max(120)
 };
 
-const EMPTY_STATE: SyncState = { syncedAt: null, attemptedAt: null, attemptedId: null, error: null, playlist: null };
+/** Input from the admin: every field, nothing else. */
+export const spotifySettingsSchema = z.object(settingsShape).strict();
+/** Stored settings may carry fields of older versions (e.g. playlistUrl); they are dropped. */
+const storedSettingsSchema = z.object(settingsShape);
 
-const playlistInfo = ({ id, name, image, link }: FetchedPlaylist) => ({ id, name, image, link });
-
-/** Player settings plus the cached playlist, synced from Spotify on demand. */
+/**
+ * The site's music player: its settings, and the collection's songs that are public, marked "in player"
+ * and have a preview.
+ */
 export class SpotifyService {
-  private inflight: Promise<SyncState> | null = null;
-
   constructor(
     private readonly repo: SettingsRepository,
-    private readonly fetchPlaylist: PlaylistFetcher,
-    private readonly onSyncError: (error: unknown) => void = () => {},
-    private readonly now: () => number = Date.now
+    private readonly media: MediaRepository | null,
+    private readonly collection: CollectionSettingsStore | null,
+    private readonly store: LocalImageStore
   ) {}
 
   async settings(): Promise<SpotifySettings> {
-    // Stored settings were validated on save; anything unreadable falls back to the defaults.
     const stored = await this.repo.get(SETTINGS_KEY);
-    const parsed = spotifySettingsSchema.safeParse({ ...DEFAULT_SPOTIFY_SETTINGS, ...(stored && typeof stored === "object" ? stored : {}) });
+    const parsed = storedSettingsSchema.safeParse({ ...DEFAULT_SPOTIFY_SETTINGS, ...(stored && typeof stored === "object" ? stored : {}) });
     return parsed.success ? parsed.data : DEFAULT_SPOTIFY_SETTINGS;
   }
 
-  /** Saves validated settings; syncs right away when the playlist changed. */
   async saveSettings(settings: SpotifySettings) {
-    const previous = await this.settings();
     await this.repo.set(SETTINGS_KEY, settings);
-    if (settings.playlistUrl === previous.playlistUrl) return;
-    // A sync already running read the old settings; let it finish, then sync the new playlist.
-    await this.inflight?.catch(() => {});
-    await this.sync();
   }
 
-  private async state(): Promise<SyncState> {
-    const stored = await this.repo.get(STATE_KEY);
-    return stored && typeof stored === "object" ? { ...EMPTY_STATE, ...(stored as Partial<SyncState>) } : EMPTY_STATE;
+  /** Songs the player plays, in collection order. */
+  async tracks(): Promise<SpotifyTrack[]> {
+    if (!this.media) return [];
+    const [rows, settings] = await Promise.all([this.media.list({ kind: "track" }), this.collection?.get() ?? DEFAULT_COLLECTION_SETTINGS]);
+    return rows
+      .filter((row) => row.inPlayer && isMediaPublic(row, settings))
+      .map((row) => this.toTrack(row))
+      .filter((track): track is SpotifyTrack => track !== null);
   }
 
-  /** Fetches the configured playlist. Concurrent calls share one fetch; failures keep the last good playlist. */
-  sync(): Promise<SyncState> {
-    this.inflight ??= this.runSync().finally(() => {
-      this.inflight = null;
-    });
-    return this.inflight;
-  }
-
-  private async runSync(): Promise<SyncState> {
-    const [settings, previous] = await Promise.all([this.settings(), this.state()]);
-    const id = playlistIdFromUrl(settings.playlistUrl)!;
-    const attemptedAt = new Date(this.now()).toISOString();
-    // Tracks showing the playlist cover had no cover of their own last time; look them up again.
-    const knownCovers = new Map(
-      (previous.playlist?.tracks ?? []).filter((track) => track.image !== previous.playlist?.image).map((track) => [track.id, track.image] as const)
-    );
-
-    let next: SyncState;
-    try {
-      const playlist = await this.fetchPlaylist(id, knownCovers);
-      next = { syncedAt: attemptedAt, attemptedAt, attemptedId: id, error: null, playlist };
-    } catch (error) {
-      this.onSyncError(error);
-      next = { ...previous, attemptedAt, attemptedId: id, error: error instanceof PlaylistError ? error.message : "同步失败" };
-    }
-    await this.repo.set(STATE_KEY, next);
-    return next;
-  }
-
-  /** Sync details for the admin; a playlist cached for another URL does not count. */
-  async status(settings?: SpotifySettings): Promise<SpotifySyncStatus> {
-    const [current, state] = await Promise.all([settings ?? this.settings(), this.state()]);
-    const id = playlistIdFromUrl(current.playlistUrl);
-    const playlist = state.playlist?.id === id ? state.playlist : null;
+  private toTrack(row: MediaRow): SpotifyTrack | null {
+    const music = musicOf(row);
+    if (!music?.previewUrl) return null;
+    const cover = row.poster?.variants.length ? this.store.publicUrl(row.poster.key, variantFileName(row.poster.variants[0].width)) : "";
     return {
-      syncedAt: playlist ? state.syncedAt : null,
-      attemptedAt: state.attemptedAt,
-      error: state.attemptedId === id ? state.error : null,
-      playlist: playlist && playlistInfo(playlist),
-      tracks: playlist?.tracks ?? []
+      id: row.id,
+      title: row.title.en || row.title.zh || row.originalTitle || Object.values(row.title).find(Boolean) || "",
+      artist: row.credits.join(", "),
+      image: cover,
+      link: music.spotifyUrl ?? music.appleUrl ?? "",
+      previewUrl: music.previewUrl
     };
   }
 
-  /**
-   * The site's player. The first request for a playlist waits (briefly) for its sync; later ones get
-   * the cached playlist and refresh it in the background once it is old.
-   */
   async player(): Promise<PublicSpotifyPlayer> {
     const settings = await this.settings();
-    const { playlistUrl: _url, ...options } = settings;
-    if (!settings.enabled) return { ...options, playlist: null, tracks: [] };
-
-    let state = await this.state();
-    const id = playlistIdFromUrl(settings.playlistUrl);
-    const now = this.now();
-    const failedRecently = state.error !== null && state.attemptedId === id && !!state.attemptedAt && now - Date.parse(state.attemptedAt) <= RETRY_MS;
-    const current = state.playlist?.id === id;
-
-    if (!current && !failedRecently) {
-      const sync = this.sync();
-      sync.catch(this.onSyncError);
-      let timer: NodeJS.Timeout | undefined;
-      const timeout = new Promise<null>((resolve) => {
-        timer = setTimeout(() => resolve(null), FIRST_SYNC_WAIT_MS);
-      });
-      state = (await Promise.race([sync, timeout]).finally(() => clearTimeout(timer))) ?? state;
-    } else if (current && !failedRecently && (!state.syncedAt || now - Date.parse(state.syncedAt) > REFRESH_MS)) {
-      this.sync().catch(this.onSyncError);
-    }
-
-    const playlist = state.playlist?.id === id ? state.playlist : null;
-    return { ...options, playlist: playlist && playlistInfo(playlist), tracks: playlist?.tracks ?? [] };
+    if (!settings.enabled) return { ...settings, tracks: [] };
+    return { ...settings, tracks: await this.tracks() };
   }
 }

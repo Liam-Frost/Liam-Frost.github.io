@@ -151,10 +151,9 @@ export type AdminProjectsResponse = { projects: AdminProject[] };
 export type AdminProjectResponse = { project: AdminProject };
 
 /** Spotify player settings, edited in the admin. */
+/** Settings of the site's music player; its songs are the collection's songs marked "in player". */
 export type SpotifySettings = {
   enabled: boolean;
-  /** https://open.spotify.com/playlist/<id> */
-  playlistUrl: string;
   shuffle: boolean;
   /** Initial preview volume, 0-100. */
   volume: number;
@@ -162,37 +161,25 @@ export type SpotifySettings = {
   autoCollapseSeconds: number;
 };
 
-/** A playlist track with its 30-second preview. */
+/** A song in the site's player, with its 30-second preview. */
 export type SpotifyTrack = {
   id: string;
   title: string;
   artist: string;
   image: string;
-  /** The track on open.spotify.com. */
+  /** The song on Spotify (or Apple Music). */
   link: string;
   previewUrl: string;
 };
 
-export type SpotifyPlaylistInfo = { id: string; name: string; image: string; link: string };
-
 /** What the site's player needs. */
-export type PublicSpotifyPlayer = Omit<SpotifySettings, "playlistUrl"> & {
-  playlist: SpotifyPlaylistInfo | null;
-  tracks: SpotifyTrack[];
-};
+export type PublicSpotifyPlayer = SpotifySettings & { tracks: SpotifyTrack[] };
 
-export type SpotifySyncStatus = {
-  /** Last successful sync of the configured playlist. */
-  syncedAt: string | null;
-  /** Last attempt, successful or not. */
-  attemptedAt: string | null;
-  /** Why the last attempt failed; null after a success. */
-  error: string | null;
-  playlist: SpotifyPlaylistInfo | null;
-  tracks: SpotifyTrack[];
+export type AdminSpotifyResponse = {
+  settings: SpotifySettings;
+  /** Songs the player plays: in the player, public and with a preview. */
+  playerTracks: number;
 };
-
-export type AdminSpotifyResponse = { settings: SpotifySettings; sync: SpotifySyncStatus };
 
 /** Collection entries: films, series and anime now; music (track/album) in a later stage. */
 export type MediaKind = "movie" | "tv" | "anime" | "track" | "album";
@@ -200,6 +187,16 @@ export type MediaKind = "movie" | "tv" | "anime" | "track" | "album";
 export type MediaStatus = "want" | "watching" | "done" | "dropped";
 /** Where an entry's details came from. */
 export type MediaSource = "tmdb" | "bangumi" | "spotify" | "itunes" | "manual";
+
+/** Song details (kind "track"). */
+export type MediaMusic = {
+  album: string | null;
+  durationMs: number | null;
+  /** 30-second preview (iTunes or Spotify CDN). */
+  previewUrl: string | null;
+  spotifyUrl: string | null;
+  appleUrl: string | null;
+};
 
 /** Episodes watched out of the total (unknown total: null). */
 export type MediaProgress = { watched: number; total: number | null };
@@ -227,6 +224,10 @@ export type AdminMediaItem = {
   watchedOn: string | null;
   rewatchCount: number;
   progress: MediaProgress | null;
+  /** Songs only. */
+  music: MediaMusic | null;
+  /** Songs: plays in the site's player. */
+  inPlayer: boolean;
   featured: boolean;
   visibility: PhotoVisibility;
   createdAt: string;
@@ -252,6 +253,9 @@ export type AdminMediaUpdate = Partial<{
   watchedOn: string | null;
   rewatchCount: number;
   progress: MediaProgress | null;
+  /** Songs: album, and a preview chosen from an iTunes search result. */
+  music: { album?: string | null; previewUrl?: string | null; appleUrl?: string | null };
+  inPlayer: boolean;
   featured: boolean;
   visibility: PhotoVisibility;
 }>;
@@ -278,6 +282,39 @@ export type CollectionSettings = {
   showWant: boolean;
 };
 
+/** A song from the iTunes search, for adding to the collection or as a preview source. */
+export type MusicSearchResult = {
+  itunesId: string;
+  title: string;
+  artist: string;
+  album: string | null;
+  year: number | null;
+  /** Small remote cover for the result list. */
+  artworkUrl: string | null;
+  previewUrl: string | null;
+  durationMs: number | null;
+  appleUrl: string | null;
+  existingId: string | null;
+};
+
+export type AdminMusicSearchResponse = { results: MusicSearchResult[] };
+export type AdminMusicImport = { itunesId: string; country: string };
+
+/** Progress of a playlist import running on the server. */
+export type MusicImportJob = {
+  id: string;
+  state: "running" | "done" | "failed";
+  playlistName: string | null;
+  total: number;
+  processed: number;
+  added: number;
+  /** Already in the collection. */
+  skipped: number;
+  /** Added without a preview (not in the player). */
+  noPreview: number;
+  error: string | null;
+};
+
 export type AdminMediaListResponse = { items: AdminMediaItem[] };
 export type AdminMediaResponse = { item: AdminMediaItem };
 export type AdminMediaSearchResponse = { results: MediaSearchResult[] };
@@ -302,6 +339,7 @@ export type PublicMediaSummary = {
   watchedOn: string | null;
   rewatchCount: number;
   progress: MediaProgress | null;
+  music: MediaMusic | null;
   featured: boolean;
   /** Whether a short review exists in any language. */
   hasReview: boolean;
