@@ -36,7 +36,10 @@ export default function CollectionPage() {
   const [year, setYear] = useState("");
   const [minRating, setMinRating] = useState(0);
 
-  const kind = (kinds.find((k) => k === params.get("kind")) ?? kinds[0]) as MediaKind | undefined;
+  // Without ?kind, open the first kind that has entries.
+  const kind = (kinds.find((k) => k === params.get("kind")) ?? kinds.find((k) => items.some((item) => item.kind === k)) ?? kinds[0]) as
+    | MediaKind
+    | undefined;
   const status = STATUSES.find((s) => s === params.get("status")) ?? null;
   const openId = params.get("item");
 
