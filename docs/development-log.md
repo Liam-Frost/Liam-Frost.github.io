@@ -43,6 +43,12 @@
 - The model re-ran verification after review fixes, including a login rate-limit check where the 9th bad attempt returned `429`.
 - The model created Stage 3 PR #3: https://github.com/Liam-Frost/Liam-Frost.github.io/pull/3
 
+- 2026-10-31: The user decided on a standalone `apps/admin` app, a configurable admin path, and upgrading React to the latest version. The plan is in `docs/plan-admin-projects-deploy.md`.
+- The model found PR #3 still open; with the user's approval it merged PR #3 and recreated local `dev` from the updated `main`.
+- The model started Stage 4 (front-end dependency upgrade): React 19.3, React Router 8, Vite 8, Node 22 in CI.
+- The first install left a hoisted React 18 copy used by `lucide-react` and simple-icons, plus a nested Vite 6 under the SWC plugin; `npm dedupe` resolved both.
+- The model verified typecheck, build, and the main UI flows in the browser.
+
 ## Notes
 
 - A direct Windows directory rename of `src` failed with `Permission denied`; the migration continued by moving source subdirectories individually.

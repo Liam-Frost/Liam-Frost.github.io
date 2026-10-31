@@ -1,4 +1,4 @@
-import { Route, Routes } from "react-router-dom";
+import { Route, Routes } from "react-router";
 
 import ScrollManager from "./ScrollManager";
 import BackgroundFX from "../components/BackgroundFX";

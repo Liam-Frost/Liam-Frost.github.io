@@ -77,9 +77,30 @@ Status: implementation complete; Claude Code review complete and fixes applied.
 - Re-ran `npm run typecheck`, `npm run build`, `npm audit --audit-level=high`, admin auth flow checks, session revocation checks, and login rate-limit checks after review fixes.
 - Created Stage 3 PR #3: https://github.com/Liam-Frost/Liam-Frost.github.io/pull/3
 
+- PR #3 merged on 2026-10-31.
+
+## 2026-10-31
+
+### Stage 4: Front-End Dependency Upgrade
+
+Status: implementation complete; awaiting Claude Code review.
+
+- Upgraded `apps/web` to React 19.3.1 and React DOM 19.3.1, with `@types/react` / `@types/react-dom` 19.3.0.
+- Replaced `react-router-dom` 6 with `react-router` 8.5.1 (v8 ships a single package); updated all imports.
+- Upgraded Vite 6 to 8.3.5, `@vitejs/plugin-react-swc` to 4.3.3, `lucide-react` 0.562 to 1.65.0, `@icons-pack/react-simple-icons` to 13.15.1.
+- Ran `npm dedupe` to remove a stale hoisted React 18 copy that would have caused duplicate React instances.
+- Set CI Node version to 22 and added root `engines.node >=22.22.0` (required by React Router 8).
+- Added `.claude/launch.json` for local web/API dev servers.
+- Ran `npm run typecheck`; result: passed.
+- Ran `npm run build`; result: passed (Vite 8).
+- Ran `npm audit fix` (non-breaking). Remaining: 3 high findings in the Prisma 6 CLI dependency chain (`deepmerge-ts` via `@prisma/config`); the fix requires a Prisma major upgrade and is deferred.
+- Manually verified in the browser with the API running in seed mode: home page, portfolio, category filter, photo modal, fullscreen viewer, theme switching (light/dark), language switching, 404 page, `/admin` login page, Spotify dock. No React errors in the console; 404 console entries come from the existing Flickr size fallback chain.
+- Found two pre-existing issues (not caused by the upgrade, not fixed in this stage): a single Escape closes both the fullscreen viewer and the photo modal; the portfolio category filter stores a localized label, so switching language while filtered shows 0 photos.
+
 ### Upcoming
 
-- Review and merge Stage 3 PR #3.
+- Claude Code review of Stage 4, then PR.
+- Stage 5: back-end foundation and admin auth refinement (`ADMIN_PATH`, IP allowlist, CSRF, Zod, tests). See `docs/plan-admin-projects-deploy.md`.
 
 ## Future Stages
 
