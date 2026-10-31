@@ -39,7 +39,7 @@ describe("playlist parsing", () => {
     expect(playlistIdFromUrl("https://open.spotify.com/playlist/short")).toBeNull();
   });
 
-  it("keeps playable tracks with previews, once each", () => {
+  it("keeps playable tracks once each, with or without a preview", () => {
     const parsed = parseEmbedPage(
       embedPage([
         embedTrack(1),
@@ -51,7 +51,11 @@ describe("playlist parsing", () => {
       ])
     );
     expect(parsed.name).toBe("City Pop Best");
-    expect(parsed.tracks.map((t) => t.title)).toEqual(["Song 1", "Song 5"]);
+    expect(parsed.tracks.map((t) => [t.title, t.previewUrl])).toEqual([
+      ["Song 1", "https://p.scdn.co/mp3-preview/1"],
+      ["Song 3", ""],
+      ["Song 5", "https://p.scdn.co/mp3-preview/5"]
+    ]);
     expect(parsed.tracks[0]).toEqual({
       id: trackId(1),
       title: "Song 1",
@@ -96,8 +100,10 @@ describe("music player", () => {
     const settings = new MemorySettingsRepository();
     const app = await buildTestServer({}, { media, settings });
     const cookie = await login(app);
-    const add = (n: number, overrides: object = {}) =>
-      media.create({
+    const add = async (n: number, overrides: object = {}) => {
+      // Distinct creation times: the player plays songs in the order they were added.
+      await new Promise((resolve) => setTimeout(resolve, 2));
+      return media.create({
         id: `00000000-0000-4000-8000-00000000000${n}`,
         kind: "track",
         source: "itunes",
@@ -108,6 +114,7 @@ describe("music player", () => {
         inPlayer: true,
         ...overrides
       });
+    };
     return { app, media, settings, cookie, headers: { ...csrf, cookie }, add };
   }
 
@@ -126,7 +133,7 @@ describe("music player", () => {
         expect.objectContaining({ title: "Song 5", link: "https://open.spotify.com/track/5" })
       ])
     );
-    expect(player.tracks).toHaveLength(2);
+    expect(player.tracks.map((track: { title: string }) => track.title)).toEqual(["Song 1", "Song 5"]);
   });
 
   it("hides songs when music is switched off on the site, and returns none when the player is off", async () => {

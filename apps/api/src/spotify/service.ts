@@ -52,12 +52,13 @@ export class SpotifyService {
     await this.repo.set(SETTINGS_KEY, settings);
   }
 
-  /** Songs the player plays, in collection order. */
+  /** Songs the player plays, in the order they were added (an imported playlist plays first to last). */
   async tracks(): Promise<SpotifyTrack[]> {
     if (!this.media) return [];
     const [rows, settings] = await Promise.all([this.media.list({ kind: "track" }), this.collection?.get() ?? DEFAULT_COLLECTION_SETTINGS]);
     return rows
       .filter((row) => row.inPlayer && isMediaPublic(row, settings))
+      .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
       .map((row) => this.toTrack(row))
       .filter((track): track is SpotifyTrack => track !== null);
   }

@@ -78,8 +78,10 @@ export function parseEmbedPage(html: string): { name: string; image: string; tra
   const seen = new Set<string>();
   for (const track of entity.trackList) {
     const id = /^spotify:track:([A-Za-z0-9]{22})$/.exec(track.uri ?? "")?.[1];
-    const previewUrl = track.audioPreview?.url ?? "";
-    if (!id || seen.has(id) || track.isPlayable === false || !previewUrl.startsWith("https://")) continue;
+    const preview = track.audioPreview?.url ?? "";
+    // Songs without a preview are kept (with ""): imports add them, only the player needs previews.
+    const previewUrl = preview.startsWith("https://") ? preview : "";
+    if (!id || seen.has(id) || track.isPlayable === false) continue;
     seen.add(id);
     tracks.push({
       id,
@@ -128,7 +130,7 @@ export function createPlaylistFetcher(fetchImpl: typeof fetch = fetch): Playlist
     }
 
     const parsed = parseEmbedPage(await response.text());
-    if (!parsed.tracks.length) throw new PlaylistError("歌单里没有可试听的歌曲");
+    if (!parsed.tracks.length) throw new PlaylistError("歌单里没有可以导入的歌曲");
 
     // Covers from earlier syncs are reused; only new tracks are looked up, within a time budget.
     const covers = new Map(knownCovers);

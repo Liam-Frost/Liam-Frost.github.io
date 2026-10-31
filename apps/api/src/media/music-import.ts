@@ -64,6 +64,9 @@ export async function importItunesSong(deps: Deps & { music: MusicSource }, itun
 
 const MAX_JOBS = 10;
 
+/** Another playlist is being imported. */
+export class ImportBusyError extends Error {}
+
 /**
  * Imports the songs of a public Spotify playlist (from its embed page, with 30-second previews) as a
  * background job; the admin polls its progress. Songs already in the collection are skipped, so a
@@ -71,7 +74,7 @@ const MAX_JOBS = 10;
  */
 export class PlaylistImports {
   private readonly jobs = new Map<string, MusicImportJob>();
-  private running: string | null = null;
+  private running: { jobId: string; playlistId: string } | null = null;
 
   constructor(
     private readonly deps: Deps,
@@ -83,16 +86,22 @@ export class PlaylistImports {
     return this.jobs.get(id) ?? null;
   }
 
-  /** Starts an import, or returns the one already running. Throws PlaylistError for a bad link. */
+  /**
+   * Starts an import, or returns the running one for the same playlist. Throws PlaylistError for a bad
+   * link and ImportBusyError while another playlist is being imported.
+   */
   start(playlistLink: string): MusicImportJob {
-    if (this.running) return this.jobs.get(this.running)!;
     const playlistId = playlistIdFromUrl(playlistLink);
     if (!playlistId) throw new PlaylistError("请填写 Spotify 歌单链接，例如 https://open.spotify.com/playlist/…");
+    if (this.running) {
+      if (this.running.playlistId === playlistId) return this.jobs.get(this.running.jobId)!;
+      throw new ImportBusyError("另一个歌单正在导入，请等它完成");
+    }
 
     const job: MusicImportJob = { id: randomBytes(8).toString("hex"), state: "running", playlistName: null, total: 0, processed: 0, added: 0, skipped: 0, noPreview: 0, error: null };
     this.jobs.set(job.id, job);
     while (this.jobs.size > MAX_JOBS) this.jobs.delete(this.jobs.keys().next().value!);
-    this.running = job.id;
+    this.running = { jobId: job.id, playlistId };
     void this.run(job, playlistId).finally(() => {
       this.running = null;
     });
