@@ -191,7 +191,7 @@ Status: implementation complete; Claude Code review complete and fixes applied.
 
 ### Upcoming
 
-- Review and merge the Stage 8 PR.
+- Review and merge Stage 8 PR #8: https://github.com/Liam-Frost/Liam-Frost.github.io/pull/8
 - Stage 9: full local run with Docker Compose.
 - Stage 5: back-end foundation and admin auth refinement (`ADMIN_PATH`, IP allowlist, CSRF, Zod, tests). See `docs/plan-admin-projects-deploy.md`.
 
