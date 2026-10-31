@@ -222,6 +222,7 @@ Status: implementation complete; Claude Code review complete and fixes applied.
 
 - Review and merge the Stage 9 PR.
 - Stage 10: VPS deployment and CI/CD (needs the VPS provider/OS/specs, DNS manager and domain from the user).
+- Collection module (movies, TV, anime, music): plan drafted in `docs/plan-collection.md` (Stages 11-14), waiting for the user's confirmation.
 - Stage 5: back-end foundation and admin auth refinement (`ADMIN_PATH`, IP allowlist, CSRF, Zod, tests). See `docs/plan-admin-projects-deploy.md`.
 
 ## Future Stages

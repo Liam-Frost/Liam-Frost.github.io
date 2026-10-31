@@ -2,6 +2,10 @@
 
 ## User Decisions
 
+### 2026-10-31: Collection Module Scope
+
+Movies, TV, anime and music get a collection module (`docs/plan-collection.md`). Mainland China accessibility is not a concern. There are no existing records for films, series or anime, so they are added one by one (search to prefill); music comes from a Spotify Liked Songs import plus manual additions. Ratings are out of five; short reviews are multilingual. Whether "want to watch" items show on the site is a global switch in the admin, plus each item's own visibility.
+
 ### 2026-10-31: Spotify Player Managed in the Admin (Option B)
 
 The site keeps its own Spotify card. The API syncs a configurable playlist and the player loops through its 30-second previews (shuffled by default). The admin's "音乐" page sets the playlist, shuffle, volume and auto-collapse. The official Spotify embed player (option A) was not chosen: it cannot shuffle and does not match the site's style.
