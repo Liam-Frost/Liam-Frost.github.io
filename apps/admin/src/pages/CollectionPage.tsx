@@ -232,7 +232,7 @@ function AddMediaDialog({ kind, tmdbReady, onClose }: { kind: WatchKind; tmdbRea
             placeholder="片名，中文、英文或原名都可以"
             disabled={!sourceReady}
             onChange={(e) => setQuery(e.target.value)}
-            autoFocus
+            data-autofocus
           />
         </Field>
         <button type="submit" className="btn-primary" disabled={searching || !query.trim() || !sourceReady}>

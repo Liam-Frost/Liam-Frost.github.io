@@ -242,13 +242,17 @@ export function createMediaSources(options: { tmdbKey?: string; fetchImpl?: type
       if (!/^\d+$/.test(sourceId)) throw new SourceError("无效的 Bangumi 条目");
       const subject = await bangumi<BangumiSubject>(`/v0/subjects/${sourceId}`);
       const infobox = subject.infobox ?? [];
+      const infoboxText = (value: string | { v: string }[]) => (typeof value === "string" ? value : value.map((item) => item.v).join(" "));
       const credits = BANGUMI_CREDIT_KEYS.flatMap((key) => {
         const value = infobox.find((entry) => entry.key === key)?.value;
         const names = typeof value === "string" ? value.split(/[、,，/]/) : (value ?? []).map((item) => item.v);
-        return names.map((name) => name.trim()).filter(Boolean);
+        // Drop notes such as "（芳文社「まんがタイムきららMAX」連載中）".
+        return names.map((name) => name.replace(/[（(][^）)]*[）)]/g, "").trim()).filter(Boolean);
       });
+      // User tags mix genres with studios, publishers and seasons; keep the ones the infobox does not name.
+      const named = infobox.map((entry) => infoboxText(entry.value)).join(" ").toLowerCase();
       const genres = (subject.tags ?? [])
-        .filter((tag) => !/\d/.test(tag.name) && tag.name.length <= 12)
+        .filter((tag) => !/\d/.test(tag.name) && tag.name.length <= 12 && !named.includes(tag.name.toLowerCase()))
         .sort((a, b) => b.count - a.count)
         .slice(0, 6)
         .map((tag) => ({ zh: tag.name }));
@@ -263,7 +267,8 @@ export function createMediaSources(options: { tmdbKey?: string; fetchImpl?: type
         credits: [...new Set(credits)].slice(0, 6),
         overview: compact({ zh: clean(subject.summary) }),
         posterUrl: bangumiPoster(subject),
-        episodes: subject.total_episodes || subject.eps || null
+        // eps counts main episodes; total_episodes also counts specials, openings and endings.
+        episodes: subject.eps || subject.total_episodes || null
       };
     },
 

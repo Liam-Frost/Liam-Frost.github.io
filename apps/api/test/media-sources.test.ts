@@ -116,12 +116,16 @@ describe("Bangumi", () => {
         tags: [
           { name: "2022年10月", count: 900 },
           { name: "音乐", count: 800 },
+          { name: "Cloverworks", count: 750 },
+          { name: "芳文社", count: 720 },
           { name: "日常", count: 700 }
         ],
-        total_episodes: 12,
+        eps: 12,
+        total_episodes: 16,
         infobox: [
           { key: "导演", value: "斎藤圭一郎" },
-          { key: "动画制作", value: [{ v: "CloverWorks" }] }
+          { key: "动画制作", value: [{ v: "CloverWorks" }] },
+          { key: "原作", value: "はまじあき（芳文社「まんがタイムきららMAX」連載中）" }
         ]
       });
     });
@@ -136,7 +140,7 @@ describe("Bangumi", () => {
       sourceUrl: "https://bgm.tv/subject/328609",
       title: { zh: "孤独摇滚！", ja: "ぼっち・ざ・ろっく！" },
       genres: [{ zh: "音乐" }, { zh: "日常" }],
-      credits: ["斎藤圭一郎", "CloverWorks"],
+      credits: ["斎藤圭一郎", "CloverWorks", "はまじあき"],
       posterUrl: "https://lain.bgm.tv/l.jpg",
       episodes: 12
     });
