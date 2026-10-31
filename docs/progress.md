@@ -228,12 +228,11 @@ Status: implementation complete; Claude Code review complete and fixes applied.
 - Admin routes for listing, searching, importing, manual creation, editing, poster replacement, deletion and display settings; poster visibility follows the entry, its kind and the "want" switch.
 - Admin UI: 收藏 page (kind tabs, status filters, title filter, display settings), add dialog (search, already-added marks, manual entry), editor (status, stars, date, rewatches, progress, multilingual title/review/synopsis, details, poster, publish switches).
 - Tests: 98 passed.
-- Verified in the browser against a temporary PostgreSQL with live Bangumi data: searched and imported two anime (titles, year, credits, genres, 12 / 28 episodes, poster), edited status, rating, progress and reviews in two languages, featured; status filter, display settings, manual entry, duplicate import (409), deletion; phone width. The "TMDB not configured" path was checked; real TMDB requests are not verified yet because `TMDB_API_KEY` is not set locally.
+- Verified in the browser against a temporary PostgreSQL with live Bangumi data: searched and imported two anime (titles, year, credits, genres, 12 / 28 episodes, poster), edited status, rating, progress and reviews in two languages, featured; status filter, display settings, manual entry, duplicate import (409), deletion; phone width. The "TMDB not configured" path was checked. With the user's TMDB read access token, real searches and imports were checked for a film, a series and an anime film (titles in all five languages where TMDB has them, localized genres, directors, 20 episodes, 780x1170 posters); TMDB's zh-TW genre names turned out to be Simplified and are now left out.
 - Ran Claude Code review for Stage 11 (`docs/reviews/2026-10-31-claude-code-stage-11.md`) and fixed six findings.
 
 ### Upcoming
 
-- Verify TMDB search and import once `TMDB_API_KEY` is set in `apps/api/.env`.
 - Review and merge the Stage 11 PR, then Stage 12 (public collection page).
 - Stage 10: VPS deployment and CI/CD (needs the VPS provider/OS/specs, DNS manager and domain from the user).
 - Stage 5: back-end foundation and admin auth refinement (`ADMIN_PATH`, IP allowlist, CSRF, Zod, tests). See `docs/plan-admin-projects-deploy.md`.

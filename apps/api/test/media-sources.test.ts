@@ -70,6 +70,18 @@ describe("TMDB", () => {
     expect(new URL(String(fetchImpl.mock.calls[0][0])).searchParams.get("api_key")).toBe("abc123");
   });
 
+  it("leaves out Traditional genre names that TMDB only has in Simplified", async () => {
+    const fetchImpl = fakeFetch((url) => {
+      if (url.pathname.startsWith("/3/genre/")) {
+        const lang = url.searchParams.get("language")!;
+        return Response.json({ genres: [{ id: 35, name: lang.startsWith("zh") ? "喜剧" : "Comedy" }] });
+      }
+      return Response.json({ id: 1, name: "剧", genres: [{ id: 35, name: "喜剧" }] });
+    });
+    const result = await createMediaSources({ tmdbKey: "abc123", fetchImpl }).details("tmdb", "tv", "tv:1");
+    expect(result.genres).toEqual([{ zh: "喜剧", en: "Comedy", fr: "Comedy", ja: "Comedy" }]);
+  });
+
   it("sends a v4 token as a bearer header and loads genre lists once", async () => {
     const fetchImpl = fakeFetch(tmdbHandler);
     const sources = createMediaSources({ tmdbKey: "eyJhbGciOi.token", fetchImpl });

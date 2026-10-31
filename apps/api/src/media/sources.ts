@@ -133,7 +133,8 @@ export function createMediaSources(options: { tmdbKey?: string; fetchImpl?: type
           const { genres } = await tmdb<{ genres: { id: number; name: string }[] }>(`/genre/${type}/list`, { language: locale });
           for (const genre of genres) names.set(genre.id, { ...names.get(genre.id), [lang]: genre.name });
         }
-        return new Map([...names].map(([id, text]) => [id, compact(text)]));
+        // TMDB answers zh-TW genre lists with the Simplified names; keep only real Traditional ones.
+        return new Map([...names].map(([id, text]) => [id, compact(text["zh-Hant"] === text.zh ? { ...text, "zh-Hant": "" } : text)]));
       })();
       list.catch(() => genreLists.delete(type));
       genreLists.set(type, list);
