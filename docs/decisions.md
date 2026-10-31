@@ -72,6 +72,18 @@ Reason: the admin's "首页精选" switch has to drive it. The seed content mark
 
 Reason: a stale tab cannot silently overwrite a newer order or drop photos from the ordering.
 
+### 2026-10-31: Serve Hidden Photos' Images Only to the Admin
+
+`/uploads` checks the photo in the database for every image request: public photos are cached publicly for a year, hidden ones go only to a signed-in admin without caching.
+
+Reason: drafts must not leak by URL guessing. The cost is one primary-key lookup per image request, which the long public cache makes rare.
+
+### 2026-10-31: Keep Prisma Migrations LF
+
+`.gitattributes` forces LF line endings for `apps/api/prisma/migrations/**`.
+
+Reason: Prisma checksums migration files byte for byte; with `core.autocrlf`, Windows and Linux checkouts would disagree.
+
 ### 2026-10-31: Commit Migrations, Add `db:deploy`
 
 The first Prisma migrations are committed and `npm run db:deploy` applies them.

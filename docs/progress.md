@@ -154,7 +154,7 @@ Status: implementation complete; Claude Code review complete and fixes applied.
 
 ### Stage 7: Photo Management and Upload Pipeline
 
-Status: implementation complete; awaiting Claude Code review.
+Status: implementation complete; Claude Code review complete and fixes applied.
 
 - Prisma: `ImageStorage` enum, `storage`, `storageKey`, `variants` on `Photo`. Committed the first migrations (`init`, `photo_uploads`) and added `npm run db:deploy`.
 - `PhotoRepository` interface with a Prisma implementation (in-memory one for tests); replaced `db/photos.ts` and the unused `storage/config.ts` / `storage/images.ts`.
@@ -166,10 +166,11 @@ Status: implementation complete; awaiting Claude Code review.
 - Web: uploaded photos use their generated sizes (`srcset`, 1280 px lightbox medium, viewport-sized full image); the home "featured" section now follows the `featured` flag (seed content marks the original ten); dev server proxies `/uploads`.
 - Tests: 47 passed (12 new for photos).
 - Verified end to end against a local Prisma Postgres (`prisma dev`) with seeded data and a throwaway admin password: 40 seed photos listed with Flickr thumbnails; a 3000x2000 upload produced 640/1280/2048/3000 sizes and a hidden photo; editing in two languages, publishing and featuring saved correctly; the public portfolio, home featured section and lightbox (1280 medium then 3000 full) showed it; arrow and drag-and-drop reordering persisted; delete removed the row and files. Mobile width without horizontal scroll.
+- Ran Claude Code review for Stage 7 (`docs/reviews/2026-10-31-claude-code-stage-7.md`) and fixed: LF-only migration files via `.gitattributes` (Prisma checksums), hidden photos' images served only to the admin, decode the original once per upload, accurate upload error codes, uploads finished before the admin list loads.
 
 ### Upcoming
 
-- Claude Code review of Stage 7, then PR.
+- Review and merge the Stage 7 PR.
 - Stage 8: projects module.
 - Stage 5: back-end foundation and admin auth refinement (`ADMIN_PATH`, IP allowlist, CSRF, Zod, tests). See `docs/plan-admin-projects-deploy.md`.
 

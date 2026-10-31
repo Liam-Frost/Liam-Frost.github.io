@@ -107,16 +107,17 @@ describe("admin photo management", () => {
     expect(photo.thumbnail).toBe(photo.variants[0].url);
     expect(photo.src).toBe(photo.variants[3].url);
 
-    // Generated sizes are served; the original is stored but never served.
+    // Generated sizes are served (to the admin while hidden); the original is stored but never served.
     const files = readdirSync(join(uploadDir, "photos", photo.id));
     expect(files).toContain("original.jpg");
-    const served = await app.inject(photo.thumbnail);
+    expect((await app.inject(photo.thumbnail)).statusCode).toBe(404);
+    const served = await app.inject({ url: photo.thumbnail, headers: { cookie } });
     expect(served.statusCode).toBe(200);
     expect(served.headers["content-type"]).toBe("image/webp");
-    expect(served.headers["cache-control"]).toMatch(/immutable/);
+    expect(served.headers["cache-control"]).toBe("private, no-store");
     const servedMeta = await sharp(served.rawPayload).metadata();
     expect(servedMeta.exif).toBeUndefined();
-    expect((await app.inject(`/uploads/photos/${photo.id}/original.jpg`)).statusCode).toBe(404);
+    expect((await app.inject({ url: `/uploads/photos/${photo.id}/original.jpg`, headers: { cookie } })).statusCode).toBe(404);
 
     // Hidden until published.
     expect((await app.inject("/api/photos")).json()).toEqual([]);
@@ -177,10 +178,16 @@ describe("admin photo management", () => {
     expect(publicList[0]).toMatchObject({ id: photo.id, featured: true, src: photo.src });
     expect(publicList[0].variants).toHaveLength(4);
 
+    // Published: anyone can load the images, and they cache forever.
+    const image = await app.inject(photo.src);
+    expect(image.statusCode).toBe(200);
+    expect(image.headers["cache-control"]).toMatch(/immutable/);
+
     const removed = await app.inject({ method: "DELETE", url, headers: { ...csrf, cookie } });
     expect(removed.statusCode).toBe(204);
     expect(existsSync(join(uploadDir, "photos", photo.id))).toBe(false);
     expect((await app.inject(`/api/photos/${photo.id}`)).statusCode).toBe(404);
+    expect((await app.inject(photo.src)).statusCode).toBe(404);
     expect((await app.inject({ method: "DELETE", url, headers: { ...csrf, cookie } })).statusCode).toBe(404);
   });
 

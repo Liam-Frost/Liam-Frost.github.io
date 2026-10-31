@@ -50,10 +50,19 @@ export async function processImage(input: Buffer): Promise<ProcessedImage> {
   const longest = Math.max(width, height);
 
   const sizes = [...new Set(VARIANT_SIZES.map((size) => Math.min(size, longest)))];
+  const largest = sizes[sizes.length - 1];
+
+  // Decode, rotate and downscale the original once; every size is rendered from that smaller raw image.
+  const base = await sharp(input, { failOn: "error", limitInputPixels: MAX_PIXELS, animated: false })
+    .rotate()
+    .resize(largest, largest, { fit: "inside", withoutEnlargement: true })
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+  const raw = { width: base.info.width, height: base.info.height, channels: base.info.channels };
+
   const variants = [];
   for (const size of sizes) {
-    const { data, info } = await sharp(input, { failOn: "error", limitInputPixels: MAX_PIXELS, animated: false })
-      .rotate()
+    const { data, info } = await sharp(base.data, { raw })
       .resize(size, size, { fit: "inside", withoutEnlargement: true })
       .webp({ quality: 82, effort: 4 })
       .toBuffer({ resolveWithObject: true });

@@ -12,13 +12,19 @@ export function usePhotos() {
 /** Writes one changed photo into the cached list. */
 export function useSetPhoto() {
   const qc = useQueryClient();
-  return (photo: AdminPhoto, { prepend = false } = {}) =>
+  return (photo: AdminPhoto, { prepend = false } = {}) => {
+    // List not loaded yet: fetch it (it will include the photo) instead of dropping the update.
+    if (!qc.getQueryData(photosKey)) {
+      void qc.invalidateQueries({ queryKey: photosKey });
+      return;
+    }
     qc.setQueryData<AdminPhotosResponse>(photosKey, (data) => {
       if (!data) return data;
       const exists = data.photos.some((p) => p.id === photo.id);
       if (exists) return { photos: data.photos.map((p) => (p.id === photo.id ? photo : p)) };
       return { photos: prepend ? [photo, ...data.photos] : [...data.photos, photo] };
     });
+  };
 }
 
 export function useUpdatePhoto() {

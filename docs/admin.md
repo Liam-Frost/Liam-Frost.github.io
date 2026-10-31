@@ -81,7 +81,7 @@ Requires `DATABASE_URL` (see `database.md`).
 - **Order**: drag cards (or use the arrow buttons) in the "全部" view. The server only accepts the complete current list, so two tabs cannot silently overwrite each other's order.
 - **Existing Flickr photos** stay as remote URLs; their texts and flags are editable, their image is not replaced.
 
-Files live in `UPLOAD_DIR` (default `apps/api/uploads`) under `photos/<id>/` and are served from `/uploads/photos/<id>/<size>.webp` with a one-year immutable cache. Only those generated sizes are reachable. Because URLs are cached for a year, a deleted photo's image can remain in browsers that already loaded it.
+Files live in `UPLOAD_DIR` (default `apps/api/uploads`) under `photos/<id>/` and are served from `/uploads/photos/<id>/<size>.webp`. Only generated sizes of existing photos are reachable: public photos with a one-year immutable cache, hidden photos only to a signed-in admin (`private, no-store`). Because public URLs are cached for a year, a photo that is later hidden or deleted can remain in browsers that already loaded it.
 
 API: `GET/POST /api/admin/photos`, `GET/PATCH/DELETE /api/admin/photos/:id`, `PUT /api/admin/photos/order`.
 
