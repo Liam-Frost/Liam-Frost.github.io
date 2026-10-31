@@ -8,7 +8,9 @@ import {
   type AdminProjectsResponse,
   type AdminProjectUpdate,
   type AdminSessionResponse,
-  type ApiErrorBody
+  type AdminSpotifyResponse,
+  type ApiErrorBody,
+  type SpotifySettings
 } from "@liam-frost/shared";
 
 export class ApiError extends Error {
@@ -128,5 +130,9 @@ export const api = {
   uploadProjectImage: (id: string, slot: "cover" | "gallery", file: File, onProgress?: (fraction: number) => void) =>
     uploadFile<AdminProjectResponse>(`${projectPath(id)}/images?slot=${slot}`, file, onProgress),
   deleteProjectImage: (id: string, imageId: string) =>
-    request<AdminProjectResponse>(`${projectPath(id)}/images/${encodeURIComponent(imageId)}`, { method: "DELETE" })
+    request<AdminProjectResponse>(`${projectPath(id)}/images/${encodeURIComponent(imageId)}`, { method: "DELETE" }),
+
+  spotify: () => request<AdminSpotifyResponse>("/api/admin/spotify"),
+  updateSpotify: (settings: SpotifySettings) => request<AdminSpotifyResponse>("/api/admin/spotify", { method: "PUT", json: settings }),
+  syncSpotify: () => request<AdminSpotifyResponse>("/api/admin/spotify/sync", { method: "POST" })
 };
