@@ -24,6 +24,7 @@ export function passwordHash() {
 
 export type TestServerOptions = {
   adminDistDir?: string;
+  webDistDir?: string;
   /** Defaults to none (seed mode). */
   photos?: PhotoRepository | null;
   /** Defaults to none. */
@@ -50,6 +51,7 @@ export async function buildTestServer(env: Record<string, string | undefined> = 
     config,
     logger: false,
     adminDistDir: options.adminDistDir ?? "/nonexistent-admin-dist",
+    webDistDir: options.webDistDir ?? "/nonexistent-web-dist",
     photos: options.photos ?? null,
     projects: options.projects ?? null,
     settings: options.settings ?? null,
