@@ -60,6 +60,7 @@
 - PR #5 was merged; the model started Stage 6 (standalone `apps/admin`).
 - `@fastify/static` pulled in a `glob` version with moderate advisories, so the API serves the small, fixed set of admin build files itself.
 - Two bugs were found in the browser and fixed before commit: the admin dev proxy looping to itself (Vite `loadEnv` includes `process.env.PORT`) and logout not returning to the login screen (`queryClient.clear()` detaching the session observer).
+- The model ran Claude Code review for Stage 6, fixed three low findings, and created Stage 6 PR #6: https://github.com/Liam-Frost/Liam-Frost.github.io/pull/6
 
 ## Notes
 

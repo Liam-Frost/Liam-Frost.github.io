@@ -150,7 +150,7 @@ Status: implementation complete; Claude Code review complete and fixes applied.
 
 ### Upcoming
 
-- Review and merge the Stage 6 PR.
+- Review and merge Stage 6 PR #6: https://github.com/Liam-Frost/Liam-Frost.github.io/pull/6
 - Stage 7: photo management and upload pipeline.
 - Stage 5: back-end foundation and admin auth refinement (`ADMIN_PATH`, IP allowlist, CSRF, Zod, tests). See `docs/plan-admin-projects-deploy.md`.
 
