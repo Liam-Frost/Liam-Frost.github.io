@@ -20,7 +20,11 @@ const queryClient: QueryClient = new QueryClient({
   queryCache: new QueryCache({ onError: onUnauthorized }),
   mutationCache: new MutationCache({ onError: onUnauthorized }),
   defaultOptions: {
-    queries: { retry: (count, error) => !(error instanceof ApiError && error.status < 500) && count < 1, refetchOnWindowFocus: false }
+    // Retry once for network and server errors; a 4xx will not change on retry.
+    queries: {
+      retry: (count, error) => count < 1 && !(error instanceof ApiError && error.status >= 400 && error.status < 500),
+      refetchOnWindowFocus: false
+    }
   }
 });
 
@@ -61,8 +65,8 @@ function SessionGate() {
     <Routes>
       <Route element={<AdminLayout user={session.user} />}>
         <Route index element={<OverviewPage />} />
-        <Route path="photos" element={<ComingSoonPage title="照片" stage="Stage 7" />} />
-        <Route path="projects" element={<ComingSoonPage title="项目" stage="Stage 8" />} />
+        <Route path="photos" element={<ComingSoonPage title="照片" />} />
+        <Route path="projects" element={<ComingSoonPage title="项目" />} />
         <Route path="*" element={<SectionNotFound />} />
       </Route>
     </Routes>

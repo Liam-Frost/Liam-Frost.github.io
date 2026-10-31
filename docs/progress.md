@@ -134,7 +134,7 @@ Status: implementation complete; Claude Code review complete and fixes applied.
 
 ### Stage 6: Admin App Scaffold
 
-Status: implementation complete; awaiting Claude Code review.
+Status: implementation complete; Claude Code review complete and fixes applied.
 
 - Added `apps/admin`: React 19.3, React Router 8, TanStack Query 5, Tailwind 4, Vite 8 with `@vitejs/plugin-react`; design tokens and components (Field, Toast, buttons, cards) adapted from `internal-developer-tools-portal`.
 - Login page, "not configured" notice, layout with Overview / Photos / Projects navigation (sidebar on desktop, top bar on mobile), logout, placeholders for Photos (Stage 7) and Projects (Stage 8).
@@ -146,10 +146,11 @@ Status: implementation complete; awaiting Claude Code review.
 - Added 5 API tests for admin hosting; `npm test`: 35 passed. `npm run typecheck`, `npm run build`, `npm audit` (0 vulnerabilities) passed.
 - Browser checks with a throwaway test password: dev server (root URL shows a bare 404, `/admin/photos` shows login, wrong password shows the server message, login, navigation, mobile width without horizontal scroll, logout returns to login) and the API-served build at `http://localhost:8787/admin/photos` (assets load on a nested route, no CSP errors, login works, favicon served, session cookie not visible to scripts).
 - Fixed during verification: the admin dev proxy read `PORT` from `loadEnv`, which includes the dev server's own `PORT`, so it proxied to itself; logout used `queryClient.clear()`, which detached the mounted session query so the UI stayed on the dashboard.
+- Ran Claude Code review for Stage 6 (`docs/reviews/2026-10-31-claude-code-stage-6.md`) and fixed: logout button accessible name on mobile, retry for network errors, internal stage names in placeholder pages.
 
 ### Upcoming
 
-- Claude Code review of Stage 6, then PR.
+- Review and merge the Stage 6 PR.
 - Stage 7: photo management and upload pipeline.
 - Stage 5: back-end foundation and admin auth refinement (`ADMIN_PATH`, IP allowlist, CSRF, Zod, tests). See `docs/plan-admin-projects-deploy.md`.
 
