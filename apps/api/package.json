@@ -10,6 +10,7 @@
     "db:deploy": "prisma migrate deploy && prisma generate",
     "db:push": "prisma db push && prisma generate",
     "db:seed": "tsx src/db/seed.ts",
+    "db:seed:collection": "tsx src/db/seed-collection.ts",
     "db:studio": "prisma studio",
     "dev": "prisma generate && tsx watch src/server.ts",
     "build": "prisma generate && tsc --noEmit && node scripts/build.mjs",
