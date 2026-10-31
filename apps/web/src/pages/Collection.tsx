@@ -52,6 +52,8 @@ export default function CollectionPage() {
   }, [view]);
 
   const ofKind = useMemo(() => items.filter((item) => item.kind === kind), [items, kind]);
+  // Tabs for kinds that have entries (and the open one, e.g. from a shared link).
+  const tabKinds = kinds.filter((k) => k === kind || items.some((item) => item.kind === k));
 
   const genres = useMemo(() => {
     const byId = new Map<string, string>();
@@ -114,9 +116,9 @@ export default function CollectionPage() {
           <p className="sectionSubtitle">{t("collection.empty")}</p>
         ) : (
           <>
-            {kinds.length > 1 ? (
+            {tabKinds.length > 1 ? (
               <div className="filters collectionTabs" role="tablist" aria-label={t("collection.title")}>
-                {kinds.map((k) => (
+                {tabKinds.map((k) => (
                   <button
                     key={k}
                     type="button"
