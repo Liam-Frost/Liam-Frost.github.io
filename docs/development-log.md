@@ -93,6 +93,7 @@
 - The user configured a TMDB read access token; real searches and imports were verified, TMDB's Simplified genre names for zh-TW were dropped, and PR #11 was merged.
 - Stage 12 started. The browser pane's screenshots crop to the top-left quarter at device pixel ratio 2; pages were scaled with an inline `transform: scale(0.5)` for inspection only.
 - The model ran Claude Code review for Stage 12 and fixed four findings.
+- The user reported a blank home page after adding an anime. It was unrelated: reloading with 繁體中文 selected crashed the app (`zh-Hant` normalized to `zh-hant`, missing from the translation tables). The bug dates back to when Traditional Chinese was added and also affects the live GitHub Pages site until this is deployed.
 
 ## Notes
 

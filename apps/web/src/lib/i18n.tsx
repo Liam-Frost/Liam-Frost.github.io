@@ -821,11 +821,13 @@ const DICT: Record<Lang, Record<Key, string>> = { zh, "zh-Hant": zhHant, en, fr,
 
 const STORAGE_KEY = "lang";
 
+const LANGS: Lang[] = ["zh", "zh-Hant", "en", "fr", "ja"];
+
+/** Case-insensitive match that returns the canonical code ("zh-hant" → "zh-Hant"), which DICT is keyed by. */
 function normalizeLang(value: string | null): Lang | null {
   if (!value) return null;
   const v = value.toLowerCase();
-  if (v === "zh" || v === "zh-hant" || v === "en" || v === "fr" || v === "ja") return v as Lang;
-  return null;
+  return LANGS.find((lang) => lang.toLowerCase() === v) ?? null;
 }
 
 function detectLang(): Lang {
@@ -881,7 +883,8 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
   }, [lang]);
 
   const value = useMemo<I18nContextValue>(() => {
-    const dict = DICT[lang];
+    // Never render nothing because of an unknown language; fall back to Simplified Chinese.
+    const dict = DICT[lang] ?? DICT.zh;
     return {
       lang,
       setLang,
