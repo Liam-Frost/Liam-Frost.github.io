@@ -45,7 +45,13 @@ function SettingsForm({ settings }: { settings: SpotifySettings }) {
   // Adopt saved (normalized) values, e.g. the playlist link without ?si=. Keyed by content: a sync
   // replaces the cached response but not the settings, and must not reset unsaved edits.
   const saved = JSON.stringify(settings);
-  useEffect(() => setDraft(JSON.parse(saved) as SpotifySettings), [saved]);
+  // The seconds field keeps its own text so it can be cleared while typing; the draft gets valid numbers only.
+  const [collapseText, setCollapseText] = useState(String(settings.autoCollapseSeconds));
+  useEffect(() => {
+    const next = JSON.parse(saved) as SpotifySettings;
+    setDraft(next);
+    setCollapseText(String(next.autoCollapseSeconds));
+  }, [saved]);
 
   const dirty = JSON.stringify(draft) !== saved;
   const set = <K extends keyof SpotifySettings>(key: K, value: SpotifySettings[K]) => setDraft((d) => ({ ...d, [key]: value }));
@@ -99,8 +105,13 @@ function SettingsForm({ settings }: { settings: SpotifySettings }) {
             min={0}
             max={120}
             className="field w-28"
-            value={draft.autoCollapseSeconds}
-            onChange={(e) => set("autoCollapseSeconds", Math.max(0, Math.min(120, Math.round(Number(e.target.value) || 0))))}
+            value={collapseText}
+            onChange={(e) => {
+              setCollapseText(e.target.value);
+              const seconds = Number(e.target.value);
+              if (e.target.value.trim() && Number.isInteger(seconds) && seconds >= 0 && seconds <= 120) set("autoCollapseSeconds", seconds);
+            }}
+            onBlur={() => setCollapseText(String(draft.autoCollapseSeconds))}
           />
         </Field>
       </Panel>

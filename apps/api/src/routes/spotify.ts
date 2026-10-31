@@ -17,7 +17,10 @@ export function registerSpotifyRoutes(app: FastifyInstance, auth: AdminAuthServi
       throw new HttpError(503, "DATABASE_NOT_CONFIGURED", "Music settings need a database (set DATABASE_URL)");
     }
   };
-  const respond = async (): Promise<AdminSpotifyResponse> => ({ settings: await spotify.settings(), sync: await spotify.status() });
+  const respond = async (): Promise<AdminSpotifyResponse> => {
+    const settings = await spotify.settings();
+    return { settings, sync: await spotify.status(settings) };
+  };
 
   app.get("/api/spotify/player", async (): Promise<PublicSpotifyPlayer> => spotify.player());
 

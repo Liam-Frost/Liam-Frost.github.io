@@ -73,6 +73,12 @@
 - `react-markdown` grew the web bundle from 428 kB to 600 kB, so the project detail page is lazy-loaded (main bundle back to 437 kB).
 - The model ran Claude Code review for Stage 8, fixed five findings (including lost updates from concurrent project image changes), and created Stage 8 PR #8: https://github.com/Liam-Frost/Liam-Frost.github.io/pull/8
 
+- PR #8 was merged. The user tested locally; the admin showed a bare 500 because the database (`prisma dev`) was not running. Connection errors now answer 503 with a clear message.
+- The user asked to manage the Spotify player in the admin and chose option B. `spotify-url-info` turned out to be broken (Spotify changed its pages), so the playlist is read from the embed page directly.
+- Node's fetch ignored the user's `HTTPS_PROXY` (curl used it), so syncs timed out locally; the API now enables Node's environment proxy support at startup.
+- The browser pane's screenshots only showed the top-left quarter of the page at device pixel ratio 2; the player was moved into view with an inline style for inspection only.
+- The model ran Claude Code review for the music player and fixed ten findings.
+
 ## Notes
 
 - A direct Windows directory rename of `src` failed with `Permission denied`; the migration continued by moving source subdirectories individually.

@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import { MemorySettingsRepository } from "../src/settings/types";
 import { createPlaylistFetcher, parseEmbedPage, playlistIdFromUrl, type FetchedPlaylist, type PlaylistFetcher } from "../src/spotify/playlist";
-import { REFRESH_MS, RETRY_MS, SpotifyService } from "../src/spotify/service";
+import { FIRST_SYNC_WAIT_MS, REFRESH_MS, RETRY_MS, SpotifyService } from "../src/spotify/service";
 import { buildTestServer, csrf, login } from "./helpers";
 
 const PLAYLIST_ID = "37i9dQZF1DX9AUX5YVf3hc";
@@ -157,6 +157,71 @@ describe("Spotify service", () => {
     const service = new SpotifyService(new MemorySettingsRepository(), fetchPlaylist);
     await Promise.all([service.player(), service.player(), service.sync()]);
     expect(fetchPlaylist).toHaveBeenCalledTimes(1);
+  });
+
+  it("syncs a new playlist even when a sync of the old one is running", async () => {
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const fetchPlaylist = vi.fn<PlaylistFetcher>(async (id) => {
+      if (id === PLAYLIST_ID) await gate;
+      return playlist(id);
+    });
+    const service = new SpotifyService(new MemorySettingsRepository(), fetchPlaylist);
+    const running = service.sync();
+    const saving = service.saveSettings({ ...(await service.settings()), playlistUrl: `https://open.spotify.com/playlist/${OTHER_ID}` });
+    release();
+    await Promise.all([running, saving]);
+    expect(fetchPlaylist.mock.calls.map(([id]) => id)).toEqual([PLAYLIST_ID, OTHER_ID]);
+    expect((await service.status()).playlist?.id).toBe(OTHER_ID);
+  });
+
+  it("does not let another playlist's failure delay a sync", async () => {
+    const repo = new MemorySettingsRepository();
+    const fetchPlaylist = vi.fn<PlaylistFetcher>(async (id) => {
+      if (id === PLAYLIST_ID) throw new Error("boom");
+      return playlist(id);
+    });
+    const service = new SpotifyService(repo, fetchPlaylist);
+    await service.sync();
+    // Changed without saveSettings (e.g. by another process).
+    await repo.set("spotify", { ...(await service.settings()), playlistUrl: `https://open.spotify.com/playlist/${OTHER_ID}` });
+    expect((await service.player()).tracks).toHaveLength(2);
+  });
+
+  it("answers without tracks when the first sync is slow, and finishes it in the background", async () => {
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    try {
+      let release!: () => void;
+      const gate = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      const service = new SpotifyService(new MemorySettingsRepository(), async (id) => {
+        await gate;
+        return playlist(id);
+      });
+      const pending = service.player();
+      await vi.advanceTimersByTimeAsync(FIRST_SYNC_WAIT_MS);
+      expect((await pending).tracks).toEqual([]);
+      release();
+      await service.sync();
+      expect((await service.player()).tracks).toHaveLength(2);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("looks up covers again for tracks that fell back to the playlist cover", async () => {
+    const fetchPlaylist = vi.fn<PlaylistFetcher>(async (id) => {
+      const result = playlist(id);
+      result.tracks[1].image = result.image;
+      return result;
+    });
+    const service = new SpotifyService(new MemorySettingsRepository(), fetchPlaylist);
+    await service.sync();
+    await service.sync();
+    expect([...fetchPlaylist.mock.calls[1][1].keys()]).toEqual([trackId(0)]);
   });
 
   it("returns no tracks when the player is disabled", async () => {

@@ -99,6 +99,18 @@ Requires `DATABASE_URL`.
 
 API: `GET/POST /api/admin/projects`, `GET/PATCH/DELETE /api/admin/projects/:id`, `POST /api/admin/projects/:id/images?slot=cover|gallery`, `DELETE /api/admin/projects/:id/images/:imageId`, `PUT /api/admin/projects/order`. Public: `GET /api/projects` (summaries), `GET /api/projects/:slug`.
 
+## Music (Spotify Player)
+
+The "音乐" page configures the player in the site's bottom-right corner. Changing settings needs `DATABASE_URL`; without a database the site still plays the default playlist (cached in memory).
+
+- **Settings**: show/hide the player, the playlist link (`https://open.spotify.com/playlist/<id>`; `?si=` is dropped), shuffle or playlist order, default volume, and how many seconds after page load the player collapses (0 = stays open).
+- **Sync**: the API reads the playlist from Spotify's public embed page (the official Web API no longer serves editorial playlists or preview URLs to new apps). Track covers come from oEmbed and are cached between syncs. Only tracks with a 30-second preview are kept. The playlist refreshes every 6 hours when visited; "立即同步" refreshes it now, and saving a new link syncs it right away. A failed sync keeps the last good playlist and shows the error on the page; visitors do not retry a failed playlist for 10 minutes.
+- **Player**: plays previews one after another (shuffled, reshuffled each round, or in playlist order) and loops; previous/next buttons and media keys work; hiding the player keeps the music playing. Static builds (GitHub Pages) and an API without a playlist fall back to the tracks in `apps/web/src/data/site.ts`.
+- **Proxy**: when `HTTPS_PROXY` is set (e.g. a local proxy needed to reach Spotify), the API sends its requests through it (Node 24.14+/25.4+; on older Node set `NODE_USE_ENV_PROXY=1`). `NO_PROXY` is respected.
+- The embed page is not a public contract. If Spotify changes it, syncs fail with "无法解析 Spotify 歌单页面" and the site keeps the last synced playlist.
+
+API: `GET/PUT /api/admin/spotify`, `POST /api/admin/spotify/sync`. Public: `GET /api/spotify/player`. Settings and the cached playlist are stored in the `Setting` table (`spotify`, `spotify.playlist`).
+
 ## Running the Admin App
 
 Development (API, web and admin dev servers):
@@ -107,7 +119,7 @@ Development (API, web and admin dev servers):
 npm run dev
 ```
 
-Then open `http://localhost:5174/admin` (or your `ADMIN_PATH`). The admin dev server reads `ADMIN_PATH` from `apps/api/.env`.
+Then open `http://localhost:5174/admin` (or your `ADMIN_PATH`). The admin dev server reads `ADMIN_PATH` from `apps/api/.env`. To point the dev servers at an API on another port, set `ADMIN_API_PROXY` (admin) or `WEB_API_PROXY` (web) there or in the environment.
 
 Served by the API (production-like):
 
