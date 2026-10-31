@@ -34,6 +34,18 @@ describe("loadConfig", () => {
     expect(config.corsOrigins).toEqual([]);
   });
 
+  it("treats blank numbers as defaults", () => {
+    const config = loadConfig({ PORT: "", ADMIN_SESSION_TTL_SECONDS: " " });
+    expect(config.port).toBe(8787);
+    expect(config.admin.sessionTtlSeconds).toBe(60 * 60 * 8);
+  });
+
+  it("parses TRUST_PROXY as a flag or a list of proxies", () => {
+    expect(loadConfig({ TRUST_PROXY: "false" }).trustProxy).toBe(false);
+    expect(loadConfig({ TRUST_PROXY: "true" }).trustProxy).toBe(true);
+    expect(loadConfig({ TRUST_PROXY: "127.0.0.1, 172.18.0.0/16" }).trustProxy).toEqual(["127.0.0.1", "172.18.0.0/16"]);
+  });
+
   it("enables admin auth when hash and secret are both set", () => {
     const config = loadConfig({ ADMIN_PASSWORD_HASH: hash, ADMIN_SESSION_SECRET: secret });
     expect(config.admin.configured).toBe(true);
@@ -53,6 +65,7 @@ describe("loadConfig", () => {
   it("rejects invalid numbers, flags, admin paths and IP entries", () => {
     expect(issuesFor({ PORT: "99999" })).toMatch(/PORT/);
     expect(issuesFor({ TRUST_PROXY: "yes" })).toMatch(/TRUST_PROXY/);
+    expect(issuesFor({ TRUST_PROXY: "true,10.0.0.1" })).toMatch(/TRUST_PROXY/);
     expect(issuesFor({ ADMIN_PATH: "/api/admin" })).toMatch(/cannot start with \/api/);
     expect(issuesFor({ ADMIN_ALLOWED_IPS: "10.0.0.1,not-an-ip" })).toMatch(/not-an-ip/);
   });

@@ -45,12 +45,12 @@ TRUST_PROXY=false
 | `ADMIN_USERNAME` | `admin` | |
 | `ADMIN_PASSWORD_HASH` | empty | Must come from `npm run auth:hash`. Set together with the secret. |
 | `ADMIN_SESSION_SECRET` | empty | At least 32 characters. Set together with the hash. |
-| `ADMIN_SESSION_TTL_SECONDS` | `28800` | 300 s to 30 days. |
+| `ADMIN_SESSION_TTL_SECONDS` | `28800` | 300 s to 30 days. Blank means default. |
 | `ADMIN_COOKIE_NAME` | `lf_admin_session` | |
 | `ADMIN_COOKIE_SECURE` | `true` in production | Set `false` only for local HTTP development. |
 | `ADMIN_PATH` | `/admin` | Where the admin app is served. Letters, digits, `-`, `_` and `/` only; cannot be `/` or start with `/api`, `/uploads`, `/assets`. Changing it needs only a restart. |
 | `ADMIN_ALLOWED_IPS` | empty (no restriction) | Comma-separated IPs / CIDR ranges, IPv4 and IPv6. |
-| `TRUST_PROXY` | `false` | Set `true` only behind a reverse proxy you control; then the client IP comes from `X-Forwarded-For`. |
+| `TRUST_PROXY` | `false` | Behind a reverse proxy, list the proxy's IPs / CIDR ranges (e.g. `127.0.0.1` or the Docker network); only then is `X-Forwarded-For` used for the client IP. `true` trusts any hop and is safe only when the API port is not reachable except through the proxy. |
 
 Admin auth is enabled only when both `ADMIN_PASSWORD_HASH` and `ADMIN_SESSION_SECRET` are set; setting just one is a configuration error. With neither set, admin routes answer `503 ADMIN_NOT_CONFIGURED`.
 

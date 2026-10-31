@@ -174,4 +174,14 @@ describe("ADMIN_ALLOWED_IPS", () => {
     const proxied = await buildTestServer({ ADMIN_ALLOWED_IPS: "10.0.0.5", TRUST_PROXY: "true" });
     expect((await proxied.inject({ url: "/api/admin/session", remoteAddress: "127.0.0.1", headers })).statusCode).toBe(200);
   });
+
+  it("with a proxy list, only trusts X-Forwarded-For from those proxies", async () => {
+    const headers = { "x-forwarded-for": "10.0.0.5" };
+    const app = await buildTestServer({ ADMIN_ALLOWED_IPS: "10.0.0.5", TRUST_PROXY: "127.0.0.1" });
+
+    // Through the trusted proxy: the forwarded client IP is used.
+    expect((await app.inject({ url: "/api/admin/session", remoteAddress: "127.0.0.1", headers })).statusCode).toBe(200);
+    // Straight to the API from elsewhere: the spoofed header is ignored.
+    expect((await app.inject({ url: "/api/admin/session", remoteAddress: "198.51.100.9", headers })).statusCode).toBe(404);
+  });
 });

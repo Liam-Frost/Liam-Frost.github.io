@@ -112,7 +112,7 @@ Status: implementation complete; Claude Code review complete and fixes applied.
 
 ### Stage 5: Back-End Foundation and Admin Auth Hardening
 
-Status: implementation complete; awaiting Claude Code review.
+Status: implementation complete; Claude Code review complete and fixes applied.
 
 - Added `apps/api/src/config/env.ts`: Zod-validated configuration, reporting every problem at once and stopping startup on invalid values.
 - Added unified error handling (`HttpError`, `{ error: { code, message } }` for all errors including 404 and Fastify client errors), security response headers, and log redaction of auth headers and cookies.
@@ -125,11 +125,12 @@ Status: implementation complete; awaiting Claude Code review.
 - Updated the temporary `apps/web` `#/admin` page for the CSRF header and new error shape.
 - Added Vitest with 27 API tests; root `npm test` runs workspace tests and CI now runs `npm test`.
 - Ran `npm test` (27 passed), `npm run typecheck`, `npm run build`.
+- Ran Claude Code review for Stage 5 (`docs/reviews/2026-10-31-claude-code-stage-5.md`) and fixed its findings: `TRUST_PROXY` accepts a proxy IP/CIDR list so a directly reachable API cannot be fooled by a spoofed `X-Forwarded-For`; blank numeric settings fall back to defaults; removed the unused `databaseUrl` config field and a duplicate configured check. Tests: 30 passed.
 - Verified in the browser against a running API with a throwaway test password and `ADMIN_PATH=studio`: wrong password shows the server message, login works, `adminPath` is returned only after login, logout works, a POST without the CSRF header gets 403.
 
 ### Upcoming
 
-- Claude Code review of Stage 5, then PR.
+- Review and merge the Stage 5 PR.
 - Stage 6: `apps/admin` scaffold served at `ADMIN_PATH`.
 - Stage 5: back-end foundation and admin auth refinement (`ADMIN_PATH`, IP allowlist, CSRF, Zod, tests). See `docs/plan-admin-projects-deploy.md`.
 
