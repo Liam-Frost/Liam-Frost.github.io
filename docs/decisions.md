@@ -44,6 +44,22 @@ React and related dependencies should be upgraded to the latest versions. This u
 
 ## Model Decisions
 
+### 2026-10-31: Bundle the API With esbuild
+
+The production API is bundled with esbuild into `apps/api/dist` (`scripts/build.mjs`): the workspace packages, which export TypeScript source, and the generated Prisma client are included; npm dependencies stay external. `prisma` moved to `dependencies` because the image runs `prisma migrate deploy` on start.
+
+Reason: the workspace packages are consumed as `.ts` source and the code uses extensionless imports, so plain `tsc` output would not run on Node without rewriting imports or building each package.
+
+### 2026-10-31: One Image, Fastify Serves Everything, Caddy in Front
+
+The Docker image contains the API, the site and the admin builds; Fastify serves all of them on one origin. Caddy terminates HTTP(S) and is the only published port; the app trusts proxy headers from the compose subnet only. The site is served from an exact-file allowlist (no `@fastify/static`, see the Stage 6 decision).
+
+Reason: one origin keeps cookies, CSRF and CORS simple; Caddy gives automatic HTTPS in Stage 10 without changing the app.
+
+### 2026-10-31: Verify Docker in GitHub Actions
+
+This machine has no Docker or WSL, so the Docker stack is verified by `docker/smoke-test.sh` in GitHub Actions on every push to `dev` and pull request to `main`. The same production build was also run outside Docker against a local PostgreSQL.
+
 ### 2026-10-31: Read Playlists From Spotify's Embed Page
 
 Since November 2024 Spotify's Web API does not return editorial playlists (such as City Pop Best) or preview URLs to new apps, and `spotify-url-info` no longer parses Spotify's pages. The API reads the playlist from the public embed page's `__NEXT_DATA__` and track covers from oEmbed, caches the result in the database, and keeps the last good playlist when a sync fails. The broken `GET /api/spotify?url=` route and the `spotify-url-info` dependency were removed.

@@ -1,30 +1,11 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
-import { existsSync, readdirSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { readFile } from "node:fs/promises";
-import { extname, join, relative, sep } from "node:path";
+import { join, relative, sep } from "node:path";
 
 import { notFound } from "../lib/errors";
-
-const CONTENT_TYPES: Record<string, string> = {
-  ".html": "text/html; charset=utf-8",
-  ".js": "text/javascript; charset=utf-8",
-  ".css": "text/css; charset=utf-8",
-  ".svg": "image/svg+xml",
-  ".png": "image/png",
-  ".jpg": "image/jpeg",
-  ".jpeg": "image/jpeg",
-  ".webp": "image/webp",
-  ".avif": "image/avif",
-  ".gif": "image/gif",
-  ".ico": "image/x-icon",
-  ".woff": "font/woff",
-  ".woff2": "font/woff2",
-  ".json": "application/json; charset=utf-8",
-  ".webmanifest": "application/manifest+json",
-  ".txt": "text/plain; charset=utf-8",
-  ".xml": "application/xml; charset=utf-8",
-  ".map": "application/json; charset=utf-8"
-};
+import { contentTypeFor } from "./content-types";
 
 /** Every file in the build, keyed by URL path ("/assets/index-abc.js"). Dotfiles are skipped. */
 function listFiles(root: string) {
@@ -41,6 +22,30 @@ function listFiles(root: string) {
   return files;
 }
 
+/**
+ * The site's CSP. Inline scripts in index.html (the theme/language bootstrap) are allowed by hash.
+ * Photos and Spotify covers come from other HTTPS hosts, previews play from Spotify's CDN, and fonts
+ * from Google Fonts.
+ */
+export function siteCsp(indexHtml: string) {
+  const inlineHashes = [...indexHtml.matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/g)]
+    .filter(([, body]) => body.trim())
+    .map(([, body]) => `'sha256-${createHash("sha256").update(body).digest("base64")}'`);
+  return [
+    "default-src 'self'",
+    ["script-src 'self'", ...inlineHashes].join(" "),
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+    "font-src 'self' data: https://fonts.gstatic.com",
+    "img-src 'self' data: blob: https:",
+    "media-src 'self' https:",
+    "connect-src 'self'",
+    "object-src 'none'",
+    "frame-ancestors 'none'",
+    "base-uri 'self'",
+    "form-action 'self'"
+  ].join("; ");
+}
+
 function cacheControl(urlPath: string) {
   // Vite's hashed assets change name on every build; everything else may change in place.
   if (urlPath.startsWith("/assets/")) return "public, max-age=31536000, immutable";
@@ -55,20 +60,28 @@ function cacheControl(urlPath: string) {
  * Without a build (development, where Vite serves the site) nothing is registered.
  */
 export function registerWebApp(app: FastifyInstance, distDir: string) {
-  if (!existsSync(join(distDir, "index.html"))) {
+  const indexFile = join(distDir, "index.html");
+  if (!existsSync(indexFile)) {
     app.log.info({ distDir }, "Site build not found; run `npm run build:web` to serve it from the API");
     return;
   }
   const files = listFiles(distDir);
+  const csp = siteCsp(readFileSync(indexFile, "utf8"));
 
   const handler = async (request: FastifyRequest, reply: FastifyReply) => {
-    const pathname = request.url.split("?")[0];
+    let pathname: string;
+    try {
+      pathname = decodeURIComponent(request.url.split("?")[0]);
+    } catch {
+      throw notFound();
+    }
     const urlPath = pathname === "/" ? "/index.html" : pathname;
     const file = files.get(urlPath);
     if (!file) throw notFound();
 
-    reply.header("content-type", CONTENT_TYPES[extname(file).toLowerCase()] ?? "application/octet-stream");
+    reply.header("content-type", contentTypeFor(file));
     reply.header("cache-control", cacheControl(urlPath));
+    if (urlPath === "/index.html") reply.header("content-security-policy", csp);
     return reply.send(await readFile(file));
   };
 
