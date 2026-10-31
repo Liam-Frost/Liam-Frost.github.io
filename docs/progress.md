@@ -249,6 +249,7 @@ Status: implementation complete; Claude Code review complete and fixes applied.
 - `npm run db:seed:collection`: sample films, series and anime with ratings, reviews and statuses (13 entries imported into the user's local database for testing).
 - The user's collection searches failed with "无法连接": `HTTPS_PROXY` existed only in the Claude app's environment, not in the user's terminal. The proxy now goes in `apps/api/.env` (added for the user), and the error message says so. Verified both ways with real TMDB and Bangumi searches.
 - Anime titles in English and French now use the romaji name from AniList (new imports, and `npm run db:backfill:romaji` for existing ones; 4 entries updated in the user's database). Tests: 107 passed.
+- Fixed a blank page when the site language is 繁體中文 and the page is reloaded (present since Traditional Chinese was added): the saved `zh-Hant` was lowercased to `zh-hant`, which matched no translation table. Language codes now map back to their canonical form, and an unknown language falls back to Simplified Chinese.
 
 ### Upcoming
 
