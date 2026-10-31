@@ -79,6 +79,12 @@
 - The browser pane's screenshots only showed the top-left quarter of the page at device pixel ratio 2; the player was moved into view with an inline style for inspection only.
 - The model ran Claude Code review for the music player and fixed ten findings.
 
+- PR #9 was merged; the model started Stage 9 (full local run with Docker Compose).
+- This machine has neither Docker nor WSL, so the Docker stack is verified on GitHub Actions with `docker/smoke-test.sh` (it passed on the first run); the production build was also run here outside Docker.
+- Git Bash rewrote `ADMIN_PATH=/studio` into a Windows path when starting the server by hand (`MSYS2_ENV_CONV_EXCL='*'` avoids it); not an issue in Docker or on Linux.
+- A Python one-liner meant to generate a test PNG was quadratic and hung a check; the smoke test's Node generator is used instead.
+- The model ran Claude Code review for Stage 9 and fixed five findings.
+
 ## Notes
 
 - A direct Windows directory rename of `src` failed with `Permission denied`; the migration continued by moving source subdirectories individually.

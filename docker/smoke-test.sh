@@ -19,6 +19,15 @@ json() { node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{const 
 fail() { echo "FAIL: $*" >&2; compose logs --tail 80 app >&2 || true; exit 1; }
 step() { echo "--- $*"; }
 
+# `up --wait` covers the app's health check; Caddy has none, so also wait until it proxies.
+wait_for_site() {
+  for _ in $(seq 1 60); do
+    curl -fsS -o /dev/null "$BASE/api/health" && return 0
+    sleep 1
+  done
+  fail "site not reachable through Caddy"
+}
+
 cleanup() {
   compose down -v --remove-orphans >/dev/null 2>&1 || true
   rm -rf "$WORK"
@@ -54,9 +63,11 @@ write_env "$HASH" "$SECRET"
 
 step "start the stack"
 compose up -d --wait --wait-timeout 180 || fail "stack did not become healthy"
+wait_for_site
 
 step "public site, health, admin page"
 curl -fsS "$BASE/" | grep -q '<div id="root">' || fail "site index"
+curl -fsSI "$BASE/" | grep -qi "^content-security-policy: .*script-src 'self' 'sha256-" || fail "site CSP"
 [[ "$(curl -fsS "$BASE/api/health" | json 'd.database')" == "configured" ]] || fail "health"
 curl -fsS "$BASE/studio" | grep -q 'name="lf-admin-path" content="/studio"' || fail "admin page"
 [[ "$(curl -s -o /dev/null -w '%{http_code}' "$BASE/admin")" == "404" ]] || fail "default admin path should be 404"
@@ -101,6 +112,7 @@ step "music player endpoint"
 step "restart and check that data survived"
 compose down
 compose up -d --wait --wait-timeout 180 || fail "stack did not come back"
+wait_for_site
 check_project
 [[ "$(curl -fsS "$BASE/api/photos" | json 'd.length')" == "$PHOTOS" ]] || fail "photos lost after restart"
 compose exec -T -w /app/apps/api app node /app/node_modules/prisma/build/index.js migrate status >/dev/null || fail "migrations not up to date"

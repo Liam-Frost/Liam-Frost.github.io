@@ -121,7 +121,7 @@
 - 后端从 Spotify 嵌入页同步歌单(每 6 小时),失败时继续用上次的歌单。
 - 前台按歌单循环播放 30 秒试听,支持上一首/下一首。
 
-### Stage 9:本地完整运行
+### Stage 9:本地完整运行(已完成)
 
 - API 生产构建(`tsup` 或 `tsc` 输出),不再用 `tsx` 运行;启动时执行 `prisma migrate deploy`。
 - 多阶段 Dockerfile:构建前台、后台、API,产出一个镜像,由 Fastify 统一托管。
@@ -130,6 +130,8 @@
 - 编写 `docs/local-development.md` 运行手册。
 
 完成标准:`docker compose up` 后,本地前台与后台均可正常使用,重启后数据保留。
+
+实际情况:本机没有 Docker,Docker 部分由 GitHub Actions 中的 `docker/smoke-test.sh` 验证(构建镜像、启动全部服务、上传、重启后数据保留);同一份生产构建也在本机脱离 Docker 跑过一遍。运行手册见 `docs/local-development.md`。
 
 ### Stage 10:VPS 部署与 CI/CD
 

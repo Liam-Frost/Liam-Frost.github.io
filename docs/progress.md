@@ -205,10 +205,23 @@ Status: implementation complete; Claude Code review complete and fixes applied.
 - Verified end to end against a fresh local PostgreSQL (all three migrations applied with `db:deploy`, seed, throwaway admin password): created a project from the admin (slug suggested), filled two languages, Markdown with a table, code block and a `<script>` line, status, months, tech stack, repo link, public and featured; uploaded a cover (640/1280/2048/2400) and two screenshots, reordered them; the home page showed the section between `skills` and `featured`; `/projects` listed it; the detail page rendered the Markdown (script shown as text, links with `noopener`), screenshots in the new order and the fullscreen viewer; an unknown slug showed the 404 message; mobile width without horizontal scroll; deleting the project removed its files.
 - Ran Claude Code review for Stage 8 (`docs/reviews/2026-10-31-claude-code-stage-8.md`) and fixed: lost updates from concurrent project image changes (per-project lock, new test), lighter image visibility lookup, 503 instead of 500 for the project detail without a database, shared `IconButton`, unsaved-changes indicator and confirmations in the editor. Tests: 56 passed.
 
+### Stage 9: Full Local Run With Docker Compose
+
+Status: implementation complete; Claude Code review complete and fixes applied.
+
+- API production build: esbuild bundle in `apps/api/dist` (server, `hash-password`, `seed`) with the workspace packages and the generated Prisma client; `prisma` moved to `dependencies` for `migrate deploy` in the image.
+- The API serves the public site build at `/` (exact-file allowlist built at startup, CSP with the inline bootstrap script's hash), next to the admin build and `/uploads`.
+- Multi-stage `Dockerfile`: one image, non-root, health check, migrations on start (`docker/entrypoint.sh`).
+- `compose.yaml`: PostgreSQL + app + Caddy (`docker/Caddyfile`), volumes for the database, uploads and Caddy data; app trusts proxy headers from the compose subnet only; settings from `.env` (`.env.example`).
+- `docker/smoke-test.sh` and `.github/workflows/docker.yml`: build, start, check site/admin/seed/login/upload/music, restart, check data and migrations, clean up.
+- Runbook: `docs/local-development.md`.
+- This machine has no Docker or WSL: the stack was verified by the smoke test on GitHub Actions (passed), and the same production build ran here outside Docker against a temporary PostgreSQL (migrations with the Prisma CLI, seed, admin login, project with uploaded cover, single-origin site/admin/API in the browser).
+- Ran Claude Code review for Stage 9 (`docs/reviews/2026-10-31-claude-code-stage-9.md`) and fixed five findings. Tests: 79 passed.
+
 ### Upcoming
 
-- Review and merge the music player PR.
-- Stage 9: full local run with Docker Compose.
+- Review and merge the Stage 9 PR.
+- Stage 10: VPS deployment and CI/CD (needs the VPS provider/OS/specs, DNS manager and domain from the user).
 - Stage 5: back-end foundation and admin auth refinement (`ADMIN_PATH`, IP allowlist, CSRF, Zod, tests). See `docs/plan-admin-projects-deploy.md`.
 
 ## Future Stages
