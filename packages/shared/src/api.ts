@@ -286,3 +286,38 @@ export type AdminCollectionSettingsResponse = {
   /** Sources that can be searched (TMDB needs TMDB_API_KEY). */
   sources: { tmdb: boolean; bangumi: boolean };
 };
+
+/** A collection entry in the public list (no synopsis or review). */
+export type PublicMediaSummary = {
+  id: string;
+  kind: MediaKind;
+  title: LocalizedText;
+  originalTitle: string | null;
+  year: number | null;
+  genres: LocalizedText[];
+  credits: string[];
+  poster: ProjectImage | null;
+  status: MediaStatus | null;
+  rating: number | null;
+  watchedOn: string | null;
+  rewatchCount: number;
+  progress: MediaProgress | null;
+  featured: boolean;
+  /** Whether a short review exists in any language. */
+  hasReview: boolean;
+  updatedAt: string;
+};
+
+/** One entry with its synopsis and review, for the detail view. */
+export type PublicMedia = PublicMediaSummary & {
+  overview: LocalizedText;
+  review: LocalizedText;
+  source: MediaSource;
+  sourceUrl: string | null;
+};
+
+export type PublicCollection = {
+  /** Kinds the site shows, in display order. */
+  kinds: MediaKind[];
+  items: PublicMediaSummary[];
+};
