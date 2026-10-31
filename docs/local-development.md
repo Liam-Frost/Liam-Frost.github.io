@@ -30,6 +30,12 @@ Requirements: Node.js 22.22 or newer, and a PostgreSQL database for photos, proj
    npm run db:seed
    ```
 
+   For sample collection entries (films, series, anime from TMDB / Bangumi with ratings and reviews; needs `TMDB_API_KEY` for films and series, and can be run again):
+
+   ```bash
+   npm run db:seed:collection
+   ```
+
 4. Start everything:
 
    ```bash
@@ -39,7 +45,8 @@ Requirements: Node.js 22.22 or newer, and a PostgreSQL database for photos, proj
 Notes:
 
 - `prisma dev` may take port 8787 for its own service. If the API reports the port is in use, set another `PORT` in `apps/api/.env` together with `ADMIN_API_PROXY` / `WEB_API_PROXY` (e.g. `http://127.0.0.1:8788`) so the dev servers follow.
-- If you need a proxy to reach Spotify, set `HTTPS_PROXY`; the API uses it for outgoing requests.
+- If TMDB, Bangumi or Spotify need a proxy on your network, set `HTTPS_PROXY` (e.g. `http://127.0.0.1:10808`) in `apps/api/.env`. Node does not use the Windows system proxy, so without this the admin's collection search reports "无法连接 TMDB / Bangumi".
+- `npm run db:backfill:romaji` adds AniList romaji titles (English and French) to anime added before this feature.
 
 ## Full Local Run (Docker Compose)
 

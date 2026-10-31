@@ -25,7 +25,13 @@ export function passwordHash() {
 }
 
 const offline = () => Promise.reject(new SourceError("no network in tests"));
-const offlineMediaSources: MediaSources = { available: () => ({ tmdb: false, bangumi: false }), search: offline, details: offline, download: offline };
+const offlineMediaSources: MediaSources = {
+  available: () => ({ tmdb: false, bangumi: false }),
+  search: offline,
+  details: offline,
+  download: offline,
+  romaji: async () => null
+};
 
 export type TestServerOptions = {
   adminDistDir?: string;

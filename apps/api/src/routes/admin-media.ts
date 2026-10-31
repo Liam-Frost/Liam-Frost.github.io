@@ -1,6 +1,6 @@
 import type { AdminCollectionSettingsResponse, AdminMediaListResponse, AdminMediaResponse, AdminMediaSearchResponse } from "@liam-frost/shared";
 import type { FastifyInstance, FastifyRequest } from "fastify";
-import { randomBytes, randomUUID } from "node:crypto";
+import { randomUUID } from "node:crypto";
 
 import type { AdminAuthService } from "../auth/service";
 import { badRequest, HttpError, notFound } from "../lib/errors";
@@ -16,10 +16,10 @@ import {
   parseInput
 } from "../lib/validation";
 import type { CollectionSettingsStore } from "../media/collection-settings";
+import { importMedia, storePoster } from "../media/import";
 import { toAdminMedia } from "../media/mapping";
 import { SourceError, type MediaSources } from "../media/sources";
 import { DuplicateMediaError, type MediaPatch, type MediaRepository, type MediaRow } from "../media/types";
-import { InvalidImageError, processImage, saveImage, type ProcessedImage } from "../photos/images";
 import type { StoredImage } from "../projects/types";
 import type { LocalImageStore } from "../storage/local";
 import { readUploadedImage } from "./read-upload";
@@ -73,14 +73,6 @@ export function registerAdminMediaRoutes(
   // Poster changes read the entry and write it back; run them one at a time per entry.
   const lock = new KeyedLock();
 
-  /** Stores a processed poster under the entry's folder; the caller attaches it. */
-  const storePoster = async (id: string, image: ProcessedImage): Promise<StoredImage> => {
-    const imageId = randomBytes(6).toString("hex");
-    const key = `media/${id}/${imageId}`;
-    await saveImage(store, key, image);
-    return { id: imageId, key, width: image.width, height: image.height, variants: image.variants.map(({ width, height }) => ({ width, height })) };
-  };
-
   app.get("/api/admin/media", admin, async (request): Promise<AdminMediaListResponse> => {
     const { kind } = parseInput(mediaListQuerySchema, request.query);
     const rows = await repo().media.list({ kind, includePrivate: true });
@@ -97,47 +89,18 @@ export function registerAdminMediaRoutes(
   /** Imports a source entry: details and poster are fetched by the server. */
   app.post("/api/admin/media/import", admin, async (request, reply): Promise<AdminMediaResponse> => {
     const { kind, source, sourceId } = parseInput(mediaImportSchema, request.body);
-    const { media } = repo();
-    const known = await media.findBySource(source, [sourceId]);
-    if (known.has(sourceId)) throw alreadyAdded();
-
-    const details = await sources.details(source, kind, sourceId).catch(sourceFailure);
-    const id = randomUUID();
-
-    // A missing or broken poster does not block the import; one can be uploaded afterwards.
-    let poster: StoredImage | null = null;
-    if (details.posterUrl) {
-      try {
-        poster = await storePoster(id, await processImage(await sources.download(details.posterUrl)));
-      } catch (error) {
-        if (!(error instanceof SourceError || error instanceof InvalidImageError)) throw error;
-        request.log.warn({ error, source, sourceId }, "Poster download failed");
-      }
-    }
-
     try {
-      const row = await media.create({
-        id,
+      const row = await importMedia(
+        { media: repo().media, sources, store, onPosterError: (error) => request.log.warn({ error, source, sourceId }, "Poster download failed") },
         kind,
         source,
-        sourceId: details.sourceId,
-        sourceUrl: details.sourceUrl,
-        title: details.title,
-        originalTitle: details.originalTitle,
-        year: details.year,
-        genres: details.genres,
-        credits: details.credits,
-        overview: details.overview,
-        poster,
-        status: "done",
-        progress: kind !== "movie" && details.episodes ? { watched: 0, total: details.episodes } : null
-      });
+        sourceId
+      );
       reply.code(201);
       return respond(row);
     } catch (error) {
-      if (poster) await store.remove(`media/${id}`).catch(() => undefined);
       if (error instanceof DuplicateMediaError) throw alreadyAdded();
-      throw error;
+      return sourceFailure(error);
     }
   });
 
@@ -175,7 +138,7 @@ export function registerAdminMediaRoutes(
   app.post("/api/admin/media/:id/poster", admin, async (request, reply): Promise<AdminMediaResponse> => {
     const preflight = await get(mediaId(request));
     const { image } = await readUploadedImage(request, deps.maxUploadBytes);
-    const poster = await storePoster(preflight.id, image);
+    const poster = await storePoster(store, preflight.id, image);
 
     let result: { updated: MediaRow; old: StoredImage | null };
     try {

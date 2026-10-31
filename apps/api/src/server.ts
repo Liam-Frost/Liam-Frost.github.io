@@ -16,6 +16,7 @@ import { registerAdminApp } from "./routes/admin-app";
 import { registerAdminPhotoRoutes } from "./routes/admin-photos";
 import { registerAdminMediaRoutes } from "./routes/admin-media";
 import { registerAdminProjectRoutes } from "./routes/admin-projects";
+import { registerCollectionRoutes } from "./routes/collection";
 import { registerPhotoRoutes } from "./routes/photos";
 import { registerProjectRoutes } from "./routes/projects";
 import { registerSpotifyRoutes } from "./routes/spotify";
@@ -165,6 +166,7 @@ export function buildServer({
   registerProjectRoutes(app, projects, store);
   const collection = settings ? new CollectionSettingsStore(settings) : null;
   registerAdminMediaRoutes(app, auth, { media, collection, sources: mediaSources, store, maxUploadBytes: config.uploads.maxBytes });
+  registerCollectionRoutes(app, { media, collection, store });
   registerUploadRoutes(app, store, { photos, projects, media, collection }, auth);
   registerSpotifyRoutes(app, auth, spotify, settings !== null);
   registerWebApp(app, webDistDir);
