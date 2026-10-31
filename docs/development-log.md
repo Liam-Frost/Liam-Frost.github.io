@@ -50,6 +50,7 @@
 - The model verified typecheck, build, and the main UI flows in the browser.
 - The model ran Claude Code review for Stage 4, fixed the photo modal key handling and the language-dependent category filter, and documented the Fastify upgrade.
 - The model created Stage 4 PR #4: https://github.com/Liam-Frost/Liam-Frost.github.io/pull/4
+- The user asked to do the Prisma major upgrade in PR #4 instead of deferring it. The model upgraded to Prisma 7.10.1 (Prisma 8 is still an RC), followed the official v7 upgrade guide (fetched from the prisma/docs GitHub repo because prisma.io was unreachable), and verified against a local `prisma dev` database because Docker is still unavailable.
 
 ## Notes
 

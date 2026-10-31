@@ -66,11 +66,23 @@ The portfolio category filter keys on the English category value instead of the 
 
 Reason: the selection must survive a language switch; every photo category has an English value (falling back to Chinese), so it works as a stable key without changing the content schema.
 
-### 2026-10-31: Defer Prisma Major Upgrade
+### 2026-10-31: Upgrade Prisma to 7.10.1 in Stage 4
 
-The remaining high audit findings come from the Prisma 6 CLI dependency chain; fixing them requires Prisma 7+.
+The user asked to do the Prisma major upgrade in the same PR instead of deferring it. The model chose Prisma 7.10.1 (exact pin), superseding "Pin Prisma to 6.19.3".
 
-Reason: a Prisma major upgrade affects schema, client generation, and migrations, and is unrelated to the front-end upgrade. It will be evaluated separately.
+Reason: 7.10.1 is the newest stable release and clears the remaining high audit findings (`deepmerge-ts` via `@prisma/config`). Prisma 8 is still a release candidate (npm `latest` points at `8.0.0-rc.29`), so it is not used yet.
+
+### 2026-10-31: Use the `prisma-client` Generator With `@prisma/adapter-pg`
+
+The schema uses the new `prisma-client` generator with output in `apps/api/src/generated/prisma` (git-ignored), and the client connects via `@prisma/adapter-pg` with `connectionTimeoutMillis: 5000`.
+
+Reason: `prisma-client-js` is deprecated in v7 and driver adapters are required. node-pg has no connect timeout by default; keeping Prisma 6's 5s keeps the seed fallback responsive when the database host is unreachable.
+
+### 2026-10-31: Generate the Prisma Client Inside API Scripts
+
+`dev`, `start`, `build`, and `typecheck` in `apps/api` run `prisma generate` first, and `prisma.config.ts` only sets a datasource when `DATABASE_URL` is present.
+
+Reason: the generated client is no longer in `node_modules` and is not committed; generating in the scripts keeps CI (`npm run typecheck`) and fresh checkouts working without a database or an extra step.
 
 ### 2026-04-26: Incremental Migration Instead of Rewrite
 

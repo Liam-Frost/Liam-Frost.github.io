@@ -93,13 +93,17 @@ Status: implementation complete; Claude Code review complete and fixes applied.
 - Added `.claude/launch.json` for local web/API dev servers.
 - Ran `npm run typecheck`; result: passed.
 - Ran `npm run build`; result: passed (Vite 8).
-- Ran `npm audit fix` (non-breaking). Remaining: 3 high findings in the Prisma 6 CLI dependency chain (`deepmerge-ts` via `@prisma/config`); the fix requires a Prisma major upgrade and is deferred. The non-breaking fix also upgraded the API's Fastify 5.8.5 to 5.12.7 and `fast-uri`; the API was re-checked in dev (`/api/photos`, `/api/spotify`, `/api/admin/session` returned 200).
+- Ran `npm audit fix` (non-breaking). Remaining: 3 high findings in the Prisma 6 CLI dependency chain (`deepmerge-ts` via `@prisma/config`); the fix requires a Prisma major upgrade (done below, at the user's request). The non-breaking fix also upgraded the API's Fastify 5.8.5 to 5.12.7 and `fast-uri`; the API was re-checked in dev (`/api/photos`, `/api/spotify`, `/api/admin/session` returned 200).
 - Manually verified in the browser with the API running in seed mode: home page, portfolio, category filter, photo modal, fullscreen viewer, theme switching (light/dark), language switching, 404 page, `/admin` login page, Spotify dock. No React errors in the console; 404 console entries come from the existing Flickr size fallback chain.
 - Found two pre-existing issues during verification: a single Escape closed both the fullscreen viewer and the photo modal; the portfolio category filter stored a localized label, so switching language while filtered showed 0 photos.
 - Ran Claude Code review for Stage 4 (`docs/reviews/2026-10-31-claude-code-stage-4.md`).
 - Fixed review findings: the photo modal ignores keys while the fullscreen viewer is open; the category filter uses a language-independent key; documented the Fastify upgrade.
 - Re-ran `npm run typecheck`, `npm run build`, and browser checks for both fixes.
 - Created Stage 4 PR #4: https://github.com/Liam-Frost/Liam-Frost.github.io/pull/4
+- At the user's request, upgraded Prisma 6.19.3 to 7.10.1 in the same PR: `prisma-client` generator with output in `apps/api/src/generated/prisma`, `apps/api/prisma.config.ts`, `@prisma/adapter-pg` driver adapter with a 5s connect timeout, scripts that run `prisma generate` explicitly.
+- Replaced the hand-written Prisma delegate shims in `photos.ts` / `seed.ts` with the generated types. This exposed a seed bug: nullable Json fields were written as `null`, which Prisma rejects; the seed now uses `Prisma.DbNull`.
+- Ran `npm audit`; result: 0 vulnerabilities.
+- Verified the real PostgreSQL path for the first time (no Docker; used `prisma dev` local Prisma Postgres): `prisma db push`, `npm run db:seed` (40 photos), API reads from the database (an edited row is returned, hiding a photo drops the public list to 39), missing photo returns 404, refused connection falls back to seed data in ~150 ms, unreachable host falls back after ~5 s.
 
 ### Upcoming
 

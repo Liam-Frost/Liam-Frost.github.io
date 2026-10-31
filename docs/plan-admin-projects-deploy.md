@@ -31,7 +31,7 @@
 
 ## 关键技术决策(提议)
 
-- **依赖版本**:前台与后台统一使用 React 19.3、React Router 8(v8 不再有 `react-router-dom`,统一从 `react-router` 导入)。Vite 8 等工具链在升级阶段评估兼容性后一并升级。Prisma 暂保持 6.19.3,大版本升级另行评估。
+- **依赖版本**:前台与后台统一使用 React 19.3、React Router 8(v8 不再有 `react-router-dom`,统一从 `react-router` 导入)。Vite 8 等工具链在升级阶段评估兼容性后一并升级。Prisma 已在 Stage 4 一并升级到 7.10.1(Prisma 8 仍是 RC,暂不使用)。
 - **管理后台技术栈**:`apps/admin` 使用 React 19 + Tailwind 4 + TanStack Query + React Router 8。
 - **可配置的后台地址(`ADMIN_PATH`)**:
   - 在 API 的 `.env` 中设置,默认 `/admin`;格式校验,禁止与 `/api`、`/uploads` 等冲突。

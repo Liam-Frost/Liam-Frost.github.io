@@ -1,4 +1,6 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaPg } from "@prisma/adapter-pg";
+
+import { PrismaClient } from "../generated/prisma/client";
 
 let prisma: PrismaClient | null = null;
 
@@ -6,12 +8,19 @@ export function hasDatabaseUrl(env = process.env) {
   return Boolean(env.DATABASE_URL?.trim());
 }
 
+export function createPrismaClient(connectionString: string) {
+  // node-pg has no connect timeout by default; keep Prisma 6's 5s so an unreachable DB falls back to seed data quickly.
+  const adapter = new PrismaPg({ connectionString, connectionTimeoutMillis: 5_000 });
+  return new PrismaClient({ adapter });
+}
+
 export function getPrismaClient() {
-  if (!hasDatabaseUrl()) {
+  const url = process.env.DATABASE_URL?.trim();
+  if (!url) {
     return null;
   }
 
-  prisma ??= new PrismaClient();
+  prisma ??= createPrismaClient(url);
   return prisma;
 }
 
