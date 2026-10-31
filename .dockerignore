@@ -1,0 +1,15 @@
+.git
+.github
+.claude
+**/node_modules
+**/dist
+apps/api/src/generated
+apps/api/uploads
+uploads
+.env
+.env.*
+**/.env
+**/.env.*
+!**/.env.example
+docs
+*.log

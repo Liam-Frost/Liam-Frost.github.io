@@ -1,0 +1,6 @@
+# SITE_ADDRESS ":80" serves plain HTTP (local runs). A domain name, e.g. "liamfrost.com", makes Caddy
+# obtain and renew HTTPS certificates automatically (the domain must point at this host, ports 80/443 open).
+{$SITE_ADDRESS::80} {
+	encode zstd gzip
+	reverse_proxy app:8787
+}

@@ -1,21 +1,71 @@
+# Full site: PostgreSQL + the app image + Caddy in front. Settings come from .env next to this file
+# (copy .env.example). See docs/local-development.md.
+name: liam-frost-site
+
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: liam-frost-postgres
     restart: unless-stopped
     environment:
       POSTGRES_DB: liam_frost_site
       POSTGRES_USER: liam_frost
-      POSTGRES_PASSWORD: liam_frost_dev
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-liam_frost_dev}
+    # Published on the loopback interface only, for `npm run dev` and database tools on this machine.
     ports:
-      - "127.0.0.1:5432:5432"
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U liam_frost -d liam_frost_site"]
-      interval: 10s
+      interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 10
+
+  app:
+    build: .
+    image: liam-frost-site:local
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://liam_frost:${POSTGRES_PASSWORD:-liam_frost_dev}@postgres:5432/liam_frost_site?schema=public
+      # Only Caddy reaches the app (its port is not published), so the compose network is the proxy.
+      TRUST_PROXY: ${COMPOSE_SUBNET:-172.28.0.0/24}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_PASSWORD_HASH: ${ADMIN_PASSWORD_HASH:-}
+      ADMIN_SESSION_SECRET: ${ADMIN_SESSION_SECRET:-}
+      ADMIN_PATH: ${ADMIN_PATH:-/admin}
+      ADMIN_ALLOWED_IPS: ${ADMIN_ALLOWED_IPS:-}
+      # Secure unless .env says otherwise (local plain-HTTP runs set false there).
+      ADMIN_COOKIE_SECURE: ${ADMIN_COOKIE_SECURE:-true}
+      UPLOAD_MAX_MB: ${UPLOAD_MAX_MB:-40}
+    volumes:
+      - uploads:/data/uploads
+
+  caddy:
+    image: caddy:2.10-alpine
+    restart: unless-stopped
+    depends_on:
+      - app
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:-:80}
+    ports:
+      - "${HTTP_PORT:-8080}:80"
+      - "${HTTPS_PORT:-8443}:443"
+    volumes:
+      - ./docker/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: ${COMPOSE_SUBNET:-172.28.0.0/24}
 
 volumes:
   postgres_data:
+  uploads:
+  caddy_data:
+  caddy_config:

@@ -19,6 +19,7 @@ import { registerPhotoRoutes } from "./routes/photos";
 import { registerProjectRoutes } from "./routes/projects";
 import { registerSpotifyRoutes } from "./routes/spotify";
 import { registerUploadRoutes } from "./routes/uploads";
+import { registerWebApp } from "./routes/web-app";
 import { PrismaPhotoRepository } from "./photos/prisma-repository";
 import type { PhotoRepository } from "./photos/types";
 import { PrismaProjectRepository } from "./projects/prisma-repository";
@@ -31,6 +32,8 @@ import { LocalImageStore } from "./storage/local";
 
 /** apps/admin/dist relative to this file (apps/api/src). */
 const DEFAULT_ADMIN_DIST_DIR = fileURLToPath(new URL("../../admin/dist", import.meta.url));
+/** apps/web/dist relative to this file (apps/api/src, or apps/api/dist when built). */
+const DEFAULT_WEB_DIST_DIR = fileURLToPath(new URL("../../web/dist", import.meta.url));
 /** apps/api/uploads, used when UPLOAD_DIR is not set. */
 const DEFAULT_UPLOAD_DIR = fileURLToPath(new URL("../uploads", import.meta.url));
 
@@ -57,6 +60,8 @@ export type BuildServerOptions = {
   logger?: boolean;
   /** Where the admin app build lives; defaults to apps/admin/dist. */
   adminDistDir?: string;
+  /** Where the public site build lives; defaults to apps/web/dist. */
+  webDistDir?: string;
   /** Photo storage; defaults to Prisma when DATABASE_URL is set. Pass null for none. */
   photos?: PhotoRepository | null;
   /** Project storage; defaults to Prisma when DATABASE_URL is set. Pass null for none. */
@@ -71,6 +76,7 @@ export function buildServer({
   config = loadConfig(),
   logger = true,
   adminDistDir = DEFAULT_ADMIN_DIST_DIR,
+  webDistDir = DEFAULT_WEB_DIST_DIR,
   photos = defaultPhotoRepository(),
   projects = defaultProjectRepository(),
   settings = defaultSettingsRepository(),
@@ -142,6 +148,7 @@ export function buildServer({
   registerProjectRoutes(app, projects, store);
   registerUploadRoutes(app, store, { photos, projects }, auth);
   registerSpotifyRoutes(app, auth, spotify, settings !== null);
+  registerWebApp(app, webDistDir);
 
   return app;
 }

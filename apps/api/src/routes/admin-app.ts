@@ -6,16 +6,7 @@ import { extname, join } from "node:path";
 
 import type { AdminAuthService } from "../auth/service";
 import { notFound } from "../lib/errors";
-
-const CONTENT_TYPES: Record<string, string> = {
-  ".js": "text/javascript; charset=utf-8",
-  ".css": "text/css; charset=utf-8",
-  ".svg": "image/svg+xml",
-  ".png": "image/png",
-  ".ico": "image/x-icon",
-  ".woff2": "font/woff2",
-  ".json": "application/json; charset=utf-8"
-};
+import { contentTypeFor } from "./content-types";
 
 const ADMIN_CSP = [
   "default-src 'self'",
@@ -76,7 +67,7 @@ export function registerAdminApp(app: FastifyInstance, auth: AdminAuthService, d
       } catch {
         throw notFound();
       }
-      reply.header("content-type", CONTENT_TYPES[extname(asset)] ?? "application/octet-stream");
+      reply.header("content-type", contentTypeFor(asset));
       // Hashed file names change on every build, so they can be cached forever.
       reply.header("cache-control", asset.startsWith("assets/") ? "public, max-age=31536000, immutable" : "public, max-age=3600");
       return reply.send(data);
