@@ -234,3 +234,52 @@ describe("admin collection", () => {
     expect((await app.inject(url)).statusCode).toBe(404);
   });
 });
+
+describe("public collection", () => {
+  it("is empty without a database", async () => {
+    const app = await buildTestServer();
+    expect((await app.inject("/api/collection")).json()).toEqual({ kinds: [], items: [] });
+  });
+
+  it("lists only what the site may show, without synopses or reviews", async () => {
+    const { app, headers, importEntry, patch } = await setup();
+    const shown = (await importEntry("movie:1")).json().item;
+    const hidden = (await importEntry("movie:2")).json().item;
+    const wanted = (await importEntry("movie:3")).json().item;
+    const series = (await importEntry("tv:4", "tv")).json().item;
+    await patch(shown.id, { review: { en: "Lovely" }, rating: 5 });
+    await patch(hidden.id, { visibility: "private" });
+    await patch(wanted.id, { status: "want" });
+    await app.inject({ method: "PUT", url: "/api/admin/collection/settings", headers, payload: { show: { movie: true, tv: false, anime: true, music: true }, showWant: false } });
+
+    const body = (await app.inject("/api/collection")).json();
+    expect(body.kinds).toEqual(["movie", "anime"]);
+    expect(body.items.map((item: { id: string }) => item.id)).toEqual([shown.id]);
+    expect(body.items[0]).toMatchObject({ rating: 5, hasReview: true });
+    expect(body.items[0]).not.toHaveProperty("review");
+    expect(body.items[0]).not.toHaveProperty("overview");
+    expect(body.items[0]).not.toHaveProperty("visibility");
+
+    const detail = await app.inject(`/api/collection/${shown.id}`);
+    expect(detail.statusCode).toBe(200);
+    expect(detail.json()).toMatchObject({ review: { en: "Lovely" }, overview: { en: "Overview" }, sourceUrl: expect.stringContaining("themoviedb") });
+
+    for (const id of [hidden.id, wanted.id, series.id, "00000000-0000-0000-0000-000000000000", "nope"]) {
+      expect((await app.inject(`/api/collection/${id}`)).statusCode, id).toBe(404);
+    }
+  });
+
+  it("answers an empty list when the database fails, and 503 for details", async () => {
+    const { app, media, importEntry } = await setup();
+    const { item } = (await importEntry()).json();
+    const refused = Object.assign(new Error("connect ECONNREFUSED"), { code: "ECONNREFUSED" });
+    media.list = async () => {
+      throw refused;
+    };
+    media.get = async () => {
+      throw refused;
+    };
+    expect((await app.inject("/api/collection")).json()).toEqual({ kinds: [], items: [] });
+    expect((await app.inject(`/api/collection/${item.id}`)).statusCode).toBe(503);
+  });
+});
