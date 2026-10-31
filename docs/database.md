@@ -29,6 +29,8 @@ DATABASE_URL=postgresql://liam_frost:liam_frost_dev@localhost:5432/liam_frost_si
 
 Copy it into `apps/api/.env` for local API and seed commands. The API and seed script load this file with `dotenv`.
 
+In the full Docker stack the app container applies pending migrations on every start (`docker/entrypoint.sh`, `MIGRATE_ON_START=false` skips it). See `docs/local-development.md`.
+
 ## Prisma 7 Setup
 
 - Prisma ORM 7.10.1 with the `prisma-client` generator. The client is generated into `apps/api/src/generated/prisma` (git-ignored) and imported from `../generated/prisma/client`.

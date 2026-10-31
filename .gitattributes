@@ -1,2 +1,7 @@
 # Prisma checksums migration files byte-for-byte: keep them LF on every platform.
 apps/api/prisma/migrations/** text eol=lf
+
+# Run inside Linux containers: a CRLF checkout on Windows would break them.
+*.sh text eol=lf
+Dockerfile text eol=lf
+docker/Caddyfile text eol=lf

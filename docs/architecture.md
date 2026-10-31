@@ -37,6 +37,8 @@ The API has a PostgreSQL/Prisma foundation for photos. During migration, photo r
 
 Admin authentication is in place with an HttpOnly cookie session and a reusable backend guard for future protected routes. CRUD, media metadata import, and upload processing are planned for later stages. See `admin.md` for the security model.
 
+Production hosting: one Node process serves everything on one origin. `routes/web-app.ts` serves the site build (`apps/web/dist`) at `/`: only files that exist in the build at startup, looked up by exact path; other paths are the usual JSON 404 (the site uses hash routes, so `/` is its only page). `index.html` gets a CSP that allows the inline theme bootstrap script by its hash, computed from the build at startup. The admin build is served at `ADMIN_PATH`, uploads at `/uploads`. In Docker, Caddy sits in front (`compose.yaml`, `docs/local-development.md`).
+
 API structure:
 
 ```txt
