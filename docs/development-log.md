@@ -90,6 +90,11 @@
 - Windows reported port 51514 as unavailable for `prisma dev` although nothing listened on it (likely a reserved range); other ports were used.
 - The model ran Claude Code review for Stage 11 and fixed six findings.
 
+- The user configured a TMDB read access token; real searches and imports were verified, TMDB's Simplified genre names for zh-TW were dropped, and PR #11 was merged.
+- Stage 12 started. The browser pane's screenshots crop to the top-left quarter at device pixel ratio 2; pages were scaled with an inline `transform: scale(0.5)` for inspection only.
+- The model ran Claude Code review for Stage 12 and fixed four findings.
+- The user reported a blank home page after adding an anime. It was unrelated: reloading with 繁體中文 selected crashed the app (`zh-Hant` normalized to `zh-hant`, missing from the translation tables). The bug dates back to when Traditional Chinese was added and also affects the live GitHub Pages site until this is deployed.
+
 ## Notes
 
 - A direct Windows directory rename of `src` failed with `Permission denied`; the migration continued by moving source subdirectories individually.

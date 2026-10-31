@@ -26,6 +26,8 @@ export interface MediaSources {
   details(source: SearchSource, kind: MediaKind, sourceId: string): Promise<SourceDetails>;
   /** Downloads a poster for the image pipeline. */
   download(url: string): Promise<Buffer>;
+  /** Romaji title of an anime from AniList, matched by its Japanese title; null when not found or unreachable. */
+  romaji(nativeTitle: string, year: number | null): Promise<string | null>;
 }
 
 const TIMEOUT_MS = 10_000;
@@ -33,6 +35,11 @@ const MAX_IMAGE_BYTES = 20 * 1024 * 1024;
 const USER_AGENT = "liam-frost-site/0.1 (https://github.com/Liam-Frost/Liam-Frost.github.io)";
 
 const TMDB_API = "https://api.themoviedb.org/3";
+const ANILIST_API = "https://graphql.anilist.co";
+const ANILIST_QUERY = "query ($search: String) { Media(search: $search, type: ANIME) { title { romaji native } startDate { year } } }";
+
+/** Compares titles ignoring width, spacing and punctuation ("ぼっち・ざ・ろっく！" = "ぼっちざろっく!"). */
+const titleKey = (title: string) => title.normalize("NFKC").toLowerCase().replace(/[\s\p{P}\p{S}]/gu, "");
 /** Hosts posters may be downloaded from. */
 const POSTER_HOSTS = new Set(["image.tmdb.org", "lain.bgm.tv"]);
 const TMDB_IMAGE = "https://image.tmdb.org/t/p";
@@ -66,6 +73,7 @@ type TmdbHit = {
 type TmdbTranslation = { iso_639_1: string; iso_3166_1: string; data: { title?: string; name?: string; overview?: string } };
 
 type TmdbDetails = TmdbHit & {
+  original_language?: string;
   genres?: { id: number; name: string }[];
   translations?: { translations: TmdbTranslation[] };
   credits?: { crew?: { job: string; name: string }[] };
@@ -101,7 +109,7 @@ export function createMediaSources(options: { tmdbKey?: string; fetchImpl?: type
     try {
       response = await fetchImpl(url, { ...init, signal: AbortSignal.timeout(TIMEOUT_MS) });
     } catch {
-      throw new SourceError(`无法连接 ${what}`);
+      throw new SourceError(`无法连接 ${what}。如果访问它需要代理，请在 apps/api/.env 中设置 HTTPS_PROXY 后重启 API`);
     }
     if (!response.ok) {
       await response.body?.cancel();
@@ -212,6 +220,9 @@ export function createMediaSources(options: { tmdbKey?: string; fetchImpl?: type
           return clean(field === "title" ? (pick?.data.title ?? pick?.data.name) : pick?.data.overview);
         };
         const original = clean(details.original_title ?? details.original_name) || null;
+        // TMDB leaves the original language's translation empty (e.g. no English title for an English
+        // series); the original title is that language's title.
+        const inOriginal = (lang: string) => (details.original_language === lang ? (original ?? "") : "");
         // Localized genre names are optional; without them the details' Chinese names are used.
         const genreNames = await tmdbGenres(type).catch(() => new Map<number, LocalizedText>());
         const credits =
@@ -226,9 +237,9 @@ export function createMediaSources(options: { tmdbKey?: string; fetchImpl?: type
           title: compact({
             zh: translated("zh", ["CN", "SG"], "title") || clean(details.title ?? details.name),
             "zh-Hant": translated("zh", ["TW", "HK"], "title"),
-            en: translated("en", ["US", "GB"], "title"),
-            fr: translated("fr", ["FR", "CA"], "title"),
-            ja: translated("ja", ["JP"], "title")
+            en: translated("en", ["US", "GB"], "title") || inOriginal("en"),
+            fr: translated("fr", ["FR", "CA"], "title") || inOriginal("fr"),
+            ja: translated("ja", ["JP"], "title") || inOriginal("ja")
           }),
           originalTitle: original,
           year: yearOf(details.release_date ?? details.first_air_date),
@@ -277,6 +288,31 @@ export function createMediaSources(options: { tmdbKey?: string; fetchImpl?: type
         // eps counts main episodes; total_episodes also counts specials, openings and endings.
         episodes: subject.eps || subject.total_episodes || null
       };
+    },
+
+    async romaji(nativeTitle, year) {
+      try {
+        const response = await fetchImpl(ANILIST_API, {
+          method: "POST",
+          headers: { "content-type": "application/json", accept: "application/json", "user-agent": USER_AGENT },
+          body: JSON.stringify({ query: ANILIST_QUERY, variables: { search: nativeTitle } }),
+          signal: AbortSignal.timeout(TIMEOUT_MS)
+        });
+        if (!response.ok) {
+          await response.body?.cancel();
+          return null;
+        }
+        const data = (await response.json()) as { data?: { Media?: { title?: { romaji?: string; native?: string }; startDate?: { year?: number } } } };
+        const media = data.data?.Media;
+        const romaji = media?.title?.romaji?.trim();
+        if (!media || !romaji) return null;
+        // Search returns the closest match; accept it only when it is the same work.
+        const sameTitle = media.title?.native && titleKey(media.title.native) === titleKey(nativeTitle);
+        const sameYear = year !== null && media.startDate?.year !== undefined && Math.abs(media.startDate.year - year) <= 1;
+        return sameTitle || sameYear ? romaji : null;
+      } catch {
+        return null;
+      }
     },
 
     async download(url) {

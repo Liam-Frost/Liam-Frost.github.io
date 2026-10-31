@@ -120,6 +120,26 @@ describe("TMDB", () => {
     expect(result.genres).toEqual([{ zh: "剧情" }]);
   });
 
+  it("uses the original title for the work's own language", async () => {
+    const fetchImpl = fakeFetch((url) => {
+      if (url.pathname.startsWith("/3/genre/")) return Response.json({ genres: [] });
+      return Response.json({
+        id: 1396,
+        name: "绝命毒师",
+        original_name: "Breaking Bad",
+        original_language: "en",
+        translations: {
+          translations: [
+            { iso_639_1: "zh", iso_3166_1: "CN", data: { name: "绝命毒师" } },
+            { iso_639_1: "en", iso_3166_1: "US", data: { name: "", overview: "A chemistry teacher..." } }
+          ]
+        }
+      });
+    });
+    const result = await createMediaSources({ tmdbKey: "abc123", fetchImpl }).details("tmdb", "tv", "tv:1396");
+    expect(result.title).toEqual({ zh: "绝命毒师", en: "Breaking Bad" });
+  });
+
   it("treats a response without results as no results", async () => {
     const sources = createMediaSources({ tmdbKey: "abc123", fetchImpl: fakeFetch(() => Response.json({ status_message: "busy" })) });
     expect(await sources.search("tmdb", "movie", "x")).toEqual([]);
@@ -130,6 +150,26 @@ describe("TMDB", () => {
     const rejected = createMediaSources({ tmdbKey: "bad", fetchImpl: fakeFetch(() => new Response("", { status: 401 })) });
     await expect(rejected.search("tmdb", "movie", "x")).rejects.toThrow(/API key/);
     expect(createMediaSources({}).available()).toEqual({ tmdb: false, bangumi: true });
+  });
+});
+
+describe("AniList romaji", () => {
+  const anilist = (media: object | null) => fakeFetch(() => Response.json({ data: { Media: media } }));
+
+  it("returns the romaji title of the same work", async () => {
+    const sources = createMediaSources({ fetchImpl: anilist({ title: { romaji: "Bocchi the Rock!", native: "ぼっち・ざ・ろっく！" }, startDate: { year: 2022 } }) });
+    expect(await sources.romaji("ぼっち・ざ・ろっく!", null)).toBe("Bocchi the Rock!");
+  });
+
+  it("accepts a different spelling of the same year, and rejects other works", async () => {
+    const match = createMediaSources({ fetchImpl: anilist({ title: { romaji: "Sousou no Frieren", native: "葬送のフリーレン" }, startDate: { year: 2023 } }) });
+    expect(await match.romaji("葬送的芙莉莲", 2023)).toBe("Sousou no Frieren");
+    expect(await match.romaji("別の作品", 2010)).toBeNull();
+  });
+
+  it("gives up quietly when AniList fails", async () => {
+    expect(await createMediaSources({ fetchImpl: fakeFetch(() => new Response("", { status: 500 })) }).romaji("x", 2020)).toBeNull();
+    expect(await createMediaSources({ fetchImpl: anilist(null) }).romaji("x", 2020)).toBeNull();
   });
 });
 
