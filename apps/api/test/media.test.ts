@@ -153,6 +153,7 @@ describe("admin collection", () => {
       { rating: 6 },
       { rating: 0 },
       { watchedOn: "2026-13-01" },
+      { watchedOn: "2026-02-31" },
       { progress: { watched: 13, total: 12 } },
       { title: {} },
       { status: "maybe" },

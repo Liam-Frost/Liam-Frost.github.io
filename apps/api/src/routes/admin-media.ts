@@ -15,13 +15,12 @@ import {
   mediaUpdateSchema,
   parseInput
 } from "../lib/validation";
-import { readCollectionSettings, saveCollectionSettings } from "../media/collection-settings";
+import type { CollectionSettingsStore } from "../media/collection-settings";
 import { toAdminMedia } from "../media/mapping";
 import { SourceError, type MediaSources } from "../media/sources";
 import { DuplicateMediaError, type MediaPatch, type MediaRepository, type MediaRow } from "../media/types";
 import { InvalidImageError, processImage, saveImage, type ProcessedImage } from "../photos/images";
 import type { StoredImage } from "../projects/types";
-import type { SettingsRepository } from "../settings/types";
 import type { LocalImageStore } from "../storage/local";
 import { readUploadedImage } from "./read-upload";
 
@@ -42,7 +41,7 @@ export function registerAdminMediaRoutes(
   auth: AdminAuthService,
   deps: {
     media: MediaRepository | null;
-    settings: SettingsRepository | null;
+    collection: CollectionSettingsStore | null;
     sources: MediaSources;
     store: LocalImageStore;
     maxUploadBytes: number;
@@ -50,10 +49,10 @@ export function registerAdminMediaRoutes(
 ) {
   const { sources, store } = deps;
   const repo = () => {
-    if (!deps.media || !deps.settings) {
+    if (!deps.media || !deps.collection) {
       throw new HttpError(503, "DATABASE_NOT_CONFIGURED", "The collection needs a database (set DATABASE_URL)");
     }
-    return { media: deps.media, settings: deps.settings };
+    return { media: deps.media, collection: deps.collection };
   };
   const admin = { preHandler: auth.requireAdmin };
   const respond = (row: MediaRow): AdminMediaResponse => ({ item: toAdminMedia(row, store) });
@@ -194,13 +193,13 @@ export function registerAdminMediaRoutes(
   });
 
   app.get("/api/admin/collection/settings", admin, async (): Promise<AdminCollectionSettingsResponse> => ({
-    settings: await readCollectionSettings(repo().settings),
+    settings: await repo().collection.get(),
     sources: sources.available()
   }));
 
   app.put("/api/admin/collection/settings", admin, async (request): Promise<AdminCollectionSettingsResponse> => {
     const settings = parseInput(collectionSettingsSchema, request.body);
-    await saveCollectionSettings(repo().settings, settings);
+    await repo().collection.save(settings);
     return { settings, sources: sources.available() };
   });
 }

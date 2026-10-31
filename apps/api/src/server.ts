@@ -21,6 +21,7 @@ import { registerProjectRoutes } from "./routes/projects";
 import { registerSpotifyRoutes } from "./routes/spotify";
 import { registerUploadRoutes } from "./routes/uploads";
 import { registerWebApp } from "./routes/web-app";
+import { CollectionSettingsStore } from "./media/collection-settings";
 import { PrismaMediaRepository } from "./media/prisma-repository";
 import { createMediaSources, type MediaSources } from "./media/sources";
 import type { MediaRepository } from "./media/types";
@@ -162,8 +163,9 @@ export function buildServer({
   registerAdminProjectRoutes(app, auth, projects, store, config.uploads.maxBytes);
   registerPhotoRoutes(app, photos, store);
   registerProjectRoutes(app, projects, store);
-  registerAdminMediaRoutes(app, auth, { media, settings, sources: mediaSources, store, maxUploadBytes: config.uploads.maxBytes });
-  registerUploadRoutes(app, store, { photos, projects, media, settings }, auth);
+  const collection = settings ? new CollectionSettingsStore(settings) : null;
+  registerAdminMediaRoutes(app, auth, { media, collection, sources: mediaSources, store, maxUploadBytes: config.uploads.maxBytes });
+  registerUploadRoutes(app, store, { photos, projects, media, collection }, auth);
   registerSpotifyRoutes(app, auth, spotify, settings !== null);
   registerWebApp(app, webDistDir);
 

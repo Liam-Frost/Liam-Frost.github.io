@@ -33,6 +33,8 @@ const MAX_IMAGE_BYTES = 20 * 1024 * 1024;
 const USER_AGENT = "liam-frost-site/0.1 (https://github.com/Liam-Frost/Liam-Frost.github.io)";
 
 const TMDB_API = "https://api.themoviedb.org/3";
+/** Hosts posters may be downloaded from. */
+const POSTER_HOSTS = new Set(["image.tmdb.org", "lain.bgm.tv"]);
 const TMDB_IMAGE = "https://image.tmdb.org/t/p";
 /** Site languages and the TMDB locale for each. */
 const TMDB_LANGS = { zh: "zh-CN", "zh-Hant": "zh-TW", en: "en-US", fr: "fr-FR", ja: "ja-JP" } as const;
@@ -164,23 +166,23 @@ export function createMediaSources(options: { tmdbKey?: string; fetchImpl?: type
       if (source === "tmdb") {
         const params = { query, language: "zh-CN", include_adult: "false" };
         if (kind === "movie" || kind === "tv") {
-          const { results } = await tmdb<{ results: TmdbHit[] }>(`/search/${kind}`, params);
-          return results.slice(0, 20).map((hit) => tmdbHit(hit, kind));
+          const { results } = await tmdb<{ results?: TmdbHit[] }>(`/search/${kind}`, params);
+          return (results ?? []).slice(0, 20).map((hit) => tmdbHit(hit, kind));
         }
         // Anime can be a film or a series.
-        const { results } = await tmdb<{ results: TmdbHit[] }>("/search/multi", params);
-        return results
+        const { results } = await tmdb<{ results?: TmdbHit[] }>("/search/multi", params);
+        return (results ?? [])
           .filter((hit) => hit.media_type === "movie" || hit.media_type === "tv")
           .slice(0, 20)
           .map((hit) => tmdbHit(hit, hit.media_type as TmdbType));
       }
 
       // Bangumi subject type 2 is anime.
-      const { data } = await bangumi<{ data: BangumiSubject[] }>("/v0/search/subjects?limit=20", {
+      const { data } = await bangumi<{ data?: BangumiSubject[] }>("/v0/search/subjects?limit=20", {
         method: "POST",
         body: JSON.stringify({ keyword: query, filter: { type: [2] } })
       });
-      return data.map((subject) => ({
+      return (data ?? []).map((subject) => ({
         source: "bangumi" as const,
         sourceId: String(subject.id),
         mediaType: "tv" as const,
@@ -200,13 +202,17 @@ export function createMediaSources(options: { tmdbKey?: string; fetchImpl?: type
         const id = match[2];
         const details = await tmdb<TmdbDetails>(`/${type}/${id}`, { language: "zh-CN", append_to_response: "translations,credits" });
         const translations = details.translations?.translations ?? [];
+        // Chinese is split by region (Simplified CN/SG, Traditional TW/HK), so it never falls back across
+        // regions; other languages take any region when the preferred ones are missing.
         const translated = (lang: string, regions: string[], field: "title" | "overview") => {
           const candidates = translations.filter((t) => t.iso_639_1 === lang);
-          const pick = regions.map((region) => candidates.find((t) => t.iso_3166_1 === region)).find(Boolean) ?? candidates[0];
+          const preferred = regions.map((region) => candidates.find((t) => t.iso_3166_1 === region)).find(Boolean);
+          const pick = preferred ?? (lang === "zh" ? undefined : candidates[0]);
           return clean(field === "title" ? (pick?.data.title ?? pick?.data.name) : pick?.data.overview);
         };
         const original = clean(details.original_title ?? details.original_name) || null;
-        const genreNames = await tmdbGenres(type);
+        // Localized genre names are optional; without them the details' Chinese names are used.
+        const genreNames = await tmdbGenres(type).catch(() => new Map<number, LocalizedText>());
         const credits =
           type === "movie"
             ? (details.credits?.crew ?? []).filter((member) => member.job === "Director").map((member) => member.name)
@@ -273,9 +279,10 @@ export function createMediaSources(options: { tmdbKey?: string; fetchImpl?: type
     },
 
     async download(url) {
+      // Poster URLs come from the sources' responses; only fetch from their image hosts, without redirects.
       const parsed = new URL(url);
-      if (parsed.protocol !== "https:") throw new SourceError("海报地址无效");
-      const response = await request(url, { headers: { "user-agent": USER_AGENT } }, "海报服务器");
+      if (parsed.protocol !== "https:" || !POSTER_HOSTS.has(parsed.hostname)) throw new SourceError("海报地址无效");
+      const response = await request(url, { headers: { "user-agent": USER_AGENT }, redirect: "error" }, "海报服务器");
       const length = Number(response.headers.get("content-length"));
       if (length > MAX_IMAGE_BYTES) {
         await response.body?.cancel();

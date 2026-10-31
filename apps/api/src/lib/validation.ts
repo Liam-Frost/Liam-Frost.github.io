@@ -192,6 +192,13 @@ const isoDate = z
   .string()
   .trim()
   .regex(/^$|^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/, "Dates must be YYYY-MM-DD")
+  // The format allows 2026-02-31; a real date survives a round trip through Date. (Refinements also run
+  // after a failed regex, so invalid input must not throw here.)
+  .refine((value) => {
+    if (!value) return true;
+    const date = new Date(`${value}T00:00:00Z`);
+    return !Number.isNaN(date.getTime()) && date.toISOString().startsWith(value);
+  }, "Invalid date")
   .nullable()
   .transform((value) => value || null);
 

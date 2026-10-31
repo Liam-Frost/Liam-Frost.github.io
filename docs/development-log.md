@@ -85,6 +85,11 @@
 - A Python one-liner meant to generate a test PNG was quadratic and hung a check; the smoke test's Node generator is used instead.
 - The model ran Claude Code review for Stage 9 and fixed five findings.
 
+- PR #10 was merged. The user asked for a collection module plan (`docs/plan-collection.md`), then confirmed it and started Stage 11.
+- Browser testing found that the add dialog's search field never got focus (native `<dialog>` focuses the close button), so typing and Enter closed it; fixed in `Dialog` with `data-autofocus`. Live Bangumi data showed studio tags among genres and episode totals that include specials; both fixed.
+- Windows reported port 51514 as unavailable for `prisma dev` although nothing listened on it (likely a reserved range); other ports were used.
+- The model ran Claude Code review for Stage 11 and fixed six findings.
+
 ## Notes
 
 - A direct Windows directory rename of `src` failed with `Permission denied`; the migration continued by moving source subdirectories individually.
