@@ -30,6 +30,7 @@ export default function PhotoCard({ photo, onOpen, priority = false }: Props) {
       <ResponsiveFlickrImage
         className="photoImg"
         baseUrl={photo.src}
+        variants={photo.variants}
         originalWidth={photo.width}
         originalHeight={photo.height}
         variant="grid"

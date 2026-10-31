@@ -62,6 +62,12 @@
 - Two bugs were found in the browser and fixed before commit: the admin dev proxy looping to itself (Vite `loadEnv` includes `process.env.PORT`) and logout not returning to the login screen (`queryClient.clear()` detaching the session observer).
 - The model ran Claude Code review for Stage 6, fixed three low findings, and created Stage 6 PR #6: https://github.com/Liam-Frost/Liam-Frost.github.io/pull/6
 
+- PR #6 was merged; the model started Stage 7 (photo management and uploads).
+- `prisma migrate dev` against `prisma dev`'s `template1` database broke the shadow database (it is copied from `template1`); the migrations were recreated against the `postgres` database. `prisma migrate diff` printed nothing in this environment, so the `photo_uploads` SQL was written by hand and verified by applying it and exercising the new columns end to end.
+- The test multipart helper first produced LF line endings, which multipart rejects; fixed in the helper.
+- During browser verification the web dev server lacked a `/uploads` proxy, and the editor's two switches shared one line; both fixed.
+- The model ran Claude Code review for Stage 7, fixed five findings, and created Stage 7 PR #7: https://github.com/Liam-Frost/Liam-Frost.github.io/pull/7
+
 ## Notes
 
 - A direct Windows directory rename of `src` failed with `Permission denied`; the migration continued by moving source subdirectories individually.

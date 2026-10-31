@@ -24,6 +24,7 @@ Personal site migration from a static React portfolio to a full-stack applicatio
 - `npm run auth:hash -- your-password`: generate an admin password hash for `ADMIN_PASSWORD_HASH`.
 - `npm run db:generate`: generate the Prisma client for the API.
 - `npm run db:migrate`: run Prisma development migrations, regenerate the client, then seed photo data.
+- `npm run db:deploy`: apply committed migrations (production).
 - `npm run db:push`: push the Prisma schema to a local/development PostgreSQL database.
 - `npm run db:seed`: seed the database from the shared photo content package.
 

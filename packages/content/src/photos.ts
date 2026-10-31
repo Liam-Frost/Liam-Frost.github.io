@@ -15,11 +15,36 @@ export type Photo = {
   settings?: string;
   description?: L;
   tags: L[];
+  /** Display URL: an external URL, or the largest generated size for uploaded photos. */
   src: string;
   alt: L;
   width: number;
   height: number;
+  /** Shown in the home page "featured" section. */
+  featured?: boolean;
+  /** Generated sizes for uploaded photos, smallest first. Absent for external (Flickr) photos. */
+  variants?: PhotoVariant[];
 };
+
+export type PhotoVariant = {
+  width: number;
+  height: number;
+  url: string;
+};
+
+/** Photos shown in the home page "featured" section before the admin manages them. */
+const FEATURED_IDS = new Set([
+  "tokyo-tower",
+  "glico-night-icon",
+  "tokyo-night-anchor",
+  "rome-alley-dome-006",
+  "beijing-temple-003",
+  "crowd-and-lights",
+  "hanabi-scatter",
+  "jellyfish",
+  "vancouver-locarno-pier-2025",
+  "shibuya-sky-arena"
+]);
 
 // Helper to get localized string from Photo field
 export function getPhotoField(value: L | undefined, lang: Lang): string {
@@ -83,7 +108,8 @@ function makePhoto(p: PhotoInput): Photo {
     src,
     alt: toL(p.alt) ?? titleL,
     width: p.width,
-    height: p.height
+    height: p.height,
+    featured: FEATURED_IDS.has(p.id)
   };
 }
 

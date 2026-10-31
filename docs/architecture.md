@@ -44,8 +44,10 @@ apps/api/src
   config/env.ts     Zod-validated environment (fails fast on bad config)
   auth/             password hashing, signed sessions, AdminAuthService (CSRF, IP allowlist, rate limit, revocation)
   lib/              HttpError, Zod input validation, IP/CIDR lists
-  routes/           admin, photos, spotify
-  db/               Prisma client and photo repository
+  routes/           admin, admin-app, admin-photos, photos, uploads, spotify
+  photos/           PhotoRepository interface + Prisma implementation, image processing (sharp), EXIF, DTO mapping
+  storage/local.ts  uploaded files under UPLOAD_DIR
+  db/               Prisma client and seed script
   generated/prisma  generated Prisma client (git-ignored)
 apps/api/test       Vitest + Fastify inject tests
 packages/shared     constants and API types shared by API, web and admin (admin path rules, CSRF header, error shape)
@@ -62,6 +64,13 @@ packages/shared     constants and API types shared by API, web and admin (admin 
 - **Hosting** (`apps/api/src/routes/admin-app.ts`): only `index.html`, Vite's hashed `assets/*` files and `favicon.svg` are served; any other file-like path is 404. The page gets a strict CSP and `no-store`; hashed assets are cached for a year. IPs outside `ADMIN_ALLOWED_IPS` get the unknown-route 404. Without a build, nothing is registered.
 - **Development**: `npm run dev:admin` (port 5174) proxies `/api` and `/uploads` to `127.0.0.1:8787` (override with `ADMIN_API_PROXY`) and injects the same `<meta>` from `ADMIN_PATH` in `apps/api/.env`.
 - **Session**: TanStack Query holds `/api/admin/session`; any 401 returns the app to the login screen; logout drops all other cached admin data.
+
+## Photos
+
+- **Storage**: `Photo.storage` is `remote-url` (existing Flickr photos: `src` is the URL) or `local` (uploads: `storageKey` + `variants`; URLs are derived at read time, so moving files to R2 later only changes how URLs are built).
+- **Repository**: routes depend on the `PhotoRepository` interface; the API uses the Prisma implementation when `DATABASE_URL` is set, tests use an in-memory one.
+- **Public shape**: `packages/content`'s `Photo` gained `featured` and optional `variants` (`{ width, height, url }`, smallest first). `src` stays the largest image, so the fullscreen viewer works unchanged.
+- **Front end**: `ResponsiveFlickrImage` keeps its Flickr suffix logic and, for photos with `variants`, builds `srcset` from them (capped by the adaptive quality tier), uses the 1280 px size as the lightbox medium and swaps in the size that covers the viewport.
 
 ## Content
 

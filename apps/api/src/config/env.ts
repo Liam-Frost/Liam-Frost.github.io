@@ -57,7 +57,10 @@ const envSchema = z.object({
   ),
   ADMIN_COOKIE_SECURE: booleanFlag,
   ADMIN_PATH: optionalString,
-  ADMIN_ALLOWED_IPS: csv
+  ADMIN_ALLOWED_IPS: csv,
+
+  UPLOAD_DIR: optionalString,
+  UPLOAD_MAX_MB: optionalNumber.pipe(z.number().int().min(1).max(200).default(40))
 });
 
 export type AdminConfig = {
@@ -81,6 +84,11 @@ export type AppConfig = {
   /** false, true (any hop; only safe when the API port is not publicly reachable), or the proxy addresses to trust. */
   trustProxy: boolean | string[];
   admin: AdminConfig;
+  uploads: {
+    /** Absolute or relative directory for uploaded images; defaults to apps/api/uploads. */
+    dir?: string;
+    maxBytes: number;
+  };
 };
 
 export class ConfigError extends Error {
@@ -155,6 +163,10 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
       cookieSecure: values.ADMIN_COOKIE_SECURE ?? production,
       path: adminPath,
       allowedIps
+    },
+    uploads: {
+      dir: values.UPLOAD_DIR,
+      maxBytes: values.UPLOAD_MAX_MB * 1024 * 1024
     }
   };
 }

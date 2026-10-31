@@ -22,7 +22,7 @@ beforeAll(() => {
 
 describe("admin app hosting", () => {
   it("serves the app shell at ADMIN_PATH and below with the mount path injected", async () => {
-    const app = await buildTestServer({ ADMIN_PATH: "/studio" }, dist);
+    const app = await buildTestServer({ ADMIN_PATH: "/studio" }, { adminDistDir: dist });
     for (const url of ["/studio", "/studio/", "/studio/photos/123"]) {
       const response = await app.inject(url);
       expect(response.statusCode, url).toBe(200);
@@ -35,7 +35,7 @@ describe("admin app hosting", () => {
   });
 
   it("serves hashed assets and the favicon, and nothing else", async () => {
-    const app = await buildTestServer({ ADMIN_PATH: "/studio" }, dist);
+    const app = await buildTestServer({ ADMIN_PATH: "/studio" }, { adminDistDir: dist });
 
     const js = await app.inject("/studio/assets/index-abc123.js");
     expect(js.statusCode).toBe(200);
@@ -52,13 +52,13 @@ describe("admin app hosting", () => {
   });
 
   it("does not serve the admin app at any other path", async () => {
-    const app = await buildTestServer({ ADMIN_PATH: "/studio" }, dist);
+    const app = await buildTestServer({ ADMIN_PATH: "/studio" }, { adminDistDir: dist });
     expect((await app.inject("/admin")).statusCode).toBe(404);
     expect((await app.inject("/studios")).statusCode).toBe(404);
   });
 
   it("hides the admin app from IPs outside ADMIN_ALLOWED_IPS with the unknown-route 404", async () => {
-    const app = await buildTestServer({ ADMIN_PATH: "/studio", ADMIN_ALLOWED_IPS: "10.0.0.5" }, dist);
+    const app = await buildTestServer({ ADMIN_PATH: "/studio", ADMIN_ALLOWED_IPS: "10.0.0.5" }, { adminDistDir: dist });
     const unknown = await app.inject("/nope");
     for (const url of ["/studio", "/studio/assets/index-abc123.js"]) {
       const response = await app.inject({ url, remoteAddress: "127.0.0.1" });

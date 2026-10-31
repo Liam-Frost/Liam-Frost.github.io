@@ -207,6 +207,7 @@ export default function PhotoModal({
           <ResponsiveFlickrImage
             className="modalImg"
             baseUrl={photo.src}
+            variants={photo.variants}
             originalWidth={photo.width}
             originalHeight={photo.height}
             variant="lightbox"
