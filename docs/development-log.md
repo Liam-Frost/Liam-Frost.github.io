@@ -66,6 +66,7 @@
 - `prisma migrate dev` against `prisma dev`'s `template1` database broke the shadow database (it is copied from `template1`); the migrations were recreated against the `postgres` database. `prisma migrate diff` printed nothing in this environment, so the `photo_uploads` SQL was written by hand and verified by applying it and exercising the new columns end to end.
 - The test multipart helper first produced LF line endings, which multipart rejects; fixed in the helper.
 - During browser verification the web dev server lacked a `/uploads` proxy, and the editor's two switches shared one line; both fixed.
+- The model ran Claude Code review for Stage 7, fixed five findings, and created Stage 7 PR #7: https://github.com/Liam-Frost/Liam-Frost.github.io/pull/7
 
 ## Notes
 
