@@ -1,12 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
 
 import { MemorySettingsRepository } from "../src/settings/types";
-import { createPlaylistFetcher, parseEmbedPage, playlistIdFromUrl, type FetchedPlaylist, type PlaylistFetcher } from "../src/spotify/playlist";
-import { FIRST_SYNC_WAIT_MS, REFRESH_MS, RETRY_MS, SpotifyService } from "../src/spotify/service";
+import { createPlaylistFetcher, parseEmbedPage, playlistIdFromUrl } from "../src/spotify/playlist";
 import { buildTestServer, csrf, login } from "./helpers";
+import { MemoryMediaRepository } from "./memory-media-repository";
 
 const PLAYLIST_ID = "37i9dQZF1DX9AUX5YVf3hc";
-const OTHER_ID = "0123456789abcdefghijkl";
 const trackId = (n: number) => `track${String(n).padStart(17, "0")}`;
 
 function embedPage(tracks: object[], name = "City Pop Best") {
@@ -28,23 +27,6 @@ const embedTrack = (n: number, extra: object = {}) => ({
   audioPreview: { url: `https://p.scdn.co/mp3-preview/${n}` },
   ...extra
 });
-
-function playlist(id: string, count = 2): FetchedPlaylist {
-  return {
-    id,
-    name: `Playlist ${id}`,
-    image: "https://i.scdn.co/image/playlist",
-    link: `https://open.spotify.com/playlist/${id}`,
-    tracks: Array.from({ length: count }, (_, i) => ({
-      id: trackId(i),
-      title: `Song ${i}`,
-      artist: "Artist",
-      image: `https://i.scdn.co/image/${i}`,
-      link: `https://open.spotify.com/track/${trackId(i)}`,
-      previewUrl: `https://p.scdn.co/mp3-preview/${i}`
-    }))
-  };
-}
 
 describe("playlist parsing", () => {
   it("reads playlist ids from links", () => {
@@ -108,198 +90,79 @@ describe("playlist parsing", () => {
   });
 });
 
-describe("Spotify service", () => {
-  it("syncs on first use, then serves the cache and refreshes it in the background", async () => {
-    let now = Date.parse("2026-10-31T00:00:00Z");
-    const fetchPlaylist = vi.fn<PlaylistFetcher>(async (id) => playlist(id));
-    const service = new SpotifyService(new MemorySettingsRepository(), fetchPlaylist, undefined, () => now);
-
-    const first = await service.player();
-    expect(first.tracks).toHaveLength(2);
-    expect(first.shuffle).toBe(true);
-    expect(fetchPlaylist).toHaveBeenCalledTimes(1);
-
-    await service.player();
-    expect(fetchPlaylist).toHaveBeenCalledTimes(1);
-
-    now += REFRESH_MS + 1;
-    await service.player();
-    await service.sync();
-    expect(fetchPlaylist).toHaveBeenCalledTimes(2);
-  });
-
-  it("keeps the last good playlist after a failure and waits before retrying", async () => {
-    let now = Date.parse("2026-10-31T00:00:00Z");
-    let fail = false;
-    const fetchPlaylist = vi.fn<PlaylistFetcher>(async (id) => {
-      if (fail) throw new Error("boom");
-      return playlist(id);
-    });
-    const service = new SpotifyService(new MemorySettingsRepository(), fetchPlaylist, undefined, () => now);
-    await service.sync();
-
-    fail = true;
-    now += REFRESH_MS + 1;
-    await service.sync();
-    expect((await service.status()).error).toBe("同步失败");
-    expect((await service.player()).tracks).toHaveLength(2);
-    expect(fetchPlaylist).toHaveBeenCalledTimes(2);
-
-    // The background retry is in flight; sync() joins it instead of fetching again.
-    now += RETRY_MS + 1;
-    await service.player();
-    await service.sync();
-    expect(fetchPlaylist).toHaveBeenCalledTimes(3);
-  });
-
-  it("shares one fetch between concurrent syncs", async () => {
-    const fetchPlaylist = vi.fn<PlaylistFetcher>(async (id) => playlist(id));
-    const service = new SpotifyService(new MemorySettingsRepository(), fetchPlaylist);
-    await Promise.all([service.player(), service.player(), service.sync()]);
-    expect(fetchPlaylist).toHaveBeenCalledTimes(1);
-  });
-
-  it("syncs a new playlist even when a sync of the old one is running", async () => {
-    let release!: () => void;
-    const gate = new Promise<void>((resolve) => {
-      release = resolve;
-    });
-    const fetchPlaylist = vi.fn<PlaylistFetcher>(async (id) => {
-      if (id === PLAYLIST_ID) await gate;
-      return playlist(id);
-    });
-    const service = new SpotifyService(new MemorySettingsRepository(), fetchPlaylist);
-    const running = service.sync();
-    const saving = service.saveSettings({ ...(await service.settings()), playlistUrl: `https://open.spotify.com/playlist/${OTHER_ID}` });
-    release();
-    await Promise.all([running, saving]);
-    expect(fetchPlaylist.mock.calls.map(([id]) => id)).toEqual([PLAYLIST_ID, OTHER_ID]);
-    expect((await service.status()).playlist?.id).toBe(OTHER_ID);
-  });
-
-  it("does not let another playlist's failure delay a sync", async () => {
-    const repo = new MemorySettingsRepository();
-    const fetchPlaylist = vi.fn<PlaylistFetcher>(async (id) => {
-      if (id === PLAYLIST_ID) throw new Error("boom");
-      return playlist(id);
-    });
-    const service = new SpotifyService(repo, fetchPlaylist);
-    await service.sync();
-    // Changed without saveSettings (e.g. by another process).
-    await repo.set("spotify", { ...(await service.settings()), playlistUrl: `https://open.spotify.com/playlist/${OTHER_ID}` });
-    expect((await service.player()).tracks).toHaveLength(2);
-  });
-
-  it("answers without tracks when the first sync is slow, and finishes it in the background", async () => {
-    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
-    try {
-      let release!: () => void;
-      const gate = new Promise<void>((resolve) => {
-        release = resolve;
+describe("music player", () => {
+  async function setup() {
+    const media = new MemoryMediaRepository();
+    const settings = new MemorySettingsRepository();
+    const app = await buildTestServer({}, { media, settings });
+    const cookie = await login(app);
+    const add = (n: number, overrides: object = {}) =>
+      media.create({
+        id: `00000000-0000-4000-8000-00000000000${n}`,
+        kind: "track",
+        source: "itunes",
+        sourceId: String(n),
+        title: { en: `Song ${n}` },
+        credits: ["Artist A", "Artist B"],
+        extra: { music: { previewUrl: `https://audio-ssl.itunes.apple.com/${n}.m4a`, appleUrl: `https://music.apple.com/song/${n}`, spotifyUrl: null } },
+        inPlayer: true,
+        ...overrides
       });
-      const service = new SpotifyService(new MemorySettingsRepository(), async (id) => {
-        await gate;
-        return playlist(id);
-      });
-      const pending = service.player();
-      await vi.advanceTimersByTimeAsync(FIRST_SYNC_WAIT_MS);
-      expect((await pending).tracks).toEqual([]);
-      release();
-      await service.sync();
-      expect((await service.player()).tracks).toHaveLength(2);
-    } finally {
-      vi.useRealTimers();
+    return { app, media, settings, cookie, headers: { ...csrf, cookie }, add };
+  }
+
+  it("plays public songs that are in the player and have a preview", async () => {
+    const { app, add } = await setup();
+    await add(1);
+    await add(2, { inPlayer: false });
+    await add(3, { visibility: "private" });
+    await add(4, { extra: { music: { previewUrl: null } } });
+    await add(5, { extra: { music: { previewUrl: "https://p.scdn.co/mp3-preview/5", spotifyUrl: "https://open.spotify.com/track/5" } } });
+    const player = (await app.inject("/api/spotify/player")).json();
+    expect(player).toMatchObject({ enabled: true, shuffle: true, volume: 30, autoCollapseSeconds: 3 });
+    expect(player.tracks).toEqual(
+      expect.arrayContaining([
+        { id: expect.any(String), title: "Song 1", artist: "Artist A, Artist B", image: "", link: "https://music.apple.com/song/1", previewUrl: "https://audio-ssl.itunes.apple.com/1.m4a" },
+        expect.objectContaining({ title: "Song 5", link: "https://open.spotify.com/track/5" })
+      ])
+    );
+    expect(player.tracks).toHaveLength(2);
+  });
+
+  it("hides songs when music is switched off on the site, and returns none when the player is off", async () => {
+    const { app, headers, add } = await setup();
+    await add(1);
+    await app.inject({ method: "PUT", url: "/api/admin/collection/settings", headers, payload: { show: { movie: true, tv: true, anime: true, music: false }, showWant: true } });
+    expect((await app.inject("/api/spotify/player")).json().tracks).toEqual([]);
+
+    await app.inject({ method: "PUT", url: "/api/admin/collection/settings", headers, payload: { show: { movie: true, tv: true, anime: true, music: true }, showWant: true } });
+    await app.inject({ method: "PUT", url: "/api/admin/spotify", headers, payload: { enabled: false, shuffle: true, volume: 30, autoCollapseSeconds: 3 } });
+    expect((await app.inject("/api/spotify/player")).json()).toMatchObject({ enabled: false, tracks: [] });
+  });
+
+  it("serves an empty player without a database", async () => {
+    const app = await buildTestServer();
+    expect((await app.inject("/api/spotify/player")).json()).toMatchObject({ enabled: true, tracks: [] });
+  });
+
+  it("saves settings, reports the song count, and ignores older stored fields", async () => {
+    const { app, settings, headers, cookie, add } = await setup();
+    await settings.set("spotify", { enabled: true, playlistUrl: "https://open.spotify.com/playlist/x", shuffle: false, volume: 40, autoCollapseSeconds: 5 });
+    await add(1);
+    const current = (await app.inject({ url: "/api/admin/spotify", headers: { cookie } })).json();
+    expect(current).toEqual({ settings: { enabled: true, shuffle: false, volume: 40, autoCollapseSeconds: 5 }, playerTracks: 1 });
+
+    const payload = { enabled: true, shuffle: true, volume: 55, autoCollapseSeconds: 0 };
+    expect((await app.inject({ method: "PUT", url: "/api/admin/spotify", headers, payload })).json().settings).toEqual(payload);
+    for (const bad of [{ ...payload, volume: 101 }, { ...payload, autoCollapseSeconds: -1 }, { ...payload, playlistUrl: "x" }]) {
+      expect((await app.inject({ method: "PUT", url: "/api/admin/spotify", headers, payload: bad })).statusCode).toBe(400);
     }
   });
 
-  it("looks up covers again for tracks that fell back to the playlist cover", async () => {
-    const fetchPlaylist = vi.fn<PlaylistFetcher>(async (id) => {
-      const result = playlist(id);
-      result.tracks[1].image = result.image;
-      return result;
-    });
-    const service = new SpotifyService(new MemorySettingsRepository(), fetchPlaylist);
-    await service.sync();
-    await service.sync();
-    expect([...fetchPlaylist.mock.calls[1][1].keys()]).toEqual([trackId(0)]);
-  });
-
-  it("returns no tracks when the player is disabled", async () => {
-    const repo = new MemorySettingsRepository();
-    const fetchPlaylist = vi.fn<PlaylistFetcher>(async (id) => playlist(id));
-    const service = new SpotifyService(repo, fetchPlaylist);
-    await service.saveSettings({ ...(await service.settings()), enabled: false });
-    expect((await service.player()).tracks).toEqual([]);
-    expect(fetchPlaylist).not.toHaveBeenCalled();
-  });
-});
-
-describe("Spotify routes", () => {
-  it("serves the player without a database", async () => {
-    const app = await buildTestServer({}, { fetchPlaylist: async (id) => playlist(id, 3) });
-    const response = await app.inject("/api/spotify/player");
-    expect(response.statusCode).toBe(200);
-    const body = response.json();
-    expect(body.tracks).toHaveLength(3);
-    expect(body.playlist.id).toBe(PLAYLIST_ID);
-    expect(body).not.toHaveProperty("playlistUrl");
-  });
-
-  it("needs a database for admin settings", async () => {
+  it("needs a database and an admin session for settings", async () => {
     const app = await buildTestServer();
     const cookie = await login(app);
     expect((await app.inject({ url: "/api/admin/spotify", headers: { cookie } })).statusCode).toBe(503);
-  });
-
-  it("requires an admin session", async () => {
-    const app = await buildTestServer({}, { settings: new MemorySettingsRepository() });
     expect((await app.inject("/api/admin/spotify")).statusCode).toBe(401);
-  });
-
-  it("saves settings and syncs a changed playlist", async () => {
-    const fetchPlaylist = vi.fn<PlaylistFetcher>(async (id) => playlist(id, id === OTHER_ID ? 5 : 2));
-    const app = await buildTestServer({}, { settings: new MemorySettingsRepository(), fetchPlaylist });
-    const cookie = await login(app);
-    const headers = { ...csrf, cookie };
-
-    const initial = (await app.inject({ url: "/api/admin/spotify", headers: { cookie } })).json();
-    expect(initial.settings.playlistUrl).toBe(`https://open.spotify.com/playlist/${PLAYLIST_ID}`);
-    expect(initial.sync.syncedAt).toBeNull();
-
-    const payload = {
-      enabled: true,
-      playlistUrl: `https://open.spotify.com/playlist/${OTHER_ID}?si=xyz`,
-      shuffle: false,
-      volume: 55,
-      autoCollapseSeconds: 0
-    };
-    const saved = await app.inject({ method: "PUT", url: "/api/admin/spotify", headers, payload });
-    expect(saved.statusCode).toBe(200);
-    expect(saved.json().settings).toEqual({ ...payload, playlistUrl: `https://open.spotify.com/playlist/${OTHER_ID}` });
-    expect(saved.json().sync.tracks).toHaveLength(5);
-    expect(fetchPlaylist).toHaveBeenLastCalledWith(OTHER_ID, expect.any(Map));
-
-    const player = (await app.inject("/api/spotify/player")).json();
-    expect(player).toMatchObject({ shuffle: false, volume: 55, autoCollapseSeconds: 0 });
-    expect(player.tracks).toHaveLength(5);
-
-    const synced = await app.inject({ method: "POST", url: "/api/admin/spotify/sync", headers });
-    expect(synced.statusCode).toBe(200);
-    expect(fetchPlaylist).toHaveBeenCalledTimes(2);
-  });
-
-  it("rejects invalid settings", async () => {
-    const app = await buildTestServer({}, { settings: new MemorySettingsRepository() });
-    const cookie = await login(app);
-    const headers = { ...csrf, cookie };
-    const base = { enabled: true, playlistUrl: `https://open.spotify.com/playlist/${PLAYLIST_ID}`, shuffle: true, volume: 30, autoCollapseSeconds: 3 };
-
-    const badUrl = await app.inject({ method: "PUT", url: "/api/admin/spotify", headers, payload: { ...base, playlistUrl: "https://evil.example/x" } });
-    expect(badUrl.statusCode).toBe(400);
-    expect(badUrl.json().error.message).toMatch(/歌单链接/);
-
-    for (const payload of [{ ...base, volume: 101 }, { ...base, autoCollapseSeconds: -1 }, { ...base, extra: 1 }]) {
-      expect((await app.inject({ method: "PUT", url: "/api/admin/spotify", headers, payload })).statusCode).toBe(400);
-    }
   });
 });

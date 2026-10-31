@@ -40,8 +40,9 @@ const ANILIST_QUERY = "query ($search: String) { Media(search: $search, type: AN
 
 /** Compares titles ignoring width, spacing and punctuation ("ぼっち・ざ・ろっく！" = "ぼっちざろっく!"). */
 const titleKey = (title: string) => title.normalize("NFKC").toLowerCase().replace(/[\s\p{P}\p{S}]/gu, "");
-/** Hosts posters may be downloaded from. */
-const POSTER_HOSTS = new Set(["image.tmdb.org", "lain.bgm.tv"]);
+/** Image hosts of TMDB, Bangumi, iTunes and Spotify; posters and covers are only downloaded from these. */
+const POSTER_HOSTS = [/^image\.tmdb\.org$/, /^lain\.bgm\.tv$/, /^is\d-ssl\.mzstatic\.com$/, /^i\.scdn\.co$/, /^mosaic\.scdn\.co$/, /^image-cdn-[a-z]+\.spotifycdn\.com$/];
+export const isPosterHost = (hostname: string) => POSTER_HOSTS.some((host) => host.test(hostname));
 const TMDB_IMAGE = "https://image.tmdb.org/t/p";
 /** Site languages and the TMDB locale for each. */
 const TMDB_LANGS = { zh: "zh-CN", "zh-Hant": "zh-TW", en: "en-US", fr: "fr-FR", ja: "ja-JP" } as const;
@@ -318,7 +319,7 @@ export function createMediaSources(options: { tmdbKey?: string; fetchImpl?: type
     async download(url) {
       // Poster URLs come from the sources' responses; only fetch from their image hosts, without redirects.
       const parsed = new URL(url);
-      if (parsed.protocol !== "https:" || !POSTER_HOSTS.has(parsed.hostname)) throw new SourceError("海报地址无效");
+      if (parsed.protocol !== "https:" || !isPosterHost(parsed.hostname)) throw new SourceError("海报地址无效");
       const response = await request(url, { headers: { "user-agent": USER_AGENT }, redirect: "error" }, "海报服务器");
       const length = Number(response.headers.get("content-length"));
       if (length > MAX_IMAGE_BYTES) {

@@ -5,6 +5,7 @@ import { join } from "node:path";
 
 import { hashPassword } from "../src/auth/password";
 import { loadConfig } from "../src/config/env";
+import type { MusicSource } from "../src/media/itunes";
 import { SourceError, type MediaSources } from "../src/media/sources";
 import type { MediaRepository } from "../src/media/types";
 import type { PhotoRepository } from "../src/photos/types";
@@ -48,6 +49,8 @@ export type TestServerOptions = {
   settings?: SettingsRepository | null;
   /** Defaults to one that fails, so tests never reach Spotify. */
   fetchPlaylist?: PlaylistFetcher;
+  /** Defaults to one that fails, so tests never reach iTunes. */
+  musicSource?: MusicSource;
 };
 
 /**
@@ -72,7 +75,8 @@ export async function buildTestServer(env: Record<string, string | undefined> = 
     media: options.media ?? null,
     mediaSources: options.mediaSources ?? offlineMediaSources,
     settings: options.settings ?? null,
-    fetchPlaylist: options.fetchPlaylist ?? (() => Promise.reject(new Error("no network in tests")))
+    fetchPlaylist: options.fetchPlaylist ?? (() => Promise.reject(new Error("no network in tests"))),
+    musicSource: options.musicSource ?? { search: offline, lookup: offline, findPreview: async () => null }
   });
 }
 
