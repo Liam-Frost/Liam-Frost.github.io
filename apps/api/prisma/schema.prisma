@@ -21,8 +21,8 @@ enum ImageStorage {
 }
 
 model Photo {
-  id          String   @id
-  slug        String   @unique
+  id          String       @id
+  slug        String       @unique
   title       Json
   date        String
   category    Json
@@ -42,12 +42,49 @@ model Photo {
   alt         Json
   width       Int
   height      Int
-  featured    Boolean  @default(false)
-  visibility  Visibility @default(PUBLIC)
-  sortOrder   Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  featured    Boolean      @default(false)
+  visibility  Visibility   @default(PUBLIC)
+  sortOrder   Int          @default(0)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
 
   @@index([visibility, sortOrder])
   @@index([date])
+}
+
+enum ProjectStatus {
+  IN_PROGRESS @map("in-progress")
+  COMPLETED   @map("completed")
+  ARCHIVED    @map("archived")
+}
+
+model Project {
+  id         String        @id
+  /// URL segment on the public site (/projects/<slug>); editable, unlike id.
+  slug       String        @unique
+  title      Json
+  /// One-line summary per language.
+  summary    Json
+  /// Markdown per language.
+  body       Json
+  /// Uploaded cover image: { id, key, width, height, variants: [{ width, height }] }.
+  cover      Json?
+  /// Uploaded screenshots, same shape as cover, in display order.
+  gallery    Json
+  /// Technology names, e.g. ["React", "Fastify"].
+  techStack  Json
+  /// { repo?, demo?, docs? } URLs.
+  links      Json
+  status     ProjectStatus @default(IN_PROGRESS)
+  /// YYYY-MM
+  startedAt  String?
+  /// YYYY-MM
+  endedAt    String?
+  featured   Boolean       @default(false)
+  visibility Visibility    @default(PRIVATE)
+  sortOrder  Int           @default(0)
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+
+  @@index([visibility, sortOrder])
 }

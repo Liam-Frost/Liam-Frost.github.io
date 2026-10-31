@@ -3,6 +3,10 @@ import {
   type AdminPhotoResponse,
   type AdminPhotosResponse,
   type AdminPhotoUpdate,
+  type AdminProjectCreate,
+  type AdminProjectResponse,
+  type AdminProjectsResponse,
+  type AdminProjectUpdate,
   type AdminSessionResponse,
   type ApiErrorBody
 } from "@liam-frost/shared";
@@ -66,18 +70,18 @@ function toApiError(status: number, body: string) {
 }
 
 /** Uploads one file with progress (fetch cannot report upload progress). */
-export function uploadPhoto(file: File, onProgress: (fraction: number) => void): Promise<AdminPhotoResponse> {
+function uploadFile<T>(url: string, file: File, onProgress?: (fraction: number) => void): Promise<T> {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
-    xhr.open("POST", "/api/admin/photos");
+    xhr.open("POST", url);
     xhr.setRequestHeader(ADMIN_REQUEST_HEADER, "1");
     xhr.setRequestHeader("accept", "application/json");
     xhr.upload.onprogress = (event) => {
-      if (event.lengthComputable) onProgress(event.loaded / event.total);
+      if (event.lengthComputable) onProgress?.(event.loaded / event.total);
     };
     xhr.onload = () => {
       if (xhr.status >= 200 && xhr.status < 300) {
-        resolve(JSON.parse(xhr.responseText) as AdminPhotoResponse);
+        resolve(JSON.parse(xhr.responseText) as T);
       } else {
         reject(toApiError(xhr.status, xhr.responseText));
       }
@@ -89,7 +93,12 @@ export function uploadPhoto(file: File, onProgress: (fraction: number) => void):
   });
 }
 
+export function uploadPhoto(file: File, onProgress: (fraction: number) => void) {
+  return uploadFile<AdminPhotoResponse>("/api/admin/photos", file, onProgress);
+}
+
 const photoPath = (id: string) => `/api/admin/photos/${encodeURIComponent(id)}`;
+const projectPath = (id: string) => `/api/admin/projects/${encodeURIComponent(id)}`;
 
 export const api = {
   session: () => request<AdminSessionResponse>("/api/admin/session"),
@@ -100,5 +109,16 @@ export const api = {
   photos: () => request<AdminPhotosResponse>("/api/admin/photos"),
   updatePhoto: (id: string, update: AdminPhotoUpdate) => request<AdminPhotoResponse>(photoPath(id), { method: "PATCH", json: update }),
   deletePhoto: (id: string) => request<void>(photoPath(id), { method: "DELETE" }),
-  reorderPhotos: (ids: string[]) => request<AdminPhotosResponse>("/api/admin/photos/order", { method: "PUT", json: { ids } })
+  reorderPhotos: (ids: string[]) => request<AdminPhotosResponse>("/api/admin/photos/order", { method: "PUT", json: { ids } }),
+
+  projects: () => request<AdminProjectsResponse>("/api/admin/projects"),
+  project: (id: string) => request<AdminProjectResponse>(projectPath(id)),
+  createProject: (body: AdminProjectCreate) => request<AdminProjectResponse>("/api/admin/projects", { method: "POST", json: body }),
+  updateProject: (id: string, update: AdminProjectUpdate) => request<AdminProjectResponse>(projectPath(id), { method: "PATCH", json: update }),
+  deleteProject: (id: string) => request<void>(projectPath(id), { method: "DELETE" }),
+  reorderProjects: (ids: string[]) => request<AdminProjectsResponse>("/api/admin/projects/order", { method: "PUT", json: { ids } }),
+  uploadProjectImage: (id: string, slot: "cover" | "gallery", file: File, onProgress?: (fraction: number) => void) =>
+    uploadFile<AdminProjectResponse>(`${projectPath(id)}/images?slot=${slot}`, file, onProgress),
+  deleteProjectImage: (id: string, imageId: string) =>
+    request<AdminProjectResponse>(`${projectPath(id)}/images/${encodeURIComponent(imageId)}`, { method: "DELETE" })
 };
