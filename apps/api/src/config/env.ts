@@ -20,6 +20,9 @@ const booleanFlag = z
   .optional()
   .transform((value) => (value === undefined ? undefined : value === "true"));
 
+/** Blank values (`PORT=`) mean "use the default", like blank strings do. */
+const optionalNumber = z.preprocess((value) => (typeof value === "string" && value.trim() === "" ? undefined : value), z.coerce.number().int().optional());
+
 const csv = optionalString.transform((value) =>
   value ? value.split(",").map((item) => item.trim()).filter(Boolean) : []
 );
@@ -27,10 +30,9 @@ const csv = optionalString.transform((value) =>
 const envSchema = z.object({
   NODE_ENV: optionalString,
   HOST: optionalString.default("0.0.0.0"),
-  PORT: z.coerce.number().int().min(1).max(65535).default(8787),
+  PORT: optionalNumber.pipe(z.number().int().min(1).max(65535).default(8787)),
   CORS_ORIGIN: csv,
-  TRUST_PROXY: booleanFlag,
-  DATABASE_URL: optionalString,
+  TRUST_PROXY: csv,
 
   ADMIN_USERNAME: optionalString,
   ADMIN_PASSWORD_HASH: optionalString.refine(
@@ -41,12 +43,14 @@ const envSchema = z.object({
     (value) => !value || value.length >= 32,
     "must be at least 32 characters"
   ),
-  ADMIN_SESSION_TTL_SECONDS: z.coerce
-    .number()
-    .int()
-    .min(300)
-    .max(60 * 60 * 24 * 30)
-    .default(60 * 60 * 8),
+  ADMIN_SESSION_TTL_SECONDS: optionalNumber.pipe(
+    z
+      .number()
+      .int()
+      .min(300)
+      .max(60 * 60 * 24 * 30)
+      .default(60 * 60 * 8)
+  ),
   ADMIN_COOKIE_NAME: optionalString.refine(
     (value) => !value || /^[A-Za-z0-9_-]+$/.test(value),
     "may only contain letters, digits, '-' and '_'"
@@ -74,8 +78,8 @@ export type AppConfig = {
   host: string;
   port: number;
   corsOrigins: string[];
-  trustProxy: boolean;
-  databaseUrl?: string;
+  /** false, true (any hop; only safe when the API port is not publicly reachable), or the proxy addresses to trust. */
+  trustProxy: boolean | string[];
   admin: AdminConfig;
 };
 
@@ -110,6 +114,20 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     issues.push((error as Error).message);
   }
 
+  let trustProxy: boolean | string[] = false;
+  const [firstProxy, ...otherProxies] = values.TRUST_PROXY;
+  if (firstProxy === "true" && otherProxies.length === 0) {
+    trustProxy = true;
+  } else if (firstProxy && firstProxy !== "false") {
+    try {
+      // Validates every entry is an IP or CIDR range; Fastify gets the original strings.
+      new IpList(values.TRUST_PROXY);
+      trustProxy = values.TRUST_PROXY;
+    } catch (error) {
+      issues.push(`TRUST_PROXY: must be true, false, or a list of proxy IPs / CIDR ranges (${(error as Error).message})`);
+    }
+  }
+
   let allowedIps = new IpList([]);
   try {
     allowedIps = new IpList(values.ADMIN_ALLOWED_IPS);
@@ -126,8 +144,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     host: values.HOST,
     port: values.PORT,
     corsOrigins: values.CORS_ORIGIN.length ? values.CORS_ORIGIN : production ? [] : DEV_CORS_ORIGINS,
-    trustProxy: values.TRUST_PROXY ?? false,
-    databaseUrl: values.DATABASE_URL,
+    trustProxy,
     admin: {
       configured: Boolean(passwordHash && sessionSecret),
       username: values.ADMIN_USERNAME ?? "admin",

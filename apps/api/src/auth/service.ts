@@ -65,9 +65,8 @@ export class AdminAuthService {
     return { username: session.sub };
   }
 
+  /** Callers check assertConfigured() first. */
   async login(request: FastifyRequest, reply: FastifyReply, username: string, password: string): Promise<AdminUser> {
-    this.assertConfigured();
-
     const rateLimit = this.limiter.consume(request.ip);
     if (!rateLimit.allowed) {
       reply.header("Retry-After", String(rateLimit.retryAfterSeconds));
