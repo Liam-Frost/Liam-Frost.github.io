@@ -1,4 +1,9 @@
-import type { AdminSpotifyResponse, PublicSpotifyPlayer, SpotifyAccountStatus, SpotifyOwnPlaylist } from "@liam-frost/shared";
+import type {
+  AdminSpotifyResponse,
+  PublicSpotifyPlayer,
+  SpotifyAccountStatus,
+  SpotifyOwnPlaylist
+} from "@liam-frost/shared";
 import type { FastifyInstance } from "fastify";
 
 import type { AdminAuthService } from "../auth/service";
@@ -12,11 +17,21 @@ import { spotifySettingsSchema, type SpotifyService } from "../spotify/service";
  * The site's music player. Its songs come from the collection; changing the player's settings needs a
  * database so they survive restarts.
  */
-export function registerSpotifyRoutes(app: FastifyInstance, auth: AdminAuthService, spotify: SpotifyService, account: SpotifyAccount, persistent: boolean) {
+export function registerSpotifyRoutes(
+  app: FastifyInstance,
+  auth: AdminAuthService,
+  spotify: SpotifyService,
+  account: SpotifyAccount,
+  persistent: boolean
+) {
   const admin = { preHandler: auth.requireAdmin };
   const requirePersistent = () => {
     if (!persistent) {
-      throw new HttpError(503, "DATABASE_NOT_CONFIGURED", "Music settings need a database (set DATABASE_URL)");
+      throw new HttpError(
+        503,
+        "DATABASE_NOT_CONFIGURED",
+        "Music settings need a database (set DATABASE_URL)"
+      );
     }
   };
   const respond = async (): Promise<AdminSpotifyResponse> => {
@@ -43,7 +58,9 @@ export function registerSpotifyRoutes(app: FastifyInstance, auth: AdminAuthServi
   };
 
   /** The admin's Spotify account, for importing Liked Songs and playlists. */
-  app.get("/api/admin/spotify/account", admin, async (): Promise<SpotifyAccountStatus> => account.status());
+  app.get("/api/admin/spotify/account", admin, async (): Promise<SpotifyAccountStatus> =>
+    account.status()
+  );
 
   /** Starts connecting: the admin's browser goes to Spotify, then back to `returnTo`. */
   app.post("/api/admin/spotify/connect", admin, async (request): Promise<{ url: string }> => {
@@ -69,7 +86,10 @@ export function registerSpotifyRoutes(app: FastifyInstance, auth: AdminAuthServi
     }
     const back = new URL(returnTo);
     try {
-      if (query.data.error || !query.data.code) throw new SourceError(query.data.error === "access_denied" ? "已取消授权" : "Spotify 没有完成授权");
+      if (query.data.error || !query.data.code)
+        throw new SourceError(
+          query.data.error === "access_denied" ? "已取消授权" : "Spotify 没有完成授权"
+        );
       await account.complete(query.data.code);
       back.searchParams.set("spotify", "connected");
     } catch (error) {
@@ -85,11 +105,15 @@ export function registerSpotifyRoutes(app: FastifyInstance, auth: AdminAuthServi
     return reply.code(204).send();
   });
 
-  app.get("/api/admin/spotify/playlists", admin, async (): Promise<{ playlists: SpotifyOwnPlaylist[] }> => {
-    try {
-      return { playlists: await account.playlists() };
-    } catch (error) {
-      return sourceFailure(error);
+  app.get(
+    "/api/admin/spotify/playlists",
+    admin,
+    async (): Promise<{ playlists: SpotifyOwnPlaylist[] }> => {
+      try {
+        return { playlists: await account.playlists() };
+      } catch (error) {
+        return sourceFailure(error);
+      }
     }
-  });
+  );
 }

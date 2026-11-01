@@ -53,12 +53,21 @@ export function Dialog({ open, title, onClose, children, footer, size = "lg" }: 
             <h2 id={titleId} className="text-[17px] font-semibold text-brand-dark">
               {title}
             </h2>
-            <button type="button" onClick={onClose} aria-label="关闭" className="rounded-full p-1.5 text-faint hover:bg-brand-secondary/12 hover:text-brand">
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="关闭"
+              className="rounded-full p-1.5 text-faint hover:bg-brand-secondary/12 hover:text-brand"
+            >
               <X aria-hidden="true" className="size-4" />
             </button>
           </div>
           <div className="flex-1 overflow-y-auto px-5 py-4">{children}</div>
-          {footer ? <div className="flex flex-wrap justify-end gap-2 border-t border-line-soft px-5 py-3.5">{footer}</div> : null}
+          {footer ? (
+            <div className="flex flex-wrap justify-end gap-2 border-t border-line-soft px-5 py-3.5">
+              {footer}
+            </div>
+          ) : null}
         </div>
       ) : null}
     </dialog>,

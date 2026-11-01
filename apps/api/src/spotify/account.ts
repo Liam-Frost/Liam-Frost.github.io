@@ -31,14 +31,21 @@ type SpotifyApiTrack = {
   is_local?: boolean;
   name?: string;
   artists?: { name?: string }[];
-  album?: { name?: string; release_date?: string; images?: { url?: string; width?: number | null }[] };
+  album?: {
+    name?: string;
+    release_date?: string;
+    images?: { url?: string; width?: number | null }[];
+  };
   duration_ms?: number;
   external_urls?: { spotify?: string };
 };
 
 function toApiTrack(track: SpotifyApiTrack | null | undefined): ApiTrack | null {
-  if (!track?.id || track.is_local || (track.type && track.type !== "track") || !track.name) return null;
-  const images = [...(track.album?.images ?? [])].filter((image) => image.url?.startsWith("https://"));
+  if (!track?.id || track.is_local || (track.type && track.type !== "track") || !track.name)
+    return null;
+  const images = [...(track.album?.images ?? [])].filter((image) =>
+    image.url?.startsWith("https://")
+  );
   images.sort((a, b) => (b.width ?? 0) - (a.width ?? 0));
   return {
     id: track.id,
@@ -84,13 +91,18 @@ export class SpotifyAccount {
     return {
       configured: Boolean(this.app && this.repo),
       redirectUri: this.app?.redirectUri ?? null,
-      account: account && { id: account.id, displayName: account.displayName, connectedAt: account.connectedAt }
+      account: account && {
+        id: account.id,
+        displayName: account.displayName,
+        connectedAt: account.connectedAt
+      }
     };
   }
 
   /** The Spotify authorization page; the callback returns the browser to `returnTo`. */
   authorizeUrl(returnTo: string) {
-    if (!this.app || !this.repo) throw new SourceError("未配置 SPOTIFY_CLIENT_ID / SPOTIFY_CLIENT_SECRET");
+    if (!this.app || !this.repo)
+      throw new SourceError("未配置 SPOTIFY_CLIENT_ID / SPOTIFY_CLIENT_SECRET");
     const now = this.now();
     for (const [key, value] of this.states) if (value.expires < now) this.states.delete(key);
     const state = randomBytes(16).toString("hex");
@@ -120,26 +132,44 @@ export class SpotifyAccount {
     try {
       response = await this.fetchImpl("https://accounts.spotify.com/api/token", {
         method: "POST",
-        headers: { authorization: `Basic ${basic}`, "content-type": "application/x-www-form-urlencoded" },
+        headers: {
+          authorization: `Basic ${basic}`,
+          "content-type": "application/x-www-form-urlencoded"
+        },
         body: new URLSearchParams(body),
         signal: AbortSignal.timeout(TIMEOUT_MS)
       });
     } catch {
-      throw new SourceError("无法连接 Spotify。如果访问它需要代理，请在 apps/api/.env 中设置 HTTPS_PROXY 后重启 API");
+      throw new SourceError(
+        "无法连接 Spotify。如果访问它需要代理，请在 apps/api/.env 中设置 HTTPS_PROXY 后重启 API"
+      );
     }
-    const data = (await response.json().catch(() => ({}))) as { access_token?: string; refresh_token?: string; expires_in?: number; error?: string };
+    const data = (await response.json().catch(() => ({}))) as {
+      access_token?: string;
+      refresh_token?: string;
+      expires_in?: number;
+      error?: string;
+    };
     if (!response.ok || !data.access_token) {
-      if (data.error === "invalid_grant") throw new SpotifyAuthError("Spotify 授权已失效，请重新连接");
+      if (data.error === "invalid_grant")
+        throw new SpotifyAuthError("Spotify 授权已失效，请重新连接");
       throw new SourceError(`Spotify 授权失败（${data.error ?? `HTTP ${response.status}`}）`);
     }
-    this.access = { token: data.access_token, expires: this.now() + ((data.expires_in ?? 3600) - 60) * 1000 };
+    this.access = {
+      token: data.access_token,
+      expires: this.now() + ((data.expires_in ?? 3600) - 60) * 1000
+    };
     return data;
   }
 
   /** Exchanges the callback code and stores the account. */
   async complete(code: string) {
     if (!this.app || !this.repo) throw new SourceError("未配置 Spotify 应用");
-    const data = await this.token({ grant_type: "authorization_code", code, redirect_uri: this.app.redirectUri });
+    const data = await this.token({
+      grant_type: "authorization_code",
+      code,
+      redirect_uri: this.app.redirectUri
+    });
     if (!data.refresh_token) throw new SourceError("Spotify 没有返回刷新令牌");
     const me = await this.get<{ id?: string; display_name?: string | null }>("/me");
     await this.repo.set(KEY, {
@@ -163,7 +193,8 @@ export class SpotifyAccount {
     try {
       const data = await this.token({ grant_type: "refresh_token", refresh_token: refreshToken });
       // Spotify may rotate the refresh token.
-      if (data.refresh_token && data.refresh_token !== refreshToken) await this.repo!.set(KEY, { ...account, refreshToken: this.box.seal(data.refresh_token) });
+      if (data.refresh_token && data.refresh_token !== refreshToken)
+        await this.repo!.set(KEY, { ...account, refreshToken: this.box.seal(data.refresh_token) });
     } catch (error) {
       if (error instanceof SpotifyAuthError) await this.disconnect();
       throw error;
@@ -175,12 +206,17 @@ export class SpotifyAccount {
     const token = await this.accessToken();
     let response: Response;
     try {
-      response = await this.fetchImpl(pathOrUrl.startsWith("https://") ? pathOrUrl : API + pathOrUrl, {
-        headers: { authorization: `Bearer ${token}`, accept: "application/json" },
-        signal: AbortSignal.timeout(TIMEOUT_MS)
-      });
+      response = await this.fetchImpl(
+        pathOrUrl.startsWith("https://") ? pathOrUrl : API + pathOrUrl,
+        {
+          headers: { authorization: `Bearer ${token}`, accept: "application/json" },
+          signal: AbortSignal.timeout(TIMEOUT_MS)
+        }
+      );
     } catch {
-      throw new SourceError("无法连接 Spotify。如果访问它需要代理，请在 apps/api/.env 中设置 HTTPS_PROXY 后重启 API");
+      throw new SourceError(
+        "无法连接 Spotify。如果访问它需要代理，请在 apps/api/.env 中设置 HTTPS_PROXY 后重启 API"
+      );
     }
     // Rate limited: wait as asked (capped), a few times.
     if (response.status === 429 && attempt < 3) {
@@ -196,7 +232,10 @@ export class SpotifyAccount {
     }
     if (!response.ok) {
       await response.body?.cancel();
-      if (response.status === 403) throw new SourceError("Spotify 拒绝了请求（403）。开发模式的应用需要在 Spotify Developer 的 User Management 里加入你的账号");
+      if (response.status === 403)
+        throw new SourceError(
+          "Spotify 拒绝了请求（403）。开发模式的应用需要在 Spotify Developer 的 User Management 里加入你的账号"
+        );
       throw new SourceError(`Spotify 返回错误（HTTP ${response.status}）`);
     }
     return (await response.json()) as T;
@@ -216,11 +255,19 @@ export class SpotifyAccount {
 
   async likedTracks(): Promise<ApiTrack[]> {
     const items = await this.paged<{ track?: SpotifyApiTrack }>("/me/tracks?limit=50");
-    return items.map((item) => toApiTrack(item.track)).filter((track): track is ApiTrack => track !== null);
+    return items
+      .map((item) => toApiTrack(item.track))
+      .filter((track): track is ApiTrack => track !== null);
   }
 
   async playlists(): Promise<SpotifyOwnPlaylist[]> {
-    type Item = { id?: string; name?: string; tracks?: { total?: number }; images?: { url?: string }[] | null; owner?: { display_name?: string | null; id?: string } };
+    type Item = {
+      id?: string;
+      name?: string;
+      tracks?: { total?: number };
+      images?: { url?: string }[] | null;
+      owner?: { display_name?: string | null; id?: string };
+    };
     const items = await this.paged<Item | null>("/me/playlists?limit=50");
     return items
       .filter((item): item is Item & { id: string } => Boolean(item?.id))
@@ -234,8 +281,17 @@ export class SpotifyAccount {
   }
 
   async playlist(playlistId: string): Promise<{ name: string; tracks: ApiTrack[] }> {
-    const meta = await this.get<{ name?: string }>(`/playlists/${encodeURIComponent(playlistId)}?fields=name`);
-    const items = await this.paged<{ track?: SpotifyApiTrack }>(`/playlists/${encodeURIComponent(playlistId)}/tracks?limit=100`);
-    return { name: meta.name ?? "", tracks: items.map((item) => toApiTrack(item.track)).filter((track): track is ApiTrack => track !== null) };
+    const meta = await this.get<{ name?: string }>(
+      `/playlists/${encodeURIComponent(playlistId)}?fields=name`
+    );
+    const items = await this.paged<{ track?: SpotifyApiTrack }>(
+      `/playlists/${encodeURIComponent(playlistId)}/tracks?limit=100`
+    );
+    return {
+      name: meta.name ?? "",
+      tracks: items
+        .map((item) => toApiTrack(item.track))
+        .filter((track): track is ApiTrack => track !== null)
+    };
   }
 }

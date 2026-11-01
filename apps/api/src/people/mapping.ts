@@ -34,7 +34,10 @@ export function toAdminPerson(row: PersonRow, works: number, store: LocalImageSt
   };
 }
 
-export function mediaEnd(row: MediaRow, store: LocalImageStore): Extract<AdminRelationEnd, { type: "media" }> {
+export function mediaEnd(
+  row: MediaRow,
+  store: LocalImageStore
+): Extract<AdminRelationEnd, { type: "media" }> {
   return {
     type: "media",
     id: row.id,
@@ -46,8 +49,17 @@ export function mediaEnd(row: MediaRow, store: LocalImageStore): Extract<AdminRe
   };
 }
 
-export function personEnd(row: PersonRow, store: LocalImageStore): Extract<AdminRelationEnd, { type: "person" }> {
-  return { type: "person", id: row.id, name: row.name, photo: row.photo ? toProjectImage(row.photo, store) : null, visibility: row.visibility };
+export function personEnd(
+  row: PersonRow,
+  store: LocalImageStore
+): Extract<AdminRelationEnd, { type: "person" }> {
+  return {
+    type: "person",
+    id: row.id,
+    name: row.name,
+    photo: row.photo ? toProjectImage(row.photo, store) : null,
+    visibility: row.visibility
+  };
 }
 
 /** Which end of a relation is the entry or person a list is about, and the id of the other end. */
@@ -56,17 +68,39 @@ export function sides(relation: RelationRow, subjectId: string) {
   const direction: "from" | "to" = fromId === subjectId ? "from" : "to";
   return direction === "from"
     ? { direction, other: { type: "media" as const, id: relation.toMediaId } }
-    : { direction, other: relation.fromMediaId ? { type: "media" as const, id: relation.fromMediaId } : { type: "person" as const, id: relation.fromPersonId! } };
+    : {
+        direction,
+        other: relation.fromMediaId
+          ? { type: "media" as const, id: relation.fromMediaId }
+          : { type: "person" as const, id: relation.fromPersonId! }
+      };
 }
 
-export function toAdminRelation(relation: RelationRow, direction: "from" | "to", other: AdminRelationEnd): AdminRelation {
-  return { id: relation.id, type: relation.type, role: relation.role, note: relation.note, direction, other };
+export function toAdminRelation(
+  relation: RelationRow,
+  direction: "from" | "to",
+  other: AdminRelationEnd
+): AdminRelation {
+  return {
+    id: relation.id,
+    type: relation.type,
+    role: relation.role,
+    note: relation.note,
+    direction,
+    other
+  };
 }
 
 /** A public person with the roles and number of entries the site shows. */
-export function toPublicPersonSummary(row: PersonRow, credits: RelationRow[], store: LocalImageStore): PublicPersonSummary {
+export function toPublicPersonSummary(
+  row: PersonRow,
+  credits: RelationRow[],
+  store: LocalImageStore
+): PublicPersonSummary {
   const counts = new Map<PersonRole, number>();
-  for (const credit of credits) if (credit.role) counts.set(credit.role as PersonRole, (counts.get(credit.role as PersonRole) ?? 0) + 1);
+  for (const credit of credits)
+    if (credit.role)
+      counts.set(credit.role as PersonRole, (counts.get(credit.role as PersonRole) ?? 0) + 1);
   return {
     id: row.id,
     name: row.name,
@@ -92,7 +126,12 @@ export function toPublicPerson(
     bio: row.bio,
     links: row.links,
     sourceUrl: row.sourceUrl,
-    credits: credits.map(({ relation, item }) => ({ id: relation.id, role: relation.role, note: relation.note, item }))
+    credits: credits.map(({ relation, item }) => ({
+      id: relation.id,
+      role: relation.role,
+      note: relation.note,
+      item
+    }))
   };
 }
 
@@ -100,17 +139,38 @@ export function toPublicPerson(
 export function toPublicLinks(
   mediaId: string,
   relations: RelationRow[],
-  visible: { media: Map<string, MediaRow>; people: Map<string, { row: PersonRow; credits: RelationRow[] }> },
+  visible: {
+    media: Map<string, MediaRow>;
+    people: Map<string, { row: PersonRow; credits: RelationRow[] }>;
+  },
   store: LocalImageStore
 ): PublicLink[] {
   return relations.flatMap((relation): PublicLink[] => {
     const { direction, other } = sides(relation, mediaId);
-    const base = { id: relation.id, type: relation.type, role: relation.role, note: relation.note, direction };
+    const base = {
+      id: relation.id,
+      type: relation.type,
+      role: relation.role,
+      note: relation.note,
+      direction
+    };
     if (other.type === "media") {
       const row = visible.media.get(other.id);
-      return row ? [{ ...base, other: { type: "media", item: toPublicMediaSummary(row, store) } }] : [];
+      return row
+        ? [{ ...base, other: { type: "media", item: toPublicMediaSummary(row, store) } }]
+        : [];
     }
     const person = visible.people.get(other.id);
-    return person ? [{ ...base, other: { type: "person", person: toPublicPersonSummary(person.row, person.credits, store) } }] : [];
+    return person
+      ? [
+          {
+            ...base,
+            other: {
+              type: "person",
+              person: toPublicPersonSummary(person.row, person.credits, store)
+            }
+          }
+        ]
+      : [];
   });
 }

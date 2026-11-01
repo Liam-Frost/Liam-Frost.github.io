@@ -1,5 +1,13 @@
 import type { AdminUser } from "@liam-frost/shared";
-import { Clapperboard, FolderKanban, Images, LayoutDashboard, LogOut, Music, UsersRound } from "lucide-react";
+import {
+  Clapperboard,
+  FolderKanban,
+  Images,
+  LayoutDashboard,
+  LogOut,
+  Music,
+  UsersRound
+} from "lucide-react";
 import type { ReactNode } from "react";
 import { NavLink, Outlet } from "react-router";
 
@@ -51,7 +59,9 @@ export function AdminLayout({ user }: { user: AdminUser }) {
         </nav>
 
         <div className="flex items-center gap-2 md:flex-col md:items-stretch md:border-t md:border-white/15 md:pt-4">
-          <span className="hidden truncate px-2 text-[12px] text-white/70 md:block">已登录：{user.username}</span>
+          <span className="hidden truncate px-2 text-[12px] text-white/70 md:block">
+            已登录：{user.username}
+          </span>
           <button
             type="button"
             onClick={onLogout}
@@ -72,12 +82,22 @@ export function AdminLayout({ user }: { user: AdminUser }) {
   );
 }
 
-export function PageHeader({ title, description, actions }: { title: string; description?: string; actions?: ReactNode }) {
+export function PageHeader({
+  title,
+  description,
+  actions
+}: {
+  title: string;
+  description?: string;
+  actions?: ReactNode;
+}) {
   return (
     <header className="mb-6 flex flex-wrap items-start gap-3">
       <div className="min-w-0 flex-1">
         <h1 className="text-[22px] font-semibold text-brand-dark">{title}</h1>
-        {description ? <p className="mt-1 text-[13.5px] leading-relaxed text-muted">{description}</p> : null}
+        {description ? (
+          <p className="mt-1 text-[13.5px] leading-relaxed text-muted">{description}</p>
+        ) : null}
       </div>
       {actions ? <div className="flex flex-wrap gap-2">{actions}</div> : null}
     </header>

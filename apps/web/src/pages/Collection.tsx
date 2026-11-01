@@ -29,7 +29,8 @@ function readView(): View {
 }
 
 /** Genre identity across languages: the first name it has. */
-const genreId = (genre: PublicMediaSummary["genres"][number]) => genre.zh || genre.en || Object.values(genre).find(Boolean) || "";
+const genreId = (genre: PublicMediaSummary["genres"][number]) =>
+  genre.zh || genre.en || Object.values(genre).find(Boolean) || "";
 
 export default function CollectionPage() {
   const { lang, t } = useI18n();
@@ -43,9 +44,9 @@ export default function CollectionPage() {
   const [minRating, setMinRating] = useState(0);
 
   // Without ?kind, open the first kind that has entries.
-  const kind = (kinds.find((k) => k === params.get("kind")) ?? kinds.find((k) => items.some((item) => item.kind === k)) ?? kinds[0]) as
-    | MediaKind
-    | undefined;
+  const kind = (kinds.find((k) => k === params.get("kind")) ??
+    kinds.find((k) => items.some((item) => item.kind === k)) ??
+    kinds[0]) as MediaKind | undefined;
   // The people tab: people credited in shown entries; the review tab: years with finished entries.
   const showingPeople = params.get("kind") === "people" && people.length > 0;
   const hasReview = useMemo(() => reviewYears(items).length > 0, [items]);
@@ -64,19 +65,32 @@ export default function CollectionPage() {
 
   const allOfKind = useMemo(() => items.filter((item) => item.kind === kind), [items, kind]);
   // Music: every song, or the songs of one album / artist / playlist (?music=albums&in=<key>).
-  const musicView = kind === "track" ? (MUSIC_VIEWS.find((v) => v === params.get("music")) ?? null) : null;
-  const groups = useMemo(() => (musicView ? musicGroups(musicView, allOfKind, playlists, lang) : []), [musicView, allOfKind, playlists, lang]);
-  const openGroup = musicView ? (groups.find((group) => group.key === params.get("in")) ?? null) : null;
+  const musicView =
+    kind === "track" ? (MUSIC_VIEWS.find((v) => v === params.get("music")) ?? null) : null;
+  const groups = useMemo(
+    () => (musicView ? musicGroups(musicView, allOfKind, playlists, lang) : []),
+    [musicView, allOfKind, playlists, lang]
+  );
+  const openGroup = musicView
+    ? (groups.find((group) => group.key === params.get("in")) ?? null)
+    : null;
   const ofKind = openGroup ? openGroup.items : allOfKind;
   // Tabs for kinds that have entries (and the open one, e.g. from a shared link).
   const tabKinds = kinds.filter((k) => k === kind || items.some((item) => item.kind === k));
 
   const genres = useMemo(() => {
     const byId = new Map<string, string>();
-    for (const item of ofKind) for (const g of item.genres) byId.set(genreId(g), pickLocalized(g, lang));
+    for (const item of ofKind)
+      for (const g of item.genres) byId.set(genreId(g), pickLocalized(g, lang));
     return [...byId].sort((a, b) => a[1].localeCompare(b[1]));
   }, [ofKind, lang]);
-  const years = useMemo(() => [...new Set(ofKind.map((item) => item.year).filter((y): y is number => y !== null))].sort((a, b) => b - a), [ofKind]);
+  const years = useMemo(
+    () =>
+      [...new Set(ofKind.map((item) => item.year).filter((y): y is number => y !== null))].sort(
+        (a, b) => b - a
+      ),
+    [ofKind]
+  );
 
   const visible = ofKind.filter(
     (item) =>
@@ -151,17 +165,28 @@ export default function CollectionPage() {
         ) : (
           <>
             {tabKinds.length + (people.length ? 1 : 0) + (hasReview ? 1 : 0) > 1 ? (
-              <div className="filters collectionTabs" role="tablist" aria-label={t("collection.title")}>
+              <div
+                className="filters collectionTabs"
+                role="tablist"
+                aria-label={t("collection.title")}
+              >
                 {tabKinds.map((k) => (
                   <button
                     key={k}
                     type="button"
                     role="tab"
                     aria-selected={!showingPeople && !showingReview && k === kind}
-                    className={cx("btn", "btnSmall", !showingPeople && !showingReview && k === kind ? "btnSoft" : "btnGhost")}
+                    className={cx(
+                      "btn",
+                      "btnSmall",
+                      !showingPeople && !showingReview && k === kind ? "btnSoft" : "btnGhost"
+                    )}
                     onClick={() => switchKind(k)}
                   >
-                    {t(`collection.kind.${k}` as Key)} <span className="collectionCount">{items.filter((item) => item.kind === k).length}</span>
+                    {t(`collection.kind.${k}` as Key)}{" "}
+                    <span className="collectionCount">
+                      {items.filter((item) => item.kind === k).length}
+                    </span>
                   </button>
                 ))}
                 {people.length ? (
@@ -172,7 +197,8 @@ export default function CollectionPage() {
                     className={cx("btn", "btnSmall", showingPeople ? "btnSoft" : "btnGhost")}
                     onClick={() => switchKind("people")}
                   >
-                    {t("collection.kind.people")} <span className="collectionCount">{people.length}</span>
+                    {t("collection.kind.people")}{" "}
+                    <span className="collectionCount">{people.length}</span>
                   </button>
                 ) : null}
                 {hasReview ? (
@@ -203,10 +229,19 @@ export default function CollectionPage() {
                 {groups.length ? (
                   <div className="personGrid groupGrid">
                     {groups.map((group) => (
-                      <button key={group.key} type="button" className="groupCard" onClick={() => openMusic({ music: musicView, in: group.key })}>
+                      <button
+                        key={group.key}
+                        type="button"
+                        className="groupCard"
+                        onClick={() => openMusic({ music: musicView, in: group.key })}
+                      >
                         <GroupCovers covers={group.covers} round={musicView === "artists"} />
                         <span className="personCardName">{group.title}</span>
-                        <span className="personCardMeta">{[group.subtitle, t("collection.music.songs", { n: group.items.length })].filter(Boolean).join(" · ")}</span>
+                        <span className="personCardMeta">
+                          {[group.subtitle, t("collection.music.songs", { n: group.items.length })]
+                            .filter(Boolean)
+                            .join(" · ")}
+                        </span>
                       </button>
                     ))}
                   </div>
@@ -215,89 +250,143 @@ export default function CollectionPage() {
                 )}
               </>
             ) : (
-            <>
-            {kind === "track" && !openGroup ? <MusicViewTabs view={null} onView={(music) => openMusic({ music })} /> : null}
-            {openGroup && musicView ? (
-              <div className="groupHeader">
-                <button type="button" className="btn btnGhost btnSmall" onClick={() => openMusic({ music: musicView })}>
-                  ← {t("collection.back")}
-                </button>
-                <div className="groupHeaderText">
-                  <h2 className="groupTitle">{openGroup.title}</h2>
-                  <p className="mediaRowMeta">{[openGroup.subtitle, t("collection.music.songs", { n: openGroup.items.length })].filter(Boolean).join(" · ")}</p>
-                </div>
-                <PlayAllButton items={visible} spotifyUrl={openGroup.spotifyUrl} />
-              </div>
-            ) : null}
-            <div className="filters collectionFilters">
-              {[null, ...STATUSES.filter((s) => ofKind.some((item) => item.status === s))].map((s) => (
-                <button
-                  key={s ?? "all"}
-                  type="button"
-                  aria-pressed={status === s}
-                  className={cx("btn", "btnSmall", status === s ? "btnSoft" : "btnGhost")}
-                  onClick={() => select({ status: s })}
-                >
-                  {s && kind ? t(statusKey(s, kind)) : t("collection.filter.all")}
-                </button>
-              ))}
-
-              <div className="collectionSelects">
-                {genres.length ? (
-                  <select className="select selectSmall" aria-label={t("collection.filter.genre")} value={genre} onChange={(e) => setGenre(e.target.value)}>
-                    <option value="">{t("collection.filter.anyGenre")}</option>
-                    {genres.map(([id, name]) => (
-                      <option key={id} value={id}>
-                        {name}
-                      </option>
-                    ))}
-                  </select>
+              <>
+                {kind === "track" && !openGroup ? (
+                  <MusicViewTabs view={null} onView={(music) => openMusic({ music })} />
                 ) : null}
-                {years.length > 1 ? (
-                  <select className="select selectSmall" aria-label={t("collection.filter.year")} value={year} onChange={(e) => setYear(e.target.value)}>
-                    <option value="">{t("collection.filter.anyYear")}</option>
-                    {years.map((y) => (
-                      <option key={y} value={y}>
-                        {y}
-                      </option>
-                    ))}
-                  </select>
-                ) : null}
-                <select className="select selectSmall" aria-label={t("collection.filter.rating")} value={minRating} onChange={(e) => setMinRating(Number(e.target.value))}>
-                  <option value={0}>{t("collection.filter.anyRating")}</option>
-                  {[5, 4, 3].map((n) => (
-                    <option key={n} value={n}>
-                      {t("collection.filter.minRating", { n })}
-                    </option>
-                  ))}
-                </select>
-                <div className="collectionView" role="group" aria-label={t("collection.view.label")}>
-                  {(["grid", "list"] as const).map((v) => (
-                    <button key={v} type="button" aria-pressed={view === v} className={cx("btn", "btnSmall", view === v ? "btnSoft" : "btnGhost")} onClick={() => setView(v)}>
-                      {t(v === "grid" && kind === "track" ? "collection.view.covers" : `collection.view.${v}`)}
+                {openGroup && musicView ? (
+                  <div className="groupHeader">
+                    <button
+                      type="button"
+                      className="btn btnGhost btnSmall"
+                      onClick={() => openMusic({ music: musicView })}
+                    >
+                      ← {t("collection.back")}
                     </button>
-                  ))}
+                    <div className="groupHeaderText">
+                      <h2 className="groupTitle">{openGroup.title}</h2>
+                      <p className="mediaRowMeta">
+                        {[
+                          openGroup.subtitle,
+                          t("collection.music.songs", { n: openGroup.items.length })
+                        ]
+                          .filter(Boolean)
+                          .join(" · ")}
+                      </p>
+                    </div>
+                    <PlayAllButton items={visible} spotifyUrl={openGroup.spotifyUrl} />
+                  </div>
+                ) : null}
+                <div className="filters collectionFilters">
+                  {[null, ...STATUSES.filter((s) => ofKind.some((item) => item.status === s))].map(
+                    (s) => (
+                      <button
+                        key={s ?? "all"}
+                        type="button"
+                        aria-pressed={status === s}
+                        className={cx("btn", "btnSmall", status === s ? "btnSoft" : "btnGhost")}
+                        onClick={() => select({ status: s })}
+                      >
+                        {s && kind ? t(statusKey(s, kind)) : t("collection.filter.all")}
+                      </button>
+                    )
+                  )}
+
+                  <div className="collectionSelects">
+                    {genres.length ? (
+                      <select
+                        className="select selectSmall"
+                        aria-label={t("collection.filter.genre")}
+                        value={genre}
+                        onChange={(e) => setGenre(e.target.value)}
+                      >
+                        <option value="">{t("collection.filter.anyGenre")}</option>
+                        {genres.map(([id, name]) => (
+                          <option key={id} value={id}>
+                            {name}
+                          </option>
+                        ))}
+                      </select>
+                    ) : null}
+                    {years.length > 1 ? (
+                      <select
+                        className="select selectSmall"
+                        aria-label={t("collection.filter.year")}
+                        value={year}
+                        onChange={(e) => setYear(e.target.value)}
+                      >
+                        <option value="">{t("collection.filter.anyYear")}</option>
+                        {years.map((y) => (
+                          <option key={y} value={y}>
+                            {y}
+                          </option>
+                        ))}
+                      </select>
+                    ) : null}
+                    <select
+                      className="select selectSmall"
+                      aria-label={t("collection.filter.rating")}
+                      value={minRating}
+                      onChange={(e) => setMinRating(Number(e.target.value))}
+                    >
+                      <option value={0}>{t("collection.filter.anyRating")}</option>
+                      {[5, 4, 3].map((n) => (
+                        <option key={n} value={n}>
+                          {t("collection.filter.minRating", { n })}
+                        </option>
+                      ))}
+                    </select>
+                    <div
+                      className="collectionView"
+                      role="group"
+                      aria-label={t("collection.view.label")}
+                    >
+                      {(["grid", "list"] as const).map((v) => (
+                        <button
+                          key={v}
+                          type="button"
+                          aria-pressed={view === v}
+                          className={cx("btn", "btnSmall", view === v ? "btnSoft" : "btnGhost")}
+                          onClick={() => setView(v)}
+                        >
+                          {t(
+                            v === "grid" && kind === "track"
+                              ? "collection.view.covers"
+                              : `collection.view.${v}`
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
 
-            {visible.length === 0 ? (
-              <p className="sectionSubtitle">{t("collection.noMatch")}</p>
-            ) : view === "grid" ? (
-              <div className="mediaGrid">
-                {visible.map((item, index) => (
-                  <MediaCard key={item.id} item={item} to={itemLink(item.id)} state={{ fromList: true }} priority={index < 6} />
-                ))}
-              </div>
-            ) : (
-              <div className="mediaList">
-                {visible.map((item) => (
-                  <MediaRow key={item.id} item={item} to={itemLink(item.id)} state={{ fromList: true }} />
-                ))}
-              </div>
-            )}
-
-            </>
+                {visible.length === 0 ? (
+                  <p className="sectionSubtitle">{t("collection.noMatch")}</p>
+                ) : view === "grid" ? (
+                  <div className="mediaGrid">
+                    {visible.map((item, index) => (
+                      <MediaCard
+                        key={item.id}
+                        item={item}
+                        to={itemLink(item.id)}
+                        state={{ fromList: true }}
+                        priority={index < 6}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="mediaList">
+                    {visible.map((item) => (
+                      <MediaRow
+                        key={item.id}
+                        item={item}
+                        to={itemLink(item.id)}
+                        state={{ fromList: true }}
+                      />
+                    ))}
+                  </div>
+                )}
+              </>
             )}
 
             <p className="collectionAttribution">{t("collection.attribution")}</p>
@@ -315,12 +404,24 @@ export default function CollectionPage() {
 }
 
 /** All songs, or songs by album, artist or playlist. */
-function MusicViewTabs({ view, onView }: { view: MusicView | null; onView: (view: MusicView | null) => void }) {
+function MusicViewTabs({
+  view,
+  onView
+}: {
+  view: MusicView | null;
+  onView: (view: MusicView | null) => void;
+}) {
   const { t } = useI18n();
   return (
     <div className="filters musicViews" role="group" aria-label={t("collection.kind.track")}>
       {([null, ...MUSIC_VIEWS] as (MusicView | null)[]).map((v) => (
-        <button key={v ?? "all"} type="button" aria-pressed={view === v} className={cx("btn", "btnSmall", view === v ? "btnSoft" : "btnGhost")} onClick={() => onView(v)}>
+        <button
+          key={v ?? "all"}
+          type="button"
+          aria-pressed={view === v}
+          className={cx("btn", "btnSmall", view === v ? "btnSoft" : "btnGhost")}
+          onClick={() => onView(v)}
+        >
           {t(v ? `collection.music.${v}` : "collection.music.all")}
         </button>
       ))}
@@ -331,12 +432,25 @@ function MusicViewTabs({ view, onView }: { view: MusicView | null; onView: (view
 /** One cover, or four in a square when there are four different ones. */
 function GroupCovers({ covers, round }: { covers: string[]; round?: boolean }) {
   return (
-    <span className={cx("personCardPhoto", "groupCovers", round ? "" : "isSquare", covers.length >= 4 ? "isMosaic" : "")}>
-      {covers.length >= 4
-        ? covers.map((cover) => <img key={cover} src={cover} alt="" loading="lazy" decoding="async" />)
-        : covers[0]
-          ? <img src={covers[0]} alt="" loading="lazy" decoding="async" />
-          : <span className="mediaPosterEmpty" aria-hidden="true">♪</span>}
+    <span
+      className={cx(
+        "personCardPhoto",
+        "groupCovers",
+        round ? "" : "isSquare",
+        covers.length >= 4 ? "isMosaic" : ""
+      )}
+    >
+      {covers.length >= 4 ? (
+        covers.map((cover) => (
+          <img key={cover} src={cover} alt="" loading="lazy" decoding="async" />
+        ))
+      ) : covers[0] ? (
+        <img src={covers[0]} alt="" loading="lazy" decoding="async" />
+      ) : (
+        <span className="mediaPosterEmpty" aria-hidden="true">
+          ♪
+        </span>
+      )}
     </span>
   );
 }

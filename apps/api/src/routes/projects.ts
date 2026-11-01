@@ -11,7 +11,11 @@ import type { LocalImageStore } from "../storage/local";
  * Public project routes. Projects only exist in the database: without one (or when it is unreachable)
  * the list is empty, and the site hides its project sections.
  */
-export function registerProjectRoutes(app: FastifyInstance, projects: ProjectRepository | null, store: LocalImageStore) {
+export function registerProjectRoutes(
+  app: FastifyInstance,
+  projects: ProjectRepository | null,
+  store: LocalImageStore
+) {
   app.get("/api/projects", async (request): Promise<PublicProjectSummary[]> => {
     if (!projects) return [];
     try {

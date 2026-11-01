@@ -1,4 +1,10 @@
-import type { AdminMediaItem, CollectionSettings, MediaSearchResult, MediaSearchSource, MediaStatus } from "@liam-frost/shared";
+import type {
+  AdminMediaItem,
+  CollectionSettings,
+  MediaSearchResult,
+  MediaSearchSource,
+  MediaStatus
+} from "@liam-frost/shared";
 import { Clapperboard, EyeOff, Plus, Search, Settings2, Star } from "lucide-react";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
@@ -6,7 +12,11 @@ import { Link, useNavigate, useSearchParams } from "react-router";
 import { MediaBatchActions } from "../components/collection/MediaBatchActions";
 import { SteamDialog } from "../components/games/SteamDialog";
 import { PageHeader } from "../components/layout/AdminLayout";
-import { MusicSearchDialog, PlaylistImportDialog, SpotifyAccountDialog } from "../components/music/MusicTools";
+import {
+  MusicSearchDialog,
+  PlaylistImportDialog,
+  SpotifyAccountDialog
+} from "../components/music/MusicTools";
 import { MusicTab } from "../components/music/MusicViews";
 import { BatchBar, SelectMark } from "../components/ui/BatchBar";
 import { DatabaseNotice } from "../components/ui/DatabaseNotice";
@@ -14,7 +24,13 @@ import { Dialog } from "../components/ui/Dialog";
 import { Field, Switch } from "../components/ui/Field";
 import { StarRating } from "../components/ui/StarRating";
 import { useToast } from "../components/ui/Toast";
-import { useCollectionSettings, useCreateMedia, useImportMedia, useMediaList, useUpdateCollectionSettings } from "../hooks/useMedia";
+import {
+  useCollectionSettings,
+  useCreateMedia,
+  useImportMedia,
+  useMediaList,
+  useUpdateCollectionSettings
+} from "../hooks/useMedia";
 import { useSelection, type Selection } from "../hooks/useSelection";
 import { api, ApiError } from "../lib/api";
 import {
@@ -89,9 +105,17 @@ export function CollectionPage() {
   return (
     <>
       <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
-        <PageHeader title="收藏" description="看过、在看和想看的电影、剧集、动漫，读过的书和漫画，以及喜欢的歌。搜索添加时会自动填好资料和海报。" />
+        <PageHeader
+          title="收藏"
+          description="看过、在看和想看的电影、剧集、动漫，读过的书和漫画，以及喜欢的歌。搜索添加时会自动填好资料和海报。"
+        />
         <div className="flex flex-wrap gap-2">
-          <button type="button" className="btn-secondary" onClick={() => setEditingSettings(true)} disabled={!settings}>
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={() => setEditingSettings(true)}
+            disabled={!settings}
+          >
             <Settings2 aria-hidden="true" className="size-4" /> 显示设置
           </button>
           {kind === "game" ? (
@@ -110,14 +134,16 @@ export function CollectionPage() {
             </>
           ) : null}
           <button type="button" className="btn-primary" onClick={() => setAdding(true)}>
-            <Plus aria-hidden="true" className="size-4" /> {kind === "track" ? "添加歌曲" : `添加${KIND_LABELS[kind]}`}
+            <Plus aria-hidden="true" className="size-4" />{" "}
+            {kind === "track" ? "添加歌曲" : `添加${KIND_LABELS[kind]}`}
           </button>
         </div>
       </div>
 
       {settings && !settings.sources.tmdb && (kind === "movie" || kind === "tv") ? (
         <p className="mb-4 rounded-xl border border-status-warn/30 bg-status-warn/8 px-4 py-2.5 text-[12.5px] leading-relaxed text-status-warn">
-          未配置 TMDB：电影和剧集暂时只能手动添加。在 <code className="chip">apps/api/.env</code> 中设置 <code className="chip">TMDB_API_KEY</code> 后重启 API。
+          未配置 TMDB：电影和剧集暂时只能手动添加。在 <code className="chip">apps/api/.env</code>{" "}
+          中设置 <code className="chip">TMDB_API_KEY</code> 后重启 API。
         </p>
       ) : null}
 
@@ -131,7 +157,10 @@ export function CollectionPage() {
             onClick={() => select({ kind: k })}
             className={`rounded-full px-3.5 py-1.5 text-[13px] transition-colors ${kind === k ? "bg-brand text-white" : "bg-brand-secondary/10 text-brand hover:bg-brand-secondary/18"}`}
           >
-            {COLLECTION_KIND_LABELS[k]} <span className="opacity-70">{(items ?? []).filter((item) => item.kind === k).length}</span>
+            {COLLECTION_KIND_LABELS[k]}{" "}
+            <span className="opacity-70">
+              {(items ?? []).filter((item) => item.kind === k).length}
+            </span>
           </button>
         ))}
       </div>
@@ -139,27 +168,55 @@ export function CollectionPage() {
       {kind === "track" ? (
         <MusicTab items={ofKind} />
       ) : (
-        <WatchList kind={kind} items={ofKind} status={status} onStatus={(s) => select({ status: s })} />
+        <WatchList
+          kind={kind}
+          items={ofKind}
+          status={status}
+          onStatus={(s) => select({ status: s })}
+        />
       )}
 
-      {adding && kind === "track" ? <MusicSearchDialog mode="add" onClose={() => setAdding(false)} /> : null}
-      {adding && kind !== "track" ? <AddMediaDialog kind={kind} available={settings?.sources} onClose={() => setAdding(false)} /> : null}
+      {adding && kind === "track" ? (
+        <MusicSearchDialog mode="add" onClose={() => setAdding(false)} />
+      ) : null}
+      {adding && kind !== "track" ? (
+        <AddMediaDialog
+          kind={kind}
+          available={settings?.sources}
+          onClose={() => setAdding(false)}
+        />
+      ) : null}
       {importing ? <PlaylistImportDialog onClose={() => setImporting(false)} /> : null}
       {spotifyOpen ? <SpotifyAccountDialog onClose={() => setSpotifyOpen(false)} /> : null}
       {steamOpen ? <SteamDialog onClose={() => setSteamOpen(false)} /> : null}
-      {editingSettings && settings ? <SettingsDialog settings={settings.settings} onClose={() => setEditingSettings(false)} /> : null}
+      {editingSettings && settings ? (
+        <SettingsDialog settings={settings.settings} onClose={() => setEditingSettings(false)} />
+      ) : null}
     </>
   );
 }
 
 /** Films, series or anime: status filters, title filter and the poster grid. */
-function WatchList({ kind, items: ofKind, status, onStatus }: { kind: WatchKind; items: AdminMediaItem[]; status: MediaStatus | null; onStatus: (status: MediaStatus | null) => void }) {
+function WatchList({
+  kind,
+  items: ofKind,
+  status,
+  onStatus
+}: {
+  kind: WatchKind;
+  items: AdminMediaItem[];
+  status: MediaStatus | null;
+  onStatus: (status: MediaStatus | null) => void;
+}) {
   const [filter, setFilter] = useState("");
   const needle = filter.trim().toLowerCase();
   const visible = ofKind.filter(
     (item) =>
       (!status || item.status === status) &&
-      (!needle || [...Object.values(item.title), item.originalTitle ?? ""].some((text) => text?.toLowerCase().includes(needle)))
+      (!needle ||
+        [...Object.values(item.title), item.originalTitle ?? ""].some((text) =>
+          text?.toLowerCase().includes(needle)
+        ))
   );
   const order = useMemo(() => visible.map((item) => item.id), [visible]);
   const selection = useSelection(order);
@@ -175,13 +232,23 @@ function WatchList({ kind, items: ofKind, status, onStatus }: { kind: WatchKind;
             onClick={() => onStatus(s)}
             className={`chip ${status === s ? "border-brand bg-brand/10 text-brand" : ""}`}
           >
-            {s ? statusLabels(kind)[s] : "全部"} {s ? ofKind.filter((item) => item.status === s).length : ofKind.length}
+            {s ? statusLabels(kind)[s] : "全部"}{" "}
+            {s ? ofKind.filter((item) => item.status === s).length : ofKind.length}
           </button>
         ))}
         <div className="ml-auto flex w-full items-center gap-2 sm:w-auto">
           <div className="relative flex-1 sm:w-60">
-            <Search aria-hidden="true" className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-faint" />
-            <input className="field pl-9" placeholder="筛选标题" aria-label="筛选标题" value={filter} onChange={(e) => setFilter(e.target.value)} />
+            <Search
+              aria-hidden="true"
+              className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-faint"
+            />
+            <input
+              className="field pl-9"
+              placeholder="筛选标题"
+              aria-label="筛选标题"
+              value={filter}
+              onChange={(e) => setFilter(e.target.value)}
+            />
           </div>
           {visible.length && !selection.active ? (
             <button type="button" className="btn-secondary shrink-0" onClick={selection.start}>
@@ -193,7 +260,9 @@ function WatchList({ kind, items: ofKind, status, onStatus }: { kind: WatchKind;
 
       {visible.length === 0 ? (
         <div className="card p-10 text-center text-[13.5px] text-muted">
-          {ofKind.length ? "没有符合条件的条目" : `还没有${KIND_LABELS[kind]}，点击“添加${KIND_LABELS[kind]}”开始`}
+          {ofKind.length
+            ? "没有符合条件的条目"
+            : `还没有${KIND_LABELS[kind]}，点击“添加${KIND_LABELS[kind]}”开始`}
         </div>
       ) : (
         <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
@@ -225,14 +294,21 @@ function MediaCard({ item, selection }: { item: AdminMediaItem; selection: Selec
           </span>
         ) : null}
         {item.poster ? (
-          <img src={item.poster.variants[0].url} alt="" loading="lazy" className="size-full object-cover" />
+          <img
+            src={item.poster.variants[0].url}
+            alt=""
+            loading="lazy"
+            className="size-full object-cover"
+          />
         ) : (
           <span className="flex size-full items-center justify-center text-faint">
             <Clapperboard aria-hidden="true" className="size-8" />
           </span>
         )}
         <div className="absolute top-2 left-2 flex flex-wrap gap-1">
-          {item.status ? <span className="chip bg-surface/90">{statusLabels(item.kind)[item.status]}</span> : null}
+          {item.status ? (
+            <span className="chip bg-surface/90">{statusLabels(item.kind)[item.status]}</span>
+          ) : null}
           {item.visibility === "private" ? (
             <span className="chip inline-flex items-center gap-1 bg-surface/90">
               <EyeOff aria-hidden="true" className="size-3" /> 隐藏
@@ -246,7 +322,10 @@ function MediaCard({ item, selection }: { item: AdminMediaItem; selection: Selec
         </div>
       </div>
       <div className="space-y-1 p-3">
-        <p className="truncate text-[13.5px] font-semibold text-brand-dark group-hover:text-brand" title={title}>
+        <p
+          className="truncate text-[13.5px] font-semibold text-brand-dark group-hover:text-brand"
+          title={title}
+        >
           {title}
         </p>
         <div className="flex items-center justify-between gap-2 text-[12px] text-subtle">
@@ -258,7 +337,13 @@ function MediaCard({ item, selection }: { item: AdminMediaItem; selection: Selec
   );
   // While selecting, a click selects (Shift: a range) instead of opening the editor.
   return selection.active ? (
-    <button type="button" aria-pressed={selected} aria-label={`选择 ${title}`} className={className} onClick={(e) => selection.toggle(item.id, e.shiftKey)}>
+    <button
+      type="button"
+      aria-pressed={selected}
+      aria-label={`选择 ${title}`}
+      className={className}
+      onClick={(e) => selection.toggle(item.id, e.shiftKey)}
+    >
       {body}
     </button>
   ) : (
@@ -268,7 +353,15 @@ function MediaCard({ item, selection }: { item: AdminMediaItem; selection: Selec
   );
 }
 
-function AddMediaDialog({ kind, available, onClose }: { kind: WatchKind; available?: Record<MediaSearchSource, boolean>; onClose: () => void }) {
+function AddMediaDialog({
+  kind,
+  available,
+  onClose
+}: {
+  kind: WatchKind;
+  available?: Record<MediaSearchSource, boolean>;
+  onClose: () => void;
+}) {
   // Sources that need a key (TMDB, Google Books) are left out until it is set.
   const configured = KIND_SOURCES[kind].filter((s) => available?.[s] ?? true);
   const sources = configured.length ? configured : KIND_SOURCES[kind];
@@ -302,14 +395,23 @@ function AddMediaDialog({ kind, available, onClose }: { kind: WatchKind; availab
       { kind, source: result.source, sourceId: result.sourceId },
       {
         onSuccess: ({ item }) => navigate(`/collection/${item.id}`),
-        onError: (e) => setError(e instanceof ApiError && e.code === "MEDIA_EXISTS" ? "这个条目已在收藏中" : e.message)
+        onError: (e) =>
+          setError(
+            e instanceof ApiError && e.code === "MEDIA_EXISTS" ? "这个条目已在收藏中" : e.message
+          )
       }
     );
 
   const addManually = (event: FormEvent) => {
     event.preventDefault();
     if (!manualTitle.trim()) return;
-    createMedia.mutate({ kind, title: { zh: manualTitle.trim() } }, { onSuccess: ({ item }) => navigate(`/collection/${item.id}`), onError: (e) => setError(e.message) });
+    createMedia.mutate(
+      { kind, title: { zh: manualTitle.trim() } },
+      {
+        onSuccess: ({ item }) => navigate(`/collection/${item.id}`),
+        onError: (e) => setError(e.message)
+      }
+    );
   };
 
   return (
@@ -334,7 +436,11 @@ function AddMediaDialog({ kind, available, onClose }: { kind: WatchKind; availab
             </select>
           </Field>
         ) : null}
-        <Field label={`在 ${SOURCE_LABELS[source]} 搜索`} htmlFor="media-query" className="min-w-0 flex-1">
+        <Field
+          label={`在 ${SOURCE_LABELS[source]} 搜索`}
+          htmlFor="media-query"
+          className="min-w-0 flex-1"
+        >
           <input
             id="media-query"
             className="field"
@@ -346,13 +452,27 @@ function AddMediaDialog({ kind, available, onClose }: { kind: WatchKind; availab
             data-autofocus
           />
         </Field>
-        <button type="submit" className="btn-primary" disabled={searching || !query.trim() || !sourceReady}>
+        <button
+          type="submit"
+          className="btn-primary"
+          disabled={searching || !query.trim() || !sourceReady}
+        >
           <Search aria-hidden="true" className="size-4" />
           {searching ? "搜索中…" : "搜索"}
         </button>
       </form>
 
-      {!sourceReady ? <p className="mt-3 text-[12.5px] text-status-warn">未配置 {source === "tmdb" ? "TMDB_API_KEY" : source === "igdb" ? "TWITCH_CLIENT_ID / TWITCH_CLIENT_SECRET" : "GOOGLE_BOOKS_API_KEY"}，暂时只能手动添加。</p> : null}
+      {!sourceReady ? (
+        <p className="mt-3 text-[12.5px] text-status-warn">
+          未配置{" "}
+          {source === "tmdb"
+            ? "TMDB_API_KEY"
+            : source === "igdb"
+              ? "TWITCH_CLIENT_ID / TWITCH_CLIENT_SECRET"
+              : "GOOGLE_BOOKS_API_KEY"}
+          ，暂时只能手动添加。
+        </p>
+      ) : null}
       {error ? (
         <p role="alert" className="mt-3 text-[12.5px] text-status-error">
           {error}
@@ -365,7 +485,13 @@ function AddMediaDialog({ kind, available, onClose }: { kind: WatchKind; availab
             {results.map((result) => (
               <li key={result.sourceId} className="flex items-start gap-3 p-3">
                 {result.posterUrl ? (
-                  <img src={result.posterUrl} alt="" loading="lazy" referrerPolicy="no-referrer" className="h-[84px] w-14 shrink-0 rounded-md bg-line-soft object-cover" />
+                  <img
+                    src={result.posterUrl}
+                    alt=""
+                    loading="lazy"
+                    referrerPolicy="no-referrer"
+                    className="h-[84px] w-14 shrink-0 rounded-md bg-line-soft object-cover"
+                  />
                 ) : (
                   <span className="flex h-[84px] w-14 shrink-0 items-center justify-center rounded-md bg-line-soft text-faint">
                     <Clapperboard aria-hidden="true" className="size-5" />
@@ -374,35 +500,77 @@ function AddMediaDialog({ kind, available, onClose }: { kind: WatchKind; availab
                 <div className="min-w-0 flex-1">
                   <p className="text-[13.5px] font-semibold text-brand-dark">
                     {result.title}
-                    {result.year ? <span className="ml-1.5 font-normal text-subtle">{result.year}</span> : null}
-                    {kind === "anime" && result.source === "tmdb" ? <span className="chip ml-1.5">{result.mediaType === "movie" ? "剧场版" : "TV"}</span> : null}
+                    {result.year ? (
+                      <span className="ml-1.5 font-normal text-subtle">{result.year}</span>
+                    ) : null}
+                    {kind === "anime" && result.source === "tmdb" ? (
+                      <span className="chip ml-1.5">
+                        {result.mediaType === "movie" ? "剧场版" : "TV"}
+                      </span>
+                    ) : null}
                   </p>
-                  {result.originalTitle && result.originalTitle !== result.title ? <p className="truncate text-[12px] text-subtle">{result.originalTitle}</p> : null}
-                  {result.creators.length ? <p className="truncate text-[12px] text-subtle">{result.creators.join("、")}</p> : null}
-                  {result.overview ? <p className="mt-1 line-clamp-2 text-[12px] leading-relaxed text-muted">{result.overview}</p> : null}
+                  {result.originalTitle && result.originalTitle !== result.title ? (
+                    <p className="truncate text-[12px] text-subtle">{result.originalTitle}</p>
+                  ) : null}
+                  {result.creators.length ? (
+                    <p className="truncate text-[12px] text-subtle">{result.creators.join("、")}</p>
+                  ) : null}
+                  {result.overview ? (
+                    <p className="mt-1 line-clamp-2 text-[12px] leading-relaxed text-muted">
+                      {result.overview}
+                    </p>
+                  ) : null}
                 </div>
                 {result.existingId ? (
                   <Link to={`/collection/${result.existingId}`} className="btn-secondary shrink-0">
                     已添加，打开
                   </Link>
                 ) : (
-                  <button type="button" className="btn-primary shrink-0" disabled={importMedia.isPending} onClick={() => add(result)}>
-                    {importMedia.isPending && importMedia.variables?.sourceId === result.sourceId ? "添加中…" : "添加"}
+                  <button
+                    type="button"
+                    className="btn-primary shrink-0"
+                    disabled={importMedia.isPending}
+                    onClick={() => add(result)}
+                  >
+                    {importMedia.isPending && importMedia.variables?.sourceId === result.sourceId
+                      ? "添加中…"
+                      : "添加"}
                   </button>
                 )}
               </li>
             ))}
           </ul>
         ) : (
-          <p className="mt-4 text-[13px] text-muted">没有找到，换个关键词试试，或者在下面手动添加。</p>
+          <p className="mt-4 text-[13px] text-muted">
+            没有找到，换个关键词试试，或者在下面手动添加。
+          </p>
         )
       ) : null}
 
-      <form onSubmit={addManually} className="mt-5 flex flex-wrap items-end gap-2 border-t border-line-soft pt-4">
-        <Field label="搜不到？手动添加" htmlFor="media-manual-title" hint="之后在编辑页补充资料和海报" className="min-w-0 flex-1">
-          <input id="media-manual-title" className="field" value={manualTitle} maxLength={200} placeholder="标题（简体中文）" onChange={(e) => setManualTitle(e.target.value)} />
+      <form
+        onSubmit={addManually}
+        className="mt-5 flex flex-wrap items-end gap-2 border-t border-line-soft pt-4"
+      >
+        <Field
+          label="搜不到？手动添加"
+          htmlFor="media-manual-title"
+          hint="之后在编辑页补充资料和海报"
+          className="min-w-0 flex-1"
+        >
+          <input
+            id="media-manual-title"
+            className="field"
+            value={manualTitle}
+            maxLength={200}
+            placeholder="标题（简体中文）"
+            onChange={(e) => setManualTitle(e.target.value)}
+          />
         </Field>
-        <button type="submit" className="btn-secondary" disabled={!manualTitle.trim() || createMedia.isPending}>
+        <button
+          type="submit"
+          className="btn-secondary"
+          disabled={!manualTitle.trim() || createMedia.isPending}
+        >
           {createMedia.isPending ? "创建中…" : "手动添加"}
         </button>
       </form>
@@ -420,11 +588,21 @@ const SEARCH_HINTS: Record<MediaSearchSource, string> = {
   igdb: "游戏英文名最容易找到"
 };
 
-function SettingsDialog({ settings, onClose }: { settings: CollectionSettings; onClose: () => void }) {
+function SettingsDialog({
+  settings,
+  onClose
+}: {
+  settings: CollectionSettings;
+  onClose: () => void;
+}) {
   const [draft, setDraft] = useState(settings);
   const update = useUpdateCollectionSettings();
   const toast = useToast();
-  const kinds = [...WATCH_KINDS.map((k) => [k, KIND_LABELS[k]] as const), ["music", "音乐"] as const, ["people", "人物"] as const];
+  const kinds = [
+    ...WATCH_KINDS.map((k) => [k, KIND_LABELS[k]] as const),
+    ["music", "音乐"] as const,
+    ["people", "人物"] as const
+  ];
 
   const save = () =>
     update.mutate(draft, {
@@ -457,13 +635,26 @@ function SettingsDialog({ settings, onClose }: { settings: CollectionSettings; o
           <p className="mb-2 text-[12.5px] font-medium text-brand-dark">在网站上显示</p>
           <div className="flex flex-col items-start gap-2.5">
             {kinds.map(([key, label]) => (
-              <Switch key={key} id={`show-${key}`} checked={draft.show[key]} onChange={(on) => setDraft((d) => ({ ...d, show: { ...d.show, [key]: on } }))} label={label} />
+              <Switch
+                key={key}
+                id={`show-${key}`}
+                checked={draft.show[key]}
+                onChange={(on) => setDraft((d) => ({ ...d, show: { ...d.show, [key]: on } }))}
+                label={label}
+              />
             ))}
           </div>
         </div>
         <div className="border-t border-line-soft pt-4">
-          <Switch id="show-want" checked={draft.showWant} onChange={(on) => setDraft((d) => ({ ...d, showWant: on }))} label="显示“想看”的条目" />
-          <p className="mt-1.5 text-[11.5px] leading-relaxed text-faint">关闭后，所有“想看”条目都不在网站上显示；打开时，每个条目再按自己的“公开”设置决定。</p>
+          <Switch
+            id="show-want"
+            checked={draft.showWant}
+            onChange={(on) => setDraft((d) => ({ ...d, showWant: on }))}
+            label="显示“想看”的条目"
+          />
+          <p className="mt-1.5 text-[11.5px] leading-relaxed text-faint">
+            关闭后，所有“想看”条目都不在网站上显示；打开时，每个条目再按自己的“公开”设置决定。
+          </p>
         </div>
       </div>
     </Dialog>

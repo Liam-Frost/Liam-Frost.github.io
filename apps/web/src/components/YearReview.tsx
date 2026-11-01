@@ -9,11 +9,20 @@ import MediaCard from "./MediaCard";
 const KINDS: MediaKind[] = ["movie", "tv", "anime", "book", "comic", "game"];
 
 /** Entries finished in a year: done, with the date they were finished in that year. */
-const finishedIn = (items: PublicMediaSummary[], year: string) => items.filter((item) => item.status === "done" && item.watchedOn?.startsWith(year));
+const finishedIn = (items: PublicMediaSummary[], year: string) =>
+  items.filter((item) => item.status === "done" && item.watchedOn?.startsWith(year));
 
 /** Years with something finished, newest first. */
 export function reviewYears(items: PublicMediaSummary[]) {
-  return [...new Set(items.filter((item) => item.status === "done" && item.watchedOn).map((item) => item.watchedOn!.slice(0, 4)))].sort().reverse();
+  return [
+    ...new Set(
+      items
+        .filter((item) => item.status === "done" && item.watchedOn)
+        .map((item) => item.watchedOn!.slice(0, 4))
+    )
+  ]
+    .sort()
+    .reverse();
 }
 
 /**
@@ -21,7 +30,13 @@ export function reviewYears(items: PublicMediaSummary[]) {
  * ratings, the most common genres, a month-by-month count and the five-star ones. Built from the
  * public collection on the page.
  */
-export default function YearReview({ items, linkTo }: { items: PublicMediaSummary[]; linkTo: (id: string) => To }) {
+export default function YearReview({
+  items,
+  linkTo
+}: {
+  items: PublicMediaSummary[];
+  linkTo: (id: string) => To;
+}) {
   const { lang, t } = useI18n();
   const years = useMemo(() => reviewYears(items), [items]);
   const [picked, setPicked] = useState<string | null>(null);
@@ -29,10 +44,16 @@ export default function YearReview({ items, linkTo }: { items: PublicMediaSummar
   const done = useMemo(() => (year ? finishedIn(items, year) : []), [items, year]);
 
   const stats = useMemo(() => {
-    const byKind = KINDS.map((kind) => [kind, done.filter((item) => item.kind === kind).length] as const).filter(([, n]) => n > 0);
+    const byKind = KINDS.map(
+      (kind) => [kind, done.filter((item) => item.kind === kind).length] as const
+    ).filter(([, n]) => n > 0);
     const rated = done.filter((item) => item.rating);
-    const average = rated.length ? rated.reduce((sum, item) => sum + item.rating!, 0) / rated.length : null;
-    const ratings = [5, 4, 3, 2, 1].map((stars) => [stars, rated.filter((item) => item.rating === stars).length] as const);
+    const average = rated.length
+      ? rated.reduce((sum, item) => sum + item.rating!, 0) / rated.length
+      : null;
+    const ratings = [5, 4, 3, 2, 1].map(
+      (stars) => [stars, rated.filter((item) => item.rating === stars).length] as const
+    );
     const genres = new Map<string, { name: string; count: number }>();
     for (const item of done) {
       for (const genre of item.genres) {
@@ -42,9 +63,22 @@ export default function YearReview({ items, linkTo }: { items: PublicMediaSummar
         genres.set(id, entry);
       }
     }
-    const months = Array.from({ length: 12 }, (_, month) => done.filter((item) => Number(item.watchedOn!.slice(5, 7)) === month + 1).length);
-    const favorites = done.filter((item) => item.rating === 5).sort((a, b) => b.watchedOn!.localeCompare(a.watchedOn!));
-    return { byKind, average, ratings, genres: [...genres.values()].sort((a, b) => b.count - a.count).slice(0, 8), months, favorites, rated: rated.length };
+    const months = Array.from(
+      { length: 12 },
+      (_, month) => done.filter((item) => Number(item.watchedOn!.slice(5, 7)) === month + 1).length
+    );
+    const favorites = done
+      .filter((item) => item.rating === 5)
+      .sort((a, b) => b.watchedOn!.localeCompare(a.watchedOn!));
+    return {
+      byKind,
+      average,
+      ratings,
+      genres: [...genres.values()].sort((a, b) => b.count - a.count).slice(0, 8),
+      months,
+      favorites,
+      rated: rated.length
+    };
   }, [done, lang]);
 
   if (!year) return <p className="sectionSubtitle">{t("review.empty")}</p>;
@@ -57,7 +91,12 @@ export default function YearReview({ items, linkTo }: { items: PublicMediaSummar
       <div className="reviewHead">
         <h2 className="groupTitle">{t("review.title", { year })}</h2>
         {years.length > 1 ? (
-          <select className="select selectSmall" aria-label={t("review.year")} value={year} onChange={(e) => setPicked(e.target.value)}>
+          <select
+            className="select selectSmall"
+            aria-label={t("review.year")}
+            value={year}
+            onChange={(e) => setPicked(e.target.value)}
+          >
             {years.map((y) => (
               <option key={y} value={y}>
                 {y}
@@ -68,13 +107,21 @@ export default function YearReview({ items, linkTo }: { items: PublicMediaSummar
       </div>
 
       <p className="reviewSummary">
-        {stats.byKind.map(([kind, n]) => t(`review.kind.${kind}` as Key, { n })).join(t("review.separator"))}
+        {stats.byKind
+          .map(([kind, n]) => t(`review.kind.${kind}` as Key, { n }))
+          .join(t("review.separator"))}
       </p>
 
       <div className="reviewGrid">
         <section className="card reviewCard">
           <h3>{t("review.months")}</h3>
-          <div className="reviewMonths" role="img" aria-label={stats.months.map((n, m) => `${monthName.format(new Date(2000, m, 1))} ${n}`).join(", ")}>
+          <div
+            className="reviewMonths"
+            role="img"
+            aria-label={stats.months
+              .map((n, m) => `${monthName.format(new Date(2000, m, 1))} ${n}`)
+              .join(", ")}
+          >
             {stats.months.map((n, m) => (
               <div key={m} className="reviewMonth">
                 <span className="reviewBar" style={{ height: `${(n / busiest) * 100}%` }} />
@@ -87,7 +134,11 @@ export default function YearReview({ items, linkTo }: { items: PublicMediaSummar
 
         <section className="card reviewCard">
           <h3>{t("review.ratings")}</h3>
-          {stats.average !== null ? <p className="reviewBig">{t("review.average", { n: stats.average.toFixed(1) })}</p> : <p className="mediaRowMeta">{t("collection.unrated")}</p>}
+          {stats.average !== null ? (
+            <p className="reviewBig">{t("review.average", { n: stats.average.toFixed(1) })}</p>
+          ) : (
+            <p className="mediaRowMeta">{t("collection.unrated")}</p>
+          )}
           <ul className="reviewRatings">
             {stats.ratings.map(([stars, n]) => (
               <li key={stars}>
@@ -120,7 +171,12 @@ export default function YearReview({ items, linkTo }: { items: PublicMediaSummar
           <h3 className="reviewSectionTitle">{t("review.favorites")}</h3>
           <div className="mediaGrid">
             {stats.favorites.map((item) => (
-              <MediaCard key={item.id} item={item} to={linkTo(item.id)} state={{ fromList: true }} />
+              <MediaCard
+                key={item.id}
+                item={item}
+                to={linkTo(item.id)}
+                state={{ fromList: true }}
+              />
             ))}
           </div>
         </section>

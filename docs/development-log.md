@@ -1,5 +1,16 @@
 # Development Log
 
+## 2026-11-01: Repository maintenance
+
+- Added PR/push CI for lint, formatting, typecheck, tests and full build; retained Docker integration checks.
+- Added weekly grouped npm/Actions Dependabot configuration, MIT licensing with content exclusions, and a private security-reporting policy.
+- Added ESLint, Prettier, EditorConfig and LF attributes; established a formatting baseline and fixed lint findings.
+- Fixed the administrator-path regex backtracking issue and added long-input regression coverage.
+- Verified 157 tests, typecheck, lint, formatting and a full build. The sandboxed SWC cache denied access; the build passed with cache access outside the sandbox.
+- Verified GitHub security settings and updated repository description, homepage and topics. Pages HTTPS enforcement could not be enabled because GitHub has not issued the certificate.
+- Recorded the initial CodeQL findings and development-only minimatch advisory in `repository-maintenance.md`; no production dependency advisories were reported.
+- VPS deployment, backups and monitoring remain outside this stage.
+
 ## 2026-04-26
 
 - User requested starting the migration to a full personal site with separate front-end and back-end.

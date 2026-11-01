@@ -35,7 +35,10 @@ export class AdminAuthService {
   /** Hidden admin routes answer exactly like unknown routes, so their existence is not revealed. */
   assertIpAllowed(request: FastifyRequest) {
     if (!this.ipAllowed(request)) {
-      request.log.warn({ ip: request.ip, url: request.url.split("?")[0] }, "Admin request from IP outside ADMIN_ALLOWED_IPS");
+      request.log.warn(
+        { ip: request.ip, url: request.url.split("?")[0] },
+        "Admin request from IP outside ADMIN_ALLOWED_IPS"
+      );
       throw notFound();
     }
   }
@@ -58,7 +61,10 @@ export class AdminAuthService {
   identify(request: FastifyRequest): AdminUser | null {
     if (!this.configured) return null;
 
-    const session = verifySessionToken(request.cookies[this.config.cookieName], this.config.sessionSecret);
+    const session = verifySessionToken(
+      request.cookies[this.config.cookieName],
+      this.config.sessionSecret
+    );
     if (!session || session.sub !== this.config.username || this.revocations.isRevoked(session)) {
       return null;
     }
@@ -66,7 +72,12 @@ export class AdminAuthService {
   }
 
   /** Callers check assertConfigured() first. */
-  async login(request: FastifyRequest, reply: FastifyReply, username: string, password: string): Promise<AdminUser> {
+  async login(
+    request: FastifyRequest,
+    reply: FastifyReply,
+    username: string,
+    password: string
+  ): Promise<AdminUser> {
     const rateLimit = this.limiter.consume(request.ip);
     if (!rateLimit.allowed) {
       reply.header("Retry-After", String(rateLimit.retryAfterSeconds));
@@ -81,7 +92,11 @@ export class AdminAuthService {
     }
 
     this.limiter.reset(request.ip);
-    const token = createSessionToken(this.config.username, this.config.sessionSecret, this.config.sessionTtlSeconds);
+    const token = createSessionToken(
+      this.config.username,
+      this.config.sessionSecret,
+      this.config.sessionTtlSeconds
+    );
     reply.setCookie(this.config.cookieName, token, {
       httpOnly: true,
       maxAge: this.config.sessionTtlSeconds,
@@ -95,7 +110,10 @@ export class AdminAuthService {
 
   logout(request: FastifyRequest, reply: FastifyReply) {
     if (this.configured) {
-      const session = verifySessionToken(request.cookies[this.config.cookieName], this.config.sessionSecret);
+      const session = verifySessionToken(
+        request.cookies[this.config.cookieName],
+        this.config.sessionSecret
+      );
       if (session) this.revocations.revoke(session);
     }
     reply.clearCookie(this.config.cookieName, { path: "/" });

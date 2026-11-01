@@ -146,7 +146,11 @@ export function buildServer({
   people = defaultPersonRepository(),
   relations = defaultRelationRepository(),
   playlists = defaultPlaylistRepository(),
-  mediaSources = createMediaSources({ tmdbKey: config.tmdbApiKey, googleBooksKey: config.googleBooksApiKey, twitch: config.twitch }),
+  mediaSources = createMediaSources({
+    tmdbKey: config.tmdbApiKey,
+    googleBooksKey: config.googleBooksApiKey,
+    twitch: config.twitch
+  }),
   settings = defaultSettingsRepository(),
   fetchPlaylist = createPlaylistFetcher(),
   musicSource = createMusicSource(),
@@ -167,19 +171,43 @@ export function buildServer({
   const auth = new AdminAuthService(config.admin);
   const store = new LocalImageStore(config.uploads.dir ?? DEFAULT_UPLOAD_DIR);
   const collection = settings ? new CollectionSettingsStore(settings) : null;
-  const spotify = new SpotifyService(settings ?? new MemorySettingsRepository(), media, collection, store, playlists);
-  const account = spotifyAccount ?? new SpotifyAccount(config.spotify, settings, config.admin.sessionSecret);
+  const spotify = new SpotifyService(
+    settings ?? new MemorySettingsRepository(),
+    media,
+    collection,
+    store,
+    playlists
+  );
+  const account =
+    spotifyAccount ?? new SpotifyAccount(config.spotify, settings, config.admin.sessionSecret);
   const steam = steamAccount ?? new SteamAccount(config.steamApiKey, settings, steamFetch);
-  const steamSync = media ? new SteamSync({ media, sources: mediaSources, store, account: steam, fetchImpl: steamFetch }, (error) => app.log.warn({ err: error }, "Steam sync failed")) : null;
+  const steamSync = media
+    ? new SteamSync(
+        { media, sources: mediaSources, store, account: steam, fetchImpl: steamFetch },
+        (error) => app.log.warn({ err: error }, "Steam sync failed")
+      )
+    : null;
   const musicImports = media
-    ? new MusicImports({ media, sources: mediaSources, store, music: musicSource, account, fetchPlaylist, trackPreview, playlists }, (error) =>
-        app.log.warn({ err: error }, "Music import failed")
+    ? new MusicImports(
+        {
+          media,
+          sources: mediaSources,
+          store,
+          music: musicSource,
+          account,
+          fetchPlaylist,
+          trackPreview,
+          playlists
+        },
+        (error) => app.log.warn({ err: error }, "Music import failed")
       )
     : null;
 
   app.register(cors, { credentials: true, origin: config.corsOrigins });
   app.register(cookie);
-  app.register(multipart, { limits: { fileSize: config.uploads.maxBytes, files: 1, fields: 0, parts: 1 } });
+  app.register(multipart, {
+    limits: { fileSize: config.uploads.maxBytes, files: 1, fields: 0, parts: 1 }
+  });
 
   app.addHook("onSend", async (_request, reply, payload) => {
     reply.header("x-content-type-options", "nosniff");
@@ -193,7 +221,8 @@ export function buildServer({
       return reply.code(error.statusCode).send(error.toBody());
     }
 
-    const err: Error & { statusCode?: number } = error instanceof Error ? error : new Error(String(error));
+    const err: Error & { statusCode?: number } =
+      error instanceof Error ? error : new Error(String(error));
     const status = typeof err.statusCode === "number" ? err.statusCode : 500;
     if (status < 500) {
       // Fastify's own client errors (bad JSON, body too large, unsupported media type).
@@ -204,7 +233,13 @@ export function buildServer({
       request.log.error({ err }, "Database unavailable");
       return reply
         .code(503)
-        .send(new HttpError(503, "DATABASE_UNAVAILABLE", "Cannot connect to the database; check that it is running and DATABASE_URL is correct").toBody());
+        .send(
+          new HttpError(
+            503,
+            "DATABASE_UNAVAILABLE",
+            "Cannot connect to the database; check that it is running and DATABASE_URL is correct"
+          ).toBody()
+        );
     }
 
     request.log.error({ err }, "Request failed");
@@ -226,9 +261,28 @@ export function buildServer({
   registerAdminProjectRoutes(app, auth, projects, store, config.uploads.maxBytes);
   registerPhotoRoutes(app, photos, store);
   registerProjectRoutes(app, projects, store);
-  registerAdminMediaRoutes(app, auth, { media, collection, sources: mediaSources, store, maxUploadBytes: config.uploads.maxBytes });
-  registerAdminMusicRoutes(app, auth, { media, sources: mediaSources, music: musicSource, store, imports: musicImports });
-  registerAdminPeopleRoutes(app, auth, { media, people, relations, sources: mediaSources, store, maxUploadBytes: config.uploads.maxBytes });
+  registerAdminMediaRoutes(app, auth, {
+    media,
+    collection,
+    sources: mediaSources,
+    store,
+    maxUploadBytes: config.uploads.maxBytes
+  });
+  registerAdminMusicRoutes(app, auth, {
+    media,
+    sources: mediaSources,
+    music: musicSource,
+    store,
+    imports: musicImports
+  });
+  registerAdminPeopleRoutes(app, auth, {
+    media,
+    people,
+    relations,
+    sources: mediaSources,
+    store,
+    maxUploadBytes: config.uploads.maxBytes
+  });
   registerAdminPlaylistRoutes(app, auth, { media, playlists });
   registerCollectionRoutes(app, { media, people, relations, playlists, collection, store });
   registerUploadRoutes(app, store, { photos, projects, media, people, collection }, auth);
@@ -253,13 +307,20 @@ export async function startServer() {
 
   // fetch() ignores HTTPS_PROXY unless asked; honour it when set, e.g. a local proxy needed to reach
   // Spotify. setGlobalProxyFromEnv exists from Node 24.14/25.4; older versions can set NODE_USE_ENV_PROXY=1.
-  const proxyEnv = process.env.HTTPS_PROXY || process.env.https_proxy || process.env.HTTP_PROXY || process.env.http_proxy;
-  const setGlobalProxyFromEnv = (http as { setGlobalProxyFromEnv?: () => void }).setGlobalProxyFromEnv;
+  const proxyEnv =
+    process.env.HTTPS_PROXY ||
+    process.env.https_proxy ||
+    process.env.HTTP_PROXY ||
+    process.env.http_proxy;
+  const setGlobalProxyFromEnv = (http as { setGlobalProxyFromEnv?: () => void })
+    .setGlobalProxyFromEnv;
   if (proxyEnv && typeof setGlobalProxyFromEnv === "function") setGlobalProxyFromEnv();
 
   const app = buildServer({ config });
   if (!config.admin.configured) {
-    app.log.warn("Admin authentication is not configured; set ADMIN_PASSWORD_HASH and ADMIN_SESSION_SECRET");
+    app.log.warn(
+      "Admin authentication is not configured; set ADMIN_PASSWORD_HASH and ADMIN_SESSION_SECRET"
+    );
   }
 
   try {

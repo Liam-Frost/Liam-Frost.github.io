@@ -10,7 +10,9 @@ import { MemoryProjectRepository } from "./memory-project-repository";
 let png: Buffer;
 
 beforeAll(async () => {
-  png = await sharp({ create: { width: 1600, height: 900, channels: 3, background: "#3a6" } }).png().toBuffer();
+  png = await sharp({ create: { width: 1600, height: 900, channels: 3, background: "#3a6" } })
+    .png()
+    .toBuffer();
 });
 
 async function setup() {
@@ -21,13 +23,24 @@ async function setup() {
   const headers = { ...csrf, cookie };
 
   const create = async (slug = "site", title = { en: "Site" }) => {
-    const response = await app.inject({ method: "POST", url: "/api/admin/projects", headers, payload: { title, slug } });
+    const response = await app.inject({
+      method: "POST",
+      url: "/api/admin/projects",
+      headers,
+      payload: { title, slug }
+    });
     return response;
   };
-  const patch = (id: string, payload: object) => app.inject({ method: "PATCH", url: `/api/admin/projects/${id}`, headers, payload });
+  const patch = (id: string, payload: object) =>
+    app.inject({ method: "PATCH", url: `/api/admin/projects/${id}`, headers, payload });
   const upload = (id: string, slot: "cover" | "gallery") => {
     const body = multipartFile("shot.png", png, "image/png");
-    return app.inject({ method: "POST", url: `/api/admin/projects/${id}/images?slot=${slot}`, headers: { ...headers, ...body.headers }, payload: body.payload });
+    return app.inject({
+      method: "POST",
+      url: `/api/admin/projects/${id}/images?slot=${slot}`,
+      headers: { ...headers, ...body.headers },
+      payload: body.payload
+    });
   };
   return { app, projects, cookie, headers, uploadDir, create, patch, upload };
 }
@@ -43,7 +56,11 @@ describe("public project routes", () => {
     const { app, create, patch } = await setup();
     const hidden = (await create("hidden")).json().project;
     const shown = (await create("shown", { en: "Shown" })).json().project;
-    await patch(shown.id, { visibility: "public", summary: { en: "One line" }, body: { en: "# Hello" } });
+    await patch(shown.id, {
+      visibility: "public",
+      summary: { en: "One line" },
+      body: { en: "# Hello" }
+    });
 
     const list = (await app.inject("/api/projects")).json();
     expect(list.map((p: { slug: string }) => p.slug)).toEqual(["shown"]);
@@ -60,12 +77,16 @@ describe("admin project management", () => {
   it("needs a database", async () => {
     const app = await buildTestServer();
     const cookie = await login(app);
-    expect((await app.inject({ url: "/api/admin/projects", headers: { cookie } })).statusCode).toBe(503);
+    expect((await app.inject({ url: "/api/admin/projects", headers: { cookie } })).statusCode).toBe(
+      503
+    );
   });
 
   it("reports an unreachable database as 503 DATABASE_UNAVAILABLE", async () => {
     const { app, projects, cookie } = await setup();
-    const refused = Object.assign(new Error("connect ECONNREFUSED 127.0.0.1:5432"), { code: "ECONNREFUSED" });
+    const refused = Object.assign(new Error("connect ECONNREFUSED 127.0.0.1:5432"), {
+      code: "ECONNREFUSED"
+    });
     projects.list = async () => {
       throw refused;
     };
@@ -78,7 +99,13 @@ describe("admin project management", () => {
     const { create } = await setup();
     const created = await create("My-Site");
     expect(created.statusCode).toBe(201);
-    expect(created.json().project).toMatchObject({ slug: "my-site", visibility: "private", status: "in-progress", gallery: [], cover: null });
+    expect(created.json().project).toMatchObject({
+      slug: "my-site",
+      visibility: "private",
+      status: "in-progress",
+      gallery: [],
+      cover: null
+    });
 
     expect((await create("my-site")).statusCode).toBe(409);
     expect((await create("bad slug")).statusCode).toBe(400);
@@ -128,7 +155,9 @@ describe("admin project management", () => {
 
     // Hidden project: only the admin can load its images.
     expect((await app.inject(cover.src)).statusCode).toBe(404);
-    expect((await app.inject({ url: cover.src, headers: { cookie } })).headers["cache-control"]).toBe("private, no-store");
+    expect(
+      (await app.inject({ url: cover.src, headers: { cookie } })).headers["cache-control"]
+    ).toBe("private, no-store");
 
     // Replacing the cover removes the old files.
     const second = (await upload(id, "cover")).json().project.cover;
@@ -142,7 +171,11 @@ describe("admin project management", () => {
     const reordered = await patch(id, { gallery: [b.id, a.id] });
     expect(reordered.json().project.gallery.map((g: { id: string }) => g.id)).toEqual([b.id, a.id]);
 
-    const removed = await app.inject({ method: "DELETE", url: `/api/admin/projects/${id}/images/${a.id}`, headers });
+    const removed = await app.inject({
+      method: "DELETE",
+      url: `/api/admin/projects/${id}/images/${a.id}`,
+      headers
+    });
     expect(removed.json().project.gallery.map((g: { id: string }) => g.id)).toEqual([b.id]);
     expect(existsSync(join(uploadDir, "projects", id, a.id))).toBe(false);
 
@@ -151,14 +184,20 @@ describe("admin project management", () => {
     const publicCover = await app.inject(second.src);
     expect(publicCover.statusCode).toBe(200);
     expect(publicCover.headers["cache-control"]).toMatch(/immutable/);
-    expect((await app.inject(`/uploads/projects/${id}/${second.id}/original.png`)).statusCode).toBe(404);
+    expect((await app.inject(`/uploads/projects/${id}/${second.id}/original.png`)).statusCode).toBe(
+      404
+    );
     expect((await app.inject(`/uploads/projects/${id}/${a.id}/640.webp`)).statusCode).toBe(404);
   });
 
   it("keeps every screenshot when uploads run concurrently", async () => {
     const { create, upload } = await setup();
     const { id } = (await create()).json().project;
-    const responses = await Promise.all([upload(id, "gallery"), upload(id, "gallery"), upload(id, "gallery")]);
+    const responses = await Promise.all([
+      upload(id, "gallery"),
+      upload(id, "gallery"),
+      upload(id, "gallery")
+    ]);
     expect(responses.map((r) => r.statusCode)).toEqual([201, 201, 201]);
     const ids = responses.map((r) => r.json().project.gallery.at(-1).id);
     const last = responses.map((r) => r.json().project.gallery.length).sort();
@@ -172,7 +211,9 @@ describe("admin project management", () => {
     await upload(id, "cover");
     await upload(id, "gallery");
 
-    expect((await app.inject({ method: "DELETE", url: `/api/admin/projects/${id}`, headers })).statusCode).toBe(204);
+    expect(
+      (await app.inject({ method: "DELETE", url: `/api/admin/projects/${id}`, headers })).statusCode
+    ).toBe(204);
     expect(existsSync(join(uploadDir, "projects", id))).toBe(false);
     expect((await app.inject({ url: `/api/admin/projects/${id}`, headers })).statusCode).toBe(404);
   });
@@ -182,8 +223,22 @@ describe("admin project management", () => {
     const ids = [];
     for (const slug of ["a", "b", "c"]) ids.push((await create(slug)).json().project.id);
 
-    expect((await app.inject({ method: "PUT", url: "/api/admin/projects/order", headers, payload: { ids: ids.slice(1) } })).statusCode).toBe(409);
-    const ok = await app.inject({ method: "PUT", url: "/api/admin/projects/order", headers, payload: { ids: [ids[2], ids[0], ids[1]] } });
+    expect(
+      (
+        await app.inject({
+          method: "PUT",
+          url: "/api/admin/projects/order",
+          headers,
+          payload: { ids: ids.slice(1) }
+        })
+      ).statusCode
+    ).toBe(409);
+    const ok = await app.inject({
+      method: "PUT",
+      url: "/api/admin/projects/order",
+      headers,
+      payload: { ids: [ids[2], ids[0], ids[1]] }
+    });
     expect(ok.json().projects.map((p: { slug: string }) => p.slug)).toEqual(["c", "a", "b"]);
   });
 });

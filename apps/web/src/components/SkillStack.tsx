@@ -38,7 +38,7 @@ export default function SkillStack() {
   const { t } = useI18n();
 
   const groups = useMemo(() => {
-    const byGroup = new Map<SkillGroup, typeof skills[number][]>();
+    const byGroup = new Map<SkillGroup, (typeof skills)[number][]>();
     GROUPS.forEach((g) => byGroup.set(g.id, []));
 
     for (const s of skills) {

@@ -44,7 +44,13 @@ describe("admin app hosting", () => {
 
     expect((await app.inject("/studio/favicon.svg")).statusCode).toBe(200);
 
-    for (const url of ["/studio/secret.txt", "/studio/assets/missing.js", "/studio/assets/..%2Fsecret.txt", "/studio/assets/.hidden", "/studio/index.html"]) {
+    for (const url of [
+      "/studio/secret.txt",
+      "/studio/assets/missing.js",
+      "/studio/assets/..%2Fsecret.txt",
+      "/studio/assets/.hidden",
+      "/studio/index.html"
+    ]) {
       const response = await app.inject(url);
       expect(response.statusCode, url).toBe(404);
       expect(response.body, url).not.toContain("nope");
@@ -58,7 +64,10 @@ describe("admin app hosting", () => {
   });
 
   it("hides the admin app from IPs outside ADMIN_ALLOWED_IPS with the unknown-route 404", async () => {
-    const app = await buildTestServer({ ADMIN_PATH: "/studio", ADMIN_ALLOWED_IPS: "10.0.0.5" }, { adminDistDir: dist });
+    const app = await buildTestServer(
+      { ADMIN_PATH: "/studio", ADMIN_ALLOWED_IPS: "10.0.0.5" },
+      { adminDistDir: dist }
+    );
     const unknown = await app.inject("/nope");
     for (const url of ["/studio", "/studio/assets/index-abc123.js"]) {
       const response = await app.inject({ url, remoteAddress: "127.0.0.1" });

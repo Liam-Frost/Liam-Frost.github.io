@@ -10,10 +10,22 @@ export default function PersonCard({ person, to }: { person: PublicPersonSummary
   const { lang, t } = useI18n();
   const name = personName(person, lang);
   return (
-    <Link className="personCard" to={to} state={{ fromList: true }} aria-label={t("collection.open", { title: name })}>
+    <Link
+      className="personCard"
+      to={to}
+      state={{ fromList: true }}
+      aria-label={t("collection.open", { title: name })}
+    >
       <span className="personCardPhoto">
         {person.photo ? (
-          <img src={person.photo.variants[0].url} srcSet={imageSrcSet(person.photo)} sizes="120px" alt="" loading="lazy" decoding="async" />
+          <img
+            src={person.photo.variants[0].url}
+            srcSet={imageSrcSet(person.photo)}
+            sizes="120px"
+            alt=""
+            loading="lazy"
+            decoding="async"
+          />
         ) : (
           <span className="mediaPosterEmpty" aria-hidden="true">
             {name.slice(0, 1)}
@@ -22,7 +34,10 @@ export default function PersonCard({ person, to }: { person: PublicPersonSummary
       </span>
       <span className="personCardName">{name}</span>
       <span className="personCardMeta">
-        {[...person.roles.slice(0, 2).map((role) => t(`collection.role.${role}` as Key)), t("collection.worksCount", { n: person.works })].join(" · ")}
+        {[
+          ...person.roles.slice(0, 2).map((role) => t(`collection.role.${role}` as Key)),
+          t("collection.worksCount", { n: person.works })
+        ].join(" · ")}
       </span>
     </Link>
   );

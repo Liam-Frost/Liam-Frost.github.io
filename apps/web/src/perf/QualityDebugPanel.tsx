@@ -1,6 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 
-import { qualityManager, type FlickrThumbSuffix, type PlaceholderStrategy, type QualityParamOverrides, type QualityTier } from "./qualityManager";
+import {
+  qualityManager,
+  type FlickrThumbSuffix,
+  type PlaceholderStrategy,
+  type QualityParamOverrides,
+  type QualityTier
+} from "./qualityManager";
 import { useQuality } from "./useQuality";
 
 function getQueryParam(name: string): string | null {
@@ -34,7 +40,8 @@ const panelStyle: React.CSSProperties = {
   overflow: "auto",
   zIndex: 99999,
 
-  fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
+  fontFamily:
+    "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
   fontSize: 12,
   lineHeight: 1.35,
 
@@ -74,14 +81,17 @@ function toTierValue(v: string): QualityTier | null {
   return null;
 }
 
-function updateOverrides(prev: QualityParamOverrides | null, patch: QualityParamOverrides): QualityParamOverrides {
+function updateOverrides(
+  prev: QualityParamOverrides | null,
+  patch: QualityParamOverrides
+): QualityParamOverrides {
   const next: QualityParamOverrides = { ...(prev ?? {}) };
 
   if ("images" in patch && patch.images) {
     next.images = { ...(next.images ?? {}), ...patch.images };
   }
 
-  const { images, ...rest } = patch;
+  const { images: _images, ...rest } = patch;
   Object.assign(next, rest);
 
   return next;
@@ -108,7 +118,9 @@ export default function QualityDebugPanel() {
 
   return (
     <div style={panelStyle} role="dialog" aria-label="Performance debug panel">
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+      <div
+        style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}
+      >
         <strong>{title}</strong>
         <div style={{ display: "flex", gap: 8 }}>
           <button
@@ -144,7 +156,9 @@ export default function QualityDebugPanel() {
             <span style={valueStyle}>{metrics.manualOverride ?? "null"}</span>
           </div>
 
-          <hr style={{ border: 0, borderTop: "1px solid rgba(255,255,255,0.12)", margin: "10px 0" }} />
+          <hr
+            style={{ border: 0, borderTop: "1px solid rgba(255,255,255,0.12)", margin: "10px 0" }}
+          />
 
           <div style={rowStyle}>
             <span style={labelStyle}>avgFrame</span>
@@ -165,7 +179,9 @@ export default function QualityDebugPanel() {
             </span>
           </div>
 
-          <hr style={{ border: 0, borderTop: "1px solid rgba(255,255,255,0.12)", margin: "10px 0" }} />
+          <hr
+            style={{ border: 0, borderTop: "1px solid rgba(255,255,255,0.12)", margin: "10px 0" }}
+          />
 
           <div style={rowStyle}>
             <label style={labelStyle}>
@@ -216,7 +232,11 @@ export default function QualityDebugPanel() {
               <input
                 type="checkbox"
                 checked={config.enableDecorativeAnimations}
-                onChange={(e) => setOverrides((prev) => updateOverrides(prev, { enableDecorativeAnimations: e.target.checked }))}
+                onChange={(e) =>
+                  setOverrides((prev) =>
+                    updateOverrides(prev, { enableDecorativeAnimations: e.target.checked })
+                  )
+                }
               />
               decorative
             </label>
@@ -225,7 +245,9 @@ export default function QualityDebugPanel() {
               <input
                 type="checkbox"
                 checked={config.enableFilters}
-                onChange={(e) => setOverrides((prev) => updateOverrides(prev, { enableFilters: e.target.checked }))}
+                onChange={(e) =>
+                  setOverrides((prev) => updateOverrides(prev, { enableFilters: e.target.checked }))
+                }
               />
               filters
             </label>
@@ -240,7 +262,11 @@ export default function QualityDebugPanel() {
                 max={1}
                 step={0.05}
                 value={config.decorativeMultiplier}
-                onChange={(e) => setOverrides((prev) => updateOverrides(prev, { decorativeMultiplier: Number(e.target.value) }))}
+                onChange={(e) =>
+                  setOverrides((prev) =>
+                    updateOverrides(prev, { decorativeMultiplier: Number(e.target.value) })
+                  )
+                }
                 style={{ width: 150, marginLeft: 8 }}
               />
             </label>
@@ -255,7 +281,11 @@ export default function QualityDebugPanel() {
                 min={1}
                 max={12}
                 value={config.updateEveryNFrames}
-                onChange={(e) => setOverrides((prev) => updateOverrides(prev, { updateEveryNFrames: Number(e.target.value) }))}
+                onChange={(e) =>
+                  setOverrides((prev) =>
+                    updateOverrides(prev, { updateEveryNFrames: Number(e.target.value) })
+                  )
+                }
                 style={{
                   marginLeft: 8,
                   width: 64,
@@ -276,7 +306,9 @@ export default function QualityDebugPanel() {
                 min={0}
                 max={120}
                 value={config.fpsCap}
-                onChange={(e) => setOverrides((prev) => updateOverrides(prev, { fpsCap: Number(e.target.value) }))}
+                onChange={(e) =>
+                  setOverrides((prev) => updateOverrides(prev, { fpsCap: Number(e.target.value) }))
+                }
                 style={{
                   marginLeft: 8,
                   width: 64,
@@ -291,7 +323,9 @@ export default function QualityDebugPanel() {
             </label>
           </div>
 
-          <hr style={{ border: 0, borderTop: "1px solid rgba(255,255,255,0.12)", margin: "10px 0" }} />
+          <hr
+            style={{ border: 0, borderTop: "1px solid rgba(255,255,255,0.12)", margin: "10px 0" }}
+          />
 
           <div style={{ ...rowStyle, alignItems: "flex-start" }}>
             <div style={labelStyle}>images</div>
@@ -300,7 +334,13 @@ export default function QualityDebugPanel() {
                 maxThumbSuffix
                 <select
                   value={config.images.maxThumbSuffix}
-                  onChange={(e) => setOverrides((prev) => updateOverrides(prev, { images: { maxThumbSuffix: e.target.value as FlickrThumbSuffix } }))}
+                  onChange={(e) =>
+                    setOverrides((prev) =>
+                      updateOverrides(prev, {
+                        images: { maxThumbSuffix: e.target.value as FlickrThumbSuffix }
+                      })
+                    )
+                  }
                   style={{
                     marginLeft: 8,
                     font: "inherit",
@@ -327,7 +367,9 @@ export default function QualityDebugPanel() {
                   value={config.images.prefetchNeighborCount}
                   onChange={(e) =>
                     setOverrides((prev) =>
-                      updateOverrides(prev, { images: { prefetchNeighborCount: Number(e.target.value) } })
+                      updateOverrides(prev, {
+                        images: { prefetchNeighborCount: Number(e.target.value) }
+                      })
                     )
                   }
                   style={{
@@ -352,7 +394,9 @@ export default function QualityDebugPanel() {
                   value={config.images.maxConcurrentImagePrefetch}
                   onChange={(e) =>
                     setOverrides((prev) =>
-                      updateOverrides(prev, { images: { maxConcurrentImagePrefetch: Number(e.target.value) } })
+                      updateOverrides(prev, {
+                        images: { maxConcurrentImagePrefetch: Number(e.target.value) }
+                      })
                     )
                   }
                   style={{
@@ -374,7 +418,9 @@ export default function QualityDebugPanel() {
                   value={config.images.placeholderStrategy}
                   onChange={(e) =>
                     setOverrides((prev) =>
-                      updateOverrides(prev, { images: { placeholderStrategy: e.target.value as PlaceholderStrategy } })
+                      updateOverrides(prev, {
+                        images: { placeholderStrategy: e.target.value as PlaceholderStrategy }
+                      })
                     )
                   }
                   style={{

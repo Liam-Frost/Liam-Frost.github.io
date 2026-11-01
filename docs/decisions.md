@@ -2,6 +2,21 @@
 
 ## User Decisions
 
+### 2026-11-01: Repository licensing and maintenance
+
+Original code and technical documentation use the standard MIT license, attributed
+to Liam Frost. Retaining the copyright/license notice is required; visible website
+attribution is optional. Personal content and third-party materials are outside
+the software license. Complete repository maintenance without VPS deployment work.
+
+Implementation choices: use supported ESLint 10 with TypeScript recommended rules
+and React Hooks checks, separate Prettier formatting, and a stable `Quality checks`
+CI job. Preserve the Docker smoke test. Dependabot targets main so security-update
+configuration applies, grouping related packages without automatic merging.
+Establish LF formatting through EditorConfig and Git attributes. Security alert
+triage and outstanding certificate/development-tool advisories are recorded in
+`repository-maintenance.md` rather than silently dismissed or force-upgraded.
+
 ### 2026-11-04: Stage 17 Scope
 
 Before the yearly review, Stage 17 adds bulk actions in the admin, music views by album / artist / playlist with real playlists, and a Steam library sync (playtime, last played; purchase dates are not available from Steam's public API and are entered by hand). Plan: `docs/plan-collection.md` (Stage 17a-d).

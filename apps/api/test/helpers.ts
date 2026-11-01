@@ -30,7 +30,14 @@ export function passwordHash() {
 
 const offline = () => Promise.reject(new SourceError("no network in tests"));
 export const offlineMediaSources: MediaSources = {
-  available: () => ({ tmdb: false, bangumi: false, openlibrary: false, googlebooks: false, anilist: false, igdb: false }),
+  available: () => ({
+    tmdb: false,
+    bangumi: false,
+    openlibrary: false,
+    googlebooks: false,
+    anilist: false,
+    igdb: false
+  }),
   search: offline,
   details: offline,
   download: offline,
@@ -77,7 +84,10 @@ export type TestServerOptions = {
  * Builds a server from env-style overrides, with admin auth configured unless overridden.
  * Uploads go to a fresh temp directory unless UPLOAD_DIR is given.
  */
-export async function buildTestServer(env: Record<string, string | undefined> = {}, options: TestServerOptions = {}) {
+export async function buildTestServer(
+  env: Record<string, string | undefined> = {},
+  options: TestServerOptions = {}
+) {
   const config = loadConfig({
     ADMIN_USERNAME: USERNAME,
     ADMIN_PASSWORD_HASH: await passwordHash(),
@@ -98,8 +108,13 @@ export async function buildTestServer(env: Record<string, string | undefined> = 
     playlists: options.playlists ?? null,
     mediaSources: options.mediaSources ?? offlineMediaSources,
     settings: options.settings ?? null,
-    fetchPlaylist: options.fetchPlaylist ?? (() => Promise.reject(new Error("no network in tests"))),
-    musicSource: options.musicSource ?? { search: offline, lookup: offline, findPreview: async () => null },
+    fetchPlaylist:
+      options.fetchPlaylist ?? (() => Promise.reject(new Error("no network in tests"))),
+    musicSource: options.musicSource ?? {
+      search: offline,
+      lookup: offline,
+      findPreview: async () => null
+    },
     spotifyAccount: options.spotifyAccount,
     trackPreview: options.trackPreview ?? (async () => null),
     steamFetch: options.steamFetch ?? (() => Promise.reject(new Error("no network in tests")))
@@ -107,11 +122,21 @@ export async function buildTestServer(env: Record<string, string | undefined> = 
 }
 
 /** A multipart/form-data body with one file field. Multipart needs CRLF line endings. */
-export function multipartFile(fileName: string, data: Buffer, contentType = "application/octet-stream") {
+export function multipartFile(
+  fileName: string,
+  data: Buffer,
+  contentType = "application/octet-stream"
+) {
   const boundary = "----lf-test-boundary";
   const CRLF = "\r\n";
   const head = Buffer.from(
-    [`--${boundary}`, `Content-Disposition: form-data; name="file"; filename="${fileName}"`, `Content-Type: ${contentType}`, "", ""].join(CRLF)
+    [
+      `--${boundary}`,
+      `Content-Disposition: form-data; name="file"; filename="${fileName}"`,
+      `Content-Type: ${contentType}`,
+      "",
+      ""
+    ].join(CRLF)
   );
   const tail = Buffer.from(`${CRLF}--${boundary}--${CRLF}`);
   return {

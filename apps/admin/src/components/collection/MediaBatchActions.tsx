@@ -30,7 +30,9 @@ export function MediaBatchActions({ kind, selection }: { kind: string; selection
       const { playlist } = await api.playlistTracks(playlistId, { action: "add", ids });
       setPlaylist(playlist);
       const added = playlist.trackIds.length - before;
-      toast(`已加入“${pickText(playlist.name)}” ${added} 首${added < ids.length ? `（${ids.length - added} 首已在歌单里）` : ""}`);
+      toast(
+        `已加入“${pickText(playlist.name)}” ${added} 首${added < ids.length ? `（${ids.length - added} 首已在歌单里）` : ""}`
+      );
     } catch (e) {
       toast(e instanceof Error ? e.message : "操作失败", "error");
     } finally {
@@ -55,29 +57,60 @@ export function MediaBatchActions({ kind, selection }: { kind: string; selection
       setBusy(false);
     }
   };
-  const update = (patch: AdminMediaBatchPatch, verb: string) => void run({ action: "update", ids, patch }, verb);
+  const update = (patch: AdminMediaBatchPatch, verb: string) =>
+    void run({ action: "update", ids, patch }, verb);
   const disabled = busy || ids.length === 0;
 
   return (
     <>
-      <button type="button" className="btn-secondary" disabled={disabled} onClick={() => update({ visibility: "public" }, "公开")}>
+      <button
+        type="button"
+        className="btn-secondary"
+        disabled={disabled}
+        onClick={() => update({ visibility: "public" }, "公开")}
+      >
         公开
       </button>
-      <button type="button" className="btn-secondary" disabled={disabled} onClick={() => update({ visibility: "private" }, "隐藏")}>
+      <button
+        type="button"
+        className="btn-secondary"
+        disabled={disabled}
+        onClick={() => update({ visibility: "private" }, "隐藏")}
+      >
         隐藏
       </button>
-      <button type="button" className="btn-secondary" disabled={disabled} onClick={() => update({ featured: true }, "设为精选")}>
+      <button
+        type="button"
+        className="btn-secondary"
+        disabled={disabled}
+        onClick={() => update({ featured: true }, "设为精选")}
+      >
         精选
       </button>
-      <button type="button" className="btn-secondary" disabled={disabled} onClick={() => update({ featured: false }, "取消精选")}>
+      <button
+        type="button"
+        className="btn-secondary"
+        disabled={disabled}
+        onClick={() => update({ featured: false }, "取消精选")}
+      >
         取消精选
       </button>
       {isMusic ? (
         <>
-          <button type="button" className="btn-secondary" disabled={disabled} onClick={() => update({ inPlayer: true }, "加入播放器")}>
+          <button
+            type="button"
+            className="btn-secondary"
+            disabled={disabled}
+            onClick={() => update({ inPlayer: true }, "加入播放器")}
+          >
             加入播放器
           </button>
-          <button type="button" className="btn-secondary" disabled={disabled} onClick={() => update({ inPlayer: false }, "移出播放器")}>
+          <button
+            type="button"
+            className="btn-secondary"
+            disabled={disabled}
+            onClick={() => update({ inPlayer: false }, "移出播放器")}
+          >
             移出播放器
           </button>
           {playlists?.length ? (
@@ -111,14 +144,21 @@ export function MediaBatchActions({ kind, selection }: { kind: string; selection
           }}
         >
           <option value="">改状态…</option>
-          {(Object.entries(statusLabels(kind)) as [MediaStatus, string][]).map(([status, label]) => (
-            <option key={status} value={status}>
-              {label}
-            </option>
-          ))}
+          {(Object.entries(statusLabels(kind)) as [MediaStatus, string][]).map(
+            ([status, label]) => (
+              <option key={status} value={status}>
+                {label}
+              </option>
+            )
+          )}
         </select>
       )}
-      <button type="button" className="btn-danger" disabled={disabled} onClick={() => setConfirming(true)}>
+      <button
+        type="button"
+        className="btn-danger"
+        disabled={disabled}
+        onClick={() => setConfirming(true)}
+      >
         <Trash2 aria-hidden="true" className="size-4" /> 删除
       </button>
 
@@ -147,7 +187,8 @@ export function MediaBatchActions({ kind, selection }: { kind: string; selection
         }
       >
         <p className="text-[13.5px] leading-relaxed text-muted">
-          确定删除选中的 {ids.length} 项吗？{isMusic ? "封面" : "海报或封面"}、你的记录、短评和关联都会删除，此操作无法撤销。
+          确定删除选中的 {ids.length} 项吗？{isMusic ? "封面" : "海报或封面"}
+          、你的记录、短评和关联都会删除，此操作无法撤销。
         </p>
       </Dialog>
     </>

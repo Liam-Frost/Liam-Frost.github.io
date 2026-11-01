@@ -4,7 +4,10 @@ import { Link } from "react-router";
 import { pickLocalized, useI18n } from "../lib/i18n";
 
 /** "2025-01 – 2025-06", "2025-01 – Present", or nothing. */
-export function projectPeriod(project: Pick<PublicProjectSummary, "startedAt" | "endedAt" | "status">, present: string) {
+export function projectPeriod(
+  project: Pick<PublicProjectSummary, "startedAt" | "endedAt" | "status">,
+  present: string
+) {
   if (!project.startedAt) return project.endedAt ?? "";
   const end = project.endedAt ?? (project.status === "in-progress" ? present : "");
   return end && end !== project.startedAt ? `${project.startedAt} – ${end}` : project.startedAt;
@@ -15,14 +18,24 @@ export function imageSrcSet(image: ProjectImage) {
   return image.variants.map((v) => `${v.url} ${v.width}w`).join(", ");
 }
 
-export default function ProjectCard({ project, priority }: { project: PublicProjectSummary; priority?: boolean }) {
+export default function ProjectCard({
+  project,
+  priority
+}: {
+  project: PublicProjectSummary;
+  priority?: boolean;
+}) {
   const { lang, t } = useI18n();
   const title = pickLocalized(project.title, lang) || project.slug;
   const summary = pickLocalized(project.summary, lang);
   const period = projectPeriod(project, t("projects.present"));
 
   return (
-    <Link className="projectCard" to={`/projects/${project.slug}`} aria-label={t("projects.open", { title })}>
+    <Link
+      className="projectCard"
+      to={`/projects/${project.slug}`}
+      aria-label={t("projects.open", { title })}
+    >
       <div className="projectCover">
         {project.cover ? (
           <img
@@ -41,7 +54,9 @@ export default function ProjectCard({ project, priority }: { project: PublicProj
       </div>
       <div className="projectBody">
         <div className="projectMeta">
-          <span className={`projectStatus projectStatus-${project.status}`}>{t(`projects.status.${project.status}`)}</span>
+          <span className={`projectStatus projectStatus-${project.status}`}>
+            {t(`projects.status.${project.status}`)}
+          </span>
           {period ? <span>{period}</span> : null}
         </div>
         <h3 className="projectTitle">{title}</h3>

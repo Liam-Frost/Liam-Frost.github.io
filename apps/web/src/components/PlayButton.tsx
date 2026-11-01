@@ -24,23 +24,42 @@ export function playRequest(item: PublicMediaSummary, title: string): PlayReques
 }
 
 /** Plays a list of songs (an album, an artist, a playlist) from the first; hidden when nothing could play. */
-export function PlayAllButton({ items, spotifyUrl = null }: { items: PublicMediaSummary[]; spotifyUrl?: string | null }) {
+export function PlayAllButton({
+  items,
+  spotifyUrl = null
+}: {
+  items: PublicMediaSummary[];
+  spotifyUrl?: string | null;
+}) {
   const { lang, t } = useI18n();
   const player = useSpotifyPlayer();
   if (!player) return null;
   const tracks = items
     .map((item) => playRequest(item, pickLocalized(item.title, lang) || item.originalTitle || ""))
     .filter((track): track is PlayRequest => track !== null);
-  const playable = player.mode === "embed" ? spotifyUrl || tracks.some((track) => track.spotifyUrl) : tracks.some((track) => track.previewUrl);
+  const playable =
+    player.mode === "embed"
+      ? spotifyUrl || tracks.some((track) => track.spotifyUrl)
+      : tracks.some((track) => track.previewUrl);
   if (!playable) return null;
   return (
-    <button type="button" className="btn btnPrimary btnSmall" onClick={() => sendPlayerCommand({ type: "queue", tracks, spotifyUrl })}>
+    <button
+      type="button"
+      className="btn btnPrimary btnSmall"
+      onClick={() => sendPlayerCommand({ type: "queue", tracks, spotifyUrl })}
+    >
       {t("collection.playAll")}
     </button>
   );
 }
 
-export default function PlayButton({ item, className = "" }: { item: PublicMediaSummary; className?: string }) {
+export default function PlayButton({
+  item,
+  className = ""
+}: {
+  item: PublicMediaSummary;
+  className?: string;
+}) {
   const { lang, t } = useI18n();
   const player = useSpotifyPlayer();
   const now = useNowPlaying();
@@ -68,7 +87,11 @@ export default function PlayButton({ item, className = "" }: { item: PublicMedia
       onClick={onClick}
     >
       <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-        {playing ? <path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z" /> : <path d="M8 5.2v13.6a.8.8 0 0 0 1.2.7l10.6-6.8a.8.8 0 0 0 0-1.4L9.2 4.5A.8.8 0 0 0 8 5.2Z" />}
+        {playing ? (
+          <path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z" />
+        ) : (
+          <path d="M8 5.2v13.6a.8.8 0 0 0 1.2.7l10.6-6.8a.8.8 0 0 0 0-1.4L9.2 4.5A.8.8 0 0 0 8 5.2Z" />
+        )}
       </svg>
     </button>
   );

@@ -26,14 +26,20 @@ function loadPlayer() {
       return response.json() as Promise<PublicSpotifyPlayer>;
     })
     // The site's own player falls back to built-in tracks when the collection has none.
-    .then((data) => (data.enabled && data.mode !== "embed" && !data.tracks?.length ? { ...data, tracks: FALLBACK.tracks } : data))
+    .then((data) =>
+      data.enabled && data.mode !== "embed" && !data.tracks?.length
+        ? { ...data, tracks: FALLBACK.tracks }
+        : data
+    )
     .catch(() => FALLBACK);
   return loading;
 }
 
 /** The Spotify player's settings and tracks; null while loading or when the player is turned off. */
 export function useSpotifyPlayer() {
-  const [player, setPlayer] = useState<PublicSpotifyPlayer | null>(apiFetchEnabled ? null : FALLBACK);
+  const [player, setPlayer] = useState<PublicSpotifyPlayer | null>(
+    apiFetchEnabled ? null : FALLBACK
+  );
 
   useEffect(() => {
     if (!apiFetchEnabled) return;
@@ -47,5 +53,7 @@ export function useSpotifyPlayer() {
   }, []);
 
   if (!player?.enabled) return null;
-  return (player.mode === "embed" ? Boolean(player.embedUrl) : player.tracks.length > 0) ? player : null;
+  return (player.mode === "embed" ? Boolean(player.embedUrl) : player.tracks.length > 0)
+    ? player
+    : null;
 }

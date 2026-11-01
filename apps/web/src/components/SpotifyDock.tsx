@@ -32,7 +32,8 @@ export default function SpotifyDock() {
 
 /** https://open.spotify.com/{type}/{id} → Spotify's embedded player for it; null for anything else. */
 function embedSrc(link: string) {
-  const match = /^https:\/\/open\.spotify\.com(\/(?:playlist|album|track|artist)\/[A-Za-z0-9]+)$/.exec(link);
+  const match =
+    /^https:\/\/open\.spotify\.com(\/(?:playlist|album|track|artist)\/[A-Za-z0-9]+)$/.exec(link);
   return match ? `https://open.spotify.com/embed${match[1]}?utm_source=generator` : null;
 }
 
@@ -51,7 +52,12 @@ function EmbedDock({ player, src }: { player: PublicSpotifyPlayer; src: string }
   useEffect(
     () =>
       onPlayerCommand((command) => {
-        const link = command.type === "play" ? command.track.spotifyUrl : command.type === "queue" ? (command.spotifyUrl ?? command.tracks[0]?.spotifyUrl ?? null) : null;
+        const link =
+          command.type === "play"
+            ? command.track.spotifyUrl
+            : command.type === "queue"
+              ? (command.spotifyUrl ?? command.tracks[0]?.spotifyUrl ?? null)
+              : null;
         const chosen = link ? embedSrc(link) : null;
         if (!chosen) return;
         setShown(chosen);
@@ -94,11 +100,21 @@ function EmbedDock({ player, src }: { player: PublicSpotifyPlayer; src: string }
         />
       </div>
 
-      <button className="spotifyDockClose" type="button" aria-label="Hide Spotify player" onClick={collapse}>
+      <button
+        className="spotifyDockClose"
+        type="button"
+        aria-label="Hide Spotify player"
+        onClick={collapse}
+      >
         <CloseIcon />
       </button>
 
-      <button className="spotifyDockButton" type="button" aria-label="Show Spotify player" onClick={() => setIsExpanded(true)}>
+      <button
+        className="spotifyDockButton"
+        type="button"
+        aria-label="Show Spotify player"
+        onClick={() => setIsExpanded(true)}
+      >
         <SpotifyLogo />
       </button>
     </aside>
@@ -338,14 +354,21 @@ function Dock({ player }: { player: PublicSpotifyPlayer }) {
         />
       </div>
 
-      <button className="spotifyDockClose" type="button" aria-label="Hide Spotify player" onClick={collapse}>
+      <button
+        className="spotifyDockClose"
+        type="button"
+        aria-label="Hide Spotify player"
+        onClick={collapse}
+      >
         <CloseIcon />
       </button>
 
       <button
         className="spotifyDockButton"
         type="button"
-        aria-label={isPlaying ? `Show Spotify player (playing ${track.title})` : "Show Spotify player"}
+        aria-label={
+          isPlaying ? `Show Spotify player (playing ${track.title})` : "Show Spotify player"
+        }
         onClick={expand}
       >
         <SpotifyLogo />

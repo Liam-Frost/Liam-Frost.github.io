@@ -26,7 +26,13 @@
           if (savedLang) {
             document.documentElement.setAttribute("data-lang", savedLang);
             document.documentElement.lang =
-              savedLang === "ja" ? "ja" : savedLang === "fr" ? "fr" : savedLang === "en" ? "en" : "zh-Hans";
+              savedLang === "ja"
+                ? "ja"
+                : savedLang === "fr"
+                  ? "fr"
+                  : savedLang === "en"
+                    ? "en"
+                    : "zh-Hans";
           }
         } catch {
           // ignore

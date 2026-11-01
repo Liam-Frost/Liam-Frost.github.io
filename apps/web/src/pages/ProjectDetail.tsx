@@ -66,7 +66,9 @@ export default function ProjectDetailPage() {
             ← {t("projects.back")}
           </Link>
           <div className="projectMeta">
-            <span className={`projectStatus projectStatus-${project.status}`}>{t(`projects.status.${project.status}`)}</span>
+            <span className={`projectStatus projectStatus-${project.status}`}>
+              {t(`projects.status.${project.status}`)}
+            </span>
             {period ? <span>{period}</span> : null}
           </div>
           <h1 className="sectionTitle">{title}</h1>
@@ -85,7 +87,13 @@ export default function ProjectDetailPage() {
           {links.length ? (
             <div className="projectLinks">
               {links.map((key, index) => (
-                <a key={key} className={index === 0 ? "btn btnPrimary" : "btn btnGhost"} href={project.links[key]} target="_blank" rel="noopener noreferrer">
+                <a
+                  key={key}
+                  className={index === 0 ? "btn btnPrimary" : "btn btnGhost"}
+                  href={project.links[key]}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
                   {t(`projects.links.${key}`)} ↗
                 </a>
               ))}
@@ -95,7 +103,12 @@ export default function ProjectDetailPage() {
 
         {project.cover ? (
           <Reveal delayMs={80}>
-            <button type="button" className="projectHero" onClick={() => setViewing(project.cover)} aria-label={title}>
+            <button
+              type="button"
+              className="projectHero"
+              onClick={() => setViewing(project.cover)}
+              aria-label={title}
+            >
               <img
                 src={project.cover.src}
                 srcSet={imageSrcSet(project.cover)}
@@ -116,7 +129,11 @@ export default function ProjectDetailPage() {
               {/* No raw HTML: react-markdown escapes it, so admin-entered text cannot inject markup. */}
               <Markdown
                 remarkPlugins={[remarkGfm]}
-                components={{ a: ({ node: _node, ...props }) => <a {...props} target="_blank" rel="noopener noreferrer" /> }}
+                components={{
+                  a: ({ node: _node, ...props }) => (
+                    <a {...props} target="_blank" rel="noopener noreferrer" />
+                  )
+                }}
               >
                 {body}
               </Markdown>
@@ -129,7 +146,13 @@ export default function ProjectDetailPage() {
             <h2 className="projectSectionTitle">{t("projects.gallery")}</h2>
             <div className="projectGallery">
               {project.gallery.map((image, index) => (
-                <button key={image.id} type="button" className="projectShot" onClick={() => setViewing(image)} aria-label={`${title} ${index + 1}`}>
+                <button
+                  key={image.id}
+                  type="button"
+                  className="projectShot"
+                  onClick={() => setViewing(image)}
+                  aria-label={`${title} ${index + 1}`}
+                >
                   <img
                     src={image.variants[Math.min(1, image.variants.length - 1)].url}
                     srcSet={imageSrcSet(image)}
@@ -148,7 +171,13 @@ export default function ProjectDetailPage() {
       </div>
 
       {viewing ? (
-        <FullscreenImageViewer baseUrl={viewing.src} originalWidth={viewing.width} originalHeight={viewing.height} alt={title} onClose={() => setViewing(null)} />
+        <FullscreenImageViewer
+          baseUrl={viewing.src}
+          originalWidth={viewing.width}
+          originalHeight={viewing.height}
+          alt={title}
+          onClose={() => setViewing(null)}
+        />
       ) : null}
     </article>
   );

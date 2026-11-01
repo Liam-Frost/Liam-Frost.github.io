@@ -30,7 +30,8 @@ export function useSetPhoto() {
 export function useUpdatePhoto() {
   const setPhoto = useSetPhoto();
   return useMutation({
-    mutationFn: ({ id, update }: { id: string; update: AdminPhotoUpdate }) => api.updatePhoto(id, update),
+    mutationFn: ({ id, update }: { id: string; update: AdminPhotoUpdate }) =>
+      api.updatePhoto(id, update),
     onSuccess: ({ photo }) => setPhoto(photo)
   });
 }
@@ -40,7 +41,10 @@ export function useDeletePhoto() {
   return useMutation({
     mutationFn: (id: string) => api.deletePhoto(id),
     onSuccess: (_data, id) =>
-      qc.setQueryData<AdminPhotosResponse>(photosKey, (data) => data && { photos: data.photos.filter((p) => p.id !== id) })
+      qc.setQueryData<AdminPhotosResponse>(
+        photosKey,
+        (data) => data && { photos: data.photos.filter((p) => p.id !== id) }
+      )
   });
 }
 
@@ -54,7 +58,9 @@ export function useReorderPhotos() {
       const previous = qc.getQueryData<AdminPhotosResponse>(photosKey);
       if (previous) {
         const byId = new Map(previous.photos.map((p) => [p.id, p]));
-        qc.setQueryData<AdminPhotosResponse>(photosKey, { photos: ids.map((id) => byId.get(id)).filter((p): p is AdminPhoto => Boolean(p)) });
+        qc.setQueryData<AdminPhotosResponse>(photosKey, {
+          photos: ids.map((id) => byId.get(id)).filter((p): p is AdminPhoto => Boolean(p))
+        });
       }
       return { previous };
     },

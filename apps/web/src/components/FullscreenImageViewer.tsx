@@ -1,7 +1,19 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEventHandler } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type KeyboardEventHandler
+} from "react";
 import { createPortal } from "react-dom";
 
-import { buildFlickrStaticUrl, longestEdgeBySuffix, parseFlickrStaticUrl, type FlickrSizeSuffix } from "../images/flickr";
+import {
+  buildFlickrStaticUrl,
+  longestEdgeBySuffix,
+  parseFlickrStaticUrl,
+  type FlickrSizeSuffix
+} from "../images/flickr";
 
 type Props = {
   baseUrl: string;
@@ -35,7 +47,13 @@ function midpoint(a: Point, b: Point): Point {
   return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
 }
 
-export default function FullscreenImageViewer({ baseUrl, originalWidth, originalHeight, alt, onClose }: Props) {
+export default function FullscreenImageViewer({
+  baseUrl,
+  originalWidth,
+  originalHeight,
+  alt,
+  onClose
+}: Props) {
   const parsed = useMemo(() => parseFlickrStaticUrl(baseUrl), [baseUrl]);
   const isFlickr = Boolean(parsed);
   const originalLongest = Math.max(1, Math.max(originalWidth, originalHeight));
@@ -73,7 +91,8 @@ export default function FullscreenImageViewer({ baseUrl, originalWidth, original
 
   const activeSuffix = useMemo(() => {
     if (!isFlickr) return null;
-    const s = availableSuffixes[Math.min(fallbackIndex, availableSuffixes.length - 1)] ?? bestSuffix;
+    const s =
+      availableSuffixes[Math.min(fallbackIndex, availableSuffixes.length - 1)] ?? bestSuffix;
     return s ?? "b";
   }, [isFlickr, availableSuffixes, fallbackIndex, bestSuffix]);
 
@@ -204,7 +223,6 @@ export default function FullscreenImageViewer({ baseUrl, originalWidth, original
       if (hideUiTimerRef.current) window.clearTimeout(hideUiTimerRef.current);
       hideUiTimerRef.current = null;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [uiVisible]);
 
   const onUserActivity = () => {
@@ -263,7 +281,11 @@ export default function FullscreenImageViewer({ baseUrl, originalWidth, original
 
           <button
             className="btn btnGhost"
-            style={{ ...controlStyle, minWidth: isCoarsePointer ? 44 : undefined, color: "rgba(255,255,255,0.92)" }}
+            style={{
+              ...controlStyle,
+              minWidth: isCoarsePointer ? 44 : undefined,
+              color: "rgba(255,255,255,0.92)"
+            }}
             type="button"
             aria-label="关闭"
             onClick={onClose}

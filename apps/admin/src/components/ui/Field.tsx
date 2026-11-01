@@ -26,9 +26,22 @@ export function Field({
 }
 
 /** On/off switch with a visible label. */
-export function Switch({ id, checked, onChange, label }: { id: string; checked: boolean; onChange: (value: boolean) => void; label: ReactNode }) {
+export function Switch({
+  id,
+  checked,
+  onChange,
+  label
+}: {
+  id: string;
+  checked: boolean;
+  onChange: (value: boolean) => void;
+  label: ReactNode;
+}) {
   return (
-    <label htmlFor={id} className="inline-flex cursor-pointer items-center gap-2.5 text-[13px] text-ink">
+    <label
+      htmlFor={id}
+      className="inline-flex cursor-pointer items-center gap-2.5 text-[13px] text-ink"
+    >
       <button
         id={id}
         type="button"

@@ -16,7 +16,10 @@ function variantUrls(row: PhotoRow, store: LocalImageStore): PhotoVariantInfo[] 
 
 /** Flickr static URLs end in "_<size>.<ext>"; "_n" (320px) is plenty for admin lists. */
 export function remoteThumbnail(src: string) {
-  return src.replace(/^(https:\/\/live\.staticflickr\.com\/\d+\/\d+_[a-z0-9]+)(?:_[a-z0-9]{1,2})?\.(jpe?g|png)$/i, "$1_n.$2");
+  return src.replace(
+    /^(https:\/\/live\.staticflickr\.com\/\d+\/\d+_[a-z0-9]+)(?:_[a-z0-9]{1,2})?\.(jpe?g|png)$/i,
+    "$1_n.$2"
+  );
 }
 
 function optional<T>(value: T | null): T | undefined {

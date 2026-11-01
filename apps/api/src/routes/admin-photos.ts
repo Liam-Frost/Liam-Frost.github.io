@@ -37,7 +37,11 @@ export function registerAdminPhotoRoutes(
 ) {
   const repo = () => {
     if (!photos) {
-      throw new HttpError(503, "DATABASE_NOT_CONFIGURED", "Photo management needs a database (set DATABASE_URL)");
+      throw new HttpError(
+        503,
+        "DATABASE_NOT_CONFIGURED",
+        "Photo management needs a database (set DATABASE_URL)"
+      );
     }
     return photos;
   };
@@ -68,7 +72,11 @@ export function registerAdminPhotoRoutes(
     try {
       await saveImage(store, storageKey, image);
 
-      const title = fileName.replace(/\.[^.]*$/, "").trim().slice(0, 120) || id;
+      const title =
+        fileName
+          .replace(/\.[^.]*$/, "")
+          .trim()
+          .slice(0, 120) || id;
       const row = await photos.create({
         id,
         slug: id,
@@ -113,7 +121,11 @@ export function registerAdminPhotoRoutes(
     const row = await repo().delete(idParam(request));
     if (!row) throw notFound("Photo not found");
     if (row.storage === "local" && row.storageKey) {
-      await store.remove(row.storageKey).catch((error) => request.log.warn({ error, photoId: row.id }, "Failed to remove photo files"));
+      await store
+        .remove(row.storageKey)
+        .catch((error) =>
+          request.log.warn({ error, photoId: row.id }, "Failed to remove photo files")
+        );
     }
     request.log.info({ photoId: row.id, by: request.adminUser?.username }, "Photo deleted");
     return reply.code(204).send();

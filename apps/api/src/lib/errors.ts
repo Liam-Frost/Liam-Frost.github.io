@@ -18,7 +18,8 @@ export class HttpError extends Error {
 /** Also used for admin routes hidden by ADMIN_ALLOWED_IPS, so they look exactly like unknown routes. */
 export const notFound = (message = "Not found") => new HttpError(404, "NOT_FOUND", message);
 
-export const badRequest = (message: string, code = "BAD_REQUEST") => new HttpError(400, code, message);
+export const badRequest = (message: string, code = "BAD_REQUEST") =>
+  new HttpError(400, code, message);
 
 const DATABASE_UNAVAILABLE_CODES = new Set([
   // Prisma: unreachable, auth failed, timeout, database missing, connection closed, pool timeout.

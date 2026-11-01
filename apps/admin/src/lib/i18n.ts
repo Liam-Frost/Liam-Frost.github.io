@@ -36,7 +36,14 @@ export const STATUS_LABELS = {
 export const WATCH_KINDS = ["movie", "tv", "anime", "book", "comic", "game"] as const;
 export type WatchKind = (typeof WATCH_KINDS)[number];
 
-export const KIND_LABELS: Record<WatchKind, string> = { movie: "电影", tv: "剧集", anime: "动漫", book: "图书", comic: "漫画", game: "游戏" };
+export const KIND_LABELS: Record<WatchKind, string> = {
+  movie: "电影",
+  tv: "剧集",
+  anime: "动漫",
+  book: "图书",
+  comic: "漫画",
+  game: "游戏"
+};
 
 /** Sources each kind is searched on, the default first. */
 export const KIND_SOURCES: Record<WatchKind, readonly MediaSearchSource[]> = {
@@ -54,7 +61,10 @@ export const isReadKind = (kind: string) => kind === "book" || kind === "comic";
 /** Tabs of the collection page: films, series, anime and songs. */
 export const COLLECTION_KINDS = [...WATCH_KINDS, "track"] as const;
 export type CollectionKind = (typeof COLLECTION_KINDS)[number];
-export const COLLECTION_KIND_LABELS: Record<CollectionKind, string> = { ...KIND_LABELS, track: "音乐" };
+export const COLLECTION_KIND_LABELS: Record<CollectionKind, string> = {
+  ...KIND_LABELS,
+  track: "音乐"
+};
 
 /** iTunes stores to search (songs are listed under that store's names). */
 export const MUSIC_STORES = [
@@ -97,7 +107,11 @@ export const PLAY_STATUS_LABELS: Record<MediaStatus, string> = {
 
 /** Status names for a kind: watched for films, series and anime, read for books and comics, played for games. */
 export const statusLabels = (kind: string): Record<MediaStatus, string> =>
-  kind === "game" ? PLAY_STATUS_LABELS : isReadKind(kind) ? READ_STATUS_LABELS : MEDIA_STATUS_LABELS;
+  kind === "game"
+    ? PLAY_STATUS_LABELS
+    : isReadKind(kind)
+      ? READ_STATUS_LABELS
+      : MEDIA_STATUS_LABELS;
 
 export const PERSON_ROLE_LABELS: Record<PersonRole, string> = {
   director: "导演",

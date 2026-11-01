@@ -8,7 +8,11 @@ const ToastContext = createContext<(message: string, tone?: Tone) => void>(() =>
 export const useToast = () => useContext(ToastContext);
 
 const ICON = { success: CircleCheck, error: CircleAlert, info: Info };
-const COLOR = { success: "text-status-ok", error: "text-status-error", info: "text-brand-secondary" };
+const COLOR = {
+  success: "text-status-ok",
+  error: "text-status-error",
+  info: "text-brand-secondary"
+};
 
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<ToastItem[]>([]);
@@ -16,13 +20,19 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const push = useCallback((message: string, tone: Tone = "success") => {
     const id = ++seq.current;
     setToasts((list) => [...list.slice(-3), { id, tone, message }]);
-    window.setTimeout(() => setToasts((list) => list.filter((t) => t.id !== id)), tone === "error" ? 7000 : 4000);
+    window.setTimeout(
+      () => setToasts((list) => list.filter((t) => t.id !== id)),
+      tone === "error" ? 7000 : 4000
+    );
   }, []);
 
   return (
     <ToastContext value={push}>
       {children}
-      <div aria-live="polite" className="pointer-events-none fixed right-4 bottom-4 z-[60] flex w-[min(380px,calc(100%-32px))] flex-col gap-2">
+      <div
+        aria-live="polite"
+        className="pointer-events-none fixed right-4 bottom-4 z-[60] flex w-[min(380px,calc(100%-32px))] flex-col gap-2"
+      >
         {toasts.map((t) => {
           const Icon = ICON[t.tone];
           return (
