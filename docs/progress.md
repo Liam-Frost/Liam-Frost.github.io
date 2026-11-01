@@ -300,6 +300,13 @@ Status: implementation complete; Claude Code review complete and fixes applied.
 - Verified with a temporary PostgreSQL and the live sources: seeded all samples (三体 from Open Library, 凉宫春日的忧郁 from Bangumi, Bocchi the Rock! from AniList, 葬送的芙莉莲 from Bangumi), added Norwegian Wood from the admin's Open Library search, checked the editor, the site's comic tab and panel, and AniList suggestions linking the anime to its manga.
 - Ran Claude Code review for Stage 15 (`docs/reviews/2026-11-03-claude-code-stage-15.md`) and fixed the findings.
 
+### Stage 15 Follow-Up: Playing Songs From the Collection
+
+- Play buttons on songs (cover wall, list and detail panel) send the song to the corner player: the site player plays its preview right away (queued after the current song when it is not in the list) and the buttons show which song plays; Spotify's player loads the song's Spotify page. Player settings load once per page for the dock and the buttons.
+- The music tab has a cover wall (square album covers, singer under the title) besides the list.
+- Verified in the browser with a temporary database and three iTunes songs (one outside the player): playing, switching, pausing from the button, list and panel buttons, and Spotify mode (buttons only for songs with a Spotify link; the embed switched to the requested song).
+- The user's Twitch app was checked: an app token and an IGDB search worked.
+
 ### Upcoming
 
 - Stage 15 PR: `npm run db:deploy` applies the book and comic migration (and the people migration if not applied yet).

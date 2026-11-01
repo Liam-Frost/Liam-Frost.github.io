@@ -116,6 +116,8 @@
 - Testing with live data found AniList's default relation types reversed source and adaptation, Open Library publishers starting with an invisible U+200E, foreign-language Open Library subjects, and Bangumi's 漫画 tag repeating the platform; all fixed.
 - Git Bash heredocs turned `\\u200e` escapes into the characters themselves; edits with escapes go through script files.
 - The model ran Claude Code review for Stage 15 and fixed the findings listed in its review record.
+- The user filled in the Twitch app credentials (checked: token and an IGDB search work), asked whether Google Books' API is free, and asked to play collection songs in the player and for a cover wall for music; both were added to the Stage 15 PR.
+- Spotify's embedded player cannot be started from the page without loading Spotify's iFrame API script; the site only switches what it shows, and the visitor presses play.
 
 ## Notes
 

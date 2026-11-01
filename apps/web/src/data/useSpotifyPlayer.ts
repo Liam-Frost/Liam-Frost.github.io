@@ -15,25 +15,34 @@ const FALLBACK: PublicSpotifyPlayer = {
   tracks: site.spotify.tracks
 };
 
+/** One request per page load: the dock and the collection's play buttons share it. */
+let loading: Promise<PublicSpotifyPlayer> | null = null;
+
+function loadPlayer() {
+  loading ??= fetch(apiUrl("/api/spotify/player"))
+    .then((response) => {
+      if (!response.ok) throw new Error(`Failed to load the Spotify player: ${response.status}`);
+      return response.json() as Promise<PublicSpotifyPlayer>;
+    })
+    // The site's own player falls back to built-in tracks when the collection has none.
+    .then((data) => (data.enabled && data.mode !== "embed" && !data.tracks?.length ? { ...data, tracks: FALLBACK.tracks } : data))
+    .catch(() => FALLBACK);
+  return loading;
+}
+
 /** The Spotify player's settings and tracks; null while loading or when the player is turned off. */
 export function useSpotifyPlayer() {
   const [player, setPlayer] = useState<PublicSpotifyPlayer | null>(apiFetchEnabled ? null : FALLBACK);
 
   useEffect(() => {
     if (!apiFetchEnabled) return;
-    const controller = new AbortController();
-    fetch(apiUrl("/api/spotify/player"), { signal: controller.signal })
-      .then((response) => {
-        if (!response.ok) throw new Error(`Failed to load the Spotify player: ${response.status}`);
-        return response.json() as Promise<PublicSpotifyPlayer>;
-      })
-      // The site's own player falls back to built-in tracks when the collection has none.
-      .then((data) => setPlayer(data.enabled && data.mode !== "embed" && !data.tracks?.length ? { ...data, tracks: FALLBACK.tracks } : data))
-      .catch((error: unknown) => {
-        if (error instanceof DOMException && error.name === "AbortError") return;
-        setPlayer(FALLBACK);
-      });
-    return () => controller.abort();
+    let current = true;
+    void loadPlayer().then((data) => {
+      if (current) setPlayer(data);
+    });
+    return () => {
+      current = false;
+    };
   }, []);
 
   if (!player?.enabled) return null;
