@@ -24,8 +24,8 @@ function listFiles(root: string) {
 
 /**
  * The site's CSP. Inline scripts in index.html (the theme/language bootstrap) are allowed by hash.
- * Photos and Spotify covers come from other HTTPS hosts, previews play from Spotify's CDN, and fonts
- * from Google Fonts.
+ * Photos and Spotify covers come from other HTTPS hosts, previews play from Spotify's and iTunes' CDNs,
+ * the music player may embed Spotify's player, and fonts come from Google Fonts.
  */
 export function siteCsp(indexHtml: string) {
   const inlineHashes = [...indexHtml.matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/g)]
@@ -40,6 +40,8 @@ export function siteCsp(indexHtml: string) {
     "media-src 'self' https:",
     "connect-src 'self'",
     "object-src 'none'",
+    // The music player can be Spotify's embedded player.
+    "frame-src https://open.spotify.com",
     "frame-ancestors 'none'",
     "base-uri 'self'",
     "form-action 'self'"

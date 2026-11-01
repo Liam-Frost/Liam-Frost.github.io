@@ -52,6 +52,8 @@ TRUST_PROXY=false
 | `ADMIN_COOKIE_SECURE` | `true` in production | Set `false` only for local HTTP development. |
 | `ADMIN_PATH` | `/admin` | Where the admin app is served. Letters, digits, `-`, `_` and `/` only; cannot be `/` or start with `/api`, `/uploads`, `/assets`. Changing it needs only a restart. |
 | `ADMIN_ALLOWED_IPS` | empty (no restriction) | Comma-separated IPs / CIDR ranges, IPv4 and IPv6. |
+| `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET` | empty | A Spotify developer app, for importing Liked Songs and your playlists. Set both or neither. |
+| `SPOTIFY_REDIRECT_URI` | `http://127.0.0.1:<PORT>/api/admin/spotify/callback` | Must match the redirect URI registered in the Spotify app. In production use `https://<domain>/api/admin/spotify/callback`. |
 | `TRUST_PROXY` | `false` | Behind a reverse proxy, list the proxy's IPs / CIDR ranges (e.g. `127.0.0.1` or the Docker network); only then is `X-Forwarded-For` used for the client IP. `true` trusts any hop and is safe only when the API port is not reachable except through the proxy. |
 
 Admin auth is enabled only when both `ADMIN_PASSWORD_HASH` and `ADMIN_SESSION_SECRET` are set; setting just one is a configuration error. With neither set, admin routes answer `503 ADMIN_NOT_CONFIGURED`.
@@ -114,17 +116,21 @@ API: `GET /api/admin/media`, `GET /api/admin/media/search?kind&source&q`, `POST 
 
 ## Music (Songs and the Player)
 
-Songs are collection entries (收藏 → 音乐; kind `track`). The site's player in the bottom-right corner plays the songs that are public, marked 加入播放器 and have a 30-second preview, in the order they were added (or shuffled). Without such songs it plays the fallback tracks in `apps/web/src/data/site.ts`.
+Songs are collection entries (收藏 → 音乐; kind `track`). The player in the site's bottom-right corner has two types, chosen on the 播放器 page:
+
+- **网站自己的播放器** plays the songs that are public, marked 加入播放器 and have a 30-second preview, in the order they were added (or shuffled). Without such songs it plays the fallback tracks in `apps/web/src/data/site.ts`.
+- **Spotify 嵌入播放器** shows Spotify's own player for a playlist, album, song or artist link. Visitors signed in to Spotify in the same browser hear full songs; others hear previews. The site's CSP allows frames from `open.spotify.com` only.
 
 - **添加歌曲**: searches the iTunes store chosen in the dialog (Japanese songs are easiest to find in the Japan store); adding fetches the song's 600 px cover, album, length, preview and Apple Music link. Songs with a preview go into the player.
-- **导入 Spotify 歌单**: imports a public playlist from its share link as a background job with progress (100 songs take under a minute). Songs come with their Spotify preview, cover and link; songs without a preview are added but stay out of the player. Songs already in the collection are skipped, so a playlist can be imported again to add new songs. One playlist imports at a time.
+- **Spotify 账号**: connect your Spotify account once (read-only access to your library and playlists; you approve on Spotify's page and come back to the music tab). Then import 已点赞的歌曲 or one of your playlists. Previews come from Spotify's song page, or iTunes when Spotify has none. The refresh token is stored encrypted (AES-256-GCM, keyed by `ADMIN_SESSION_SECRET`) in the `Setting` table; 断开 deletes it. A Spotify app in development mode only works for accounts added under its User Management.
+- **导入歌单链接**: imports a public playlist from its share link as a background job with progress (100 songs take under a minute). Songs come with their Spotify preview, cover and link; songs without a preview are added but stay out of the player. Songs already in the collection are skipped, so a playlist can be imported again to add new songs. One playlist imports at a time.
 - **Song list**: preview button, 播放器 switch, and 找试听 for songs without a preview (iTunes search; choosing a result sets the preview and puts the song in the player). Filters: all, in the player, not in the player, without a preview.
 - **Song editor**: rating, short review (per language), title, singers, album, year, genres, cover, preview (换一个试听), Spotify / Apple Music links, player / public / featured switches.
-- **播放器 page** (`<ADMIN_PATH>/music`): show/hide the player, shuffle, default volume, seconds before it collapses (0 = stays open), and how many songs it plays.
+- **播放器 page** (`<ADMIN_PATH>/music`): show/hide the player, player type (and the Spotify link for the embedded player), shuffle and default volume (site player only), seconds before it collapses (0 = stays open), and how many songs the site player has.
 - Previews may only come from `audio-ssl.itunes.apple.com` or `p.scdn.co`; a song cannot be in the player without one.
-- Spotify playlists are read from Spotify's public embed page (the official Web API does not serve editorial playlists or previews to new apps). If Spotify changes that page, imports fail with a message; songs already imported are unaffected. Importing your Liked Songs needs a Spotify developer app (Stage 13b).
+- Spotify playlists are read from Spotify's public embed page (the official Web API does not serve editorial playlists or previews to new apps). If Spotify changes that page, imports fail with a message; songs already imported are unaffected. Liked Songs and your own playlists come through the Spotify Web API with your account (above).
 
-API: `GET /api/admin/music/search?q&country`, `POST /api/admin/music/import`, `POST /api/admin/music/playlist-import`, `GET /api/admin/music/jobs/:id`, `GET/PUT /api/admin/spotify` (player settings). Public: `GET /api/spotify/player`. Player settings are stored in the `Setting` table (`spotify`).
+API: `GET /api/admin/music/search?q&country`, `POST /api/admin/music/import`, `POST /api/admin/music/playlist-import`, `POST /api/admin/music/spotify-import` (`{source: "liked"}` or `{source: "playlist", playlistId}`), `GET /api/admin/music/jobs/:id`, `GET/PUT /api/admin/spotify` (player settings), `GET/DELETE /api/admin/spotify/account`, `POST /api/admin/spotify/connect`, `GET /api/admin/spotify/callback` (authorized by a one-time state, since Spotify's redirect carries no admin cookie), `GET /api/admin/spotify/playlists`. Public: `GET /api/spotify/player`. Player settings are stored in the `Setting` table (`spotify`).
 
 ## Running the Admin App
 

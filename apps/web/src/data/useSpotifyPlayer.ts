@@ -7,6 +7,8 @@ import { site } from "./site";
 /** Used by static builds and whenever the API has no playlist to offer. */
 const FALLBACK: PublicSpotifyPlayer = {
   enabled: true,
+  mode: "custom",
+  embedUrl: "",
   shuffle: true,
   volume: 30,
   autoCollapseSeconds: 3,
@@ -25,7 +27,8 @@ export function useSpotifyPlayer() {
         if (!response.ok) throw new Error(`Failed to load the Spotify player: ${response.status}`);
         return response.json() as Promise<PublicSpotifyPlayer>;
       })
-      .then((data) => setPlayer(data.enabled && !data.tracks?.length ? { ...data, tracks: FALLBACK.tracks } : data))
+      // The site's own player falls back to built-in tracks when the collection has none.
+      .then((data) => setPlayer(data.enabled && data.mode !== "embed" && !data.tracks?.length ? { ...data, tracks: FALLBACK.tracks } : data))
       .catch((error: unknown) => {
         if (error instanceof DOMException && error.name === "AbortError") return;
         setPlayer(FALLBACK);
@@ -33,5 +36,6 @@ export function useSpotifyPlayer() {
     return () => controller.abort();
   }, []);
 
-  return player?.enabled && player.tracks.length ? player : null;
+  if (!player?.enabled) return null;
+  return (player.mode === "embed" ? Boolean(player.embedUrl) : player.tracks.length > 0) ? player : null;
 }

@@ -22,6 +22,9 @@ import {
   type CollectionSettings,
   type MediaKind,
   type MusicImportJob,
+  type MusicImportRequest,
+  type SpotifyAccountStatus,
+  type SpotifyOwnPlaylist,
   type SpotifySettings
 } from "@liam-frost/shared";
 
@@ -160,6 +163,11 @@ export const api = {
   searchMusic: (q: string, country: string) => request<AdminMusicSearchResponse>(`/api/admin/music/search?${new URLSearchParams({ q, country })}`),
   importMusic: (body: AdminMusicImport) => request<AdminMediaResponse>("/api/admin/music/import", { method: "POST", json: body }),
   startPlaylistImport: (playlistUrl: string) => request<{ job: MusicImportJob }>("/api/admin/music/playlist-import", { method: "POST", json: { playlistUrl } }),
+  startSpotifyImport: (body: MusicImportRequest) => request<{ job: MusicImportJob }>("/api/admin/music/spotify-import", { method: "POST", json: body }),
+  spotifyAccount: () => request<SpotifyAccountStatus>("/api/admin/spotify/account"),
+  connectSpotify: (returnTo: string) => request<{ url: string }>("/api/admin/spotify/connect", { method: "POST", json: { returnTo } }),
+  disconnectSpotify: () => request<void>("/api/admin/spotify/account", { method: "DELETE" }),
+  spotifyPlaylists: () => request<{ playlists: SpotifyOwnPlaylist[] }>("/api/admin/spotify/playlists"),
   musicJob: (id: string) => request<{ job: MusicImportJob }>(`/api/admin/music/jobs/${encodeURIComponent(id)}`),
   collectionSettings: () => request<AdminCollectionSettingsResponse>("/api/admin/collection/settings"),
   updateCollectionSettings: (settings: CollectionSettings) =>
