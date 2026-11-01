@@ -1,4 +1,12 @@
-import type { CollectionSettings, LocalizedText, MediaKind, MediaProgress, MediaSource, MediaStatus, PhotoVisibility } from "@liam-frost/shared";
+import type {
+  CollectionSettings,
+  LocalizedText,
+  MediaKind,
+  MediaProgress,
+  MediaSource,
+  MediaStatus,
+  PhotoVisibility
+} from "@liam-frost/shared";
 
 import type { StoredImage } from "../projects/types";
 
@@ -29,9 +37,12 @@ export type MediaRow = {
   updatedAt: Date;
 };
 
-export type NewMedia = Pick<MediaRow, "id" | "kind" | "source" | "title"> & Partial<Omit<MediaRow, "id" | "kind" | "source" | "title" | "createdAt" | "updatedAt">>;
+export type NewMedia = Pick<MediaRow, "id" | "kind" | "source" | "title"> &
+  Partial<Omit<MediaRow, "id" | "kind" | "source" | "title" | "createdAt" | "updatedAt">>;
 
-export type MediaPatch = Partial<Omit<MediaRow, "id" | "kind" | "source" | "sourceId" | "createdAt" | "updatedAt">>;
+export type MediaPatch = Partial<
+  Omit<MediaRow, "id" | "kind" | "source" | "sourceId" | "createdAt" | "updatedAt">
+>;
 
 /** What /uploads needs to decide whether to serve a poster. */
 export type MediaImageAccess = Pick<MediaRow, "kind" | "status" | "visibility" | "poster">;
@@ -55,9 +66,14 @@ export interface MediaRepository {
 const MUSIC: MediaKind[] = ["track", "album"];
 
 /** Whether the site may show an entry: its own visibility, its kind's switch, and the "want" switch. */
-export function isMediaPublic(item: Pick<MediaRow, "kind" | "status" | "visibility">, settings: CollectionSettings) {
+export function isMediaPublic(
+  item: Pick<MediaRow, "kind" | "status" | "visibility">,
+  settings: CollectionSettings
+) {
   if (item.visibility !== "public") return false;
-  const kindShown = MUSIC.includes(item.kind) ? settings.show.music : settings.show[item.kind as Exclude<MediaKind, "track" | "album">];
+  const kindShown = MUSIC.includes(item.kind)
+    ? settings.show.music
+    : settings.show[item.kind as Exclude<MediaKind, "track" | "album">];
   if (!kindShown) return false;
   return item.status !== "want" || settings.showWant;
 }

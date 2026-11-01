@@ -1,7 +1,14 @@
 import type { PhotoVariant } from "@liam-frost/content";
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 
-import { buildFlickrStaticUrl, capThumbSuffix, longestEdgeBySuffix, parseFlickrStaticUrl, pickBestSuffixForEdge, type FlickrSizeSuffix } from "../images/flickr";
+import {
+  buildFlickrStaticUrl,
+  capThumbSuffix,
+  longestEdgeBySuffix,
+  parseFlickrStaticUrl,
+  pickBestSuffixForEdge,
+  type FlickrSizeSuffix
+} from "../images/flickr";
 import { prefetchImage } from "../images/prefetch";
 import { useQuality } from "../perf/useQuality";
 
@@ -117,7 +124,10 @@ function getLightboxDesiredFullEdge() {
   return Math.ceil(viewportEdge * dpr * 1.5);
 }
 
-function clampSuffixToOriginal(suffix: FlickrSizeSuffix, originalLongestEdge: number): FlickrSizeSuffix {
+function clampSuffixToOriginal(
+  suffix: FlickrSizeSuffix,
+  originalLongestEdge: number
+): FlickrSizeSuffix {
   const order: FlickrSizeSuffix[] = ["n", "z", "c", "b", "h", "k", "3k", "4k"];
   const idx = order.indexOf(suffix);
   if (idx === -1) return "b";
@@ -230,7 +240,8 @@ export default function ResponsiveFlickrImage({
 
   const [lightboxMediumFallbackIndex, setLightboxMediumFallbackIndex] = useState(0);
   const lightboxMediumList = thumbFallbackChain[mediumSuffix];
-  const lightboxMediumSuffix = lightboxMediumList[Math.min(lightboxMediumFallbackIndex, lightboxMediumList.length - 1)];
+  const lightboxMediumSuffix =
+    lightboxMediumList[Math.min(lightboxMediumFallbackIndex, lightboxMediumList.length - 1)];
 
   useEffect(() => {
     setShowFull(false);
@@ -265,7 +276,8 @@ export default function ResponsiveFlickrImage({
   }, [fullSuffix, originalLongest]);
 
   const [fullFallbackIndex, setFullFallbackIndex] = useState(0);
-  const fullSuffixActive = fullFallbackChain[Math.min(fullFallbackIndex, fullFallbackChain.length - 1)] ?? "b";
+  const fullSuffixActive =
+    fullFallbackChain[Math.min(fullFallbackIndex, fullFallbackChain.length - 1)] ?? "b";
 
   const fullSrc = useMemo(() => {
     if (sized) {
@@ -276,7 +288,8 @@ export default function ResponsiveFlickrImage({
     return buildFlickrStaticUrl(baseUrl, fullSuffixActive);
   }, [isFlickr, baseUrl, fullSuffixActive, sized]);
 
-  const { loaded: mediumLoaded, setLoaded: setMediumLoaded } = useImageLoadedFlag(lightboxMediumSrc);
+  const { loaded: mediumLoaded, setLoaded: setMediumLoaded } =
+    useImageLoadedFlag(lightboxMediumSrc);
   const { loaded: fullLoaded, setLoaded: setFullLoaded } = useImageLoadedFlag(fullSrc);
 
   // Start loading full once medium is visible enough.

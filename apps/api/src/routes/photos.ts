@@ -12,7 +12,11 @@ import type { LocalImageStore } from "../storage/local";
  * configured but unreachable they fall back to it too, so the site keeps working. An empty database
  * means an empty gallery: once photos are managed in the admin, seed data is not mixed back in.
  */
-export function registerPhotoRoutes(app: FastifyInstance, photos: PhotoRepository | null, store: LocalImageStore) {
+export function registerPhotoRoutes(
+  app: FastifyInstance,
+  photos: PhotoRepository | null,
+  store: LocalImageStore
+) {
   app.get("/api/photos", async (request) => {
     if (!photos) return seedPhotos;
     try {

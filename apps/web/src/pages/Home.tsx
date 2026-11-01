@@ -7,7 +7,6 @@ import ProjectCard from "../components/ProjectCard";
 import Reveal from "../components/Reveal";
 import SkillStack from "../components/SkillStack";
 import TypingAnimation from "../components/TypingAnimation";
-import type { Photo } from "@liam-frost/content";
 import { site } from "../data/site";
 import { useCollection } from "../data/useCollection";
 import { usePhotos } from "../data/usePhotos";
@@ -36,15 +35,28 @@ export default function HomePage() {
   const featured = useMemo(() => photos.filter((p) => p.featured), [photos]);
   // Between the introduction and the photos; hidden when there are no featured projects (or no API).
   const { projects } = useProjects();
-  const featuredProjects = useMemo(() => projects.filter((p) => p.featured).slice(0, 4), [projects]);
+  const featuredProjects = useMemo(
+    () => projects.filter((p) => p.featured).slice(0, 4),
+    [projects]
+  );
   // After the projects: the latest finished or ongoing films, series and anime (not "want to watch", and
   // not books, comics or games, which are read or played); hidden when empty.
   const { items: collection } = useCollection();
   const recentMedia = useMemo(
     () =>
       collection
-        .filter((item) => (item.status === "done" || item.status === "watching") && !isReadKind(item.kind) && item.kind !== "game")
-        .sort((a, b) => (b.watchedOn ?? b.updatedAt.slice(0, 10)).localeCompare(a.watchedOn ?? a.updatedAt.slice(0, 10)) || b.updatedAt.localeCompare(a.updatedAt))
+        .filter(
+          (item) =>
+            (item.status === "done" || item.status === "watching") &&
+            !isReadKind(item.kind) &&
+            item.kind !== "game"
+        )
+        .sort(
+          (a, b) =>
+            (b.watchedOn ?? b.updatedAt.slice(0, 10)).localeCompare(
+              a.watchedOn ?? a.updatedAt.slice(0, 10)
+            ) || b.updatedAt.localeCompare(a.updatedAt)
+        )
         .slice(0, 6),
     [collection]
   );
@@ -71,10 +83,7 @@ export default function HomePage() {
     const initialGreetingLang = initialLangRef.current ?? mapToGreetingLang(lang);
     const startIdx = GREETING_ORDER.indexOf(initialGreetingLang);
     // Reorder: from startIdx to end, then from 0 to startIdx-1
-    const orderedLangs = [
-      ...GREETING_ORDER.slice(startIdx),
-      ...GREETING_ORDER.slice(0, startIdx)
-    ];
+    const orderedLangs = [...GREETING_ORDER.slice(startIdx), ...GREETING_ORDER.slice(0, startIdx)];
     return orderedLangs.map((l) => GREETINGS[l]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Empty deps: only compute once on mount
@@ -91,7 +100,6 @@ export default function HomePage() {
       setCopyHint(t("contact.copyFailed"));
     }
   };
-
 
   return (
     <>
@@ -147,8 +155,6 @@ export default function HomePage() {
                     </div>
                   ))}
                 </div>
-
-
               </div>
             </Reveal>
           </div>
@@ -352,7 +358,13 @@ export default function HomePage() {
                 <span className="contactElsewhereLabel">{t("contact.elsewhere")}</span>
                 <div className="contactElsewhereLinks">
                   {site.socials.map((s) => (
-                    <a key={s.label} className="contactElsewhereLink" href={s.href} target="_blank" rel="noreferrer">
+                    <a
+                      key={s.label}
+                      className="contactElsewhereLink"
+                      href={s.href}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
                       {s.label}
                     </a>
                   ))}

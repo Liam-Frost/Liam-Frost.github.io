@@ -30,7 +30,11 @@ const settingsShape = {
   shuffle: z.boolean(),
   volume: z.number().int().min(0).max(100),
   autoCollapseSeconds: z.number().int().min(0).max(120),
-  playlistId: z.string().regex(/^[0-9a-f-]{36}$/, "Invalid playlist").nullable().default(null)
+  playlistId: z
+    .string()
+    .regex(/^[0-9a-f-]{36}$/, "Invalid playlist")
+    .nullable()
+    .default(null)
 };
 
 /** Input from the admin: every field, nothing else. The embed link is normalized (and required for "embed"). */
@@ -63,7 +67,10 @@ export class SpotifyService {
 
   async settings(): Promise<SpotifySettings> {
     const stored = await this.repo.get(SETTINGS_KEY);
-    const parsed = storedSettingsSchema.safeParse({ ...DEFAULT_SPOTIFY_SETTINGS, ...(stored && typeof stored === "object" ? stored : {}) });
+    const parsed = storedSettingsSchema.safeParse({
+      ...DEFAULT_SPOTIFY_SETTINGS,
+      ...(stored && typeof stored === "object" ? stored : {})
+    });
     return parsed.success ? parsed.data : DEFAULT_SPOTIFY_SETTINGS;
   }
 
@@ -87,20 +94,33 @@ export class SpotifyService {
     let picked: MediaRow[];
     if (playlist && playlist.visibility === "public") {
       const byId = new Map(shown.map((row) => [row.id, row]));
-      picked = playlist.trackIds.map((id) => byId.get(id)).filter((row): row is MediaRow => row !== undefined);
+      picked = playlist.trackIds
+        .map((id) => byId.get(id))
+        .filter((row): row is MediaRow => row !== undefined);
     } else {
-      picked = shown.filter((row) => row.inPlayer).sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+      picked = shown
+        .filter((row) => row.inPlayer)
+        .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
     }
-    return picked.map((row) => this.toTrack(row)).filter((track): track is SpotifyTrack => track !== null);
+    return picked
+      .map((row) => this.toTrack(row))
+      .filter((track): track is SpotifyTrack => track !== null);
   }
 
   private toTrack(row: MediaRow): SpotifyTrack | null {
     const music = musicOf(row);
     if (!music?.previewUrl) return null;
-    const cover = row.poster?.variants.length ? this.store.publicUrl(row.poster.key, variantFileName(row.poster.variants[0].width)) : "";
+    const cover = row.poster?.variants.length
+      ? this.store.publicUrl(row.poster.key, variantFileName(row.poster.variants[0].width))
+      : "";
     return {
       id: row.id,
-      title: row.title.en || row.title.zh || row.originalTitle || Object.values(row.title).find(Boolean) || "",
+      title:
+        row.title.en ||
+        row.title.zh ||
+        row.originalTitle ||
+        Object.values(row.title).find(Boolean) ||
+        "",
       artist: row.credits.join(", "),
       image: cover,
       link: music.spotifyUrl ?? music.appleUrl ?? "",

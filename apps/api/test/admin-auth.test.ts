@@ -29,7 +29,11 @@ describe("admin session and login", () => {
 
     const cookie = `${response.cookies[0].name}=${response.cookies[0].value}`;
     const session = await app.inject({ url: "/api/admin/session", headers: { cookie } });
-    expect(session.json()).toMatchObject({ authenticated: true, user: { username: USERNAME }, adminPath: "/secret-panel" });
+    expect(session.json()).toMatchObject({
+      authenticated: true,
+      user: { username: USERNAME },
+      adminPath: "/secret-panel"
+    });
   });
 
   it("rejects writes without the CSRF header", async () => {
@@ -40,7 +44,9 @@ describe("admin session and login", () => {
       payload: { username: USERNAME, password: PASSWORD }
     });
     expect(response.statusCode).toBe(403);
-    expect(response.json()).toEqual({ error: { code: "CSRF", message: "Missing required request header" } });
+    expect(response.json()).toEqual({
+      error: { code: "CSRF", message: "Missing required request header" }
+    });
   });
 
   it("rejects wrong credentials and invalid bodies", async () => {
@@ -108,7 +114,11 @@ describe("admin session and login", () => {
     expect(me.statusCode).toBe(200);
     expect(me.json()).toEqual({ user: { username: USERNAME } });
 
-    const logout = await app.inject({ method: "POST", url: "/api/admin/logout", headers: { ...csrf, cookie } });
+    const logout = await app.inject({
+      method: "POST",
+      url: "/api/admin/logout",
+      headers: { ...csrf, cookie }
+    });
     expect(logout.statusCode).toBe(200);
 
     const after = await app.inject({ url: "/api/admin/me", headers: { cookie } });
@@ -120,14 +130,23 @@ describe("admin session and login", () => {
     const cookie = await login(app);
     const [name, value] = cookie.split("=");
     const [payload, signature] = value.split(".");
-    const forged = Buffer.from(JSON.stringify({ ...JSON.parse(Buffer.from(payload, "base64url").toString()), exp: 9e9 })).toString("base64url");
-    const response = await app.inject({ url: "/api/admin/me", headers: { cookie: `${name}=${forged}.${signature}` } });
+    const forged = Buffer.from(
+      JSON.stringify({ ...JSON.parse(Buffer.from(payload, "base64url").toString()), exp: 9e9 })
+    ).toString("base64url");
+    const response = await app.inject({
+      url: "/api/admin/me",
+      headers: { cookie: `${name}=${forged}.${signature}` }
+    });
     expect(response.statusCode).toBe(401);
   });
 
   it("reports an unconfigured admin and refuses login", async () => {
     const app = await buildTestServer({ ADMIN_PASSWORD_HASH: "", ADMIN_SESSION_SECRET: "" });
-    expect((await app.inject("/api/admin/session")).json()).toEqual({ authenticated: false, configured: false, user: null });
+    expect((await app.inject("/api/admin/session")).json()).toEqual({
+      authenticated: false,
+      configured: false,
+      user: null
+    });
 
     const response = await app.inject({
       method: "POST",
@@ -169,10 +188,16 @@ describe("ADMIN_ALLOWED_IPS", () => {
     const headers = { "x-forwarded-for": "10.0.0.5" };
 
     const direct = await buildTestServer({ ADMIN_ALLOWED_IPS: "10.0.0.5" });
-    expect((await direct.inject({ url: "/api/admin/session", remoteAddress: "127.0.0.1", headers })).statusCode).toBe(404);
+    expect(
+      (await direct.inject({ url: "/api/admin/session", remoteAddress: "127.0.0.1", headers }))
+        .statusCode
+    ).toBe(404);
 
     const proxied = await buildTestServer({ ADMIN_ALLOWED_IPS: "10.0.0.5", TRUST_PROXY: "true" });
-    expect((await proxied.inject({ url: "/api/admin/session", remoteAddress: "127.0.0.1", headers })).statusCode).toBe(200);
+    expect(
+      (await proxied.inject({ url: "/api/admin/session", remoteAddress: "127.0.0.1", headers }))
+        .statusCode
+    ).toBe(200);
   });
 
   it("with a proxy list, only trusts X-Forwarded-For from those proxies", async () => {
@@ -180,8 +205,14 @@ describe("ADMIN_ALLOWED_IPS", () => {
     const app = await buildTestServer({ ADMIN_ALLOWED_IPS: "10.0.0.5", TRUST_PROXY: "127.0.0.1" });
 
     // Through the trusted proxy: the forwarded client IP is used.
-    expect((await app.inject({ url: "/api/admin/session", remoteAddress: "127.0.0.1", headers })).statusCode).toBe(200);
+    expect(
+      (await app.inject({ url: "/api/admin/session", remoteAddress: "127.0.0.1", headers }))
+        .statusCode
+    ).toBe(200);
     // Straight to the API from elsewhere: the spoofed header is ignored.
-    expect((await app.inject({ url: "/api/admin/session", remoteAddress: "198.51.100.9", headers })).statusCode).toBe(404);
+    expect(
+      (await app.inject({ url: "/api/admin/session", remoteAddress: "198.51.100.9", headers }))
+        .statusCode
+    ).toBe(404);
   });
 });

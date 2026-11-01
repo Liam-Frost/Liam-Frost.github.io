@@ -1,12 +1,22 @@
 import type { SpotifyTrack } from "@liam-frost/shared";
 
-export type FetchedPlaylist = { id: string; name: string; image: string; link: string; tracks: SpotifyTrack[] };
+export type FetchedPlaylist = {
+  id: string;
+  name: string;
+  image: string;
+  link: string;
+  tracks: SpotifyTrack[];
+};
 
 /**
  * Loads a playlist; `knownCovers` maps track ids to cover URLs already known. Cover lookups stop after
  * `coverBudgetMs` (default 20 s); tracks without their own cover get the playlist's.
  */
-export type PlaylistFetcher = (playlistId: string, knownCovers: ReadonlyMap<string, string>, options?: { coverBudgetMs?: number }) => Promise<FetchedPlaylist>;
+export type PlaylistFetcher = (
+  playlistId: string,
+  knownCovers: ReadonlyMap<string, string>,
+  options?: { coverBudgetMs?: number }
+) => Promise<FetchedPlaylist>;
 
 /** Errors worth showing in the admin as they are. */
 export class PlaylistError extends Error {}
@@ -62,7 +72,11 @@ function get(fetchImpl: typeof fetch, url: string, timeoutMs = TIMEOUT_MS) {
  * comes from its public embed page (the data the embed player itself uses). Its format is not a public
  * contract: when it changes, this throws and the last good snapshot stays in use.
  */
-export function parseEmbedPage(html: string): { name: string; image: string; tracks: Omit<SpotifyTrack, "image">[] } {
+export function parseEmbedPage(html: string): {
+  name: string;
+  image: string;
+  tracks: Omit<SpotifyTrack, "image">[];
+} {
   const script = /<script id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/.exec(html);
   let entity: EmbedEntity | undefined;
   try {
@@ -94,7 +108,8 @@ export function parseEmbedPage(html: string): { name: string; image: string; tra
 
   return {
     name: entity.name?.trim() || entity.title?.trim() || "Spotify",
-    image: entity.coverArt?.sources?.find((source) => source.url?.startsWith("https://"))?.url ?? "",
+    image:
+      entity.coverArt?.sources?.find((source) => source.url?.startsWith("https://"))?.url ?? "",
     tracks
   };
 }
@@ -110,7 +125,9 @@ async function trackCover(fetchImpl: typeof fetch, id: string) {
       return "";
     }
     const data = (await response.json()) as { thumbnail_url?: unknown };
-    return typeof data.thumbnail_url === "string" && data.thumbnail_url.startsWith("https://") ? data.thumbnail_url : "";
+    return typeof data.thumbnail_url === "string" && data.thumbnail_url.startsWith("https://")
+      ? data.thumbnail_url
+      : "";
   } catch {
     return "";
   }
@@ -126,7 +143,11 @@ export function createPlaylistFetcher(fetchImpl: typeof fetch = fetch): Playlist
     }
     if (!response.ok) {
       await response.body?.cancel();
-      throw new PlaylistError(response.status === 404 ? "歌单不存在或不是公开歌单" : `Spotify 返回错误（HTTP ${response.status}）`);
+      throw new PlaylistError(
+        response.status === 404
+          ? "歌单不存在或不是公开歌单"
+          : `Spotify 返回错误（HTTP ${response.status}）`
+      );
     }
 
     const parsed = parseEmbedPage(await response.text());
@@ -149,7 +170,10 @@ export function createPlaylistFetcher(fetchImpl: typeof fetch = fetch): Playlist
       name: parsed.name,
       image: parsed.image,
       link: playlistUrl(playlistId),
-      tracks: parsed.tracks.map((track) => ({ ...track, image: covers.get(track.id) || parsed.image }))
+      tracks: parsed.tracks.map((track) => ({
+        ...track,
+        image: covers.get(track.id) || parsed.image
+      }))
     };
   };
 }
@@ -176,22 +200,31 @@ export function spotifyLink(value: string): string | null {
       return null;
     }
     if (url.protocol !== "https:" || url.hostname !== "open.spotify.com") return null;
-    const match = /^\/(?:intl-[a-z-]+\/)?(?:embed\/)?([a-z]+)\/([A-Za-z0-9]{22})\/?$/.exec(url.pathname);
+    const match = /^\/(?:intl-[a-z-]+\/)?(?:embed\/)?([a-z]+)\/([A-Za-z0-9]{22})\/?$/.exec(
+      url.pathname
+    );
     if (!match) return null;
     [, type, id] = match;
   }
-  return (EMBED_TYPES as readonly string[]).includes(type!) ? `https://open.spotify.com/${type}/${id}` : null;
+  return (EMBED_TYPES as readonly string[]).includes(type!)
+    ? `https://open.spotify.com/${type}/${id}`
+    : null;
 }
 
 /** The 30-second preview of one track, from its embed page; null when it has none or the page fails. */
-export async function fetchTrackPreview(trackId: string, fetchImpl: typeof fetch = fetch): Promise<string | null> {
+export async function fetchTrackPreview(
+  trackId: string,
+  fetchImpl: typeof fetch = fetch
+): Promise<string | null> {
   try {
     const response = await get(fetchImpl, `https://open.spotify.com/embed/track/${trackId}`);
     if (!response.ok) {
       await response.body?.cancel();
       return null;
     }
-    const script = /<script id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/.exec(await response.text());
+    const script = /<script id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/.exec(
+      await response.text()
+    );
     const entity = script ? JSON.parse(script[1])?.props?.pageProps?.state?.data?.entity : null;
     const url: unknown = entity?.audioPreview?.url;
     return typeof url === "string" && url.startsWith("https://p.scdn.co/") ? url : null;

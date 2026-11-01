@@ -20,17 +20,35 @@ export function Stars({ rating }: { rating: number | null }) {
   );
 }
 
-export function mediaTitle(item: Pick<PublicMediaSummary, "title" | "originalTitle">, lang: Parameters<typeof pickLocalized>[1]) {
+export function mediaTitle(
+  item: Pick<PublicMediaSummary, "title" | "originalTitle">,
+  lang: Parameters<typeof pickLocalized>[1]
+) {
   return pickLocalized(item.title, lang) || item.originalTitle || "";
 }
 
 /** Books and comics are read; the rest are watched. */
 export const isReadKind = (kind: PublicMediaSummary["kind"]) => kind === "book" || kind === "comic";
 
-export const statusKey = (status: NonNullable<PublicMediaSummary["status"]>, kind: PublicMediaSummary["kind"]) =>
-  (kind === "game" ? `collection.play.${status}` : isReadKind(kind) ? `collection.read.${status}` : `collection.status.${status}`) as Key;
+export const statusKey = (
+  status: NonNullable<PublicMediaSummary["status"]>,
+  kind: PublicMediaSummary["kind"]
+) =>
+  (kind === "game"
+    ? `collection.play.${status}`
+    : isReadKind(kind)
+      ? `collection.read.${status}`
+      : `collection.status.${status}`) as Key;
 
-function Poster({ item, sizes, priority }: { item: PublicMediaSummary; sizes: string; priority?: boolean }) {
+function Poster({
+  item,
+  sizes,
+  priority
+}: {
+  item: PublicMediaSummary;
+  sizes: string;
+  priority?: boolean;
+}) {
   const { lang } = useI18n();
   if (!item.poster) {
     return (
@@ -52,7 +70,17 @@ function Poster({ item, sizes, priority }: { item: PublicMediaSummary; sizes: st
 }
 
 /** Poster card for the grid and the home page; songs get a square cover and a play button on it. */
-export default function MediaCard({ item, to, state, priority }: { item: PublicMediaSummary; to: To; state?: unknown; priority?: boolean }) {
+export default function MediaCard({
+  item,
+  to,
+  state,
+  priority
+}: {
+  item: PublicMediaSummary;
+  to: To;
+  state?: unknown;
+  priority?: boolean;
+}) {
   const { lang, t } = useI18n();
   const title = mediaTitle(item, lang);
   const isMusic = item.kind === "track";
@@ -60,12 +88,18 @@ export default function MediaCard({ item, to, state, priority }: { item: PublicM
     <Link className="mediaCard" to={to} state={state} aria-label={t("collection.open", { title })}>
       <div className={isMusic ? "mediaPoster isSquare" : "mediaPoster"}>
         <Poster item={item} sizes="(max-width: 520px) 45vw, 200px" priority={priority} />
-        {item.status && item.status !== "done" ? <span className={`mediaBadge mediaBadge-${item.status}`}>{t(statusKey(item.status, item.kind))}</span> : null}
+        {item.status && item.status !== "done" ? (
+          <span className={`mediaBadge mediaBadge-${item.status}`}>
+            {t(statusKey(item.status, item.kind))}
+          </span>
+        ) : null}
       </div>
       <div className="mediaCardBody">
         <h3 className="mediaCardTitle">{title}</h3>
         <div className="mediaCardMeta">
-          <span className="mediaCardSub">{isMusic ? item.credits.join(", ") : (item.year ?? "")}</span>
+          <span className="mediaCardSub">
+            {isMusic ? item.credits.join(", ") : (item.year ?? "")}
+          </span>
           {item.rating ? <Stars rating={item.rating} /> : null}
         </div>
       </div>
@@ -83,7 +117,15 @@ export default function MediaCard({ item, to, state, priority }: { item: PublicM
 }
 
 /** One row of the list view. */
-export function MediaRow({ item, to, state }: { item: PublicMediaSummary; to: To; state?: unknown }) {
+export function MediaRow({
+  item,
+  to,
+  state
+}: {
+  item: PublicMediaSummary;
+  to: To;
+  state?: unknown;
+}) {
   const { lang, t } = useI18n();
   const title = mediaTitle(item, lang);
   const isMusic = item.kind === "track";
@@ -92,7 +134,9 @@ export function MediaRow({ item, to, state }: { item: PublicMediaSummary; to: To
     .map((genre) => pickLocalized(genre, lang))
     .filter(Boolean);
   // Songs: artists and album; films, series and anime: year, genres and the first credit.
-  const meta = isMusic ? [item.credits.join(", "), item.music?.album, item.year] : [item.year, ...genres, item.credits[0]];
+  const meta = isMusic
+    ? [item.credits.join(", "), item.music?.album, item.year]
+    : [item.year, ...genres, item.credits[0]];
   const row = (
     <Link className="mediaRow" to={to} state={state} aria-label={t("collection.open", { title })}>
       <div className={isMusic ? "mediaRowPoster isSquare" : "mediaRowPoster"}>
@@ -100,11 +144,17 @@ export function MediaRow({ item, to, state }: { item: PublicMediaSummary; to: To
       </div>
       <div className="mediaRowMain">
         <h3 className="mediaCardTitle">{title}</h3>
-        {item.originalTitle && item.originalTitle !== title ? <p className="mediaRowOriginal">{item.originalTitle}</p> : null}
+        {item.originalTitle && item.originalTitle !== title ? (
+          <p className="mediaRowOriginal">{item.originalTitle}</p>
+        ) : null}
         <p className="mediaRowMeta">{meta.filter(Boolean).join(" · ")}</p>
       </div>
       <div className="mediaRowSide">
-        {item.status ? <span className={`mediaBadge mediaBadge-${item.status}`}>{t(statusKey(item.status, item.kind))}</span> : null}
+        {item.status ? (
+          <span className={`mediaBadge mediaBadge-${item.status}`}>
+            {t(statusKey(item.status, item.kind))}
+          </span>
+        ) : null}
         <Stars rating={item.rating} />
         {item.watchedOn ? <span className="mediaRowDate">{item.watchedOn}</span> : null}
       </div>

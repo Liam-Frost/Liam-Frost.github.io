@@ -1,4 +1,9 @@
-import type { LocalizedText, PhotoVisibility, ProjectLinks, ProjectStatus } from "@liam-frost/shared";
+import type {
+  LocalizedText,
+  PhotoVisibility,
+  ProjectLinks,
+  ProjectStatus
+} from "@liam-frost/shared";
 
 import type { StoredVariant } from "../photos/types";
 
@@ -34,7 +39,9 @@ export type ProjectRow = {
 
 export type NewProject = Pick<ProjectRow, "id" | "slug" | "title">;
 
-export type ProjectPatch = Partial<Omit<ProjectRow, "id" | "sortOrder" | "createdAt" | "updatedAt">>;
+export type ProjectPatch = Partial<
+  Omit<ProjectRow, "id" | "sortOrder" | "createdAt" | "updatedAt">
+>;
 
 export class SlugTakenError extends Error {}
 

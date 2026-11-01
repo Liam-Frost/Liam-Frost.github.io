@@ -1,6 +1,11 @@
 import React, { createContext, useEffect, useMemo, useState } from "react";
 
-import { qualityManager, type QualityConfig, type QualityMetrics, type QualityTier } from "./qualityManager";
+import {
+  qualityManager,
+  type QualityConfig,
+  type QualityMetrics,
+  type QualityTier
+} from "./qualityManager";
 import QualityDebugPanel from "./QualityDebugPanel";
 import { setMaxConcurrentImagePrefetch } from "../images/prefetch";
 
@@ -23,7 +28,9 @@ export default function QualityProvider({ children }: Props) {
 
   const [tier, setTier] = useState<QualityTier>(initialMetrics.effectiveTier);
   const [config, setConfig] = useState<QualityConfig>(() => qualityManager.getConfig());
-  const [reducedMotion, setReducedMotion] = useState<boolean>(() => qualityManager.getReducedMotion());
+  const [reducedMotion, setReducedMotion] = useState<boolean>(() =>
+    qualityManager.getReducedMotion()
+  );
   const [metrics, setMetrics] = useState<QualityMetrics>(initialMetrics);
 
   useEffect(() => {

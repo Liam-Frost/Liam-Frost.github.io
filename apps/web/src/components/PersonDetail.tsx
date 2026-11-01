@@ -15,7 +15,15 @@ const hostOf = (url: string) => {
 };
 
 /** Side panel with one person: photo, roles, bio, links and their entries in the collection. */
-export default function PersonDetail({ id, onClose, linkTo }: { id: string; onClose: () => void; linkTo: CollectionLinkTo }) {
+export default function PersonDetail({
+  id,
+  onClose,
+  linkTo
+}: {
+  id: string;
+  onClose: () => void;
+  linkTo: CollectionLinkTo;
+}) {
   const { lang, t } = useI18n();
   const { person, status } = usePublicPerson(id);
   const roleLabel = useRoleLabel();
@@ -31,15 +39,24 @@ export default function PersonDetail({ id, onClose, linkTo }: { id: string; onCl
 
   return (
     <DetailDrawer id={id} labelledBy="person-detail-title" onClose={onClose}>
-      {status === "loading" || status === "idle" ? <p className="sectionSubtitle">{t("collection.loading")}</p> : null}
-      {status === "missing" ? <p className="sectionSubtitle">{t("collection.personNotFound")}</p> : null}
+      {status === "loading" || status === "idle" ? (
+        <p className="sectionSubtitle">{t("collection.loading")}</p>
+      ) : null}
+      {status === "missing" ? (
+        <p className="sectionSubtitle">{t("collection.personNotFound")}</p>
+      ) : null}
 
       {person ? (
         <>
           <div className="mediaDrawerHead">
             <div className="mediaDrawerPoster isSquare isRound">
               {person.photo ? (
-                <img src={person.photo.variants[person.photo.variants.length - 1].url} srcSet={imageSrcSet(person.photo)} sizes="180px" alt="" />
+                <img
+                  src={person.photo.variants[person.photo.variants.length - 1].url}
+                  srcSet={imageSrcSet(person.photo)}
+                  sizes="180px"
+                  alt=""
+                />
               ) : (
                 <span className="mediaPosterEmpty" aria-hidden="true">
                   {name.slice(0, 1)}
@@ -50,7 +67,9 @@ export default function PersonDetail({ id, onClose, linkTo }: { id: string; onCl
               <h2 className="mediaDrawerTitle" id="person-detail-title">
                 {name}
               </h2>
-              {person.originalName && person.originalName !== name ? <p className="mediaRowOriginal">{person.originalName}</p> : null}
+              {person.originalName && person.originalName !== name ? (
+                <p className="mediaRowOriginal">{person.originalName}</p>
+              ) : null}
               <p className="mediaRowMeta">{t("collection.worksCount", { n: person.works })}</p>
               {person.roles.length ? (
                 <div className="tags">
@@ -75,7 +94,12 @@ export default function PersonDetail({ id, onClose, linkTo }: { id: string; onCl
             <h3>{t("collection.works")}</h3>
             <div className="linkList">
               {[...works.values()].map(({ item, details }) => (
-                <MediaLinkRow key={item.id} item={item} details={[...new Set(details), item.year ? String(item.year) : ""]} to={linkTo.item(item.id)} />
+                <MediaLinkRow
+                  key={item.id}
+                  item={item}
+                  details={[...new Set(details), item.year ? String(item.year) : ""]}
+                  to={linkTo.item(item.id)}
+                />
               ))}
             </div>
           </section>
@@ -83,12 +107,23 @@ export default function PersonDetail({ id, onClose, linkTo }: { id: string; onCl
           {person.links.length || person.sourceUrl ? (
             <div className="mediaListenLinks">
               {person.links.map((link) => (
-                <a key={link} className="btn btnSoft btnSmall" href={link} target="_blank" rel="noopener noreferrer">
+                <a
+                  key={link}
+                  className="btn btnSoft btnSmall"
+                  href={link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
                   {hostOf(link)}
                 </a>
               ))}
               {person.sourceUrl ? (
-                <a className="btn btnSoft btnSmall" href={person.sourceUrl} target="_blank" rel="noopener noreferrer">
+                <a
+                  className="btn btnSoft btnSmall"
+                  href={person.sourceUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
                   {t("collection.source", { source: "TMDB" })}
                 </a>
               ) : null}

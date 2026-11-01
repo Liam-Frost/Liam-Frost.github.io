@@ -38,7 +38,10 @@ function escapeHtml(value: string) {
 /** Writes the mount path into the page: `<base>` so ./assets resolve under nested routes, `<meta>` for the router. */
 export function injectAdminPath(html: string, adminPath: string) {
   const value = escapeHtml(adminPath);
-  return html.replace("<head>", `<head>\n    <base href="${value}/" />\n    <meta name="${ADMIN_PATH_META}" content="${value}" />`);
+  return html.replace(
+    "<head>",
+    `<head>\n    <base href="${value}/" />\n    <meta name="${ADMIN_PATH_META}" content="${value}" />`
+  );
 }
 
 /**
@@ -49,7 +52,10 @@ export function injectAdminPath(html: string, adminPath: string) {
 export function registerAdminApp(app: FastifyInstance, auth: AdminAuthService, distDir: string) {
   const indexFile = join(distDir, "index.html");
   if (!existsSync(indexFile)) {
-    app.log.info({ distDir }, "Admin app build not found; run `npm run build:admin` to serve it from the API");
+    app.log.info(
+      { distDir },
+      "Admin app build not found; run `npm run build:admin` to serve it from the API"
+    );
     return;
   }
 
@@ -69,12 +75,19 @@ export function registerAdminApp(app: FastifyInstance, auth: AdminAuthService, d
       }
       reply.header("content-type", contentTypeFor(asset));
       // Hashed file names change on every build, so they can be cached forever.
-      reply.header("cache-control", asset.startsWith("assets/") ? "public, max-age=31536000, immutable" : "public, max-age=3600");
+      reply.header(
+        "cache-control",
+        asset.startsWith("assets/") ? "public, max-age=31536000, immutable" : "public, max-age=3600"
+      );
       return reply.send(data);
     }
 
     // Anything that looks like a file, or is under assets/, but is not a known asset is a 404, not the app shell.
-    if (extname(rest) || rest.startsWith("assets/") || rest.split("/").some((segment) => segment.startsWith("."))) {
+    if (
+      extname(rest) ||
+      rest.startsWith("assets/") ||
+      rest.split("/").some((segment) => segment.startsWith("."))
+    ) {
       throw notFound();
     }
 

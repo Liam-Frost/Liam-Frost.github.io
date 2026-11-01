@@ -1,4 +1,10 @@
-import { SlugTakenError, type NewProject, type ProjectPatch, type ProjectRepository, type ProjectRow } from "../src/projects/types";
+import {
+  SlugTakenError,
+  type NewProject,
+  type ProjectPatch,
+  type ProjectRepository,
+  type ProjectRow
+} from "../src/projects/types";
 
 /** In-memory ProjectRepository with the same rules as the Prisma one (unique slug, ordering). */
 export class MemoryProjectRepository implements ProjectRepository {

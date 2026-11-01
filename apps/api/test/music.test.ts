@@ -11,7 +11,9 @@ import { MemoryPlaylistRepository } from "./memory-playlist-repository";
 
 let jpg: Buffer;
 beforeAll(async () => {
-  jpg = await sharp({ create: { width: 600, height: 600, channels: 3, background: "#a63" } }).jpeg().toBuffer();
+  jpg = await sharp({ create: { width: 600, height: 600, channels: 3, background: "#a63" } })
+    .jpeg()
+    .toBuffer();
 });
 
 const itunesResult = (n: number, overrides: object = {}) => ({
@@ -31,11 +33,17 @@ const itunesResult = (n: number, overrides: object = {}) => ({
 });
 
 const fakeFetch = (handler: (url: URL) => Response) =>
-  vi.fn(async (input: string | URL | Request) => handler(new URL(String(input)))) as unknown as typeof fetch;
+  vi.fn(async (input: string | URL | Request) =>
+    handler(new URL(String(input)))
+  ) as unknown as typeof fetch;
 
 describe("iTunes", () => {
   it("maps songs with a large cover and a clean Apple Music link", async () => {
-    const music = createMusicSource(fakeFetch(() => Response.json({ results: [itunesResult(1), { kind: "music-video", trackId: 2 }] })));
+    const music = createMusicSource(
+      fakeFetch(() =>
+        Response.json({ results: [itunesResult(1), { kind: "music-video", trackId: 2 }] })
+      )
+    );
     const [song, ...rest] = await music.search("plastic love", "US");
     expect(rest).toEqual([]);
     expect(song).toEqual({
@@ -55,11 +63,17 @@ describe("iTunes", () => {
 
   it("finds a preview only for the same song: title, artist and length", async () => {
     const results = [
-      itunesResult(1, { trackName: "Plastic Love", artistName: "Tanaka Yuri", trackTimeMillis: 305960 }),
+      itunesResult(1, {
+        trackName: "Plastic Love",
+        artistName: "Tanaka Yuri",
+        trackTimeMillis: 305960
+      }),
       itunesResult(2, { trackName: "Plastic Love (2021 Remaster)", trackTimeMillis: 296000 })
     ];
     const music = createMusicSource(fakeFetch(() => Response.json({ results })));
-    expect((await music.findPreview("Plastic Love", "Mariya Takeuchi", 294000))?.itunesId).toBe("2");
+    expect((await music.findPreview("Plastic Love", "Mariya Takeuchi", 294000))?.itunesId).toBe(
+      "2"
+    );
     expect(await music.findPreview("Plastic Love", "Mariya Takeuchi", 200000)).toBeNull();
     expect(await music.findPreview("Other Song", "Mariya Takeuchi", null)).toBeNull();
   });
@@ -99,19 +113,35 @@ const playlist = (tracks: number): FetchedPlaylist => ({
     title: `Track ${i}`,
     artist: "Miki Matsubara",
     // Two songs per album cover; the last one only has the playlist's cover.
-    image: i === tracks - 1 ? "https://i.scdn.co/image/playlist" : `https://image-cdn-ak.spotifycdn.com/image/${Math.floor(i / 2)}`,
+    image:
+      i === tracks - 1
+        ? "https://i.scdn.co/image/playlist"
+        : `https://image-cdn-ak.spotifycdn.com/image/${Math.floor(i / 2)}`,
     link: `https://open.spotify.com/track/${i}`,
     previewUrl: i === 0 ? "" : `https://p.scdn.co/mp3-preview/${i}`
   }))
 });
 
-async function setup(options: { music?: Partial<MusicSource>; fetchPlaylist?: PlaylistFetcher; download?: MediaSources["download"] } = {}) {
+async function setup(
+  options: {
+    music?: Partial<MusicSource>;
+    fetchPlaylist?: PlaylistFetcher;
+    download?: MediaSources["download"];
+  } = {}
+) {
   const media = new MemoryMediaRepository();
   const settings = new MemorySettingsRepository();
   const download = vi.fn(options.download ?? (async () => jpg));
   const mediaSources: MediaSources = {
     ...offlineMediaSources,
-    available: () => ({ tmdb: false, bangumi: true, openlibrary: true, googlebooks: true, anilist: true, igdb: true }),
+    available: () => ({
+      tmdb: false,
+      bangumi: true,
+      openlibrary: true,
+      googlebooks: true,
+      anilist: true,
+      igdb: true
+    }),
     search: async () => [],
     details: async () => {
       throw new SourceError("unused");
@@ -126,7 +156,10 @@ async function setup(options: { music?: Partial<MusicSource>; fetchPlaylist?: Pl
     ...options.music
   };
   const playlists = new MemoryPlaylistRepository(media);
-  const app = await buildTestServer({}, { media, settings, mediaSources, musicSource, fetchPlaylist: options.fetchPlaylist, playlists });
+  const app = await buildTestServer(
+    {},
+    { media, settings, mediaSources, musicSource, fetchPlaylist: options.fetchPlaylist, playlists }
+  );
   const cookie = await login(app);
   return { app, media, playlists, download, cookie, headers: { ...csrf, cookie } };
 }
@@ -134,16 +167,34 @@ async function setup(options: { music?: Partial<MusicSource>; fetchPlaylist?: Pl
 describe("admin music", () => {
   it("searches iTunes and marks songs already added", async () => {
     const { app, cookie, headers } = await setup();
-    await app.inject({ method: "POST", url: "/api/admin/music/import", headers, payload: { itunesId: "1", country: "US" } });
-    const results = (await app.inject({ url: "/api/admin/music/search?q=song&country=JP", headers: { cookie } })).json().results;
-    expect(results.map((r: { existingId: string | null }) => Boolean(r.existingId))).toEqual([true, false]);
+    await app.inject({
+      method: "POST",
+      url: "/api/admin/music/import",
+      headers,
+      payload: { itunesId: "1", country: "US" }
+    });
+    const results = (
+      await app.inject({ url: "/api/admin/music/search?q=song&country=JP", headers: { cookie } })
+    ).json().results;
+    expect(results.map((r: { existingId: string | null }) => Boolean(r.existingId))).toEqual([
+      true,
+      false
+    ]);
     expect(results[0]).not.toHaveProperty("artworkLarge");
-    expect((await app.inject({ url: "/api/admin/music/search?q=x&country=XX", headers: { cookie } })).statusCode).toBe(400);
+    expect(
+      (await app.inject({ url: "/api/admin/music/search?q=x&country=XX", headers: { cookie } }))
+        .statusCode
+    ).toBe(400);
   });
 
   it("adds an iTunes song with its cover, artists and preview, in the player", async () => {
     const { app, headers, download } = await setup();
-    const response = await app.inject({ method: "POST", url: "/api/admin/music/import", headers, payload: { itunesId: "7", country: "US" } });
+    const response = await app.inject({
+      method: "POST",
+      url: "/api/admin/music/import",
+      headers,
+      payload: { itunesId: "7", country: "US" }
+    });
     expect(response.statusCode).toBe(201);
     const { item } = response.json();
     expect(item).toMatchObject({
@@ -156,47 +207,109 @@ describe("admin music", () => {
       year: 2020,
       status: null,
       inPlayer: true,
-      music: { album: "Album", durationMs: 200000, previewUrl: "https://audio-ssl.itunes.apple.com/7.m4a", spotifyUrl: null, appleUrl: "https://music.apple.com/us/song/7" }
+      music: {
+        album: "Album",
+        durationMs: 200000,
+        previewUrl: "https://audio-ssl.itunes.apple.com/7.m4a",
+        spotifyUrl: null,
+        appleUrl: "https://music.apple.com/us/song/7"
+      }
     });
     expect(item.poster.variants).toHaveLength(1);
     expect(download).toHaveBeenCalledWith("https://is1-ssl.mzstatic.com/7/600x600bb.jpg");
 
-    expect((await app.inject({ method: "POST", url: "/api/admin/music/import", headers, payload: { itunesId: "7", country: "US" } })).statusCode).toBe(409);
+    expect(
+      (
+        await app.inject({
+          method: "POST",
+          url: "/api/admin/music/import",
+          headers,
+          payload: { itunesId: "7", country: "US" }
+        })
+      ).statusCode
+    ).toBe(409);
   });
 
   it("keeps songs without a preview out of the player", async () => {
-    const { app, headers } = await setup({ music: { lookup: async (id) => songOf(Number(id), { previewUrl: null }) } });
-    const { item } = (await app.inject({ method: "POST", url: "/api/admin/music/import", headers, payload: { itunesId: "3", country: "US" } })).json();
+    const { app, headers } = await setup({
+      music: { lookup: async (id) => songOf(Number(id), { previewUrl: null }) }
+    });
+    const { item } = (
+      await app.inject({
+        method: "POST",
+        url: "/api/admin/music/import",
+        headers,
+        payload: { itunesId: "3", country: "US" }
+      })
+    ).json();
     expect(item.inPlayer).toBe(false);
   });
 
   it("imports a playlist in the background: once per song, one cover per album", async () => {
     const fetchPlaylist = vi.fn<PlaylistFetcher>(async () => playlist(5));
     const { app, headers, cookie, download, playlists } = await setup({ fetchPlaylist });
-    const start = await app.inject({ method: "POST", url: "/api/admin/music/playlist-import", headers, payload: { playlistUrl: "https://open.spotify.com/playlist/37i9dQZF1DX9AUX5YVf3hc?si=1" } });
+    const start = await app.inject({
+      method: "POST",
+      url: "/api/admin/music/playlist-import",
+      headers,
+      payload: { playlistUrl: "https://open.spotify.com/playlist/37i9dQZF1DX9AUX5YVf3hc?si=1" }
+    });
     expect(start.statusCode).toBe(202);
     const jobId = start.json().job.id;
 
     let job;
     for (let i = 0; i < 50; i++) {
-      job = (await app.inject({ url: `/api/admin/music/jobs/${jobId}`, headers: { cookie } })).json().job;
+      job = (
+        await app.inject({ url: `/api/admin/music/jobs/${jobId}`, headers: { cookie } })
+      ).json().job;
       if (job.state !== "running") break;
       await new Promise((resolve) => setTimeout(resolve, 20));
     }
-    expect(job).toMatchObject({ state: "done", playlistName: "City Pop Best", total: 5, processed: 5, added: 5, skipped: 0, noPreview: 1 });
-    expect(fetchPlaylist).toHaveBeenCalledWith("37i9dQZF1DX9AUX5YVf3hc", expect.any(Map), { coverBudgetMs: Number.POSITIVE_INFINITY });
+    expect(job).toMatchObject({
+      state: "done",
+      playlistName: "City Pop Best",
+      total: 5,
+      processed: 5,
+      added: 5,
+      skipped: 0,
+      noPreview: 1
+    });
+    expect(fetchPlaylist).toHaveBeenCalledWith("37i9dQZF1DX9AUX5YVf3hc", expect.any(Map), {
+      coverBudgetMs: Number.POSITIVE_INFINITY
+    });
     // Covers 0, 0, 1, 1 and the playlist cover (not downloaded): two downloads.
     expect(download).toHaveBeenCalledTimes(2);
 
-    const items = (await app.inject({ url: "/api/admin/media?kind=track", headers: { cookie } })).json().items;
+    const items = (
+      await app.inject({ url: "/api/admin/media?kind=track", headers: { cookie } })
+    ).json().items;
     expect(items).toHaveLength(5);
-    const first = items.find((item: { sourceId: string }) => item.sourceId === "track00000000000000000");
-    expect(first).toMatchObject({ source: "spotify", inPlayer: false, music: { previewUrl: null, spotifyUrl: "https://open.spotify.com/track/0" } });
-    expect(items.find((item: { sourceId: string }) => item.sourceId === "track00000000000000004").poster).toBeNull();
+    const first = items.find(
+      (item: { sourceId: string }) => item.sourceId === "track00000000000000000"
+    );
+    expect(first).toMatchObject({
+      source: "spotify",
+      inPlayer: false,
+      music: { previewUrl: null, spotifyUrl: "https://open.spotify.com/track/0" }
+    });
+    expect(
+      items.find((item: { sourceId: string }) => item.sourceId === "track00000000000000004").poster
+    ).toBeNull();
 
-    const again = (await app.inject({ method: "POST", url: "/api/admin/music/playlist-import", headers, payload: { playlistUrl: "https://open.spotify.com/playlist/37i9dQZF1DX9AUX5YVf3hc" } })).json().job;
+    const again = (
+      await app.inject({
+        method: "POST",
+        url: "/api/admin/music/playlist-import",
+        headers,
+        payload: { playlistUrl: "https://open.spotify.com/playlist/37i9dQZF1DX9AUX5YVf3hc" }
+      })
+    ).json().job;
     for (let i = 0; i < 50 && again.state === "running"; i++) {
-      Object.assign(again, (await app.inject({ url: `/api/admin/music/jobs/${again.id}`, headers: { cookie } })).json().job);
+      Object.assign(
+        again,
+        (await app.inject({ url: `/api/admin/music/jobs/${again.id}`, headers: { cookie } })).json()
+          .job
+      );
       await new Promise((resolve) => setTimeout(resolve, 20));
     }
     expect(again).toMatchObject({ state: "done", added: 0, skipped: 5 });
@@ -204,8 +317,14 @@ describe("admin music", () => {
     // The import made one playlist with every song in list order; importing again added no copies.
     const [made] = await playlists.list({ includePrivate: true });
     expect(await playlists.list({ includePrivate: true })).toHaveLength(1);
-    expect(made).toMatchObject({ name: { en: "City Pop Best" }, source: "spotify", sourceId: "37i9dQZF1DX9AUX5YVf3hc" });
-    const order = made.trackIds.map((id) => items.find((item: { id: string }) => item.id === id).sourceId);
+    expect(made).toMatchObject({
+      name: { en: "City Pop Best" },
+      source: "spotify",
+      sourceId: "37i9dQZF1DX9AUX5YVf3hc"
+    });
+    const order = made.trackIds.map(
+      (id) => items.find((item: { id: string }) => item.id === id).sourceId
+    );
     expect(order).toEqual([0, 1, 2, 3, 4].map((i) => `track0000000000000000${i}`));
   });
 
@@ -220,9 +339,17 @@ describe("admin music", () => {
         return playlist(1);
       }
     });
-    const start = (playlistUrl: string) => app.inject({ method: "POST", url: "/api/admin/music/playlist-import", headers, payload: { playlistUrl } });
+    const start = (playlistUrl: string) =>
+      app.inject({
+        method: "POST",
+        url: "/api/admin/music/playlist-import",
+        headers,
+        payload: { playlistUrl }
+      });
     const first = (await start("spotify:playlist:37i9dQZF1DX9AUX5YVf3hc")).json().job;
-    expect((await start("https://open.spotify.com/playlist/37i9dQZF1DX9AUX5YVf3hc")).json().job.id).toBe(first.id);
+    expect(
+      (await start("https://open.spotify.com/playlist/37i9dQZF1DX9AUX5YVf3hc")).json().job.id
+    ).toBe(first.id);
     const other = await start("spotify:playlist:0123456789abcdefghijkl");
     expect(other.statusCode).toBe(409);
     expect(other.json().error.code).toBe("IMPORT_BUSY");
@@ -235,41 +362,106 @@ describe("admin music", () => {
         throw new SourceError("无法连接 Spotify");
       }
     });
-    expect((await app.inject({ method: "POST", url: "/api/admin/music/playlist-import", headers, payload: { playlistUrl: "https://example.com/x" } })).statusCode).toBe(400);
-    const { job } = (await app.inject({ method: "POST", url: "/api/admin/music/playlist-import", headers, payload: { playlistUrl: "spotify:playlist:37i9dQZF1DX9AUX5YVf3hc" } })).json();
+    expect(
+      (
+        await app.inject({
+          method: "POST",
+          url: "/api/admin/music/playlist-import",
+          headers,
+          payload: { playlistUrl: "https://example.com/x" }
+        })
+      ).statusCode
+    ).toBe(400);
+    const { job } = (
+      await app.inject({
+        method: "POST",
+        url: "/api/admin/music/playlist-import",
+        headers,
+        payload: { playlistUrl: "spotify:playlist:37i9dQZF1DX9AUX5YVf3hc" }
+      })
+    ).json();
     await new Promise((resolve) => setTimeout(resolve, 30));
-    expect((await app.inject({ url: `/api/admin/music/jobs/${job.id}`, headers: { cookie } })).json().job).toMatchObject({ state: "failed", error: "无法连接 Spotify" });
+    expect(
+      (await app.inject({ url: `/api/admin/music/jobs/${job.id}`, headers: { cookie } })).json().job
+    ).toMatchObject({ state: "failed", error: "无法连接 Spotify" });
   });
 
   it("edits music fields of songs only, with previews from iTunes or Spotify", async () => {
     const { app, headers } = await setup();
-    const { item } = (await app.inject({ method: "POST", url: "/api/admin/music/import", headers, payload: { itunesId: "4", country: "US" } })).json();
-    const patch = (id: string, payload: object) => app.inject({ method: "PATCH", url: `/api/admin/media/${id}`, headers, payload });
+    const { item } = (
+      await app.inject({
+        method: "POST",
+        url: "/api/admin/music/import",
+        headers,
+        payload: { itunesId: "4", country: "US" }
+      })
+    ).json();
+    const patch = (id: string, payload: object) =>
+      app.inject({ method: "PATCH", url: `/api/admin/media/${id}`, headers, payload });
 
-    const saved = await patch(item.id, { inPlayer: false, rating: 4, music: { album: "Other", previewUrl: "https://p.scdn.co/mp3-preview/9" } });
+    const saved = await patch(item.id, {
+      inPlayer: false,
+      rating: 4,
+      music: { album: "Other", previewUrl: "https://p.scdn.co/mp3-preview/9" }
+    });
     expect(saved.statusCode).toBe(200);
-    expect(saved.json().item).toMatchObject({ inPlayer: false, rating: 4, music: { album: "Other", previewUrl: "https://p.scdn.co/mp3-preview/9", appleUrl: "https://music.apple.com/us/song/4" } });
+    expect(saved.json().item).toMatchObject({
+      inPlayer: false,
+      rating: 4,
+      music: {
+        album: "Other",
+        previewUrl: "https://p.scdn.co/mp3-preview/9",
+        appleUrl: "https://music.apple.com/us/song/4"
+      }
+    });
 
-    for (const payload of [{ music: { previewUrl: "https://evil.example/a.mp3" } }, { music: { appleUrl: "https://evil.example" } }, { status: "done" }, { progress: { watched: 1, total: 2 } }]) {
+    for (const payload of [
+      { music: { previewUrl: "https://evil.example/a.mp3" } },
+      { music: { appleUrl: "https://evil.example" } },
+      { status: "done" },
+      { progress: { watched: 1, total: 2 } }
+    ]) {
       expect((await patch(item.id, payload)).statusCode, JSON.stringify(payload)).toBe(400);
     }
 
     // The player only plays songs with a preview.
     expect((await patch(item.id, { music: { previewUrl: null } })).statusCode).toBe(200);
     expect((await patch(item.id, { inPlayer: true })).statusCode).toBe(400);
-    expect((await patch(item.id, { inPlayer: true, music: { previewUrl: "https://audio-ssl.itunes.apple.com/x.m4a" } })).json().item.inPlayer).toBe(true);
+    expect(
+      (
+        await patch(item.id, {
+          inPlayer: true,
+          music: { previewUrl: "https://audio-ssl.itunes.apple.com/x.m4a" }
+        })
+      ).json().item.inPlayer
+    ).toBe(true);
     expect((await patch(item.id, { music: { previewUrl: null } })).statusCode).toBe(400);
 
-    const film = (await app.inject({ method: "POST", url: "/api/admin/media", headers, payload: { kind: "movie", title: { zh: "电影" } } })).json().item;
+    const film = (
+      await app.inject({
+        method: "POST",
+        url: "/api/admin/media",
+        headers,
+        payload: { kind: "movie", title: { zh: "电影" } }
+      })
+    ).json().item;
     expect((await patch(film.id, { inPlayer: true })).statusCode).toBe(400);
     expect((await patch(film.id, { music: { album: "x" } })).statusCode).toBe(400);
   });
 
   it("lists public songs with their music details", async () => {
     const { app, headers } = await setup();
-    await app.inject({ method: "POST", url: "/api/admin/music/import", headers, payload: { itunesId: "5", country: "US" } });
+    await app.inject({
+      method: "POST",
+      url: "/api/admin/music/import",
+      headers,
+      payload: { itunesId: "5", country: "US" }
+    });
     const body = (await app.inject("/api/collection")).json();
     expect(body.kinds).toContain("track");
-    expect(body.items[0]).toMatchObject({ kind: "track", music: { album: "Album", appleUrl: "https://music.apple.com/us/song/5" } });
+    expect(body.items[0]).toMatchObject({
+      kind: "track",
+      music: { album: "Album", appleUrl: "https://music.apple.com/us/song/5" }
+    });
   });
 });

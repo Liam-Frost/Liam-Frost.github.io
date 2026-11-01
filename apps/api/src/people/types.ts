@@ -1,4 +1,9 @@
-import type { LocalizedText, PersonSource, PhotoVisibility, RelationType } from "@liam-frost/shared";
+import type {
+  LocalizedText,
+  PersonSource,
+  PhotoVisibility,
+  RelationType
+} from "@liam-frost/shared";
 
 import type { StoredImage } from "../projects/types";
 
@@ -18,8 +23,11 @@ export type PersonRow = {
   updatedAt: Date;
 };
 
-export type NewPerson = Pick<PersonRow, "id" | "source" | "name"> & Partial<Omit<PersonRow, "id" | "source" | "name" | "createdAt" | "updatedAt">>;
-export type PersonPatch = Partial<Omit<PersonRow, "id" | "source" | "sourceId" | "createdAt" | "updatedAt">>;
+export type NewPerson = Pick<PersonRow, "id" | "source" | "name"> &
+  Partial<Omit<PersonRow, "id" | "source" | "name" | "createdAt" | "updatedAt">>;
+export type PersonPatch = Partial<
+  Omit<PersonRow, "id" | "source" | "sourceId" | "createdAt" | "updatedAt">
+>;
 
 /** The same source person is already in the collection. */
 export class DuplicatePersonError extends Error {}
@@ -71,7 +79,9 @@ export interface RelationRepository {
  * The unique key of a relation. "related" is symmetric, so its two ends are sorted: A related to B and
  * B related to A are the same relation.
  */
-export function relationKey(relation: Pick<RelationRow, "fromMediaId" | "fromPersonId" | "toMediaId" | "type" | "role">) {
+export function relationKey(
+  relation: Pick<RelationRow, "fromMediaId" | "fromPersonId" | "toMediaId" | "type" | "role">
+) {
   const from = relation.fromMediaId ? `m:${relation.fromMediaId}` : `p:${relation.fromPersonId}`;
   const to = `m:${relation.toMediaId}`;
   const [a, b] = relation.type === "related" ? [from, to].sort() : [from, to];

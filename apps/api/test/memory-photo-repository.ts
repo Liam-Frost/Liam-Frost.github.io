@@ -14,7 +14,10 @@ export class MemoryPhotoRepository implements PhotoRepository {
     this.check();
     return [...this.rows.values()]
       .filter((row) => includePrivate || row.visibility === "public")
-      .sort((a, b) => a.sortOrder - b.sortOrder || b.date.localeCompare(a.date) || a.id.localeCompare(b.id));
+      .sort(
+        (a, b) =>
+          a.sortOrder - b.sortOrder || b.date.localeCompare(a.date) || a.id.localeCompare(b.id)
+      );
   }
 
   async get(id: string) {
@@ -26,7 +29,12 @@ export class MemoryPhotoRepository implements PhotoRepository {
     this.check();
     const min = Math.min(1, ...[...this.rows.values()].map((row) => row.sortOrder));
     const now = new Date();
-    const row: PhotoRow = { ...photo, sortOrder: photo.sortOrder ?? min - 1, createdAt: now, updatedAt: now };
+    const row: PhotoRow = {
+      ...photo,
+      sortOrder: photo.sortOrder ?? min - 1,
+      createdAt: now,
+      updatedAt: now
+    };
     this.rows.set(row.id, row);
     return row;
   }

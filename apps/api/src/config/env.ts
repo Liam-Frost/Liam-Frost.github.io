@@ -21,10 +21,18 @@ const booleanFlag = z
   .transform((value) => (value === undefined ? undefined : value === "true"));
 
 /** Blank values (`PORT=`) mean "use the default", like blank strings do. */
-const optionalNumber = z.preprocess((value) => (typeof value === "string" && value.trim() === "" ? undefined : value), z.coerce.number().int().optional());
+const optionalNumber = z.preprocess(
+  (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
+  z.coerce.number().int().optional()
+);
 
 const csv = optionalString.transform((value) =>
-  value ? value.split(",").map((item) => item.trim()).filter(Boolean) : []
+  value
+    ? value
+        .split(",")
+        .map((item) => item.trim())
+        .filter(Boolean)
+    : []
 );
 
 const envSchema = z.object({
@@ -120,7 +128,9 @@ export class ConfigError extends Error {
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
   const parsed = envSchema.safeParse(env);
   if (!parsed.success) {
-    throw new ConfigError(parsed.error.issues.map((issue) => `${issue.path.join(".")}: ${issue.message}`));
+    throw new ConfigError(
+      parsed.error.issues.map((issue) => `${issue.path.join(".")}: ${issue.message}`)
+    );
   }
 
   const values = parsed.data;
@@ -142,7 +152,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     issues.push("TWITCH_CLIENT_ID and TWITCH_CLIENT_SECRET must be set together");
   }
   // Spotify only allows plain HTTP redirects to loopback IPs; the default matches a local API.
-  const spotifyRedirect = values.SPOTIFY_REDIRECT_URI ?? `http://127.0.0.1:${values.PORT}/api/admin/spotify/callback`;
+  const spotifyRedirect =
+    values.SPOTIFY_REDIRECT_URI ?? `http://127.0.0.1:${values.PORT}/api/admin/spotify/callback`;
   try {
     const url = new URL(spotifyRedirect);
     if (!["http:", "https:"].includes(url.protocol)) throw new Error("not http(s)");
@@ -167,7 +178,9 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
       new IpList(values.TRUST_PROXY);
       trustProxy = values.TRUST_PROXY;
     } catch (error) {
-      issues.push(`TRUST_PROXY: must be true, false, or a list of proxy IPs / CIDR ranges (${(error as Error).message})`);
+      issues.push(
+        `TRUST_PROXY: must be true, false, or a list of proxy IPs / CIDR ranges (${(error as Error).message})`
+      );
     }
   }
 
@@ -186,7 +199,11 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     production,
     host: values.HOST,
     port: values.PORT,
-    corsOrigins: values.CORS_ORIGIN.length ? values.CORS_ORIGIN : production ? [] : DEV_CORS_ORIGINS,
+    corsOrigins: values.CORS_ORIGIN.length
+      ? values.CORS_ORIGIN
+      : production
+        ? []
+        : DEV_CORS_ORIGINS,
     trustProxy,
     admin: {
       configured: Boolean(passwordHash && sessionSecret),
@@ -206,7 +223,13 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     tmdbApiKey: values.TMDB_API_KEY ?? "",
     googleBooksApiKey: values.GOOGLE_BOOKS_API_KEY ?? "",
     steamApiKey: values.STEAM_WEB_API_KEY ?? "",
-    twitch: values.TWITCH_CLIENT_ID && values.TWITCH_CLIENT_SECRET ? { clientId: values.TWITCH_CLIENT_ID, clientSecret: values.TWITCH_CLIENT_SECRET } : null,
-    spotify: spotifyId && spotifySecret ? { clientId: spotifyId, clientSecret: spotifySecret, redirectUri: spotifyRedirect } : null
+    twitch:
+      values.TWITCH_CLIENT_ID && values.TWITCH_CLIENT_SECRET
+        ? { clientId: values.TWITCH_CLIENT_ID, clientSecret: values.TWITCH_CLIENT_SECRET }
+        : null,
+    spotify:
+      spotifyId && spotifySecret
+        ? { clientId: spotifyId, clientSecret: spotifySecret, redirectUri: spotifyRedirect }
+        : null
   };
 }

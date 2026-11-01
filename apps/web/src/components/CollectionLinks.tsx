@@ -17,14 +17,37 @@ export function useRoleLabel() {
   };
 }
 
-export const personName = (person: Pick<PublicPersonSummary, "name" | "originalName">, lang: Parameters<typeof pickLocalized>[1]) =>
-  pickLocalized(person.name, lang) || person.originalName || "";
+export const personName = (
+  person: Pick<PublicPersonSummary, "name" | "originalName">,
+  lang: Parameters<typeof pickLocalized>[1]
+) => pickLocalized(person.name, lang) || person.originalName || "";
 
-function Thumb({ image, fallback, round, square }: { image: PublicMediaSummary["poster"]; fallback: string; round?: boolean; square?: boolean }) {
+function Thumb({
+  image,
+  fallback,
+  round,
+  square
+}: {
+  image: PublicMediaSummary["poster"];
+  fallback: string;
+  round?: boolean;
+  square?: boolean;
+}) {
   return (
-    <span className={["linkRowThumb", round ? "isRound" : "", square ? "isSquare" : ""].filter(Boolean).join(" ")}>
+    <span
+      className={["linkRowThumb", round ? "isRound" : "", square ? "isSquare" : ""]
+        .filter(Boolean)
+        .join(" ")}
+    >
       {image ? (
-        <img src={image.variants[0].url} srcSet={imageSrcSet(image)} sizes="48px" alt="" loading="lazy" decoding="async" />
+        <img
+          src={image.variants[0].url}
+          srcSet={imageSrcSet(image)}
+          sizes="48px"
+          alt=""
+          loading="lazy"
+          decoding="async"
+        />
       ) : (
         <span className="mediaPosterEmpty" aria-hidden="true">
           {fallback.slice(0, 1)}
@@ -35,11 +58,24 @@ function Thumb({ image, fallback, round, square }: { image: PublicMediaSummary["
 }
 
 /** A linked entry: thumbnail, title, and a line of details (role, note, year). */
-export function MediaLinkRow({ item, details, to }: { item: PublicMediaSummary; details: string[]; to: To }) {
+export function MediaLinkRow({
+  item,
+  details,
+  to
+}: {
+  item: PublicMediaSummary;
+  details: string[];
+  to: To;
+}) {
   const { lang, t } = useI18n();
   const title = mediaTitle(item, lang);
   return (
-    <Link className="linkRow" to={to} state={{ fromList: true }} aria-label={t("collection.open", { title })}>
+    <Link
+      className="linkRow"
+      to={to}
+      state={{ fromList: true }}
+      aria-label={t("collection.open", { title })}
+    >
       <Thumb image={item.poster} fallback={title} square={item.kind === "track"} />
       <span className="linkRowMain">
         <span className="linkRowTitle">{title}</span>
@@ -50,11 +86,24 @@ export function MediaLinkRow({ item, details, to }: { item: PublicMediaSummary; 
 }
 
 /** A linked person: round photo, name, and their roles in this entry. */
-export function PersonLinkRow({ person, details, to }: { person: PublicPersonSummary; details: string[]; to: To }) {
+export function PersonLinkRow({
+  person,
+  details,
+  to
+}: {
+  person: PublicPersonSummary;
+  details: string[];
+  to: To;
+}) {
   const { lang, t } = useI18n();
   const name = personName(person, lang);
   return (
-    <Link className="linkRow" to={to} state={{ fromList: true }} aria-label={t("collection.open", { title: name })}>
+    <Link
+      className="linkRow"
+      to={to}
+      state={{ fromList: true }}
+      aria-label={t("collection.open", { title: name })}
+    >
       <Thumb image={person.photo} fallback={name} round />
       <span className="linkRowMain">
         <span className="linkRowTitle">{name}</span>
@@ -65,11 +114,27 @@ export function PersonLinkRow({ person, details, to }: { person: PublicPersonSum
 }
 
 /** Group order in an entry's panel; each key is `type.direction` ("related" reads the same both ways). */
-const GROUPS = ["credit.to", "soundtrack.to", "soundtrack.from", "adaptation.from", "adaptation.to", "sequel.from", "sequel.to", "related"] as const;
-const groupOf = (link: PublicLink) => (link.type === "related" ? "related" : `${link.type}.${link.direction}`);
+const GROUPS = [
+  "credit.to",
+  "soundtrack.to",
+  "soundtrack.from",
+  "adaptation.from",
+  "adaptation.to",
+  "sequel.from",
+  "sequel.to",
+  "related"
+] as const;
+const groupOf = (link: PublicLink) =>
+  link.type === "related" ? "related" : `${link.type}.${link.direction}`;
 
 /** An entry's links, grouped: people (roles merged per person), soundtrack, source, adaptations, sequels. */
-export function CollectionLinks({ links, linkTo }: { links: PublicLink[]; linkTo: CollectionLinkTo }) {
+export function CollectionLinks({
+  links,
+  linkTo
+}: {
+  links: PublicLink[];
+  linkTo: CollectionLinkTo;
+}) {
   const { lang, t } = useI18n();
   const roleLabel = useRoleLabel();
   if (!links.length) return null;
@@ -96,11 +161,18 @@ export function CollectionLinks({ links, linkTo }: { links: PublicLink[]; linkTo
                   <MediaLinkRow
                     key={link.id}
                     item={link.other.item}
-                    details={[...new Set(details)].concat(link.other.item.year ? [String(link.other.item.year)] : [])}
+                    details={[...new Set(details)].concat(
+                      link.other.item.year ? [String(link.other.item.year)] : []
+                    )}
                     to={linkTo.item(link.other.item.id)}
                   />
                 ) : (
-                  <PersonLinkRow key={link.id} person={link.other.person} details={[...new Set(details)]} to={linkTo.person(link.other.person.id)} />
+                  <PersonLinkRow
+                    key={link.id}
+                    person={link.other.person}
+                    details={[...new Set(details)]}
+                    to={linkTo.person(link.other.person.id)}
+                  />
                 )
               )}
             </div>

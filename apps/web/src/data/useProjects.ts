@@ -9,7 +9,9 @@ import { apiFetchEnabled, apiUrl } from "../lib/api";
  */
 export function useProjects() {
   const [projects, setProjects] = useState<PublicProjectSummary[]>([]);
-  const [status, setStatus] = useState<"loading" | "ready" | "offline">(apiFetchEnabled ? "loading" : "offline");
+  const [status, setStatus] = useState<"loading" | "ready" | "offline">(
+    apiFetchEnabled ? "loading" : "offline"
+  );
 
   useEffect(() => {
     if (!apiFetchEnabled) return;
@@ -35,7 +37,9 @@ export function useProjects() {
 
 export function useProject(slug: string) {
   const [project, setProject] = useState<PublicProject | null>(null);
-  const [status, setStatus] = useState<"loading" | "ready" | "missing">(apiFetchEnabled ? "loading" : "missing");
+  const [status, setStatus] = useState<"loading" | "ready" | "missing">(
+    apiFetchEnabled ? "loading" : "missing"
+  );
 
   useEffect(() => {
     if (!apiFetchEnabled) return;

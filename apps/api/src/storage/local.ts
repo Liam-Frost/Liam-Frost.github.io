@@ -8,7 +8,8 @@ export const UPLOADS_PREFIX = "/uploads";
  * Keys: "photos/<id>", "projects|media|people/<id>" (an entry's folder) or "projects|media|people/<id>/<imageId>".
  * Lowercase letters, digits and '-' only, so they can never escape the root.
  */
-const KEY = /^(photos\/[a-z0-9][a-z0-9-]{0,80}|(projects|media|people)\/[a-z0-9][a-z0-9-]{0,80}(\/[a-z0-9][a-z0-9-]{0,40})?)$/;
+const KEY =
+  /^(photos\/[a-z0-9][a-z0-9-]{0,80}|(projects|media|people)\/[a-z0-9][a-z0-9-]{0,80}(\/[a-z0-9][a-z0-9-]{0,40})?)$/;
 /** Served file names: generated sizes only ("1280.webp"). Originals are stored but never served. */
 const PUBLIC_FILE = /^\d{1,5}\.webp$/;
 
@@ -28,7 +29,8 @@ export class LocalImageStore {
     if (!isStorageKey(key)) throw new Error(`Invalid storage key: ${key}`);
     const dir = join(this.root, ...key.split("/"));
     // Defense in depth: the key pattern already rules this out.
-    if (!dir.startsWith(this.root + sep)) throw new Error(`Storage key escapes the upload root: ${key}`);
+    if (!dir.startsWith(this.root + sep))
+      throw new Error(`Storage key escapes the upload root: ${key}`);
     return name ? join(dir, name) : dir;
   }
 

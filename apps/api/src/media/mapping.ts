@@ -1,4 +1,11 @@
-import type { AdminMediaItem, MediaGame, MediaMusic, MediaPublication, PublicMedia, PublicMediaSummary } from "@liam-frost/shared";
+import type {
+  AdminMediaItem,
+  MediaGame,
+  MediaMusic,
+  MediaPublication,
+  PublicMedia,
+  PublicMediaSummary
+} from "@liam-frost/shared";
 
 import { toProjectImage } from "../projects/mapping";
 import type { LocalImageStore } from "../storage/local";
@@ -19,7 +26,8 @@ export function musicOf(row: Pick<MediaRow, "kind" | "extra">): MediaMusic | nul
   };
 }
 
-const count = (value: unknown) => (typeof value === "number" && Number.isInteger(value) && value > 0 ? value : null);
+const count = (value: unknown) =>
+  typeof value === "number" && Number.isInteger(value) && value > 0 ? value : null;
 
 /** Book and comic details stored in `extra.publication`; null for other kinds. */
 export function publicationOf(row: Pick<MediaRow, "kind" | "extra">): MediaPublication | null {
@@ -33,7 +41,10 @@ export function publicationOf(row: Pick<MediaRow, "kind" | "extra">): MediaPubli
   };
 }
 
-const names = (value: unknown) => (Array.isArray(value) ? value.filter((item): item is string => typeof item === "string" && item.length > 0) : []);
+const names = (value: unknown) =>
+  Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === "string" && item.length > 0)
+    : [];
 
 /** Game details stored in `extra.game`; null for other kinds. */
 export function gameOf(row: Pick<MediaRow, "kind" | "extra">): MediaGame | null {
@@ -42,8 +53,16 @@ export function gameOf(row: Pick<MediaRow, "kind" | "extra">): MediaGame | null 
   return {
     platforms: names(game.platforms),
     publishers: names(game.publishers),
-    playtimeHours: typeof game.playtimeHours === "number" && Number.isInteger(game.playtimeHours) && game.playtimeHours >= 0 ? game.playtimeHours : null,
-    steamAppId: typeof game.steamAppId === "number" && Number.isInteger(game.steamAppId) ? game.steamAppId : null,
+    playtimeHours:
+      typeof game.playtimeHours === "number" &&
+      Number.isInteger(game.playtimeHours) &&
+      game.playtimeHours >= 0
+        ? game.playtimeHours
+        : null,
+    steamAppId:
+      typeof game.steamAppId === "number" && Number.isInteger(game.steamAppId)
+        ? game.steamAppId
+        : null,
     lastPlayedOn: text(game.lastPlayedOn),
     purchasedOn: text(game.purchasedOn)
   };
@@ -106,5 +125,11 @@ export function toPublicMediaSummary(row: MediaRow, store: LocalImageStore): Pub
 
 /** An entry's details; the collection route adds its links. */
 export function toPublicMedia(row: MediaRow, store: LocalImageStore): Omit<PublicMedia, "links"> {
-  return { ...toPublicMediaSummary(row, store), overview: row.overview, review: row.review, source: row.source, sourceUrl: row.sourceUrl };
+  return {
+    ...toPublicMediaSummary(row, store),
+    overview: row.overview,
+    review: row.review,
+    source: row.source,
+    sourceUrl: row.sourceUrl
+  };
 }

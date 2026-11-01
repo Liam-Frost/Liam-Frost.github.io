@@ -3,7 +3,9 @@ import type { LocalizedText } from "@liam-frost/shared";
 import type { Playlist, PlaylistTrack, PrismaClient } from "../generated/prisma/client";
 import type { NewPlaylist, PlaylistPatch, PlaylistRepository, PlaylistRow } from "./types";
 
-const WITH_TRACKS = { tracks: { orderBy: { position: "asc" }, select: { mediaId: true } } } as const;
+const WITH_TRACKS = {
+  tracks: { orderBy: { position: "asc" }, select: { mediaId: true } }
+} as const;
 
 function toRow(record: Playlist & { tracks: Pick<PlaylistTrack, "mediaId">[] }): PlaylistRow {
   return {
@@ -38,13 +40,20 @@ export class PrismaPlaylistRepository implements PlaylistRepository {
   }
 
   async findBySource(source: PlaylistRow["source"], sourceId: string) {
-    const record = await this.prisma.playlist.findUnique({ where: { source_sourceId: { source, sourceId } }, include: WITH_TRACKS });
+    const record = await this.prisma.playlist.findUnique({
+      where: { source_sourceId: { source, sourceId } },
+      include: WITH_TRACKS
+    });
     return record ? toRow(record) : null;
   }
 
   async create({ visibility, ...playlist }: NewPlaylist) {
     const record = await this.prisma.playlist.create({
-      data: { description: {}, ...playlist, visibility: visibility === "private" ? "PRIVATE" : "PUBLIC" },
+      data: {
+        description: {},
+        ...playlist,
+        visibility: visibility === "private" ? "PRIVATE" : "PUBLIC"
+      },
       include: WITH_TRACKS
     });
     return toRow(record);
@@ -55,7 +64,10 @@ export class PrismaPlaylistRepository implements PlaylistRepository {
     if (!found) return null;
     const record = await this.prisma.playlist.update({
       where: { id },
-      data: { ...patch, ...(visibility ? { visibility: visibility === "private" ? "PRIVATE" : "PUBLIC" } : {}) },
+      data: {
+        ...patch,
+        ...(visibility ? { visibility: visibility === "private" ? "PRIVATE" : "PUBLIC" } : {})
+      },
       include: WITH_TRACKS
     });
     return toRow(record);
@@ -70,12 +82,18 @@ export class PrismaPlaylistRepository implements PlaylistRepository {
 
   async addTracks(id: string, mediaIds: string[]) {
     return this.prisma.$transaction(async (tx) => {
-      const playlist = await tx.playlist.findUnique({ where: { id }, include: { tracks: { select: { mediaId: true, position: true } } } });
+      const playlist = await tx.playlist.findUnique({
+        where: { id },
+        include: { tracks: { select: { mediaId: true, position: true } } }
+      });
       if (!playlist) return null;
       const present = new Set(playlist.tracks.map((track) => track.mediaId));
       let position = Math.max(-1, ...playlist.tracks.map((track) => track.position));
       const added = [...new Set(mediaIds)].filter((mediaId) => !present.has(mediaId));
-      if (added.length) await tx.playlistTrack.createMany({ data: added.map((mediaId) => ({ playlistId: id, mediaId, position: (position += 1) })) });
+      if (added.length)
+        await tx.playlistTrack.createMany({
+          data: added.map((mediaId) => ({ playlistId: id, mediaId, position: (position += 1) }))
+        });
       await tx.playlist.update({ where: { id }, data: { updatedAt: new Date() } });
       return toRow((await tx.playlist.findUnique({ where: { id }, include: WITH_TRACKS }))!);
     });
@@ -84,7 +102,9 @@ export class PrismaPlaylistRepository implements PlaylistRepository {
   async removeTracks(id: string, mediaIds: string[]) {
     const found = await this.prisma.playlist.findUnique({ where: { id }, select: { id: true } });
     if (!found) return null;
-    await this.prisma.playlistTrack.deleteMany({ where: { playlistId: id, mediaId: { in: mediaIds } } });
+    await this.prisma.playlistTrack.deleteMany({
+      where: { playlistId: id, mediaId: { in: mediaIds } }
+    });
     return this.get(id);
   }
 
@@ -93,7 +113,10 @@ export class PrismaPlaylistRepository implements PlaylistRepository {
       const found = await tx.playlist.findUnique({ where: { id }, select: { id: true } });
       if (!found) return null;
       for (const [position, mediaId] of mediaIds.entries()) {
-        await tx.playlistTrack.update({ where: { playlistId_mediaId: { playlistId: id, mediaId } }, data: { position } });
+        await tx.playlistTrack.update({
+          where: { playlistId_mediaId: { playlistId: id, mediaId } },
+          data: { position }
+        });
       }
       return toRow((await tx.playlist.findUnique({ where: { id }, include: WITH_TRACKS }))!);
     });

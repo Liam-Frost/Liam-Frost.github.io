@@ -11,7 +11,9 @@ const EMPTY: PublicCollection = { kinds: [], items: [], people: [], playlists: [
  */
 export function useCollection() {
   const [collection, setCollection] = useState<PublicCollection>(EMPTY);
-  const [status, setStatus] = useState<"loading" | "ready" | "offline">(apiFetchEnabled ? "loading" : "offline");
+  const [status, setStatus] = useState<"loading" | "ready" | "offline">(
+    apiFetchEnabled ? "loading" : "offline"
+  );
 
   useEffect(() => {
     if (!apiFetchEnabled) return;
@@ -22,7 +24,15 @@ export function useCollection() {
         return response.json() as Promise<PublicCollection>;
       })
       .then((data) => {
-        setCollection(Array.isArray(data?.items) ? { ...data, people: Array.isArray(data.people) ? data.people : [], playlists: Array.isArray(data.playlists) ? data.playlists : [] } : EMPTY);
+        setCollection(
+          Array.isArray(data?.items)
+            ? {
+                ...data,
+                people: Array.isArray(data.people) ? data.people : [],
+                playlists: Array.isArray(data.playlists) ? data.playlists : []
+              }
+            : EMPTY
+        );
         setStatus("ready");
       })
       .catch((error: unknown) => {
@@ -70,12 +80,16 @@ function useDetail<T>(path: string | null) {
 
 /** One entry with its synopsis, review and links; null id loads nothing. */
 export function useCollectionItem(id: string | null) {
-  const { data, status } = useDetail<PublicMedia>(id ? `/api/collection/${encodeURIComponent(id)}` : null);
+  const { data, status } = useDetail<PublicMedia>(
+    id ? `/api/collection/${encodeURIComponent(id)}` : null
+  );
   return { item: data, status };
 }
 
 /** One person with their entries; null id loads nothing. */
 export function usePublicPerson(id: string | null) {
-  const { data, status } = useDetail<PublicPerson>(id ? `/api/people/${encodeURIComponent(id)}` : null);
+  const { data, status } = useDetail<PublicPerson>(
+    id ? `/api/people/${encodeURIComponent(id)}` : null
+  );
   return { person: data, status };
 }

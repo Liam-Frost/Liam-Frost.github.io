@@ -63,7 +63,10 @@ export class ApiError extends Error {
 
 type RequestOptions = Omit<RequestInit, "body"> & { json?: unknown; body?: BodyInit };
 
-export async function request<T>(path: string, { json, headers: initHeaders, ...init }: RequestOptions = {}): Promise<T> {
+export async function request<T>(
+  path: string,
+  { json, headers: initHeaders, ...init }: RequestOptions = {}
+): Promise<T> {
   const headers = new Headers(initHeaders);
   headers.set("accept", "application/json");
   // CSRF: the API rejects admin writes without this header.
@@ -107,17 +110,23 @@ function toApiError(status: number, body: string) {
   return apiError(status, data);
 }
 
-const DATABASE_UNAVAILABLE_MESSAGE = "数据库连接失败：请确认数据库已启动，并检查 apps/api/.env 中的 DATABASE_URL";
+const DATABASE_UNAVAILABLE_MESSAGE =
+  "数据库连接失败：请确认数据库已启动，并检查 apps/api/.env 中的 DATABASE_URL";
 
 function apiError(status: number, data: Partial<ApiErrorBody> | undefined) {
   const code = data?.error?.code ?? "HTTP";
   // Shown in toasts and inline errors anywhere in the admin, so it is translated here once.
-  if (code === "DATABASE_UNAVAILABLE") return new ApiError(status, code, DATABASE_UNAVAILABLE_MESSAGE);
+  if (code === "DATABASE_UNAVAILABLE")
+    return new ApiError(status, code, DATABASE_UNAVAILABLE_MESSAGE);
   return new ApiError(status, code, data?.error?.message ?? `请求失败（HTTP ${status}）`);
 }
 
 /** Uploads one file with progress (fetch cannot report upload progress). */
-function uploadFile<T>(url: string, file: File, onProgress?: (fraction: number) => void): Promise<T> {
+function uploadFile<T>(
+  url: string,
+  file: File,
+  onProgress?: (fraction: number) => void
+): Promise<T> {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.open("POST", url);
@@ -154,75 +163,135 @@ const playlistPath = (id: string) => `/api/admin/playlists/${encodeURIComponent(
 export const api = {
   session: () => request<AdminSessionResponse>("/api/admin/session"),
   login: (username: string, password: string) =>
-    request<AdminSessionResponse>("/api/admin/login", { method: "POST", json: { username, password } }),
+    request<AdminSessionResponse>("/api/admin/login", {
+      method: "POST",
+      json: { username, password }
+    }),
   logout: () => request<{ authenticated: false }>("/api/admin/logout", { method: "POST" }),
 
   photos: () => request<AdminPhotosResponse>("/api/admin/photos"),
-  updatePhoto: (id: string, update: AdminPhotoUpdate) => request<AdminPhotoResponse>(photoPath(id), { method: "PATCH", json: update }),
+  updatePhoto: (id: string, update: AdminPhotoUpdate) =>
+    request<AdminPhotoResponse>(photoPath(id), { method: "PATCH", json: update }),
   deletePhoto: (id: string) => request<void>(photoPath(id), { method: "DELETE" }),
-  reorderPhotos: (ids: string[]) => request<AdminPhotosResponse>("/api/admin/photos/order", { method: "PUT", json: { ids } }),
+  reorderPhotos: (ids: string[]) =>
+    request<AdminPhotosResponse>("/api/admin/photos/order", { method: "PUT", json: { ids } }),
 
   projects: () => request<AdminProjectsResponse>("/api/admin/projects"),
   project: (id: string) => request<AdminProjectResponse>(projectPath(id)),
-  createProject: (body: AdminProjectCreate) => request<AdminProjectResponse>("/api/admin/projects", { method: "POST", json: body }),
-  updateProject: (id: string, update: AdminProjectUpdate) => request<AdminProjectResponse>(projectPath(id), { method: "PATCH", json: update }),
+  createProject: (body: AdminProjectCreate) =>
+    request<AdminProjectResponse>("/api/admin/projects", { method: "POST", json: body }),
+  updateProject: (id: string, update: AdminProjectUpdate) =>
+    request<AdminProjectResponse>(projectPath(id), { method: "PATCH", json: update }),
   deleteProject: (id: string) => request<void>(projectPath(id), { method: "DELETE" }),
-  reorderProjects: (ids: string[]) => request<AdminProjectsResponse>("/api/admin/projects/order", { method: "PUT", json: { ids } }),
-  uploadProjectImage: (id: string, slot: "cover" | "gallery", file: File, onProgress?: (fraction: number) => void) =>
-    uploadFile<AdminProjectResponse>(`${projectPath(id)}/images?slot=${slot}`, file, onProgress),
+  reorderProjects: (ids: string[]) =>
+    request<AdminProjectsResponse>("/api/admin/projects/order", { method: "PUT", json: { ids } }),
+  uploadProjectImage: (
+    id: string,
+    slot: "cover" | "gallery",
+    file: File,
+    onProgress?: (fraction: number) => void
+  ) => uploadFile<AdminProjectResponse>(`${projectPath(id)}/images?slot=${slot}`, file, onProgress),
   deleteProjectImage: (id: string, imageId: string) =>
-    request<AdminProjectResponse>(`${projectPath(id)}/images/${encodeURIComponent(imageId)}`, { method: "DELETE" }),
+    request<AdminProjectResponse>(`${projectPath(id)}/images/${encodeURIComponent(imageId)}`, {
+      method: "DELETE"
+    }),
 
   spotify: () => request<AdminSpotifyResponse>("/api/admin/spotify"),
-  updateSpotify: (settings: SpotifySettings) => request<AdminSpotifyResponse>("/api/admin/spotify", { method: "PUT", json: settings }),
+  updateSpotify: (settings: SpotifySettings) =>
+    request<AdminSpotifyResponse>("/api/admin/spotify", { method: "PUT", json: settings }),
 
   media: () => request<AdminMediaListResponse>("/api/admin/media"),
   mediaItem: (id: string) => request<AdminMediaResponse>(mediaPath(id)),
   searchMedia: (kind: MediaKind, source: MediaSearchSource, q: string) =>
-    request<AdminMediaSearchResponse>(`/api/admin/media/search?${new URLSearchParams({ kind, source, q })}`),
-  importMedia: (body: AdminMediaImport) => request<AdminMediaResponse>("/api/admin/media/import", { method: "POST", json: body }),
-  createMedia: (body: AdminMediaCreate) => request<AdminMediaResponse>("/api/admin/media", { method: "POST", json: body }),
-  updateMedia: (id: string, update: AdminMediaUpdate) => request<AdminMediaResponse>(mediaPath(id), { method: "PATCH", json: update }),
+    request<AdminMediaSearchResponse>(
+      `/api/admin/media/search?${new URLSearchParams({ kind, source, q })}`
+    ),
+  importMedia: (body: AdminMediaImport) =>
+    request<AdminMediaResponse>("/api/admin/media/import", { method: "POST", json: body }),
+  createMedia: (body: AdminMediaCreate) =>
+    request<AdminMediaResponse>("/api/admin/media", { method: "POST", json: body }),
+  updateMedia: (id: string, update: AdminMediaUpdate) =>
+    request<AdminMediaResponse>(mediaPath(id), { method: "PATCH", json: update }),
   deleteMedia: (id: string) => request<void>(mediaPath(id), { method: "DELETE" }),
-  batchMedia: (body: AdminBatchRequest<AdminMediaBatchPatch>) => request<AdminBatchResult>("/api/admin/media/batch", { method: "POST", json: body }),
+  batchMedia: (body: AdminBatchRequest<AdminMediaBatchPatch>) =>
+    request<AdminBatchResult>("/api/admin/media/batch", { method: "POST", json: body }),
   batchPeople: (body: AdminBatchRequest<Pick<AdminPersonUpdateBody, "visibility" | "featured">>) =>
     request<AdminBatchResult>("/api/admin/people/batch", { method: "POST", json: body }),
-  uploadMediaPoster: (id: string, file: File) => uploadFile<AdminMediaResponse>(`${mediaPath(id)}/poster`, file),
-  searchMusic: (q: string, country: string) => request<AdminMusicSearchResponse>(`/api/admin/music/search?${new URLSearchParams({ q, country })}`),
-  importMusic: (body: AdminMusicImport) => request<AdminMediaResponse>("/api/admin/music/import", { method: "POST", json: body }),
-  startPlaylistImport: (playlistUrl: string) => request<{ job: MusicImportJob }>("/api/admin/music/playlist-import", { method: "POST", json: { playlistUrl } }),
-  startSpotifyImport: (body: MusicImportRequest) => request<{ job: MusicImportJob }>("/api/admin/music/spotify-import", { method: "POST", json: body }),
+  uploadMediaPoster: (id: string, file: File) =>
+    uploadFile<AdminMediaResponse>(`${mediaPath(id)}/poster`, file),
+  searchMusic: (q: string, country: string) =>
+    request<AdminMusicSearchResponse>(
+      `/api/admin/music/search?${new URLSearchParams({ q, country })}`
+    ),
+  importMusic: (body: AdminMusicImport) =>
+    request<AdminMediaResponse>("/api/admin/music/import", { method: "POST", json: body }),
+  startPlaylistImport: (playlistUrl: string) =>
+    request<{ job: MusicImportJob }>("/api/admin/music/playlist-import", {
+      method: "POST",
+      json: { playlistUrl }
+    }),
+  startSpotifyImport: (body: MusicImportRequest) =>
+    request<{ job: MusicImportJob }>("/api/admin/music/spotify-import", {
+      method: "POST",
+      json: body
+    }),
   spotifyAccount: () => request<SpotifyAccountStatus>("/api/admin/spotify/account"),
-  connectSpotify: (returnTo: string) => request<{ url: string }>("/api/admin/spotify/connect", { method: "POST", json: { returnTo } }),
+  connectSpotify: (returnTo: string) =>
+    request<{ url: string }>("/api/admin/spotify/connect", { method: "POST", json: { returnTo } }),
   disconnectSpotify: () => request<void>("/api/admin/spotify/account", { method: "DELETE" }),
-  spotifyPlaylists: () => request<{ playlists: SpotifyOwnPlaylist[] }>("/api/admin/spotify/playlists"),
-  musicJob: (id: string) => request<{ job: MusicImportJob }>(`/api/admin/music/jobs/${encodeURIComponent(id)}`),
+  spotifyPlaylists: () =>
+    request<{ playlists: SpotifyOwnPlaylist[] }>("/api/admin/spotify/playlists"),
+  musicJob: (id: string) =>
+    request<{ job: MusicImportJob }>(`/api/admin/music/jobs/${encodeURIComponent(id)}`),
   people: () => request<AdminPeopleResponse>("/api/admin/people"),
   person: (id: string) => request<AdminPersonResponse>(personPath(id)),
-  searchPeople: (q: string) => request<AdminPersonSearchResponse>(`/api/admin/people/search?${new URLSearchParams({ q })}`),
-  importPerson: (sourceId: string) => request<AdminPersonResponse>("/api/admin/people/import", { method: "POST", json: { source: "tmdb", sourceId } }),
-  createPerson: (body: AdminPersonCreate) => request<AdminPersonResponse>("/api/admin/people", { method: "POST", json: body }),
-  updatePerson: (id: string, update: AdminPersonUpdate) => request<AdminPersonResponse>(personPath(id), { method: "PATCH", json: update }),
+  searchPeople: (q: string) =>
+    request<AdminPersonSearchResponse>(`/api/admin/people/search?${new URLSearchParams({ q })}`),
+  importPerson: (sourceId: string) =>
+    request<AdminPersonResponse>("/api/admin/people/import", {
+      method: "POST",
+      json: { source: "tmdb", sourceId }
+    }),
+  createPerson: (body: AdminPersonCreate) =>
+    request<AdminPersonResponse>("/api/admin/people", { method: "POST", json: body }),
+  updatePerson: (id: string, update: AdminPersonUpdate) =>
+    request<AdminPersonResponse>(personPath(id), { method: "PATCH", json: update }),
   deletePerson: (id: string) => request<void>(personPath(id), { method: "DELETE" }),
-  uploadPersonPhoto: (id: string, file: File) => uploadFile<AdminPersonResponse>(`${personPath(id)}/photo`, file),
+  uploadPersonPhoto: (id: string, file: File) =>
+    uploadFile<AdminPersonResponse>(`${personPath(id)}/photo`, file),
   relations: (subject: { type: "media" | "person"; id: string }) =>
-    request<AdminRelationsResponse>(`${subject.type === "media" ? mediaPath(subject.id) : personPath(subject.id)}/relations`),
-  suggestions: (mediaId: string) => request<AdminRelationSuggestionsResponse>(`${mediaPath(mediaId)}/suggestions`),
-  createRelation: (body: AdminRelationCreate) => request<AdminRelationResponse>("/api/admin/relations", { method: "POST", json: body }),
-  updateRelation: (id: string, update: AdminRelationUpdate) => request<AdminRelationResponse>(relationPath(id), { method: "PATCH", json: update }),
+    request<AdminRelationsResponse>(
+      `${subject.type === "media" ? mediaPath(subject.id) : personPath(subject.id)}/relations`
+    ),
+  suggestions: (mediaId: string) =>
+    request<AdminRelationSuggestionsResponse>(`${mediaPath(mediaId)}/suggestions`),
+  createRelation: (body: AdminRelationCreate) =>
+    request<AdminRelationResponse>("/api/admin/relations", { method: "POST", json: body }),
+  updateRelation: (id: string, update: AdminRelationUpdate) =>
+    request<AdminRelationResponse>(relationPath(id), { method: "PATCH", json: update }),
   deleteRelation: (id: string) => request<void>(relationPath(id), { method: "DELETE" }),
   playlists: () => request<AdminPlaylistsResponse>("/api/admin/playlists"),
-  createPlaylist: (body: AdminPlaylistCreate) => request<AdminPlaylistResponse>("/api/admin/playlists", { method: "POST", json: body }),
-  updatePlaylist: (id: string, update: AdminPlaylistUpdate) => request<AdminPlaylistResponse>(playlistPath(id), { method: "PATCH", json: update }),
+  createPlaylist: (body: AdminPlaylistCreate) =>
+    request<AdminPlaylistResponse>("/api/admin/playlists", { method: "POST", json: body }),
+  updatePlaylist: (id: string, update: AdminPlaylistUpdate) =>
+    request<AdminPlaylistResponse>(playlistPath(id), { method: "PATCH", json: update }),
   deletePlaylist: (id: string) => request<void>(playlistPath(id), { method: "DELETE" }),
-  playlistTracks: (id: string, body: AdminPlaylistTracks) => request<AdminPlaylistResponse>(`${playlistPath(id)}/tracks`, { method: "POST", json: body }),
-  reorderPlaylist: (id: string, ids: string[]) => request<AdminPlaylistResponse>(`${playlistPath(id)}/order`, { method: "PUT", json: { ids } }),
+  playlistTracks: (id: string, body: AdminPlaylistTracks) =>
+    request<AdminPlaylistResponse>(`${playlistPath(id)}/tracks`, { method: "POST", json: body }),
+  reorderPlaylist: (id: string, ids: string[]) =>
+    request<AdminPlaylistResponse>(`${playlistPath(id)}/order`, { method: "PUT", json: { ids } }),
   steamAccount: () => request<SteamAccountStatus>("/api/admin/steam/account"),
-  connectSteam: (returnTo: string) => request<{ url: string }>("/api/admin/steam/connect", { method: "POST", json: { returnTo } }),
+  connectSteam: (returnTo: string) =>
+    request<{ url: string }>("/api/admin/steam/connect", { method: "POST", json: { returnTo } }),
   disconnectSteam: () => request<void>("/api/admin/steam/account", { method: "DELETE" }),
   startSteamSync: () => request<{ job: SteamSyncJob }>("/api/admin/steam/sync", { method: "POST" }),
-  steamJob: (id: string) => request<{ job: SteamSyncJob }>(`/api/admin/steam/jobs/${encodeURIComponent(id)}`),
-  collectionSettings: () => request<AdminCollectionSettingsResponse>("/api/admin/collection/settings"),
+  steamJob: (id: string) =>
+    request<{ job: SteamSyncJob }>(`/api/admin/steam/jobs/${encodeURIComponent(id)}`),
+  collectionSettings: () =>
+    request<AdminCollectionSettingsResponse>("/api/admin/collection/settings"),
   updateCollectionSettings: (settings: CollectionSettings) =>
-    request<AdminCollectionSettingsResponse>("/api/admin/collection/settings", { method: "PUT", json: settings })
+    request<AdminCollectionSettingsResponse>("/api/admin/collection/settings", {
+      method: "PUT",
+      json: settings
+    })
 };

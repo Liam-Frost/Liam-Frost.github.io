@@ -16,18 +16,27 @@ export function normalizeAdminPath(value: string | undefined): string {
   const trimmed = value?.trim();
   if (!trimmed) return DEFAULT_ADMIN_PATH;
 
-  const path = `/${trimmed.replace(/^\/+|\/+$/g, "")}`;
+  // Scan both ends once; an unanchored trailing-slash regex can backtrack quadratically.
+  let start = 0;
+  let end = trimmed.length;
+  while (start < end && trimmed[start] === "/") start += 1;
+  while (end > start && trimmed[end - 1] === "/") end -= 1;
+  const path = `/${trimmed.slice(start, end)}`;
   if (path === "/") {
     throw new Error("ADMIN_PATH cannot be the site root");
   }
 
   const segments = path.slice(1).split("/");
   if (!segments.every((segment) => SEGMENT.test(segment))) {
-    throw new Error("ADMIN_PATH may only contain letters, digits, '-', '_' and '/' between segments");
+    throw new Error(
+      "ADMIN_PATH may only contain letters, digits, '-', '_' and '/' between segments"
+    );
   }
 
   const lower = path.toLowerCase();
-  const reserved = RESERVED_PREFIXES.find((prefix) => lower === prefix || lower.startsWith(`${prefix}/`));
+  const reserved = RESERVED_PREFIXES.find(
+    (prefix) => lower === prefix || lower.startsWith(`${prefix}/`)
+  );
   if (reserved) {
     throw new Error(`ADMIN_PATH cannot start with ${reserved}`);
   }
