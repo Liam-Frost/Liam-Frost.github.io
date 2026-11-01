@@ -217,6 +217,7 @@ export default function MediaDetail({
 
           {item.sourceUrl && SOURCE_NAMES[item.source] ? (
             <a
+              data-analytics="media_source"
               className="btn btnSoft btnSmall mediaSourceLink"
               href={item.sourceUrl}
               target="_blank"
@@ -226,7 +227,7 @@ export default function MediaDetail({
             </a>
           ) : null}
           {item.music?.spotifyUrl || item.music?.appleUrl ? (
-            <div className="mediaListenLinks">
+            <div className="mediaListenLinks" data-analytics="listen">
               {item.music.spotifyUrl ? (
                 <a
                   className="btn btnSoft btnSmall"

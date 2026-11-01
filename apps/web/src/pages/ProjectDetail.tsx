@@ -85,7 +85,7 @@ export default function ProjectDetailPage() {
           ) : null}
 
           {links.length ? (
-            <div className="projectLinks">
+            <div className="projectLinks" data-analytics="project_links">
               {links.map((key, index) => (
                 <a
                   key={key}
@@ -125,7 +125,7 @@ export default function ProjectDetailPage() {
 
         {body ? (
           <Reveal delayMs={120}>
-            <div className="card prose">
+            <div className="card prose" data-analytics="project_body">
               {/* No raw HTML: react-markdown escapes it, so admin-entered text cannot inject markup. */}
               <Markdown
                 remarkPlugins={[remarkGfm]}

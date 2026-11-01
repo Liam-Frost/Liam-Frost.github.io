@@ -8,6 +8,7 @@ import MediaDetail from "../components/MediaDetail";
 import PersonCard from "../components/PersonCard";
 import PersonDetail from "../components/PersonDetail";
 import YearReview, { reviewYears } from "../components/YearReview";
+import { track } from "../lib/analytics";
 import { PlayAllButton } from "../components/PlayButton";
 import { MUSIC_VIEWS, musicGroups, type MusicView } from "../data/musicGroups";
 import Reveal from "../components/Reveal";
@@ -347,7 +348,11 @@ export default function CollectionPage() {
                           type="button"
                           aria-pressed={view === v}
                           className={cx("btn", "btnSmall", view === v ? "btnSoft" : "btnGhost")}
-                          onClick={() => setView(v)}
+                          onClick={() => {
+                            if (v !== view)
+                              track("collection_filter", { target: kind ?? "all", detail: v });
+                            setView(v);
+                          }}
                         >
                           {t(
                             v === "grid" && kind === "track"

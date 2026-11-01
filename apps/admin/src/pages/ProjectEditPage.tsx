@@ -17,6 +17,7 @@ import { useToast } from "../components/ui/Toast";
 import { useProject, useProjectImages, useUpdateProject } from "../hooks/useProjects";
 import { ApiError } from "../lib/api";
 import { LANG_LABELS, LANGS, pickText, STATUS_LABELS, type Lang } from "../lib/i18n";
+import { RecentStats } from "../components/analytics/RecentStats";
 
 const ACCEPT = "image/jpeg,image/png,image/webp,image/avif,image/tiff";
 
@@ -164,6 +165,7 @@ function ProjectEditor({ project }: { project: AdminProject }) {
         <h1 className="min-w-0 flex-1 truncate text-[22px] font-semibold text-brand-dark">
           {title}
         </h1>
+        <RecentStats type="project" id={project.slug} />
         {project.visibility === "public" ? (
           <a
             href={`/#/projects/${project.slug}`}

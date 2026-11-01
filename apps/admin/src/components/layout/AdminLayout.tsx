@@ -1,5 +1,6 @@
 import type { AdminUser } from "@liam-frost/shared";
 import {
+  ChartColumn,
   Clapperboard,
   FolderKanban,
   Images,
@@ -20,7 +21,8 @@ const NAV = [
   { to: "/projects", label: "项目", icon: FolderKanban, end: false },
   { to: "/collection", label: "收藏", icon: Clapperboard, end: false },
   { to: "/people", label: "人物", icon: UsersRound, end: false },
-  { to: "/music", label: "播放器", icon: Music, end: false }
+  { to: "/music", label: "播放器", icon: Music, end: false },
+  { to: "/analytics", label: "统计", icon: ChartColumn, end: false }
 ];
 
 export function AdminLayout({ user }: { user: AdminUser }) {

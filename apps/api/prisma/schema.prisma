@@ -245,3 +245,117 @@ model PlaylistTrack {
   @@id([playlistId, mediaId])
   @@index([mediaId])
 }
+
+/// A visitor analytics event. Raw events are kept for ANALYTICS_EVENT_RETENTION_DAYS, then only the
+/// daily totals in AnalyticsDaily remain. No IP address is stored: `visitor` is a hash with a salt that
+/// changes every day.
+model AnalyticsEvent {
+  id          String   @id
+  type        String
+  at          DateTime
+  /// Local day (YYYY-MM-DD) and hour in ANALYTICS_TIMEZONE.
+  day         String
+  hour        Int
+  sessionId   String
+  visitor     String
+  path        String
+  contentType String?
+  contentId   String?
+  target      String?
+  detail      String?
+  value       Float?
+
+  @@index([day])
+  @@index([sessionId])
+}
+
+/// A visit: everything after 30 minutes without activity is a new session. Holds the details counted
+/// once per session (where the visitor came from, country, device).
+model AnalyticsSession {
+  id          String   @id
+  visitor     String
+  startedAt   DateTime
+  lastSeenAt  DateTime
+  day         String
+  hour        Int
+  entryPath   String?
+  referrer    String?
+  utmSource   String?
+  utmMedium   String?
+  utmCampaign String?
+  country     String?
+  lang        String?
+  device      String
+  browser     String
+
+  @@index([day])
+  @@index([lastSeenAt])
+}
+
+/// Daily totals, kept for good: `metric` names a count (views, page, country, ...), `key` what it counts.
+model AnalyticsDaily {
+  day    String
+  metric String
+  key    String @default("")
+  value  Float
+
+  @@id([day, metric, key])
+  @@index([metric, day])
+}
+
+/// Days whose totals have been written.
+model AnalyticsRollupDay {
+  day        String   @id
+  computedAt DateTime
+}
+
+/// The salt for today's visitor hashes; yesterday's is deleted, so hashes cannot be linked across days.
+model AnalyticsSalt {
+  day  String @id
+  salt String
+}
+
+/// The name a piece of content had when last seen, so statistics can still name it after it is
+/// hidden or deleted. `key` is "type:id".
+model AnalyticsContentName {
+  key       String   @id
+  type      String
+  contentId String
+  name      String
+  kind      String?
+  updatedAt DateTime
+}
+
+/// Daily request counts and timings of the public API, by route.
+model AnalyticsRequestDaily {
+  day          String
+  route        String
+  requests     Int
+  serverErrors Int
+  clientErrors Int
+  totalMs      Float
+  /// Response times: upper bound in ms → count.
+  histogram    Json
+
+  @@id([day, route])
+}
+
+/// Results of import and sync jobs, and of calls to external sources (TMDB, IGDB, Spotify, ...).
+model AnalyticsSystemEvent {
+  id      Int      @id @default(autoincrement())
+  at      DateTime
+  /// job or source.
+  kind    String
+  name    String
+  ok      Boolean
+  message String?
+
+  @@index([at])
+  @@index([kind, name, at])
+}
+
+/// Small analytics flags, e.g. "demo" when the database holds generated demo data.
+model AnalyticsFlag {
+  key   String @id
+  value String
+}

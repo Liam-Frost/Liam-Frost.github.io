@@ -369,9 +369,31 @@ Status: implementation complete.
 - Site collection page 回顾 tab: per year, how many films, series, anime, books, comics and games were finished, monthly bars, rating distribution and average, top genres, five-star works. Counts entries marked done with a finished date in that year.
 - Verified in the browser with the sample collection (desktop and 375 px wide).
 
+### Stage 18b and 18c: Content, Audience, Experience and Health
+
+Status: implementation complete; Claude Code review complete and fixes applied.
+
+- Content events are checked against public content (projects, photos, collection entries, people, playlists; cached catalog) and names are snapshotted hourly. Admin 内容 view with per-item detail; editors, the project list and collection cards show 30-day views.
+- 来源与受众: source types and sites, countries, UTM, entry pages, languages, devices, browsers and a weekday-hour heatmap, with small groups folded.
+- 体验与运行: Core Web Vitals from the site (half of the landings), public API timings, import and sync job log, external source status (migration `20261107090000_analytics_reports`).
+- CSV / JSON export, clearing by scope, `npm run db:seed:analytics-demo` for a demo-only database.
+- CI: CodeQL flagged `Math.random()` in the site's event ids (fallback path); ids now come from `crypto.getRandomValues`.
+- Tests: 179 passed.
+- Verified with a temporary demo database (60 days, 1,353 visits): every view, the item detail and editor link, 30-day counts on collection cards, CSV export, clearing from the UI, and no overflow at 375 px. Real site visits stored content views for real entries only, public API timings and CLS; this browser pane reports no LCP for pages loaded off screen, so LCP and INP were checked by tests.
+
+### Stage 18a: Visitor Analytics Pipeline and Overview
+
+Status: implementation complete; Claude Code review complete and fixes applied.
+
+- Cookieless collection: `POST /api/analytics/events` (validation per event type, crawler / admin / excluded-IP filtering, per-IP rate limit, repeat filter), sessions in `sessionStorage`, daily salted visitor hashes, countries from a proxy header or GeoLite2 (`maxmind`), hourly rollups and retention cleanup (migration `20261106090000_analytics`).
+- Site: page, content, play, outbound-link, collection-tab and visible-time events; GPC / Do Not Track respected; 隐私说明 page in five languages, linked from the footer.
+- Admin: 统计 page with range picker, KPI cards against the previous period, daily / hourly chart with data table, top pages, visitors online.
+- Tests: 170 passed.
+- Verified with a temporary database: browsing the site produced the expected page, photo, collection-entry, tab, view, outbound-link and play events (a resumed song not counted twice), sessions with route, language, device and browser, no IP; visits after signing in to the admin were not counted; the 统计 page at desktop and 375 px.
+
 ### Upcoming
 
-- `npm run db:deploy` applies the playlist migration.
+- `npm run db:deploy` applies the playlist and analytics migrations.
 - Connect Steam in the admin (收藏 → 游戏 → Steam 游戏库) and run a first sync.
 - Stage 10: VPS deployment and CI/CD (needs the VPS and domain details).
 - Stage 10: VPS deployment and CI/CD (needs the VPS provider/OS/specs, DNS manager and domain from the user).

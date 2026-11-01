@@ -183,6 +183,23 @@ const zh = {
   "collection.kind.track": "音乐",
   "collection.artists": "歌手",
   "collection.album": "专辑：{album}",
+  "footer.privacy": "隐私说明",
+  "privacy.title": "隐私说明",
+  "privacy.intro":
+    "本站会统计访问情况，用来了解哪些内容有人看、访客从哪里来。统计不使用 Cookie，也不会在你的浏览器里保存能识别你的信息。",
+  "privacy.collectTitle": "收集什么",
+  "privacy.collect":
+    "浏览的页面和打开的内容（项目、照片、收藏条目）、播放的歌曲、点击的外部链接、在页面上停留的时间；来源网站（只保留域名）、国家、界面语言、设备类型和浏览器类型。",
+  "privacy.notTitle": "不收集什么",
+  "privacy.not":
+    "不保存 IP 地址，不使用 Cookie 或跨站追踪，不使用第三方统计服务。为了统计每天的访客数，服务器用 IP 和浏览器信息加上每天更换的随机值算出一个摘要；随机值每天销毁，所以无法跨天识别同一个人。",
+  "privacy.keepTitle": "保留多久",
+  "privacy.keep": "原始记录保留 90 天，之后只保留按天汇总的数字。",
+  "privacy.optOutTitle": "如何关闭",
+  "privacy.optOut":
+    "在浏览器中开启“全局隐私控制”（GPC）或“请勿追踪”（Do Not Track），本站就不会记录你的访问。",
+  "privacy.statusOff": "你的浏览器目前不会被统计。",
+  "privacy.statusOn": "你的浏览器目前会被统计。",
   "collection.lastPlayed": "最后游玩 {date}",
   "collection.purchasedOn": "购入于 {date}",
   "collection.kind.review": "回顾",
@@ -437,6 +454,23 @@ const en: Record<Key, string> = {
   "collection.kind.track": "Music",
   "collection.artists": "Artists",
   "collection.album": "Album: {album}",
+  "footer.privacy": "Privacy",
+  "privacy.title": "Privacy",
+  "privacy.intro":
+    "This site counts visits to learn which pages and works people look at and where visitors come from. It uses no cookies and stores nothing in your browser that could identify you.",
+  "privacy.collectTitle": "What is collected",
+  "privacy.collect":
+    "Pages viewed and what was opened (projects, photos, collection entries), songs played, links to other sites clicked, and time spent on a page; the referring site (its domain only), country, site language, device type and browser family.",
+  "privacy.notTitle": "What is not",
+  "privacy.not":
+    "No IP addresses are stored, no cookies or cross-site tracking are used, and no third-party analytics service is involved. To count each day's visitors, the server derives a hash from the IP address and browser details plus a random value that changes daily; the value is destroyed every day, so nobody can be recognised from one day to the next.",
+  "privacy.keepTitle": "How long",
+  "privacy.keep": "Individual records are kept for 90 days; after that only daily totals remain.",
+  "privacy.optOutTitle": "Opting out",
+  "privacy.optOut":
+    "Turn on Global Privacy Control (GPC) or Do Not Track in your browser and this site will not record your visits.",
+  "privacy.statusOff": "Your browser is currently not counted.",
+  "privacy.statusOn": "Your browser is currently counted.",
   "collection.lastPlayed": "Last played {date}",
   "collection.purchasedOn": "Bought {date}",
   "collection.kind.review": "Year in review",
@@ -690,6 +724,24 @@ const fr: Record<Key, string> = {
   "collection.kind.track": "Musique",
   "collection.artists": "Artistes",
   "collection.album": "Album : {album}",
+  "footer.privacy": "Confidentialité",
+  "privacy.title": "Confidentialité",
+  "privacy.intro":
+    "Ce site compte les visites pour savoir quels contenus sont consultés et d'où viennent les visiteurs. Il n'utilise aucun cookie et ne garde rien dans votre navigateur qui permette de vous identifier.",
+  "privacy.collectTitle": "Ce qui est collecté",
+  "privacy.collect":
+    "Les pages vues et ce qui a été ouvert (projets, photos, éléments de la collection), les morceaux écoutés, les liens externes cliqués et le temps passé sur une page ; le site d'origine (son domaine seulement), le pays, la langue du site, le type d'appareil et la famille de navigateur.",
+  "privacy.notTitle": "Ce qui ne l'est pas",
+  "privacy.not":
+    "Aucune adresse IP n'est conservée, aucun cookie ni suivi entre sites n'est utilisé, et aucun service d'analyse tiers n'intervient. Pour compter les visiteurs de la journée, le serveur calcule une empreinte à partir de l'adresse IP et du navigateur, avec une valeur aléatoire renouvelée chaque jour ; cette valeur est détruite chaque jour, il est donc impossible de reconnaître quelqu'un d'un jour à l'autre.",
+  "privacy.keepTitle": "Durée de conservation",
+  "privacy.keep":
+    "Les enregistrements détaillés sont conservés 90 jours ; ensuite, seuls les totaux quotidiens restent.",
+  "privacy.optOutTitle": "Refuser",
+  "privacy.optOut":
+    "Activez Global Privacy Control (GPC) ou « Do Not Track » dans votre navigateur et ce site n'enregistrera plus vos visites.",
+  "privacy.statusOff": "Votre navigateur n'est actuellement pas comptabilisé.",
+  "privacy.statusOn": "Votre navigateur est actuellement comptabilisé.",
   "collection.lastPlayed": "Dernière partie le {date}",
   "collection.purchasedOn": "Acheté le {date}",
   "collection.kind.review": "Bilan",
@@ -941,6 +993,23 @@ const ja: Record<Key, string> = {
   "collection.kind.track": "音楽",
   "collection.artists": "アーティスト",
   "collection.album": "アルバム：{album}",
+  "footer.privacy": "プライバシー",
+  "privacy.title": "プライバシー",
+  "privacy.intro":
+    "このサイトは、どのページや作品が見られているか、訪問者がどこから来たかを知るためにアクセスを集計しています。Cookie は使わず、あなたを識別できる情報をブラウザに保存することもありません。",
+  "privacy.collectTitle": "集計する内容",
+  "privacy.collect":
+    "閲覧したページと開いたコンテンツ（プロジェクト、写真、コレクション）、再生した曲、クリックした外部リンク、ページの滞在時間。参照元サイト（ドメインのみ）、国、表示言語、端末の種類、ブラウザの種類。",
+  "privacy.notTitle": "集計しないもの",
+  "privacy.not":
+    "IP アドレスは保存せず、Cookie やサイトをまたぐ追跡、外部の解析サービスも使いません。1 日の訪問者数を数えるため、サーバーは IP アドレスとブラウザ情報に毎日変わる乱数を加えたハッシュを計算します。乱数は毎日破棄されるため、日をまたいで同じ人を識別することはできません。",
+  "privacy.keepTitle": "保存期間",
+  "privacy.keep": "個々の記録は 90 日間保存し、その後は日ごとの合計だけが残ります。",
+  "privacy.optOutTitle": "オプトアウト",
+  "privacy.optOut":
+    "ブラウザで Global Privacy Control（GPC）または「トラッキング拒否」（Do Not Track）を有効にすると、このサイトはあなたの訪問を記録しません。",
+  "privacy.statusOff": "現在、このブラウザは集計されていません。",
+  "privacy.statusOn": "現在、このブラウザは集計の対象です。",
   "collection.lastPlayed": "最終プレイ {date}",
   "collection.purchasedOn": "{date} に購入",
   "collection.kind.review": "振り返り",
@@ -1202,6 +1271,23 @@ const zhHant: Record<Key, string> = {
   "collection.kind.track": "音樂",
   "collection.artists": "歌手",
   "collection.album": "專輯：{album}",
+  "footer.privacy": "隱私說明",
+  "privacy.title": "隱私說明",
+  "privacy.intro":
+    "本站會統計訪問情況，用來了解哪些內容有人看、訪客從哪裡來。統計不使用 Cookie，也不會在你的瀏覽器裡保存能識別你的資訊。",
+  "privacy.collectTitle": "收集什麼",
+  "privacy.collect":
+    "瀏覽的頁面和打開的內容（專案、照片、收藏條目）、播放的歌曲、點擊的外部連結、在頁面上停留的時間；來源網站（只保留網域）、國家、介面語言、裝置類型和瀏覽器類型。",
+  "privacy.notTitle": "不收集什麼",
+  "privacy.not":
+    "不保存 IP 位址，不使用 Cookie 或跨站追蹤，不使用第三方統計服務。為了統計每天的訪客數，伺服器用 IP 和瀏覽器資訊加上每天更換的隨機值算出一個摘要；隨機值每天銷毀，所以無法跨天識別同一個人。",
+  "privacy.keepTitle": "保留多久",
+  "privacy.keep": "原始記錄保留 90 天，之後只保留按天彙總的數字。",
+  "privacy.optOutTitle": "如何關閉",
+  "privacy.optOut":
+    "在瀏覽器中開啟「全域隱私控制」（GPC）或「請勿追蹤」（Do Not Track），本站就不會記錄你的訪問。",
+  "privacy.statusOff": "你的瀏覽器目前不會被統計。",
+  "privacy.statusOn": "你的瀏覽器目前會被統計。",
   "collection.lastPlayed": "最後遊玩 {date}",
   "collection.purchasedOn": "購入於 {date}",
   "collection.kind.review": "回顧",

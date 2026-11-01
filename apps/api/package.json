@@ -11,6 +11,7 @@
     "db:push": "prisma db push && prisma generate",
     "db:seed": "tsx src/db/seed.ts",
     "db:seed:collection": "tsx src/db/seed-collection.ts",
+    "db:seed:analytics-demo": "tsx src/db/seed-analytics-demo.ts",
     "db:backfill:romaji": "tsx src/db/backfill-romaji.ts",
     "db:studio": "prisma studio",
     "dev": "prisma generate && tsx watch src/server.ts",
@@ -31,6 +32,7 @@
     "dotenv": "^18.0.9",
     "exif-reader": "^2.0.3",
     "fastify": "^5.0.0",
+    "maxmind": "^5.0.7",
     "prisma": "7.10.1",
     "sharp": "^0.35.5",
     "zod": "^4.6.7"

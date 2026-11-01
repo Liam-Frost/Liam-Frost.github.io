@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState, type FocusEvent } from "react
 
 import { onPlayerCommand, setNowPlaying, type PlayRequest } from "../data/playerBus";
 import { useSpotifyPlayer } from "../data/useSpotifyPlayer";
+import { track as trackEvent } from "../lib/analytics";
 import { SpotifyCard } from "./spotify-card";
 
 /** Previews that fail to load are skipped; after this many in a row, playback stops. */
@@ -60,6 +61,19 @@ function EmbedDock({ player, src }: { player: PublicSpotifyPlayer; src: string }
               : null;
         const chosen = link ? embedSrc(link) : null;
         if (!chosen) return;
+        // Spotify's player only shows the song; counted as a play once it is loaded for the visitor.
+        const first =
+          command.type === "play"
+            ? command.track
+            : command.type === "queue"
+              ? command.tracks[0]
+              : null;
+        if (first)
+          trackEvent("music_play", {
+            contentId: first.id,
+            target: "spotify",
+            detail: command.type === "play" ? "button" : "all"
+          });
         setShown(chosen);
         setIsExpanded(true);
         setHasAutoCollapsed(true);
