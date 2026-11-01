@@ -20,8 +20,8 @@ triage and outstanding certificate/development-tool advisories are recorded in
 PR CodeQL findings prompted a follow-up: register the maintained Fastify rate-limit
 plugin before routes (making `buildServer` asynchronous), with a shared 600/minute
 client budget, health exemption, bounded cache and structured 429 responses. Keep
-the stricter login limiter. Remove residual angle brackets from provider descriptions
-so malformed nested tags cannot re-form markup. Validate both changes with regression
+the stricter login limiter. Extract provider description text with a shared single-pass
+scanner that never copies angle brackets, so nested tags cannot re-form markup. Validate both changes with regression
 coverage and CI; do not suppress the scan findings.
 
 ### 2026-11-04: Stage 17 Scope

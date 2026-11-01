@@ -59,9 +59,11 @@ GitHub CodeQL initially reported ten open alerts:
 - **#10, polynomial regex in `normalizeAdminPath`: fixed locally.** Replace the
   potentially quadratic trailing-slash regex with two linear scans. Regression
   coverage includes long valid slash runs, invalid suffixes and all-slash input.
-- **#8 and #9, incomplete HTML removal in imported descriptions:** remove complete
-  tags and then remaining angle brackets so nested malformed tags cannot form
-  markup after replacement. Steam import coverage includes nested hostile tags.
+- **#8 and #9, incomplete HTML removal in imported descriptions:** use a shared
+  single-pass text extractor instead of regex tag replacement. No angle brackets
+  are copied, so nested malformed tags cannot form markup in the result. Unit
+  coverage includes normal, nested, unclosed and plain-text inputs; Steam import
+  coverage also includes nested hostile tags.
   Consumers still render these values as React text or textarea values. A future
   HTML rendering feature must use a maintained sanitizer; this cleanup is intended
   for plain-text display, not arbitrary HTML output.

@@ -9,6 +9,8 @@ import type {
   PersonSearchResult
 } from "@liam-frost/shared";
 
+import { stripMarkup } from "../lib/plain-text";
+
 /** Errors worth showing in the admin as they are. */
 export class SourceError extends Error {}
 
@@ -357,10 +359,7 @@ const clean = (value: string | null | undefined) =>
 /** AniList descriptions carry some HTML and a "(Source: ...)" credit line. */
 const plainText = (value: string | null | undefined) =>
   clean(
-    value
-      ?.replace(/<br\s*\/?>/gi, "\n")
-      .replace(/<[^<>]*>/g, "")
-      .replace(/[<>]/g, "")
+    stripMarkup((value ?? "").replace(/<br\s*\/?>/gi, "\n"))
       .replace(/\n*\(Source:[^)]*\)\s*$/i, "")
       .replace(/\n{3,}/g, "\n\n")
   );

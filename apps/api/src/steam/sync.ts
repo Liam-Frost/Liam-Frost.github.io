@@ -2,6 +2,7 @@ import type { LocalizedText, MediaStatus, SteamSyncJob } from "@liam-frost/share
 import { randomBytes, randomUUID } from "node:crypto";
 
 import { importMedia, storePoster } from "../media/import";
+import { stripMarkup } from "../lib/plain-text";
 import { SourceError, type MediaSources } from "../media/sources";
 import { DuplicateMediaError, type MediaRepository } from "../media/types";
 import { InvalidImageError, processImage } from "../photos/images";
@@ -223,10 +224,7 @@ export class SteamSync {
         credits: (details.developers ?? []).slice(0, 3),
         overview: details.short_description
           ? {
-              zh: details.short_description
-                .replace(/<[^<>]*>/g, "")
-                .replace(/[<>]/g, "")
-                .trim()
+              zh: stripMarkup(details.short_description).trim()
             }
           : {},
         poster,
