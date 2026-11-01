@@ -1,6 +1,7 @@
 import { lazy, Suspense } from "react";
 import { Route, Routes } from "react-router";
 
+import AnalyticsTracker from "./AnalyticsTracker";
 import ScrollManager from "./ScrollManager";
 import BackgroundFX from "../components/BackgroundFX";
 import Footer from "../components/Footer";
@@ -9,6 +10,7 @@ import SpotifyDock from "../components/SpotifyDock";
 import HomePage from "../pages/Home";
 import NotFoundPage from "../pages/NotFound";
 import PortfolioPage from "../pages/Portfolio";
+import PrivacyPage from "../pages/Privacy";
 import ProjectsPage from "../pages/Projects";
 import { useI18n } from "../lib/i18n";
 import { useTheme } from "../lib/useTheme";
@@ -30,6 +32,7 @@ export default function App() {
 
       <BackgroundFX />
       <ScrollManager />
+      <AnalyticsTracker />
 
       <header className="siteHeader">
         <div className="container">
@@ -42,6 +45,7 @@ export default function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/portfolio" element={<PortfolioPage />} />
           <Route path="/projects" element={<ProjectsPage />} />
+          <Route path="/privacy" element={<PrivacyPage />} />
           <Route
             path="/collection"
             element={

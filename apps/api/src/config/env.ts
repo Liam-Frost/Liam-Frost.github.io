@@ -76,7 +76,21 @@ const envSchema = z.object({
   TWITCH_CLIENT_SECRET: optionalString,
   SPOTIFY_CLIENT_ID: optionalString,
   SPOTIFY_CLIENT_SECRET: optionalString,
-  SPOTIFY_REDIRECT_URI: optionalString
+  SPOTIFY_REDIRECT_URI: optionalString,
+
+  ANALYTICS_ENABLED: booleanFlag,
+  ANALYTICS_TIMEZONE: optionalString,
+  ANALYTICS_EVENT_RETENTION_DAYS: optionalNumber.pipe(z.number().int().min(7).max(730).default(90)),
+  ANALYTICS_MIN_GROUP_SIZE: optionalNumber.pipe(z.number().int().min(1).max(50).default(3)),
+  ANALYTICS_RATE_LIMIT_PER_MINUTE: optionalNumber.pipe(
+    z.number().int().min(1).max(10_000).default(60)
+  ),
+  ANALYTICS_EXCLUDE_IPS: csv,
+  ANALYTICS_COUNTRY_HEADER: optionalString.refine(
+    (value) => !value || /^[A-Za-z0-9-]+$/.test(value),
+    "must be a header name, e.g. cf-ipcountry"
+  ),
+  ANALYTICS_GEOIP_DB: optionalString
 });
 
 export type AdminConfig = {
@@ -90,6 +104,22 @@ export type AdminConfig = {
   cookieSecure: boolean;
   path: string;
   allowedIps: IpList;
+};
+
+export type AnalyticsConfig = {
+  enabled: boolean;
+  /** IANA time zone for days and hours. */
+  timezone: string;
+  retentionDays: number;
+  /** Breakdowns with fewer distinct visitors than this hide their numbers. */
+  minGroupSize: number;
+  /** Event requests per IP per minute. */
+  rateLimitPerMinute: number;
+  excludeIps: IpList;
+  /** A trusted proxy's country header (lower case), e.g. cf-ipcountry. */
+  countryHeader: string | null;
+  /** A GeoLite2 Country database (.mmdb). */
+  geoipDb: string | null;
 };
 
 export type AppConfig = {
@@ -115,6 +145,7 @@ export type AppConfig = {
   twitch: { clientId: string; clientSecret: string } | null;
   /** Spotify developer app for importing the admin's Liked Songs and playlists; null when not set up. */
   spotify: { clientId: string; clientSecret: string; redirectUri: string } | null;
+  analytics: AnalyticsConfig;
 };
 
 export class ConfigError extends Error {
@@ -191,6 +222,19 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     issues.push(`ADMIN_ALLOWED_IPS: ${(error as Error).message}`);
   }
 
+  let analyticsExcludeIps = new IpList([]);
+  try {
+    analyticsExcludeIps = new IpList(values.ANALYTICS_EXCLUDE_IPS);
+  } catch (error) {
+    issues.push(`ANALYTICS_EXCLUDE_IPS: ${(error as Error).message}`);
+  }
+  const analyticsTimezone = values.ANALYTICS_TIMEZONE ?? "Asia/Shanghai";
+  try {
+    new Intl.DateTimeFormat("en", { timeZone: analyticsTimezone });
+  } catch {
+    issues.push(`ANALYTICS_TIMEZONE: "${analyticsTimezone}" is not an IANA time zone`);
+  }
+
   if (issues.length) {
     throw new ConfigError(issues);
   }
@@ -230,6 +274,16 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     spotify:
       spotifyId && spotifySecret
         ? { clientId: spotifyId, clientSecret: spotifySecret, redirectUri: spotifyRedirect }
-        : null
+        : null,
+    analytics: {
+      enabled: values.ANALYTICS_ENABLED ?? true,
+      timezone: analyticsTimezone,
+      retentionDays: values.ANALYTICS_EVENT_RETENTION_DAYS,
+      minGroupSize: values.ANALYTICS_MIN_GROUP_SIZE,
+      rateLimitPerMinute: values.ANALYTICS_RATE_LIMIT_PER_MINUTE,
+      excludeIps: analyticsExcludeIps,
+      countryHeader: values.ANALYTICS_COUNTRY_HEADER?.toLowerCase() ?? null,
+      geoipDb: values.ANALYTICS_GEOIP_DB ?? null
+    }
   };
 }

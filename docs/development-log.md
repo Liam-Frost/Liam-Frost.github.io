@@ -154,6 +154,8 @@
 - The user created a Google Books key; it was added to `.env` / `.env.example` with comments and wired in as a book source. Google's cover links are 128 px; `zoom=0` turned out to return the same 575 × 750 "no image" placeholder for different books, so covers use `fife=w800`.
 - The user filled in `STEAM_WEB_API_KEY` (game details public) and asked for 17c and 17d. Steam sign-in can only be completed by the user in their own browser; the sync was tested with faked Steam answers and the sign-in address checked in the browser.
 - The first password used for the temporary admin was from an older test environment; the login silently failed and the Steam button was not found.
+- The user had already set this repository's git identity to Liam-Frost <frostnova986@gmail.com>; the Stage 18 plan commit already used it. Commits here use that identity, not the company one.
+- Stage 18a: the temporary API's launcher could not import `dotenv` from the scratch folder; it now resolves it from `apps/api`. The browser pane's sample player could not load audio offline, so play counting was checked through the player bus; visits after signing in to the admin (same host, shared cookie) were correctly not counted. `prisma dev` reported its stream server on 127.0.0.1:8787, the API's default port.
 
 ## Notes
 

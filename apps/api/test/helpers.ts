@@ -5,6 +5,7 @@ import { join } from "node:path";
 
 import { hashPassword } from "../src/auth/password";
 import { loadConfig } from "../src/config/env";
+import type { AnalyticsStore } from "../src/analytics/types";
 import type { MusicSource } from "../src/media/itunes";
 import { SourceError, type MediaSources } from "../src/media/sources";
 import type { MediaRepository } from "../src/media/types";
@@ -78,6 +79,10 @@ export type TestServerOptions = {
   steamFetch?: typeof fetch;
   /** Defaults to no preview, so tests never reach Spotify. */
   trackPreview?: (trackId: string) => Promise<string | null>;
+  /** Defaults to none (events are dropped). */
+  analyticsStore?: AnalyticsStore | null;
+  /** Defaults to the real time. */
+  now?: () => Date;
 };
 
 /**
@@ -117,7 +122,9 @@ export async function buildTestServer(
     },
     spotifyAccount: options.spotifyAccount,
     trackPreview: options.trackPreview ?? (async () => null),
-    steamFetch: options.steamFetch ?? (() => Promise.reject(new Error("no network in tests")))
+    steamFetch: options.steamFetch ?? (() => Promise.reject(new Error("no network in tests"))),
+    analyticsStore: options.analyticsStore ?? null,
+    now: options.now
   });
 }
 

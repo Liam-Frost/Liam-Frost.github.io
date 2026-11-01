@@ -77,6 +77,7 @@ export function SpotifyCard({
             </button>
           ) : null}
           <a
+            data-analytics="player"
             href={track.link}
             target="_blank"
             rel="noopener noreferrer"

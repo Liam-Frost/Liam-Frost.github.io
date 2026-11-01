@@ -105,7 +105,7 @@ export default function PersonDetail({
           </section>
 
           {person.links.length || person.sourceUrl ? (
-            <div className="mediaListenLinks">
+            <div className="mediaListenLinks" data-analytics="person_links">
               {person.links.map((link) => (
                 <a
                   key={link}

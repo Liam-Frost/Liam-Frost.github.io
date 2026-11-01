@@ -1,5 +1,8 @@
 import {
   ADMIN_REQUEST_HEADER,
+  type AnalyticsMeta,
+  type AnalyticsOverview,
+  type AnalyticsRange,
   type AdminBatchRequest,
   type AdminBatchResult,
   type AdminCollectionSettingsResponse,
@@ -280,6 +283,14 @@ export const api = {
     request<AdminPlaylistResponse>(`${playlistPath(id)}/tracks`, { method: "POST", json: body }),
   reorderPlaylist: (id: string, ids: string[]) =>
     request<AdminPlaylistResponse>(`${playlistPath(id)}/order`, { method: "PUT", json: { ids } }),
+  analyticsMeta: () => request<AnalyticsMeta>("/api/admin/analytics/meta"),
+  analyticsOverview: (range: AnalyticsRange, from?: string, to?: string) =>
+    request<AnalyticsOverview>(
+      `/api/admin/analytics/overview?${new URLSearchParams({
+        range,
+        ...(range === "custom" && from && to ? { from, to } : {})
+      })}`
+    ),
   steamAccount: () => request<SteamAccountStatus>("/api/admin/steam/account"),
   connectSteam: (returnTo: string) =>
     request<{ url: string }>("/api/admin/steam/connect", { method: "POST", json: { returnTo } }),

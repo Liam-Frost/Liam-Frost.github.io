@@ -2260,6 +2260,36 @@ html[data-theme="light"] .aboutSection {
   }
 }
 
+/* Privacy page */
+.privacy .prose {
+  max-width: 760px;
+}
+
+.privacy .prose section + section {
+  margin-top: 1.4em;
+}
+
+.privacy .prose h2 {
+  margin: 0 0 0.4em;
+  font-size: 18px;
+}
+
+.privacy .prose p {
+  margin: 0;
+}
+
+.privacyStatus {
+  margin-top: 1.6em !important;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.footerGrid a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 /* Markdown body */
 .prose {
   margin-top: 24px;

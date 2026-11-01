@@ -369,11 +369,21 @@ Status: implementation complete.
 - Site collection page 回顾 tab: per year, how many films, series, anime, books, comics and games were finished, monthly bars, rating distribution and average, top genres, five-star works. Counts entries marked done with a finished date in that year.
 - Verified in the browser with the sample collection (desktop and 375 px wide).
 
+### Stage 18a: Visitor Analytics Pipeline and Overview
+
+Status: implementation complete; Claude Code review complete and fixes applied.
+
+- Cookieless collection: `POST /api/analytics/events` (validation per event type, crawler / admin / excluded-IP filtering, per-IP rate limit, repeat filter), sessions in `sessionStorage`, daily salted visitor hashes, countries from a proxy header or GeoLite2 (`maxmind`), hourly rollups and retention cleanup (migration `20261106090000_analytics`).
+- Site: page, content, play, outbound-link, collection-tab and visible-time events; GPC / Do Not Track respected; 隐私说明 page in five languages, linked from the footer.
+- Admin: 统计 page with range picker, KPI cards against the previous period, daily / hourly chart with data table, top pages, visitors online.
+- Tests: 170 passed.
+- Verified with a temporary database: browsing the site produced the expected page, photo, collection-entry, tab, view, outbound-link and play events (a resumed song not counted twice), sessions with route, language, device and browser, no IP; visits after signing in to the admin were not counted; the 统计 page at desktop and 375 px.
+
 ### Upcoming
 
-- `npm run db:deploy` applies the playlist migration.
+- `npm run db:deploy` applies the playlist and analytics migrations.
 - Connect Steam in the admin (收藏 → 游戏 → Steam 游戏库) and run a first sync.
-- Stage 18: visitor analytics (cookieless, with countries, admin only). See `docs/plan-analytics.md`.
+- Stage 18b: content, sources and audience views; 18c: experience, health, export. See `docs/plan-analytics.md`.
 - Stage 10: VPS deployment and CI/CD (needs the VPS and domain details).
 - Stage 10: VPS deployment and CI/CD (needs the VPS provider/OS/specs, DNS manager and domain from the user).
 - Stage 5: back-end foundation and admin auth refinement (`ADMIN_PATH`, IP allowlist, CSRF, Zod, tests). See `docs/plan-admin-projects-deploy.md`.

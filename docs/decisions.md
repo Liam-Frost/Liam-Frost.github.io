@@ -96,6 +96,12 @@ React and related dependencies should be upgraded to the latest versions. This u
 
 ## Model Decisions
 
+### 2026-11-02: Analytics Details for Stage 18a
+
+The model chose: page views by route template rather than full address; content views read from the address (projects, `?photo=`, `?item=`, `?person=`, playlists), so no page component needs its own tracking call; referrer, UTM, country, device and browser stored once per session rather than per event; beacons sent as `text/plain` (no CORS preflight); the signed-in admin excluded on the server by the session cookie rather than a browser flag; content ids validated by format only until Stage 18b adds name snapshots; a Spotify-player play counted when the song is loaded, since the iframe hides playback. Countries use the `maxmind` package for GeoLite2 files.
+
+Reason: fewer moving parts in the site, smaller raw tables, and no identifying data in the browser.
+
 ### 2026-11-01: Steam Through "Sign in Through Steam" and the Site's Web API Key
 
 The model chose Steam's OpenID sign-in to prove the admin's SteamID and the site's Web API key to read the library, storing only the SteamID, name and avatar.

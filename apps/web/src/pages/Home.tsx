@@ -356,7 +356,7 @@ export default function HomePage() {
 
               <div className="contactElsewhere">
                 <span className="contactElsewhereLabel">{t("contact.elsewhere")}</span>
-                <div className="contactElsewhereLinks">
+                <div className="contactElsewhereLinks" data-analytics="contact">
                   {site.socials.map((s) => (
                     <a
                       key={s.label}

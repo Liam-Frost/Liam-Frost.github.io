@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { Link } from "react-router";
 
 import { site } from "../data/site";
 import { pickLocalized, useI18n } from "../lib/i18n";
@@ -10,7 +11,8 @@ export default function Footer() {
   return (
     <div className="footerGrid">
       <p style={{ margin: 0 }}>
-        © {year} {site.nameLatin} · {pickLocalized(site.role, lang)}
+        © {year} {site.nameLatin} · {pickLocalized(site.role, lang)} ·{" "}
+        <Link to="/privacy">{t("footer.privacy")}</Link>
       </p>
 
       <button

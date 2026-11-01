@@ -8,11 +8,16 @@ import Fastify from "fastify";
 import * as http from "node:http";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
+import { createCountryLookup } from "./analytics/geo";
+import { PrismaAnalyticsStore } from "./analytics/prisma-store";
+import { AnalyticsService } from "./analytics/service";
+import type { AnalyticsStore } from "./analytics/types";
 import { AdminAuthService } from "./auth/service";
 import { ConfigError, loadConfig, type AppConfig } from "./config/env";
 import { getPrismaClient, hasDatabaseUrl } from "./db/client";
 import { HttpError, isDatabaseUnavailable, notFound } from "./lib/errors";
 import { registerAdminRoutes } from "./routes/admin";
+import { registerAnalyticsRoutes } from "./routes/analytics";
 import { registerAdminApp } from "./routes/admin-app";
 import { registerAdminPhotoRoutes } from "./routes/admin-photos";
 import { registerAdminMediaRoutes } from "./routes/admin-media";
@@ -93,6 +98,12 @@ function defaultPlaylistRepository(): PlaylistRepository | null {
   return client ? new PrismaPlaylistRepository(client) : null;
 }
 
+/** Prisma-backed visitor analytics when DATABASE_URL is set, otherwise none (events are dropped). */
+function defaultAnalyticsStore(): AnalyticsStore | null {
+  const client = getPrismaClient();
+  return client ? new PrismaAnalyticsStore(client) : null;
+}
+
 /** Prisma-backed settings when DATABASE_URL is set, otherwise none (defaults, kept in memory). */
 function defaultSettingsRepository(): SettingsRepository | null {
   const client = getPrismaClient();
@@ -120,6 +131,10 @@ export type BuildServerOptions = {
   relations?: RelationRepository | null;
   /** Playlists; defaults to Prisma when DATABASE_URL is set. Pass null for none. */
   playlists?: PlaylistRepository | null;
+  /** Visitor analytics; defaults to Prisma when DATABASE_URL is set. Pass null for none. */
+  analyticsStore?: AnalyticsStore | null;
+  /** The analytics clock; defaults to the real time. */
+  now?: () => Date;
   /** TMDB / Bangumi access; defaults to the real services. */
   mediaSources?: MediaSources;
   /** Settings storage; defaults to Prisma when DATABASE_URL is set. Pass null for none. */
@@ -150,6 +165,8 @@ export async function buildServer({
   people = defaultPersonRepository(),
   relations = defaultRelationRepository(),
   playlists = defaultPlaylistRepository(),
+  analyticsStore = defaultAnalyticsStore(),
+  now,
   mediaSources = createMediaSources({
     tmdbKey: config.tmdbApiKey,
     googleBooksKey: config.googleBooksApiKey,
@@ -206,6 +223,29 @@ export async function buildServer({
         (error) => app.log.warn({ err: error }, "Music import failed")
       )
     : null;
+
+  const geo = createCountryLookup(
+    { header: config.analytics.countryHeader, geoipDb: config.analytics.geoipDb },
+    (error) => app.log.warn({ err: error }, "Cannot open ANALYTICS_GEOIP_DB; countries are unknown")
+  );
+  const analytics = analyticsStore
+    ? new AnalyticsService(analyticsStore, config.analytics, geo, now)
+    : null;
+  if (analytics?.enabled) {
+    // Hourly: write the totals of finished days and delete raw data past the retention period.
+    const maintain = () =>
+      analytics.maintain().catch((error: unknown) => {
+        app.log.warn({ err: error }, "Analytics maintenance failed");
+      });
+    const first = setTimeout(maintain, 10_000);
+    const hourly = setInterval(maintain, 60 * 60 * 1000);
+    first.unref();
+    hourly.unref();
+    app.addHook("onClose", async () => {
+      clearTimeout(first);
+      clearInterval(hourly);
+    });
+  }
 
   app.register(cors, { credentials: true, origin: config.corsOrigins });
   app.register(cookie);
@@ -304,6 +344,7 @@ export async function buildServer({
   registerUploadRoutes(app, store, { photos, projects, media, people, collection }, auth);
   registerSpotifyRoutes(app, auth, spotify, account, settings !== null);
   registerSteamRoutes(app, auth, steam, steamSync);
+  registerAnalyticsRoutes(app, auth, analytics, geo, config.analytics.rateLimitPerMinute);
   registerWebApp(app, webDistDir);
 
   return app;
