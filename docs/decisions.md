@@ -2,6 +2,10 @@
 
 ## User Decisions
 
+### 2026-11-01: Cookieless Visitor Analytics, Admin Only
+
+The user chose cookieless analytics for Stage 18: visitors are counted per day by a server-side hash with a daily salt, nothing identifying is kept in the browser, and returning visitors are not counted. Countries are collected (country code only). Statistics are shown only in the admin, not on the public site.
+
 ### 2026-11-01: Evaluate Node 26 and track TypeScript 7 support
 
 User requested actual Node 26 compatibility validation after merging Dependabot

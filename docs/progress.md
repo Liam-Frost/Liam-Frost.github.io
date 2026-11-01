@@ -373,6 +373,7 @@ Status: implementation complete.
 
 - `npm run db:deploy` applies the playlist migration.
 - Connect Steam in the admin (收藏 → 游戏 → Steam 游戏库) and run a first sync.
+- Stage 18: visitor analytics (cookieless, with countries, admin only). See `docs/plan-analytics.md`.
 - Stage 10: VPS deployment and CI/CD (needs the VPS and domain details).
 - Stage 10: VPS deployment and CI/CD (needs the VPS provider/OS/specs, DNS manager and domain from the user).
 - Stage 5: back-end foundation and admin auth refinement (`ADMIN_PATH`, IP allowlist, CSRF, Zod, tests). See `docs/plan-admin-projects-deploy.md`.
