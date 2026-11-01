@@ -30,10 +30,11 @@ const queue: AnalyticsEventInput[] = [];
 let timer: number | undefined;
 let currentPath: AnalyticsPath = "/";
 
+/** 32 random hex characters; getRandomValues also works on plain-HTTP pages, unlike randomUUID. */
 const randomId = () =>
-  typeof crypto !== "undefined" && "randomUUID" in crypto
-    ? crypto.randomUUID().replace(/-/g, "")
-    : `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 12)}`;
+  Array.from(crypto.getRandomValues(new Uint8Array(16)), (byte) =>
+    byte.toString(16).padStart(2, "0")
+  ).join("");
 
 function readStoredSession(): { id: string; last: number } | null {
   try {
