@@ -166,6 +166,8 @@ export type SpotifySettings = {
   volume: number;
   /** Seconds before the player collapses after the page loads; 0 keeps it open. */
   autoCollapseSeconds: number;
+  /** The site's own player: a playlist to play instead of every song marked "in player". */
+  playlistId: string | null;
 };
 
 /** A song in the site's player, with its 30-second preview. */
@@ -420,12 +422,45 @@ export type PublicMedia = PublicMediaSummary & {
   links: PublicLink[];
 };
 
+export type AdminPlaylist = {
+  id: string;
+  name: LocalizedText;
+  description: LocalizedText;
+  /** Made in the admin, or created by a Spotify import. */
+  source: "manual" | "spotify";
+  sourceUrl: string | null;
+  visibility: PhotoVisibility;
+  /** Song ids in playlist order. */
+  trackIds: string[];
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type AdminPlaylistsResponse = { playlists: AdminPlaylist[] };
+export type AdminPlaylistResponse = { playlist: AdminPlaylist };
+export type AdminPlaylistCreate = { name: LocalizedText; description?: LocalizedText };
+export type AdminPlaylistUpdate = Partial<{ name: LocalizedText; description: LocalizedText; visibility: PhotoVisibility }>;
+/** Adds songs to the end of a playlist, or removes them. */
+export type AdminPlaylistTracks = { action: "add" | "remove"; ids: string[] };
+
+/** A public playlist; its songs are the collection's songs the site shows, in playlist order. */
+export type PublicPlaylist = {
+  id: string;
+  name: LocalizedText;
+  description: LocalizedText;
+  trackIds: string[];
+  /** The playlist on Spotify, for imported ones. */
+  sourceUrl: string | null;
+};
+
 export type PublicCollection = {
   /** Kinds the site shows, in display order. */
   kinds: MediaKind[];
   items: PublicMediaSummary[];
   /** People the site shows (empty when the people switch is off). */
   people: PublicPersonSummary[];
+  /** Public playlists with at least one song the site shows. */
+  playlists: PublicPlaylist[];
 };
 
 /** How two entries, or a person and an entry, are linked. */

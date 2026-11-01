@@ -376,6 +376,26 @@ export const personBatchSchema = batchSchema(
     .refine((value) => Object.keys(value).length > 0, "Nothing to change")
 );
 
+export const playlistIdSchema = projectIdSchema;
+
+export const playlistCreateSchema = z
+  .object({ name: requiredText(120, "Name is required in at least one language"), description: localizedText(1000).optional() })
+  .strict();
+
+export const playlistUpdateSchema = z
+  .object({ name: requiredText(120, "Name is required in at least one language"), description: localizedText(1000), visibility: z.enum(["public", "private"]) })
+  .partial()
+  .strict();
+
+export const playlistTracksSchema = z
+  .object({ action: z.enum(["add", "remove"]), ids: z.array(uuid).min(1).max(1000, "At most 1000 at a time") })
+  .strict();
+
+export const playlistOrderSchema = z
+  .object({ ids: z.array(uuid).max(5000) })
+  .strict()
+  .refine((value) => new Set(value.ids).size === value.ids.length, "Duplicate ids in order");
+
 export const collectionSettingsSchema = z
   .object({
     // Settings saved before a kind existed have no switch for it; it is shown.

@@ -7,6 +7,7 @@ import { MemorySettingsRepository } from "../src/settings/types";
 import type { FetchedPlaylist, PlaylistFetcher } from "../src/spotify/playlist";
 import { buildTestServer, csrf, login, offlineMediaSources } from "./helpers";
 import { MemoryMediaRepository } from "./memory-media-repository";
+import { MemoryPlaylistRepository } from "./memory-playlist-repository";
 
 let jpg: Buffer;
 beforeAll(async () => {
@@ -124,9 +125,10 @@ async function setup(options: { music?: Partial<MusicSource>; fetchPlaylist?: Pl
     findPreview: async () => null,
     ...options.music
   };
-  const app = await buildTestServer({}, { media, settings, mediaSources, musicSource, fetchPlaylist: options.fetchPlaylist });
+  const playlists = new MemoryPlaylistRepository(media);
+  const app = await buildTestServer({}, { media, settings, mediaSources, musicSource, fetchPlaylist: options.fetchPlaylist, playlists });
   const cookie = await login(app);
-  return { app, media, download, cookie, headers: { ...csrf, cookie } };
+  return { app, media, playlists, download, cookie, headers: { ...csrf, cookie } };
 }
 
 describe("admin music", () => {
@@ -170,7 +172,7 @@ describe("admin music", () => {
 
   it("imports a playlist in the background: once per song, one cover per album", async () => {
     const fetchPlaylist = vi.fn<PlaylistFetcher>(async () => playlist(5));
-    const { app, headers, cookie, download } = await setup({ fetchPlaylist });
+    const { app, headers, cookie, download, playlists } = await setup({ fetchPlaylist });
     const start = await app.inject({ method: "POST", url: "/api/admin/music/playlist-import", headers, payload: { playlistUrl: "https://open.spotify.com/playlist/37i9dQZF1DX9AUX5YVf3hc?si=1" } });
     expect(start.statusCode).toBe(202);
     const jobId = start.json().job.id;
@@ -198,6 +200,13 @@ describe("admin music", () => {
       await new Promise((resolve) => setTimeout(resolve, 20));
     }
     expect(again).toMatchObject({ state: "done", added: 0, skipped: 5 });
+
+    // The import made one playlist with every song in list order; importing again added no copies.
+    const [made] = await playlists.list({ includePrivate: true });
+    expect(await playlists.list({ includePrivate: true })).toHaveLength(1);
+    expect(made).toMatchObject({ name: { en: "City Pop Best" }, source: "spotify", sourceId: "37i9dQZF1DX9AUX5YVf3hc" });
+    const order = made.trackIds.map((id) => items.find((item: { id: string }) => item.id === id).sourceId);
+    expect(order).toEqual([0, 1, 2, 3, 4].map((i) => `track0000000000000000${i}`));
   });
 
   it("refuses a second playlist while one is importing", async () => {

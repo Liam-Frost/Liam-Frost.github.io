@@ -155,6 +155,7 @@ model MediaItem {
   updatedAt     DateTime     @updatedAt
   relationsFrom MediaRelation[] @relation("RelationFromMedia")
   relationsTo   MediaRelation[] @relation("RelationToMedia")
+  playlists     PlaylistTrack[]
 
   @@unique([source, sourceId])
   @@index([kind, visibility])
@@ -212,4 +213,35 @@ model MediaRelation {
   @@index([fromMediaId])
   @@index([fromPersonId])
   @@index([toMediaId])
+}
+
+/// A playlist of songs: made in the admin, or created by a Spotify import (one per Spotify playlist, and
+/// one for Liked Songs).
+model Playlist {
+  id          String          @id
+  name        Json
+  description Json
+  /// manual or spotify.
+  source      String
+  /// Spotify playlist id, or "liked" for Liked Songs.
+  sourceId    String?
+  sourceUrl   String?
+  visibility  Visibility      @default(PUBLIC)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  tracks      PlaylistTrack[]
+
+  @@unique([source, sourceId])
+}
+
+/// A song's place in a playlist.
+model PlaylistTrack {
+  playlistId String
+  mediaId    String
+  position   Int
+  playlist   Playlist  @relation(fields: [playlistId], references: [id], onDelete: Cascade)
+  media      MediaItem @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+
+  @@id([playlistId, mediaId])
+  @@index([mediaId])
 }

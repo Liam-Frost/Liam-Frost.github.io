@@ -17,6 +17,7 @@ import { registerAdminPhotoRoutes } from "./routes/admin-photos";
 import { registerAdminMediaRoutes } from "./routes/admin-media";
 import { registerAdminMusicRoutes } from "./routes/admin-music";
 import { registerAdminPeopleRoutes } from "./routes/admin-people";
+import { registerAdminPlaylistRoutes } from "./routes/admin-playlists";
 import { registerAdminProjectRoutes } from "./routes/admin-projects";
 import { registerCollectionRoutes } from "./routes/collection";
 import { registerPhotoRoutes } from "./routes/photos";
@@ -33,6 +34,8 @@ import { createMediaSources, type MediaSources } from "./media/sources";
 import type { MediaRepository } from "./media/types";
 import { PrismaPersonRepository, PrismaRelationRepository } from "./people/prisma-repository";
 import type { PersonRepository, RelationRepository } from "./people/types";
+import { PrismaPlaylistRepository } from "./playlists/prisma-repository";
+import type { PlaylistRepository } from "./playlists/types";
 import { PrismaPhotoRepository } from "./photos/prisma-repository";
 import type { PhotoRepository } from "./photos/types";
 import { PrismaProjectRepository } from "./projects/prisma-repository";
@@ -80,6 +83,12 @@ function defaultRelationRepository(): RelationRepository | null {
   return client ? new PrismaRelationRepository(client) : null;
 }
 
+/** Prisma-backed playlists when DATABASE_URL is set, otherwise none. */
+function defaultPlaylistRepository(): PlaylistRepository | null {
+  const client = getPrismaClient();
+  return client ? new PrismaPlaylistRepository(client) : null;
+}
+
 /** Prisma-backed settings when DATABASE_URL is set, otherwise none (defaults, kept in memory). */
 function defaultSettingsRepository(): SettingsRepository | null {
   const client = getPrismaClient();
@@ -103,6 +112,8 @@ export type BuildServerOptions = {
   people?: PersonRepository | null;
   /** Links between entries and people; defaults to Prisma when DATABASE_URL is set. Pass null for none. */
   relations?: RelationRepository | null;
+  /** Playlists; defaults to Prisma when DATABASE_URL is set. Pass null for none. */
+  playlists?: PlaylistRepository | null;
   /** TMDB / Bangumi access; defaults to the real services. */
   mediaSources?: MediaSources;
   /** Settings storage; defaults to Prisma when DATABASE_URL is set. Pass null for none. */
@@ -127,6 +138,7 @@ export function buildServer({
   media = defaultMediaRepository(),
   people = defaultPersonRepository(),
   relations = defaultRelationRepository(),
+  playlists = defaultPlaylistRepository(),
   mediaSources = createMediaSources({ tmdbKey: config.tmdbApiKey, googleBooksKey: config.googleBooksApiKey, twitch: config.twitch }),
   settings = defaultSettingsRepository(),
   fetchPlaylist = createPlaylistFetcher(),
@@ -146,10 +158,10 @@ export function buildServer({
   const auth = new AdminAuthService(config.admin);
   const store = new LocalImageStore(config.uploads.dir ?? DEFAULT_UPLOAD_DIR);
   const collection = settings ? new CollectionSettingsStore(settings) : null;
-  const spotify = new SpotifyService(settings ?? new MemorySettingsRepository(), media, collection, store);
+  const spotify = new SpotifyService(settings ?? new MemorySettingsRepository(), media, collection, store, playlists);
   const account = spotifyAccount ?? new SpotifyAccount(config.spotify, settings, config.admin.sessionSecret);
   const musicImports = media
-    ? new MusicImports({ media, sources: mediaSources, store, music: musicSource, account, fetchPlaylist, trackPreview }, (error) =>
+    ? new MusicImports({ media, sources: mediaSources, store, music: musicSource, account, fetchPlaylist, trackPreview, playlists }, (error) =>
         app.log.warn({ err: error }, "Music import failed")
       )
     : null;
@@ -206,7 +218,8 @@ export function buildServer({
   registerAdminMediaRoutes(app, auth, { media, collection, sources: mediaSources, store, maxUploadBytes: config.uploads.maxBytes });
   registerAdminMusicRoutes(app, auth, { media, sources: mediaSources, music: musicSource, store, imports: musicImports });
   registerAdminPeopleRoutes(app, auth, { media, people, relations, sources: mediaSources, store, maxUploadBytes: config.uploads.maxBytes });
-  registerCollectionRoutes(app, { media, people, relations, collection, store });
+  registerAdminPlaylistRoutes(app, auth, { media, playlists });
+  registerCollectionRoutes(app, { media, people, relations, playlists, collection, store });
   registerUploadRoutes(app, store, { photos, projects, media, people, collection }, auth);
   registerSpotifyRoutes(app, auth, spotify, account, settings !== null);
   registerWebApp(app, webDistDir);

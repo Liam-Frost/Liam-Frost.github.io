@@ -2,6 +2,7 @@ import type { MediaMusic, MusicImportJob } from "@liam-frost/shared";
 import { randomBytes, randomUUID } from "node:crypto";
 
 import { InvalidImageError, processImage, type ProcessedImage } from "../photos/images";
+import type { PlaylistRepository } from "../playlists/types";
 import type { StoredImage } from "../projects/types";
 import type { ApiTrack, SpotifyAccount } from "../spotify/account";
 import { PlaylistError, playlistIdFromUrl, type PlaylistFetcher } from "../spotify/playlist";
@@ -95,7 +96,13 @@ export class MusicImports {
   private running: { jobId: string; key: string } | null = null;
 
   constructor(
-    private readonly deps: Deps & { music: MusicSource; account: SpotifyAccount; fetchPlaylist: PlaylistFetcher; trackPreview: (trackId: string) => Promise<string | null> },
+    private readonly deps: Deps & {
+      music: MusicSource;
+      account: SpotifyAccount;
+      fetchPlaylist: PlaylistFetcher;
+      trackPreview: (trackId: string) => Promise<string | null>;
+      playlists?: PlaylistRepository | null;
+    },
     private readonly onError: (error: unknown) => void = () => {}
   ) {}
 
@@ -107,7 +114,7 @@ export class MusicImports {
   startPlaylistLink(link: string) {
     const playlistId = playlistIdFromUrl(link);
     if (!playlistId) throw new PlaylistError("请填写 Spotify 歌单链接，例如 https://open.spotify.com/playlist/…");
-    return this.start(`link:${playlistId}`, "playlist-link", async (job) => {
+    return this.start(`link:${playlistId}`, "playlist-link", { sourceId: playlistId, sourceUrl: `https://open.spotify.com/playlist/${playlistId}` }, async (job) => {
       // A background job can wait for every cover.
       const playlist = await this.deps.fetchPlaylist(playlistId, new Map(), { coverBudgetMs: Number.POSITIVE_INFINITY });
       job.playlistName = playlist.name;
@@ -129,7 +136,11 @@ export class MusicImports {
   /** Starts importing the connected account's Liked Songs, or one of its playlists. */
   startAccount(request: { source: "liked" } | { source: "playlist"; playlistId: string }) {
     const key = request.source === "liked" ? "liked" : `playlist:${request.playlistId}`;
-    return this.start(key, request.source, async (job) => {
+    const playlist =
+      request.source === "liked"
+        ? { sourceId: "liked", sourceUrl: "https://open.spotify.com/collection/tracks" }
+        : { sourceId: request.playlistId, sourceUrl: `https://open.spotify.com/playlist/${request.playlistId}` };
+    return this.start(key, request.source, playlist, async (job) => {
       let tracks: ApiTrack[];
       if (request.source === "liked") {
         job.playlistName = "已点赞的歌曲";
@@ -151,7 +162,12 @@ export class MusicImports {
     return { previewUrl: song?.previewUrl ?? null, appleUrl: song?.appleUrl ?? null };
   }
 
-  private start(key: string, source: MusicImportJob["source"], load: (job: MusicImportJob) => Promise<ImportSong[]>): MusicImportJob {
+  private start(
+    key: string,
+    source: MusicImportJob["source"],
+    playlist: { sourceId: string; sourceUrl: string },
+    load: (job: MusicImportJob) => Promise<ImportSong[]>
+  ): MusicImportJob {
     if (this.running) {
       if (this.running.key === key) return this.jobs.get(this.running.jobId)!;
       throw new ImportBusyError("另一个导入正在进行，请等它完成");
@@ -160,13 +176,13 @@ export class MusicImports {
     this.jobs.set(job.id, job);
     while (this.jobs.size > MAX_JOBS) this.jobs.delete(this.jobs.keys().next().value!);
     this.running = { jobId: job.id, key };
-    void this.run(job, load).finally(() => {
+    void this.run(job, playlist, load).finally(() => {
       this.running = null;
     });
     return job;
   }
 
-  private async run(job: MusicImportJob, load: (job: MusicImportJob) => Promise<ImportSong[]>) {
+  private async run(job: MusicImportJob, playlist: { sourceId: string; sourceUrl: string }, load: (job: MusicImportJob) => Promise<ImportSong[]>) {
     try {
       const songs = await load(job);
       job.total = songs.length;
@@ -186,12 +202,35 @@ export class MusicImports {
         else await this.create(job, song, result.value);
         job.processed += 1;
       }
+      await this.fillPlaylist(job, playlist, songs);
       job.state = "done";
     } catch (error) {
       this.onError(error);
       job.state = "failed";
       job.error = error instanceof PlaylistError || error instanceof SourceError ? error.message : "导入失败";
     }
+  }
+
+  /**
+   * The import's songs (new and already collected) go into a playlist of the same name, created on the
+   * first import and topped up later; songs already in it keep their place.
+   */
+  private async fillPlaylist(job: MusicImportJob, source: { sourceId: string; sourceUrl: string }, songs: ImportSong[]) {
+    const playlists = this.deps.playlists;
+    if (!playlists) return;
+    const ids = await this.deps.media.findBySource("spotify", songs.map((song) => song.spotifyId));
+    const ordered = songs.map((song) => ids.get(song.spotifyId)).filter((id): id is string => Boolean(id));
+    const name = job.playlistName ?? "Spotify";
+    const playlist =
+      (await playlists.findBySource("spotify", source.sourceId)) ??
+      (await playlists.create({
+        id: randomUUID(),
+        name: source.sourceId === "liked" ? { zh: "已点赞的歌曲", en: "Liked Songs" } : { en: name },
+        source: "spotify",
+        sourceId: source.sourceId,
+        sourceUrl: source.sourceUrl
+      }));
+    await playlists.addTracks(playlist.id, ordered);
   }
 
   private async prepare(song: ImportSong, covers: Map<string, Promise<ProcessedImage | null>>) {

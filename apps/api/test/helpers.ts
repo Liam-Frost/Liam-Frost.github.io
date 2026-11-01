@@ -9,6 +9,7 @@ import type { MusicSource } from "../src/media/itunes";
 import { SourceError, type MediaSources } from "../src/media/sources";
 import type { MediaRepository } from "../src/media/types";
 import type { PersonRepository, RelationRepository } from "../src/people/types";
+import type { PlaylistRepository } from "../src/playlists/types";
 import type { PhotoRepository } from "../src/photos/types";
 import type { ProjectRepository } from "../src/projects/types";
 import { buildServer } from "../src/server";
@@ -53,6 +54,8 @@ export type TestServerOptions = {
   people?: PersonRepository | null;
   /** Defaults to none. */
   relations?: RelationRepository | null;
+  /** Defaults to none. */
+  playlists?: PlaylistRepository | null;
   /** Defaults to sources that fail, so tests never reach TMDB or Bangumi. */
   mediaSources?: MediaSources;
   /** Defaults to none (in-memory defaults). */
@@ -89,6 +92,7 @@ export async function buildTestServer(env: Record<string, string | undefined> = 
     media: options.media ?? null,
     people: options.people ?? null,
     relations: options.relations ?? null,
+    playlists: options.playlists ?? null,
     mediaSources: options.mediaSources ?? offlineMediaSources,
     settings: options.settings ?? null,
     fetchPlaylist: options.fetchPlaylist ?? (() => Promise.reject(new Error("no network in tests"))),
