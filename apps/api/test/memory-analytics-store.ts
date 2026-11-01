@@ -1,4 +1,14 @@
-import type { AnalyticsStore, DailyRow, StoredEvent, StoredSession } from "../src/analytics/types";
+import type { AnalyticsClearScope } from "@liam-frost/shared";
+
+import type {
+  AnalyticsStore,
+  ContentName,
+  DailyRow,
+  RequestStats,
+  StoredEvent,
+  StoredSession,
+  SystemEvent
+} from "../src/analytics/types";
 
 export class MemoryAnalyticsStore implements AnalyticsStore {
   readonly events = new Map<string, StoredEvent>();
@@ -6,6 +16,10 @@ export class MemoryAnalyticsStore implements AnalyticsStore {
   readonly rows: DailyRow[] = [];
   readonly rolled = new Map<string, Date>();
   readonly salts = new Map<string, string>();
+  readonly names = new Map<string, ContentName>();
+  readonly requests = new Map<string, RequestStats>();
+  readonly system: SystemEvent[] = [];
+  readonly flags = new Map<string, string>();
 
   async insertEvents(events: StoredEvent[]) {
     for (const event of events) if (!this.events.has(event.id)) this.events.set(event.id, event);
@@ -73,5 +87,82 @@ export class MemoryAnalyticsStore implements AnalyticsStore {
     for (const key of this.salts.keys()) if (key !== day) this.salts.delete(key);
     if (!this.salts.has(day)) this.salts.set(day, create());
     return this.salts.get(day)!;
+  }
+
+  async getSessions(ids: string[]) {
+    return ids.map((id) => this.sessions.get(id)).filter((s): s is StoredSession => Boolean(s));
+  }
+
+  async contentNames() {
+    return [...this.names.values()];
+  }
+
+  async writeContentNames(names: ContentName[]) {
+    for (const name of names) this.names.set(name.key, name);
+  }
+
+  async addRequestStats(stats: RequestStats) {
+    const key = `${stats.day}|${stats.route}`;
+    const row = this.requests.get(key) ?? {
+      ...stats,
+      requests: 0,
+      serverErrors: 0,
+      clientErrors: 0,
+      totalMs: 0,
+      histogram: {}
+    };
+    row.requests += stats.requests;
+    row.serverErrors += stats.serverErrors;
+    row.clientErrors += stats.clientErrors;
+    row.totalMs += stats.totalMs;
+    for (const [bound, count] of Object.entries(stats.histogram))
+      row.histogram[bound] = (row.histogram[bound] ?? 0) + count;
+    this.requests.set(key, row);
+  }
+
+  async requestStats(days: string[]) {
+    return [...this.requests.values()].filter((row) => days.includes(row.day));
+  }
+
+  async addSystemEvent(event: SystemEvent) {
+    this.system.push(event);
+  }
+
+  async systemEvents({
+    since,
+    kind,
+    limit
+  }: {
+    since: Date;
+    kind?: SystemEvent["kind"];
+    limit: number;
+  }) {
+    return this.system
+      .filter((event) => event.at >= since && (!kind || event.kind === kind))
+      .sort((a, b) => b.at.getTime() - a.at.getTime())
+      .slice(0, limit);
+  }
+
+  async deleteSystemEventsBefore(at: Date) {
+    this.system.splice(0, this.system.length, ...this.system.filter((event) => event.at >= at));
+  }
+
+  async flag(key: string) {
+    return this.flags.get(key) ?? null;
+  }
+
+  async clear(scope: AnalyticsClearScope) {
+    if (scope !== "health") {
+      this.events.clear();
+      this.sessions.clear();
+      this.rows.splice(0);
+      this.rolled.clear();
+      this.names.clear();
+    }
+    if (scope !== "events") {
+      this.requests.clear();
+      this.system.splice(0);
+    }
+    if (scope === "all") this.flags.clear();
   }
 }

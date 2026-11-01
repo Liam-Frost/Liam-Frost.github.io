@@ -56,7 +56,9 @@ export class SteamSync {
       account: SteamAccount;
       fetchImpl?: typeof fetch;
     },
-    private readonly onError: (error: unknown) => void = () => {}
+    private readonly onError: (error: unknown) => void = () => {},
+    /** Called when a sync ends, done or failed (for the analytics job log). */
+    private readonly onFinish: (job: SteamSyncJob) => void = () => {}
   ) {}
 
   get(id: string) {
@@ -81,6 +83,7 @@ export class SteamSync {
     while (this.jobs.size > MAX_JOBS) this.jobs.delete(this.jobs.keys().next().value!);
     this.running = job.id;
     void this.run(job).finally(() => {
+      this.onFinish(job);
       this.running = null;
     });
     return job;

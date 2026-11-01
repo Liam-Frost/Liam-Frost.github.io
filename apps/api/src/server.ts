@@ -8,9 +8,11 @@ import Fastify from "fastify";
 import * as http from "node:http";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
+import { ContentCatalog } from "./analytics/catalog";
 import { createCountryLookup } from "./analytics/geo";
 import { PrismaAnalyticsStore } from "./analytics/prisma-store";
 import { AnalyticsService } from "./analytics/service";
+import { RequestRecorder, SystemLog, withSourceLog } from "./analytics/system";
 import type { AnalyticsStore } from "./analytics/types";
 import { AdminAuthService } from "./auth/service";
 import { ConfigError, loadConfig, type AppConfig } from "./config/env";
@@ -202,17 +204,79 @@ export async function buildServer({
   const account =
     spotifyAccount ?? new SpotifyAccount(config.spotify, settings, config.admin.sessionSecret);
   const steam = steamAccount ?? new SteamAccount(config.steamApiKey, settings, steamFetch);
+  const geo = createCountryLookup(
+    { header: config.analytics.countryHeader, geoipDb: config.analytics.geoipDb },
+    (error) => app.log.warn({ err: error }, "Cannot open ANALYTICS_GEOIP_DB; countries are unknown")
+  );
+  const catalog = new ContentCatalog({ projects, photos, media, people, playlists }, () =>
+    (now ? now() : new Date()).getTime()
+  );
+  const analytics = analyticsStore
+    ? new AnalyticsService(analyticsStore, config.analytics, geo, now, catalog)
+    : null;
+  // The job log, source status and API timings under 统计 → 体验与运行.
+  const systemLog =
+    analyticsStore && config.analytics.enabled
+      ? new SystemLog(analyticsStore, now, (error) =>
+          app.log.warn({ err: error }, "Cannot write the analytics job log")
+        )
+      : null;
+  const requests =
+    analytics && analyticsStore && config.analytics.enabled
+      ? new RequestRecorder(analyticsStore, analytics.clock, now)
+      : null;
+  const sources = systemLog ? withSourceLog(mediaSources, systemLog) : mediaSources;
+  if (analytics?.enabled) {
+    // Hourly: write the totals of finished days and delete raw data past the retention period.
+    const maintain = () =>
+      analytics.maintain().catch((error: unknown) => {
+        app.log.warn({ err: error }, "Analytics maintenance failed");
+      });
+    const flush = () =>
+      requests?.flush().catch((error: unknown) => {
+        app.log.warn({ err: error }, "Cannot write API request statistics");
+      });
+    const first = setTimeout(maintain, 10_000);
+    const hourly = setInterval(maintain, 60 * 60 * 1000);
+    const minutely = setInterval(flush, 60 * 1000);
+    first.unref();
+    hourly.unref();
+    minutely.unref();
+    app.addHook("onClose", async () => {
+      clearTimeout(first);
+      clearInterval(hourly);
+      clearInterval(minutely);
+      await flush();
+    });
+    // Public API routes only: not the admin, the event endpoint or health probes.
+    app.addHook("onResponse", async (request, reply) => {
+      const route = request.routeOptions.url;
+      if (!requests || !route?.startsWith("/api/") || route.startsWith("/api/admin/")) return;
+      if (route === "/api/analytics/events" || route === "/api/health") return;
+      requests.record(route, reply.statusCode, reply.elapsedTime);
+    });
+  }
+
   const steamSync = media
     ? new SteamSync(
-        { media, sources: mediaSources, store, account: steam, fetchImpl: steamFetch },
-        (error) => app.log.warn({ err: error }, "Steam sync failed")
+        { media, sources, store, account: steam, fetchImpl: steamFetch },
+        (error) => app.log.warn({ err: error }, "Steam sync failed"),
+        (job) =>
+          systemLog?.record(
+            "job",
+            "steam-sync",
+            job.state === "done",
+            job.state === "done"
+              ? `${job.total} 款：新增 ${job.added}，更新 ${job.updated}，失败 ${job.failed}`
+              : job.error
+          )
       )
     : null;
   const musicImports = media
     ? new MusicImports(
         {
           media,
-          sources: mediaSources,
+          sources,
           store,
           music: musicSource,
           account,
@@ -220,32 +284,18 @@ export async function buildServer({
           trackPreview,
           playlists
         },
-        (error) => app.log.warn({ err: error }, "Music import failed")
+        (error) => app.log.warn({ err: error }, "Music import failed"),
+        (job) =>
+          systemLog?.record(
+            "job",
+            `music-${job.source}`,
+            job.state === "done",
+            job.state === "done"
+              ? `${job.playlistName ?? ""} ${job.total} 首：新增 ${job.added}，已有 ${job.skipped}`.trim()
+              : job.error
+          )
       )
     : null;
-
-  const geo = createCountryLookup(
-    { header: config.analytics.countryHeader, geoipDb: config.analytics.geoipDb },
-    (error) => app.log.warn({ err: error }, "Cannot open ANALYTICS_GEOIP_DB; countries are unknown")
-  );
-  const analytics = analyticsStore
-    ? new AnalyticsService(analyticsStore, config.analytics, geo, now)
-    : null;
-  if (analytics?.enabled) {
-    // Hourly: write the totals of finished days and delete raw data past the retention period.
-    const maintain = () =>
-      analytics.maintain().catch((error: unknown) => {
-        app.log.warn({ err: error }, "Analytics maintenance failed");
-      });
-    const first = setTimeout(maintain, 10_000);
-    const hourly = setInterval(maintain, 60 * 60 * 1000);
-    first.unref();
-    hourly.unref();
-    app.addHook("onClose", async () => {
-      clearTimeout(first);
-      clearInterval(hourly);
-    });
-  }
 
   app.register(cors, { credentials: true, origin: config.corsOrigins });
   app.register(cookie);
@@ -320,13 +370,13 @@ export async function buildServer({
   registerAdminMediaRoutes(app, auth, {
     media,
     collection,
-    sources: mediaSources,
+    sources,
     store,
     maxUploadBytes: config.uploads.maxBytes
   });
   registerAdminMusicRoutes(app, auth, {
     media,
-    sources: mediaSources,
+    sources,
     music: musicSource,
     store,
     imports: musicImports
@@ -335,7 +385,7 @@ export async function buildServer({
     media,
     people,
     relations,
-    sources: mediaSources,
+    sources,
     store,
     maxUploadBytes: config.uploads.maxBytes
   });

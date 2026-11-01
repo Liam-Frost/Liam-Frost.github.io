@@ -3,6 +3,33 @@ import type { DailyRow, StoredEvent, StoredSession } from "./types";
 /** A session that saw one page for under this many visible seconds bounced. */
 export const BOUNCE_SECONDS = 10;
 
+/**
+ * Upper bounds for timings (ms) and layout shift (× 1000). They include Google's good / poor limits
+ * (100, 200, 250, 500, 2500, 4000), so a rating from a bucket is exact.
+ */
+export const BUCKETS = [
+  25, 50, 75, 100, 150, 200, 250, 300, 400, 500, 750, 1000, 1500, 2000, 2500, 3000, 4000, 5000,
+  7500, 10000, 20000, 60000
+];
+
+export const bucketOf = (value: number) =>
+  BUCKETS.find((bound) => value <= bound) ?? BUCKETS[BUCKETS.length - 1]!;
+
+/** The bucket bound at a percentile of a histogram (bound → count). */
+export function percentile(histogram: Map<number, number> | Record<string, number>, p: number) {
+  const entries = (histogram instanceof Map ? [...histogram] : Object.entries(histogram))
+    .map(([bound, count]) => [Number(bound), count] as const)
+    .sort((a, b) => a[0] - b[0]);
+  const total = entries.reduce((sum, [, count]) => sum + count, 0);
+  if (!total) return 0;
+  let seen = 0;
+  for (const [bound, count] of entries) {
+    seen += count;
+    if (seen >= Math.ceil(total * p)) return bound;
+  }
+  return entries[entries.length - 1]![0];
+}
+
 class Counter {
   readonly rows = new Map<string, DailyRow>();
 
@@ -23,7 +50,7 @@ class Counter {
  * Metrics: views, visitors, sessions, bounces, engaged (seconds); per key: page, pageEngaged,
  * hour, hourVisitors, sessionHour, entry, referrer, utmSource, utmMedium, utmCampaign, country,
  * device, browser, lang, content, contentVisitors, play, player, playSource, outbound,
- * outboundPosition, filter.
+ * outboundPosition, filter, vital ("path|metric|bucket").
  */
 export function computeDay(
   day: string,
@@ -74,6 +101,9 @@ export function computeDay(
         break;
       case "collection_filter":
         counter.add("filter", event.detail ? `${event.target}:${event.detail}` : event.target);
+        break;
+      case "web_vital":
+        counter.add("vital", `${event.path}|${event.target}|${bucketOf(event.value ?? 0)}`);
         break;
     }
   }

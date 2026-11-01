@@ -67,7 +67,11 @@ describe("analytics", () => {
           referrer: "https://www.google.com/search?q=liam",
           utm: { source: " Newsletter ", campaign: "Launch" }
         }),
-        event(session, { type: "content_view", contentType: "project", contentId: "my-app" })
+        event(session, {
+          type: "content_view",
+          contentType: "photo",
+          contentId: "glico-night-icon"
+        })
       ],
       { "cf-ipcountry": "jp" }
     );

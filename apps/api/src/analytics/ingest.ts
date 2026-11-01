@@ -4,6 +4,7 @@ import {
   ANALYTICS_PATHS,
   ANALYTICS_PLAY_SOURCES,
   ANALYTICS_PLAYERS,
+  ANALYTICS_VITALS,
   LANGS
 } from "@liam-frost/shared";
 import { z } from "zod";
@@ -146,6 +147,10 @@ export function validateEvent(raw: unknown, siteHost: string): ValidEvent | null
     case "engagement":
       if (e.value === undefined || e.value < 1) return null;
       return { ...event, value: Math.min(Math.round(e.value), MAX_ENGAGED_SECONDS) };
+    case "web_vital":
+      if (!(ANALYTICS_VITALS as readonly string[]).includes(e.target ?? "")) return null;
+      if (e.value === undefined || e.value < 0 || e.value > 60_000) return null;
+      return { ...event, target: e.target!, value: Math.round(e.value) };
   }
 }
 

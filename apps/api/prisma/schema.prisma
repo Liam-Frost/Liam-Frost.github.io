@@ -314,3 +314,48 @@ model AnalyticsSalt {
   day  String @id
   salt String
 }
+
+/// The name a piece of content had when last seen, so statistics can still name it after it is
+/// hidden or deleted. `key` is "type:id".
+model AnalyticsContentName {
+  key       String   @id
+  type      String
+  contentId String
+  name      String
+  kind      String?
+  updatedAt DateTime
+}
+
+/// Daily request counts and timings of the public API, by route.
+model AnalyticsRequestDaily {
+  day          String
+  route        String
+  requests     Int
+  serverErrors Int
+  clientErrors Int
+  totalMs      Float
+  /// Response times: upper bound in ms → count.
+  histogram    Json
+
+  @@id([day, route])
+}
+
+/// Results of import and sync jobs, and of calls to external sources (TMDB, IGDB, Spotify, ...).
+model AnalyticsSystemEvent {
+  id      Int      @id @default(autoincrement())
+  at      DateTime
+  /// job or source.
+  kind    String
+  name    String
+  ok      Boolean
+  message String?
+
+  @@index([at])
+  @@index([kind, name, at])
+}
+
+/// Small analytics flags, e.g. "demo" when the database holds generated demo data.
+model AnalyticsFlag {
+  key   String @id
+  value String
+}

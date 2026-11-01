@@ -1,4 +1,4 @@
-import type { AnalyticsEventType } from "@liam-frost/shared";
+import type { AnalyticsClearScope, AnalyticsEventType } from "@liam-frost/shared";
 
 export type StoredEvent = {
   id: string;
@@ -37,6 +37,34 @@ export type StoredSession = {
 /** One daily total: `metric` names the count, `key` what it counts ("" for plain totals). */
 export type DailyRow = { day: string; metric: string; key: string; value: number };
 
+/** The name of a piece of content when last seen; `key` is "type:id". */
+export type ContentName = {
+  key: string;
+  type: string;
+  contentId: string;
+  name: string;
+  kind: string | null;
+};
+
+/** Requests to one public API route on one day; `histogram` maps an upper bound in ms to a count. */
+export type RequestStats = {
+  day: string;
+  route: string;
+  requests: number;
+  serverErrors: number;
+  clientErrors: number;
+  totalMs: number;
+  histogram: Record<string, number>;
+};
+
+export type SystemEvent = {
+  at: Date;
+  kind: "job" | "source";
+  name: string;
+  ok: boolean;
+  message: string | null;
+};
+
 export interface AnalyticsStore {
   /** Stores new events; ids already stored are ignored. */
   insertEvents(events: StoredEvent[]): Promise<void>;
@@ -59,4 +87,21 @@ export interface AnalyticsStore {
   deleteRawBefore(day: string): Promise<void>;
   /** The salt for a day, created on first use; every other day's salt is deleted. */
   saltFor(day: string, create: () => string): Promise<string>;
+  getSessions(ids: string[]): Promise<StoredSession[]>;
+  contentNames(): Promise<ContentName[]>;
+  /** Adds or replaces names. */
+  writeContentNames(names: ContentName[], at: Date): Promise<void>;
+  /** Adds requests to a day's counts for a route. */
+  addRequestStats(stats: RequestStats): Promise<void>;
+  requestStats(days: string[]): Promise<RequestStats[]>;
+  addSystemEvent(event: SystemEvent): Promise<void>;
+  /** Newest first. */
+  systemEvents(options: {
+    since: Date;
+    kind?: SystemEvent["kind"];
+    limit: number;
+  }): Promise<SystemEvent[]>;
+  deleteSystemEventsBefore(at: Date): Promise<void>;
+  flag(key: string): Promise<string | null>;
+  clear(scope: AnalyticsClearScope): Promise<void>;
 }

@@ -1,7 +1,15 @@
-import type { AnalyticsEventType } from "@liam-frost/shared";
+import type { AnalyticsClearScope, AnalyticsEventType } from "@liam-frost/shared";
 
 import type { AnalyticsEvent, PrismaClient } from "../generated/prisma/client";
-import type { AnalyticsStore, DailyRow, StoredEvent, StoredSession } from "./types";
+import type {
+  AnalyticsStore,
+  ContentName,
+  DailyRow,
+  RequestStats,
+  StoredEvent,
+  StoredSession,
+  SystemEvent
+} from "./types";
 
 const toEvent = (record: AnalyticsEvent): StoredEvent => ({
   ...record,
@@ -95,5 +103,108 @@ export class PrismaAnalyticsStore implements AnalyticsStore {
     });
     const record = await this.prisma.analyticsSalt.findUniqueOrThrow({ where: { day } });
     return record.salt;
+  }
+
+  async getSessions(ids: string[]) {
+    if (!ids.length) return [];
+    return this.prisma.analyticsSession.findMany({ where: { id: { in: ids } } });
+  }
+
+  async contentNames() {
+    return this.prisma.analyticsContentName.findMany({
+      select: { key: true, type: true, contentId: true, name: true, kind: true }
+    });
+  }
+
+  async writeContentNames(names: ContentName[], at: Date) {
+    await this.prisma.$transaction(
+      names.map((name) =>
+        this.prisma.analyticsContentName.upsert({
+          where: { key: name.key },
+          create: { ...name, updatedAt: at },
+          update: { name: name.name, kind: name.kind, updatedAt: at }
+        })
+      )
+    );
+  }
+
+  async addRequestStats(stats: RequestStats) {
+    // One API instance writes these; read, merge the histogram, write.
+    const where = { day_route: { day: stats.day, route: stats.route } };
+    const existing = await this.prisma.analyticsRequestDaily.findUnique({ where });
+    const histogram = { ...((existing?.histogram as Record<string, number> | null) ?? {}) };
+    for (const [bound, count] of Object.entries(stats.histogram))
+      histogram[bound] = (histogram[bound] ?? 0) + count;
+    await this.prisma.analyticsRequestDaily.upsert({
+      where,
+      create: { ...stats, histogram },
+      update: {
+        requests: { increment: stats.requests },
+        serverErrors: { increment: stats.serverErrors },
+        clientErrors: { increment: stats.clientErrors },
+        totalMs: { increment: stats.totalMs },
+        histogram
+      }
+    });
+  }
+
+  async requestStats(days: string[]) {
+    if (!days.length) return [];
+    const records = await this.prisma.analyticsRequestDaily.findMany({
+      where: { day: { in: days } }
+    });
+    return records.map((record) => ({
+      ...record,
+      histogram: record.histogram as Record<string, number>
+    }));
+  }
+
+  async addSystemEvent(event: SystemEvent) {
+    await this.prisma.analyticsSystemEvent.create({ data: event });
+  }
+
+  async systemEvents({
+    since,
+    kind,
+    limit
+  }: {
+    since: Date;
+    kind?: SystemEvent["kind"];
+    limit: number;
+  }) {
+    const records = await this.prisma.analyticsSystemEvent.findMany({
+      where: { at: { gte: since }, ...(kind ? { kind } : {}) },
+      orderBy: { at: "desc" },
+      take: limit
+    });
+    return records.map(({ id: _id, ...record }) => ({
+      ...record,
+      kind: record.kind as SystemEvent["kind"]
+    }));
+  }
+
+  async deleteSystemEventsBefore(at: Date) {
+    await this.prisma.analyticsSystemEvent.deleteMany({ where: { at: { lt: at } } });
+  }
+
+  async flag(key: string) {
+    return (await this.prisma.analyticsFlag.findUnique({ where: { key } }))?.value ?? null;
+  }
+
+  async clear(scope: AnalyticsClearScope) {
+    const p = this.prisma;
+    const usage = [
+      p.analyticsEvent.deleteMany(),
+      p.analyticsSession.deleteMany(),
+      p.analyticsDaily.deleteMany(),
+      p.analyticsRollupDay.deleteMany(),
+      p.analyticsContentName.deleteMany()
+    ];
+    const health = [p.analyticsRequestDaily.deleteMany(), p.analyticsSystemEvent.deleteMany()];
+    await p.$transaction([
+      ...(scope === "health" ? [] : usage),
+      ...(scope === "events" ? [] : health),
+      ...(scope === "all" ? [p.analyticsFlag.deleteMany()] : [])
+    ]);
   }
 }

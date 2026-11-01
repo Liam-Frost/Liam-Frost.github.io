@@ -113,7 +113,9 @@ export class MusicImports {
       trackPreview: (trackId: string) => Promise<string | null>;
       playlists?: PlaylistRepository | null;
     },
-    private readonly onError: (error: unknown) => void = () => {}
+    private readonly onError: (error: unknown) => void = () => {},
+    /** Called when a job ends, done or failed (for the analytics job log). */
+    private readonly onFinish: (job: MusicImportJob) => void = () => {}
   ) {}
 
   get(id: string) {
@@ -215,6 +217,7 @@ export class MusicImports {
     while (this.jobs.size > MAX_JOBS) this.jobs.delete(this.jobs.keys().next().value!);
     this.running = { jobId: job.id, key };
     void this.run(job, playlist, load).finally(() => {
+      this.onFinish(job);
       this.running = null;
     });
     return job;
