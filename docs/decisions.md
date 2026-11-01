@@ -56,6 +56,12 @@ React and related dependencies should be upgraded to the latest versions. This u
 
 ## Model Decisions
 
+### 2026-11-01: Steam Through "Sign in Through Steam" and the Site's Web API Key
+
+The model chose Steam's OpenID sign-in to prove the admin's SteamID and the site's Web API key to read the library, storing only the SteamID, name and avatar.
+
+Reason: Steam has no OAuth for other sites. The callback is checked with Steam (`check_authentication`) so a forged answer cannot connect another account. Purchase dates are not in any public Steam API, so they are entered by hand.
+
 ### 2026-11-04: IGDB Searches Skip Mods and Updates
 
 Game searches leave out IGDB game types 3, 5, 12, 13 and 14 (bundles, mods, forks, packs, updates).

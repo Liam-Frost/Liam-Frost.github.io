@@ -504,6 +504,12 @@ export function createMediaSources(options: {
       igdbToken = null;
       return igdb<T>(endpoint, query, false);
     }
+    if (response.status === 429 && retry) {
+      // IGDB allows four requests a second; a Steam sync imports one game after another.
+      await response.body?.cancel();
+      await new Promise((resolve) => setTimeout(resolve, 1100));
+      return igdb<T>(endpoint, query, false);
+    }
     if (!response.ok) {
       await response.body?.cancel();
       throw new SourceError(`IGDB 返回错误（HTTP ${response.status}）`);
