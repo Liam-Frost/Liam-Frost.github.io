@@ -1,10 +1,10 @@
 import type { AdminMediaItem, CollectionSettings, MediaSearchResult, MediaStatus } from "@liam-frost/shared";
 import { Clapperboard, EyeOff, Plus, Search, Settings2, Star } from "lucide-react";
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
 
 import { PageHeader } from "../components/layout/AdminLayout";
-import { MusicList, MusicSearchDialog, PlaylistImportDialog } from "../components/music/MusicTools";
+import { MusicList, MusicSearchDialog, PlaylistImportDialog, SpotifyAccountDialog } from "../components/music/MusicTools";
 import { DatabaseNotice } from "../components/ui/DatabaseNotice";
 import { Dialog } from "../components/ui/Dialog";
 import { Field, Switch } from "../components/ui/Field";
@@ -22,6 +22,22 @@ export function CollectionPage() {
   const status = STATUSES.find((s) => s === params.get("status")) ?? null;
   const [adding, setAdding] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [spotifyOpen, setSpotifyOpen] = useState(false);
+  const toast = useToast();
+
+  // Back from Spotify's consent page: report the result and open the account dialog.
+  useEffect(() => {
+    const result = params.get("spotify");
+    if (!result) return;
+    if (result === "connected") toast("已连接 Spotify");
+    else toast(`连接 Spotify 失败：${params.get("reason") ?? "未知原因"}`, "error");
+    setSpotifyOpen(result === "connected");
+    const next = new URLSearchParams(params);
+    next.delete("spotify");
+    next.delete("reason");
+    setParams(next, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only when returning from Spotify
+  }, []);
   const [editingSettings, setEditingSettings] = useState(false);
   const { data: items, isPending, error } = useMediaList();
   const { data: settings } = useCollectionSettings();
@@ -55,9 +71,14 @@ export function CollectionPage() {
             <Settings2 aria-hidden="true" className="size-4" /> 显示设置
           </button>
           {kind === "track" ? (
-            <button type="button" className="btn-secondary" onClick={() => setImporting(true)}>
-              导入 Spotify 歌单
-            </button>
+            <>
+              <button type="button" className="btn-secondary" onClick={() => setSpotifyOpen(true)}>
+                Spotify 账号
+              </button>
+              <button type="button" className="btn-secondary" onClick={() => setImporting(true)}>
+                导入歌单链接
+              </button>
+            </>
           ) : null}
           <button type="button" className="btn-primary" onClick={() => setAdding(true)}>
             <Plus aria-hidden="true" className="size-4" /> {kind === "track" ? "添加歌曲" : `添加${KIND_LABELS[kind]}`}
@@ -95,6 +116,7 @@ export function CollectionPage() {
       {adding && kind === "track" ? <MusicSearchDialog mode="add" onClose={() => setAdding(false)} /> : null}
       {adding && kind !== "track" ? <AddMediaDialog kind={kind} tmdbReady={settings?.sources.tmdb ?? false} onClose={() => setAdding(false)} /> : null}
       {importing ? <PlaylistImportDialog onClose={() => setImporting(false)} /> : null}
+      {spotifyOpen ? <SpotifyAccountDialog onClose={() => setSpotifyOpen(false)} /> : null}
       {editingSettings && settings ? <SettingsDialog settings={settings.settings} onClose={() => setEditingSettings(false)} /> : null}
     </>
   );

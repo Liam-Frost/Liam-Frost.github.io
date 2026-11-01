@@ -265,9 +265,21 @@ Status: implementation complete; Claude Code review complete and fixes applied.
 - Verified with a temporary PostgreSQL: imported City Pop Best (100 songs in 37 s, all with previews and covers), added a song from the JP iTunes store, edited a song and swapped its preview to iTunes; the site player played collection songs and the public music tab and detail panel showed them. The user's local database got the new migration (schema diff empty).
 - Ran Claude Code review for Stage 13a (`docs/reviews/2026-11-01-claude-code-stage-13a.md`) and fixed five findings.
 
+### Stage 13b: Spotify Account Import and Embedded Player
+
+Status: implementation complete; Claude Code review complete and fixes applied. The Spotify sign-in itself is for the user to test.
+
+- Connect a Spotify account (Authorization Code flow, read-only scopes, one-time state); the refresh token is stored encrypted with AES-256-GCM. Rate limits (429), expired tokens and revoked access are handled; a 403 explains the app's User Management.
+- Import Liked Songs or one of your own playlists as a background job; songs are added in list order, previews from Spotify's song page or iTunes.
+- Player type setting: the site's own player or Spotify's embedded player (playlist / album / song / artist link). The web dock shows Spotify's player in an iframe and keeps it loaded while collapsed; the site CSP allows `frame-src https://open.spotify.com`.
+- Admin: Spotify 账号 dialog (connect, disconnect, Liked Songs, own playlists, progress), player type on the 播放器 page.
+- Tests: 120 passed. Verified the embedded player in the browser against a mock API (Spotify's player loaded; collapsing kept the iframe).
+- Ran Claude Code review for Stage 13b (`docs/reviews/2026-11-01-claude-code-stage-13b.md`) and fixed four findings.
+
 ### Upcoming
 
-- Review and merge the Stage 13a PR; Stage 13b (Spotify Liked Songs import) once the user has created a Spotify developer app.
+- The user tests the Spotify connection (`npm run db:deploy` first) and merges the PR.
+- New collection kinds (books, games, comics, people) and links between entries — proposal pending the user's confirmation.
 - Stage 10: VPS deployment and CI/CD (needs the VPS provider/OS/specs, DNS manager and domain from the user).
 - Stage 5: back-end foundation and admin auth refinement (`ADMIN_PATH`, IP allowlist, CSRF, Zod, tests). See `docs/plan-admin-projects-deploy.md`.
 

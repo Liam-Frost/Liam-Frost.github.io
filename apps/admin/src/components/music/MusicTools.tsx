@@ -1,4 +1,4 @@
-import type { AdminMediaItem, MusicSearchResult } from "@liam-frost/shared";
+import type { AdminMediaItem, MusicImportJob, MusicImportRequest, MusicSearchResult } from "@liam-frost/shared";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Music, Pause, Play, Search } from "lucide-react";
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
@@ -192,12 +192,8 @@ export function MusicSearchDialog({
   );
 }
 
-/** Imports a public Spotify playlist on the server and shows its progress. */
-export function PlaylistImportDialog({ onClose }: { onClose: () => void }) {
-  const [link, setLink] = useState("");
-  const [jobId, setJobId] = useState<string | null>(null);
-  const [error, setError] = useState("");
-  const [starting, setStarting] = useState(false);
+/** Polls an import job until it ends, then refreshes the collection. */
+function useImportJob(jobId: string | null) {
   const qc = useQueryClient();
   const { data: job } = useQuery({
     queryKey: ["admin", "music-job", jobId],
@@ -205,11 +201,40 @@ export function PlaylistImportDialog({ onClose }: { onClose: () => void }) {
     enabled: jobId !== null,
     refetchInterval: (q) => (q.state.data?.state === "running" || !q.state.data ? 1000 : false)
   });
-  const running = job?.state === "running" || (jobId !== null && !job);
-
   useEffect(() => {
     if (job && job.state !== "running") void qc.invalidateQueries({ queryKey: mediaKey });
   }, [job, qc]);
+  return { job, running: job?.state === "running" || (jobId !== null && !job) };
+}
+
+function JobProgress({ job }: { job: MusicImportJob }) {
+  return (
+    <div className="mt-4 space-y-2 rounded-xl border border-line-soft p-3 text-[13px]" role="status">
+      <p className="font-semibold text-brand-dark">{job.playlistName ?? "读取中…"}</p>
+      {job.total ? (
+        <>
+          <div className="h-2 overflow-hidden rounded-full bg-line-soft">
+            <div className="h-full rounded-full bg-brand transition-[width]" style={{ width: `${Math.round((job.processed / job.total) * 100)}%` }} />
+          </div>
+          <p className="text-muted">
+            {job.processed} / {job.total} · 新增 {job.added} · 已有 {job.skipped}
+            {job.noPreview ? ` · 没有试听 ${job.noPreview}` : ""}
+          </p>
+        </>
+      ) : null}
+      {job.state === "done" ? <p className="text-status-ok">导入完成。没有试听的歌不会加入播放器，可以在列表里为它们找试听。</p> : null}
+      {job.state === "failed" ? <p className="text-status-error">导入失败：{job.error}</p> : null}
+    </div>
+  );
+}
+
+/** Imports a public Spotify playlist on the server and shows its progress. */
+export function PlaylistImportDialog({ onClose }: { onClose: () => void }) {
+  const [link, setLink] = useState("");
+  const [jobId, setJobId] = useState<string | null>(null);
+  const [error, setError] = useState("");
+  const [starting, setStarting] = useState(false);
+  const { job, running } = useImportJob(jobId);
 
   const start = async (event: FormEvent) => {
     event.preventDefault();
@@ -249,25 +274,120 @@ export function PlaylistImportDialog({ onClose }: { onClose: () => void }) {
           {error}
         </p>
       ) : null}
+      {job ? <JobProgress job={job} /> : null}
+    </Dialog>
+  );
+}
 
-      {job ? (
-        <div className="mt-4 space-y-2 rounded-xl border border-line-soft p-3 text-[13px]" role="status">
-          <p className="font-semibold text-brand-dark">{job.playlistName ?? "读取歌单中…"}</p>
-          {job.total ? (
-            <>
-              <div className="h-2 overflow-hidden rounded-full bg-line-soft">
-                <div className="h-full rounded-full bg-brand transition-[width]" style={{ width: `${Math.round((job.processed / job.total) * 100)}%` }} />
-              </div>
-              <p className="text-muted">
-                {job.processed} / {job.total} · 新增 {job.added} · 已有 {job.skipped}
-                {job.noPreview ? ` · 没有试听 ${job.noPreview}` : ""}
-              </p>
-            </>
-          ) : null}
-          {job.state === "done" ? <p className="text-status-ok">导入完成。没有试听的歌不会加入播放器，可以在列表里为它们找试听。</p> : null}
-          {job.state === "failed" ? <p className="text-status-error">导入失败：{job.error}</p> : null}
+/** The admin's Spotify account: connect, then import Liked Songs or one of their playlists. */
+export function SpotifyAccountDialog({ onClose }: { onClose: () => void }) {
+  const qc = useQueryClient();
+  const toast = useToast();
+  const { data: status, isPending } = useQuery({ queryKey: ["admin", "spotify-account"], queryFn: api.spotifyAccount });
+  const connected = Boolean(status?.account);
+  const { data: playlists, error: playlistsError } = useQuery({ queryKey: ["admin", "spotify-playlists"], queryFn: () => api.spotifyPlaylists().then((r) => r.playlists), enabled: connected });
+  const [jobId, setJobId] = useState<string | null>(null);
+  const [error, setError] = useState("");
+  const { job, running } = useImportJob(jobId);
+
+  const connect = async () => {
+    setError("");
+    try {
+      // Spotify sends the browser back to this page, which reports the result.
+      const returnTo = new URL(window.location.href);
+      returnTo.searchParams.delete("spotify");
+      returnTo.searchParams.delete("reason");
+      window.location.assign((await api.connectSpotify(returnTo.toString())).url);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "无法连接");
+    }
+  };
+
+  const disconnect = async () => {
+    await api.disconnectSpotify();
+    await qc.invalidateQueries({ queryKey: ["admin", "spotify-account"] });
+    toast("已断开 Spotify");
+  };
+
+  const importFrom = async (request: MusicImportRequest) => {
+    setError("");
+    try {
+      setJobId((await api.startSpotifyImport(request)).job.id);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "无法开始导入");
+    }
+  };
+
+  return (
+    <Dialog open title="Spotify 账号" onClose={onClose}>
+      {isPending ? <p className="text-[13px] text-subtle">加载中…</p> : null}
+      {status && !status.configured ? (
+        <p className="text-[13px] leading-relaxed text-muted">
+          还没有配置 Spotify 应用。在 <code className="chip">apps/api/.env</code> 中设置 <code className="chip">SPOTIFY_CLIENT_ID</code> 和{" "}
+          <code className="chip">SPOTIFY_CLIENT_SECRET</code> 后重启 API。
+        </p>
+      ) : null}
+      {status?.configured && !status.account ? (
+        <div className="space-y-3 text-[13px] text-muted">
+          <p>连接你的 Spotify 账号后，可以导入“已点赞的歌曲”和你的歌单（只读权限）。</p>
+          <p className="text-[12px] text-faint">Spotify 应用里登记的 Redirect URI 必须是：{status.redirectUri}</p>
+          <button type="button" className="btn-primary" onClick={() => void connect()}>
+            连接 Spotify
+          </button>
         </div>
       ) : null}
+      {status?.account ? (
+        <div className="space-y-4">
+          <div className="flex flex-wrap items-center gap-3 text-[13px]">
+            <span className="text-muted">
+              已连接：<span className="font-semibold text-brand-dark">{status.account.displayName}</span>
+            </span>
+            <button type="button" className="btn-secondary" onClick={() => void disconnect()} disabled={running}>
+              断开
+            </button>
+          </div>
+          <div className="flex flex-wrap items-center gap-3 rounded-xl border border-line-soft p-3">
+            <div className="min-w-0 flex-1">
+              <p className="text-[13.5px] font-semibold text-brand-dark">已点赞的歌曲</p>
+              <p className="text-[12px] text-subtle">试听优先用 Spotify 的，没有时到 iTunes 找同一首歌；歌多时需要几分钟。</p>
+            </div>
+            <button type="button" className="btn-primary" disabled={running} onClick={() => void importFrom({ source: "liked" })}>
+              导入
+            </button>
+          </div>
+          <div>
+            <p className="mb-2 text-[12.5px] font-medium text-brand-dark">我的歌单</p>
+            {playlistsError ? <p className="text-[12.5px] text-status-error">{playlistsError.message}</p> : null}
+            {playlists?.length ? (
+              <ul className="max-h-72 divide-y divide-line-soft overflow-y-auto rounded-xl border border-line-soft">
+                {playlists.map((playlist) => (
+                  <li key={playlist.id} className="flex items-center gap-3 p-2.5">
+                    <Cover src={playlist.image} />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-[13px] font-semibold text-brand-dark">{playlist.name}</p>
+                      <p className="truncate text-[12px] text-subtle">
+                        {playlist.tracks} 首 · {playlist.owner}
+                      </p>
+                    </div>
+                    <button type="button" className="btn-secondary shrink-0" disabled={running} onClick={() => void importFrom({ source: "playlist", playlistId: playlist.id })}>
+                      导入
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : playlists ? (
+              <p className="text-[12.5px] text-subtle">没有歌单。</p>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
+
+      {error ? (
+        <p role="alert" className="mt-3 text-[12.5px] text-status-error">
+          {error}
+        </p>
+      ) : null}
+      {job ? <JobProgress job={job} /> : null}
     </Dialog>
   );
 }

@@ -99,6 +99,13 @@
 - Importing City Pop Best in the browser test took 37 s for 100 songs; covers load lazily, so a first screenshot showed none.
 - The model ran Claude Code review for Stage 13a and fixed five findings.
 
+- The user created a Spotify developer app (credentials in `apps/api/.env`) and asked for Stage 13b plus a Spotify embedded player switchable in the admin.
+- The Web API gives new apps no previews, so imports read each song's preview from Spotify's embed page and fall back to iTunes.
+- The callback is authorized by a one-time state rather than the admin cookie: the cookie is `SameSite=Strict`, and in development the callback is on another origin.
+- The browser pane reported a 0×0 viewport while hidden; the embedded player was checked after setting an explicit size.
+- `.env.example` had `…` as the Spotify values, which would have counted as configured; they are now empty.
+- The model ran Claude Code review for Stage 13b and fixed four findings.
+
 ## Notes
 
 - A direct Windows directory rename of `src` failed with `Permission denied`; the migration continued by moving source subdirectories individually.
