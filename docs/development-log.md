@@ -11,6 +11,7 @@
 - Recorded the initial CodeQL findings and development-only minimatch advisory in `repository-maintenance.md`; no production dependency advisories were reported.
 - VPS deployment, backups and monitoring remain outside this stage.
 - Opened PR #18; initial GitHub CI and Docker smoke checks passed. CodeQL's summary flagged logout rate limiting and incomplete Steam HTML cleanup. Added a global Fastify request limiter, hardened both provider description cleanup paths and verified 158 tests locally. GitHub's Pages health check confirms Cloudflare proxying and no current HTTPS eligibility.
+- Replaced both regex-based tag cleanup paths with one shared single-pass plain-text extractor. Added normal/nested/unclosed markup cases; regression coverage now totals 162 tests.
 
 ## 2026-04-26
 
