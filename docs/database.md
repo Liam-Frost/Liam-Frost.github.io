@@ -99,7 +99,16 @@ npm run db:studio
 
 ## MediaItem Model
 
-Collection entries (migration `20261031150000_media`): `kind` (movie, tv, anime; track and album later), `source` and `sourceId` (unique together; TMDB ids are prefixed `movie:` / `tv:`), localized `title`, `overview`, `review` and `genres` as JSON, `credits`, local `poster` (same shape as project covers), `status`, `rating` (1-5), `watchedOn`, `rewatchCount`, `progress` (`{ watched, total }`), `extra` (kind-specific JSON), `featured`, `visibility`. The `collection` key in `Setting` holds the display switches.
+Collection entries (migration `20261031150000_media`): `kind` (movie, tv, anime, track, album), `source` and `sourceId` (unique together; TMDB ids are prefixed `movie:` / `tv:`), localized `title`, `overview`, `review` and `genres` as JSON, `credits`, local `poster` (same shape as project covers), `status`, `rating` (1-5), `watchedOn`, `rewatchCount`, `progress` (`{ watched, total }`), `extra` (kind-specific JSON), `featured`, `visibility`. The `collection` key in `Setting` holds the display switches.
+
+## Person and MediaRelation Models
+
+People linked to collection entries (migration `20261102090000_people_relations`):
+
+- `Person`: `source` (`tmdb` or `manual`) and `sourceId` (unique together), localized `name` and `bio` as JSON, `originalName`, local `photo` (same shape as posters, stored under `UPLOAD_DIR/people/<id>/`), `links` (https URLs), `featured`, `visibility`.
+- `MediaRelation`: starts at an entry (`fromMediaId`) or a person (`fromPersonId`), never both (a database `CHECK`), and ends at an entry (`toMediaId`). `type` is `soundtrack`, `adaptation`, `sequel`, `related` or `credit`; `role` is a person's role for credits and the song's use (opening, ending, ...) for soundtracks; `note` is localized. `key` is unique: one relation per start, end, type and role, with the two ends of `related` sorted so A–B and B–A are the same. Deleting an entry or a person deletes its relations (`ON DELETE CASCADE`).
+
+Reading direction: `soundtrack` song → work, `adaptation` adaptation → source, `sequel` sequel → prequel, `credit` person → work. A relation is stored once and listed from both ends.
 
 ## Setting Model
 

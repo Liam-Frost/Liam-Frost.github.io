@@ -283,8 +283,8 @@ export type MediaSearchResult = {
 };
 
 export type CollectionSettings = {
-  /** Which kinds the site shows. */
-  show: { movie: boolean; tv: boolean; anime: boolean; music: boolean };
+  /** Which kinds the site shows (people: the people tab and people in entries' links). */
+  show: { movie: boolean; tv: boolean; anime: boolean; music: boolean; people: boolean };
   /** Off: "want" entries never appear on the site, whatever their own visibility. */
   showWant: boolean;
 };
@@ -374,10 +374,167 @@ export type PublicMedia = PublicMediaSummary & {
   review: LocalizedText;
   source: MediaSource;
   sourceUrl: string | null;
+  /** Linked entries and people the site shows. */
+  links: PublicLink[];
 };
 
 export type PublicCollection = {
   /** Kinds the site shows, in display order. */
   kinds: MediaKind[];
   items: PublicMediaSummary[];
+  /** People the site shows (empty when the people switch is off). */
+  people: PublicPersonSummary[];
+};
+
+/** How two entries, or a person and an entry, are linked. */
+export type RelationType = "soundtrack" | "adaptation" | "sequel" | "related" | "credit";
+/** A person's role in a work. */
+export type PersonRole =
+  | "director"
+  | "screenwriter"
+  | "creator"
+  | "producer"
+  | "actor"
+  | "voice"
+  | "singer"
+  | "composer"
+  | "lyricist"
+  | "author"
+  | "illustrator"
+  | "studio"
+  | "other";
+/** What a song is to a work. */
+export type SoundtrackRole = "opening" | "ending" | "insert" | "theme" | "score";
+
+export const PERSON_ROLES: readonly PersonRole[] = [
+  "director",
+  "screenwriter",
+  "creator",
+  "producer",
+  "actor",
+  "voice",
+  "singer",
+  "composer",
+  "lyricist",
+  "author",
+  "illustrator",
+  "studio",
+  "other"
+];
+export const SOUNDTRACK_ROLES: readonly SoundtrackRole[] = ["opening", "ending", "insert", "theme", "score"];
+
+/** Where a person's details came from. */
+export type PersonSource = "tmdb" | "manual";
+
+export type AdminPerson = {
+  id: string;
+  source: PersonSource;
+  sourceId: string | null;
+  sourceUrl: string | null;
+  name: LocalizedText;
+  originalName: string | null;
+  photo: ProjectImage | null;
+  bio: LocalizedText;
+  /** https links: official site, Wikipedia, Spotify, ... */
+  links: string[];
+  featured: boolean;
+  visibility: PhotoVisibility;
+  /** Entries linked to this person. */
+  works: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type AdminPersonCreate = { name: LocalizedText; originalName?: string | null };
+export type AdminPersonImport = { source: "tmdb"; sourceId: string };
+export type AdminPersonUpdate = Partial<{
+  name: LocalizedText;
+  originalName: string | null;
+  bio: LocalizedText;
+  links: string[];
+  featured: boolean;
+  visibility: PhotoVisibility;
+}>;
+
+export type PersonSearchResult = {
+  source: "tmdb";
+  sourceId: string;
+  name: string;
+  /** e.g. "Directing", "Acting". */
+  department: string | null;
+  /** A few titles the person is known for. */
+  knownFor: string[];
+  photoUrl: string | null;
+  existingId: string | null;
+};
+
+export type AdminPeopleResponse = { people: AdminPerson[] };
+export type AdminPersonResponse = { person: AdminPerson };
+export type AdminPersonSearchResponse = { results: PersonSearchResult[] };
+
+/** The other end of a relation in the admin. */
+export type AdminRelationEnd =
+  | { type: "media"; id: string; kind: MediaKind; title: LocalizedText; year: number | null; poster: ProjectImage | null; visibility: PhotoVisibility }
+  | { type: "person"; id: string; name: LocalizedText; photo: ProjectImage | null; visibility: PhotoVisibility };
+
+export type AdminRelation = {
+  id: string;
+  type: RelationType;
+  role: string | null;
+  note: LocalizedText;
+  /** "from": the entry or person the list is about is where the relation starts. */
+  direction: "from" | "to";
+  other: AdminRelationEnd;
+};
+
+export type AdminRelationCreate = {
+  from: { type: "media" | "person"; id: string };
+  toId: string;
+  type: RelationType;
+  role?: string | null;
+  note?: LocalizedText;
+};
+export type AdminRelationUpdate = { role?: string | null; note?: LocalizedText };
+export type AdminRelationsResponse = { relations: AdminRelation[] };
+export type AdminRelationResponse = { relation: AdminRelation };
+
+/** A link the admin may want to add, found from the entry's source data. */
+export type RelationSuggestion =
+  /** A cast or crew member on TMDB; importing the person comes first when they are not in the collection. */
+  | { kind: "tmdb-person"; sourceId: string; name: string; role: PersonRole; character: string | null; photoUrl: string | null; personId: string | null }
+  /** A song's singer by name; a person is created when none matches. */
+  | { kind: "artist"; name: string; personId: string | null }
+  /** Another entry in the collection that AniList links to this one. */
+  | { kind: "media"; relation: AdminRelationCreate; other: Extract<AdminRelationEnd, { type: "media" }> };
+
+export type AdminRelationSuggestionsResponse = { suggestions: RelationSuggestion[] };
+
+/** A person in public lists and links. */
+export type PublicPersonSummary = {
+  id: string;
+  name: LocalizedText;
+  originalName: string | null;
+  photo: ProjectImage | null;
+  /** Roles in the entries the site shows, most common first. */
+  roles: PersonRole[];
+  /** Entries the site shows. */
+  works: number;
+  featured: boolean;
+};
+
+export type PublicLink = {
+  id: string;
+  type: RelationType;
+  role: string | null;
+  note: LocalizedText;
+  direction: "from" | "to";
+  other: { type: "media"; item: PublicMediaSummary } | { type: "person"; person: PublicPersonSummary };
+};
+
+/** One person with their entries, for the person view. */
+export type PublicPerson = PublicPersonSummary & {
+  bio: LocalizedText;
+  links: string[];
+  sourceUrl: string | null;
+  credits: { id: string; role: string | null; note: LocalizedText; item: PublicMediaSummary }[];
 };

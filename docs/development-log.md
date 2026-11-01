@@ -105,6 +105,11 @@
 - The browser pane reported a 0×0 viewport while hidden; the embedded player was checked after setting an explicit size.
 - `.env.example` had `…` as the Spotify values, which would have counted as configured; they are now empty.
 - The model ran Claude Code review for Stage 13b and fixed four findings.
+- PR #13 was merged. The user confirmed the proposal for books, comics, games, people and links between entries; it was written into the collection plan as Stages 14-16.
+- Stage 14 started. Browser testing with a temporary database found: importing a TMDB person failed with a Prisma validation error (the photo URL was passed to the database; the in-memory test repository now rejects unknown fields like Prisma), Enter in the add-link dialog reloaded the page (nested forms; dialogs now render into `<body>`), and animated films list voice actors as cast with "(voice)" (now read as voice roles).
+- The sample collection was first seeded without `UPLOAD_DIR`, so its posters landed in the user's `apps/api/uploads`; the 13 folders (ids only in the temporary database) were moved out right away and the folder count matched the original 115.
+- Text with Chinese characters sent with curl from Git Bash arrived garbled (console encoding); only test data was affected.
+- The model ran Claude Code review for Stage 14 and fixed the findings listed in its review record.
 
 ## Notes
 

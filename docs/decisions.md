@@ -2,6 +2,10 @@
 
 ## User Decisions
 
+### 2026-11-01: More Collection Kinds and Links
+
+The collection should also cover books, comics, games and people (actors, directors, singers, writers and so on), and entries should link to each other: songs as soundtracks of works, adaptations of comics and books, and people's roles in works. Books, comics and games are new `MediaItem` kinds; people get their own table; links live in one relation table, stored once and shown on both sides. Plan: `docs/plan-collection.md` (Stages 14-16).
+
 ### 2026-10-31: Collection Module Scope
 
 Movies, TV, anime and music get a collection module (`docs/plan-collection.md`). Mainland China accessibility is not a concern. There are no existing records for films, series or anime, so they are added one by one (search to prefill); music comes from a Spotify Liked Songs import plus manual additions. Ratings are out of five; short reviews are multilingual. Whether "want to watch" items show on the site is a global switch in the admin, plus each item's own visibility.
@@ -47,6 +51,18 @@ The admin login address should be configurable like `internal-developer-tools-po
 React and related dependencies should be upgraded to the latest versions. This upgrade is exempt from the "Preserve Existing UI" decision.
 
 ## Model Decisions
+
+### 2026-11-02: Suggestions Never Link by Themselves
+
+Suggested links (TMDB cast and crew, a song's singers, AniList relations) are listed for the admin to add one by one; nothing is linked automatically. AniList relations only match anime in the collection to anime, because a manga usually shares the anime's title.
+
+Reason: same-name people and title matches are common enough that automatic links would quietly add wrong ones; the plan asked for candidates only.
+
+### 2026-11-02: Admin Dialogs Render Into the Page Body
+
+Admin dialogs are rendered with a portal into `<body>`, and submit events stop at the dialog.
+
+Reason: dialogs open from inside editors' `<form>`s; a form inside a dialog was nested in the editor's form, so pressing Enter reloaded the page (and React bubbled the submit to the editor). This affected the existing 找试听 dialog too.
 
 ### 2026-11-01: The Player Plays the Collection's Songs
 

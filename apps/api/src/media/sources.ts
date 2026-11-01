@@ -1,4 +1,4 @@
-import type { LocalizedText, MediaKind, MediaSearchResult } from "@liam-frost/shared";
+import type { LocalizedText, MediaKind, MediaSearchResult, PersonRole, PersonSearchResult } from "@liam-frost/shared";
 
 /** Errors worth showing in the admin as they are. */
 export class SourceError extends Error {}
@@ -20,6 +20,25 @@ export type SourceDetails = {
   episodes: number | null;
 };
 
+export type PersonHit = Omit<PersonSearchResult, "existingId">;
+
+/** Normalized details of one TMDB person, ready to become a person in the collection. */
+export type PersonDetails = {
+  sourceId: string;
+  sourceUrl: string;
+  name: LocalizedText;
+  originalName: string | null;
+  bio: LocalizedText;
+  links: string[];
+  photoUrl: string | null;
+};
+
+/** A cast or crew member of a TMDB film or series. */
+export type CreditHit = { sourceId: string; name: string; role: PersonRole; character: string | null; photoUrl: string | null };
+
+/** An AniList relation of an anime: how the other work relates to it, what it is, and its titles. */
+export type AniListRelation = { relationType: string; mediaType: "ANIME" | "MANGA"; titles: string[] };
+
 export interface MediaSources {
   available(): { tmdb: boolean; bangumi: boolean };
   search(source: SearchSource, kind: MediaKind, query: string): Promise<SourceHit[]>;
@@ -28,6 +47,14 @@ export interface MediaSources {
   download(url: string): Promise<Buffer>;
   /** Romaji title of an anime from AniList, matched by its Japanese title; null when not found or unreachable. */
   romaji(nativeTitle: string, year: number | null): Promise<string | null>;
+  /** TMDB people search. */
+  searchPeople(query: string): Promise<PersonHit[]>;
+  /** One TMDB person. */
+  person(sourceId: string): Promise<PersonDetails>;
+  /** Directors / creators, writers and the main cast of a TMDB film or series ("movie:123"). */
+  credits(sourceId: string, kind: MediaKind): Promise<CreditHit[]>;
+  /** AniList relations of an anime matched by its Japanese title; empty when not found or unreachable. */
+  animeRelations(nativeTitle: string, year: number | null): Promise<AniListRelation[]>;
 }
 
 const TIMEOUT_MS = 10_000;
@@ -37,9 +64,13 @@ const USER_AGENT = "liam-frost-site/0.1 (https://github.com/Liam-Frost/Liam-Fros
 const TMDB_API = "https://api.themoviedb.org/3";
 const ANILIST_API = "https://graphql.anilist.co";
 const ANILIST_QUERY = "query ($search: String) { Media(search: $search, type: ANIME) { title { romaji native } startDate { year } } }";
+const ANILIST_RELATIONS_QUERY =
+  "query ($search: String) { Media(search: $search, type: ANIME) { title { romaji native } startDate { year } relations { edges { relationType node { type title { romaji native english } } } } } }";
+/** Main cast members suggested for a film or series. */
+const CAST_LIMIT = 8;
 
 /** Compares titles ignoring width, spacing and punctuation ("ぼっち・ざ・ろっく！" = "ぼっちざろっく!"). */
-const titleKey = (title: string) => title.normalize("NFKC").toLowerCase().replace(/[\s\p{P}\p{S}]/gu, "");
+export const titleKey = (title: string) => title.normalize("NFKC").toLowerCase().replace(/[\s\p{P}\p{S}]/gu, "");
 /** Image hosts of TMDB, Bangumi, iTunes and Spotify; posters and covers are only downloaded from these. */
 const POSTER_HOSTS = [/^image\.tmdb\.org$/, /^lain\.bgm\.tv$/, /^is\d-ssl\.mzstatic\.com$/, /^i\.scdn\.co$/, /^mosaic\.scdn\.co$/, /^image-cdn-[a-z]+\.spotifycdn\.com$/];
 export const isPosterHost = (hostname: string) => POSTER_HOSTS.some((host) => host.test(hostname));
@@ -81,6 +112,32 @@ type TmdbDetails = TmdbHit & {
   created_by?: { name: string }[];
   production_companies?: { name: string }[];
   number_of_episodes?: number;
+};
+
+type TmdbPersonHit = {
+  id: number;
+  name: string;
+  known_for_department?: string;
+  profile_path?: string | null;
+  known_for?: { title?: string; name?: string }[];
+};
+
+type TmdbPerson = TmdbPersonHit & {
+  biography?: string;
+  homepage?: string | null;
+  imdb_id?: string | null;
+  translations?: { translations: { iso_639_1: string; iso_3166_1: string; data: { biography?: string; name?: string } }[] };
+};
+
+type TmdbCredits = {
+  cast?: { id: number; name: string; character?: string; profile_path?: string | null; order?: number }[];
+  crew?: { id: number; name: string; job: string; profile_path?: string | null }[];
+};
+
+type AniListMedia = {
+  title?: { romaji?: string; native?: string };
+  startDate?: { year?: number };
+  relations?: { edges?: { relationType?: string; node?: { type?: string; title?: { romaji?: string; native?: string; english?: string } } }[] };
 };
 
 type BangumiSubject = {
@@ -149,6 +206,30 @@ export function createMediaSources(options: { tmdbKey?: string; fetchImpl?: type
       genreLists.set(type, list);
     }
     return list;
+  };
+
+  /** One AniList anime matched by its Japanese title (same title, or a year within one); null otherwise. */
+  const anilist = async (query: string, nativeTitle: string, year: number | null): Promise<AniListMedia | null> => {
+    try {
+      const response = await fetchImpl(ANILIST_API, {
+        method: "POST",
+        headers: { "content-type": "application/json", accept: "application/json", "user-agent": USER_AGENT },
+        body: JSON.stringify({ query, variables: { search: nativeTitle } }),
+        signal: AbortSignal.timeout(TIMEOUT_MS)
+      });
+      if (!response.ok) {
+        await response.body?.cancel();
+        return null;
+      }
+      const media = ((await response.json()) as { data?: { Media?: AniListMedia } }).data?.Media;
+      if (!media) return null;
+      // Search returns the closest match; accept it only when it is the same work.
+      const sameTitle = media.title?.native && titleKey(media.title.native) === titleKey(nativeTitle);
+      const sameYear = year !== null && media.startDate?.year !== undefined && Math.abs(media.startDate.year - year) <= 1;
+      return sameTitle || sameYear ? media : null;
+    } catch {
+      return null;
+    }
   };
 
   const bangumi = async <T>(path: string, init: RequestInit = {}): Promise<T> => {
@@ -292,28 +373,106 @@ export function createMediaSources(options: { tmdbKey?: string; fetchImpl?: type
     },
 
     async romaji(nativeTitle, year) {
-      try {
-        const response = await fetchImpl(ANILIST_API, {
-          method: "POST",
-          headers: { "content-type": "application/json", accept: "application/json", "user-agent": USER_AGENT },
-          body: JSON.stringify({ query: ANILIST_QUERY, variables: { search: nativeTitle } }),
-          signal: AbortSignal.timeout(TIMEOUT_MS)
-        });
-        if (!response.ok) {
-          await response.body?.cancel();
-          return null;
-        }
-        const data = (await response.json()) as { data?: { Media?: { title?: { romaji?: string; native?: string }; startDate?: { year?: number } } } };
-        const media = data.data?.Media;
-        const romaji = media?.title?.romaji?.trim();
-        if (!media || !romaji) return null;
-        // Search returns the closest match; accept it only when it is the same work.
-        const sameTitle = media.title?.native && titleKey(media.title.native) === titleKey(nativeTitle);
-        const sameYear = year !== null && media.startDate?.year !== undefined && Math.abs(media.startDate.year - year) <= 1;
-        return sameTitle || sameYear ? romaji : null;
-      } catch {
-        return null;
-      }
+      return (await anilist(ANILIST_QUERY, nativeTitle, year))?.title?.romaji?.trim() || null;
+    },
+
+    async animeRelations(nativeTitle, year) {
+      const media = await anilist(ANILIST_RELATIONS_QUERY, nativeTitle, year);
+      return (media?.relations?.edges ?? []).flatMap((edge) => {
+        const titles = [edge.node?.title?.native, edge.node?.title?.romaji, edge.node?.title?.english].map(clean).filter(Boolean);
+        const mediaType = edge.node?.type;
+        if (!edge.relationType || !titles.length || (mediaType !== "ANIME" && mediaType !== "MANGA")) return [];
+        return [{ relationType: edge.relationType, mediaType, titles }];
+      });
+    },
+
+    async searchPeople(query) {
+      const data = await tmdb<{ results?: TmdbPersonHit[] }>("/search/person", { query, language: "zh-CN", include_adult: "false" });
+      return (data.results ?? []).slice(0, 20).map((hit) => ({
+        source: "tmdb" as const,
+        sourceId: String(hit.id),
+        name: clean(hit.name),
+        department: hit.known_for_department ?? null,
+        knownFor: (hit.known_for ?? []).map((work) => clean(work.title ?? work.name)).filter(Boolean).slice(0, 3),
+        photoUrl: hit.profile_path ? `${TMDB_IMAGE}/w185${hit.profile_path}` : null
+      }));
+    },
+
+    async person(sourceId) {
+      if (!/^\d{1,12}$/.test(sourceId)) throw new SourceError("无效的 TMDB 人物");
+      const details = await tmdb<TmdbPerson>(`/person/${sourceId}`, { append_to_response: "translations" });
+      const translations = details.translations?.translations ?? [];
+      const translated = (lang: string, regions: string[], field: "name" | "biography") => {
+        const candidates = translations.filter((t) => t.iso_639_1 === lang);
+        const preferred = regions.map((region) => candidates.find((t) => t.iso_3166_1 === region)).find(Boolean);
+        return clean((preferred ?? (lang === "zh" ? undefined : candidates[0]))?.data[field]);
+      };
+      const name = clean(details.name);
+      return {
+        sourceId,
+        sourceUrl: `https://www.themoviedb.org/person/${sourceId}`,
+        // TMDB's main name is usually the romanized one; translations add local scripts when they exist.
+        name: compact({
+          zh: translated("zh", ["CN", "SG"], "name"),
+          "zh-Hant": translated("zh", ["TW", "HK"], "name"),
+          en: name,
+          fr: translated("fr", ["FR", "CA"], "name"),
+          ja: translated("ja", ["JP"], "name")
+        }),
+        originalName: null,
+        bio: compact({
+          zh: translated("zh", ["CN", "SG"], "biography"),
+          "zh-Hant": translated("zh", ["TW", "HK"], "biography"),
+          en: translated("en", ["US", "GB"], "biography") || clean(details.biography),
+          fr: translated("fr", ["FR", "CA"], "biography"),
+          ja: translated("ja", ["JP"], "biography")
+        }),
+        links: [
+          details.homepage && /^https:\/\//.test(details.homepage) ? details.homepage : "",
+          details.imdb_id && /^nm\d+$/.test(details.imdb_id) ? `https://www.imdb.com/name/${details.imdb_id}/` : ""
+        ].filter(Boolean),
+        photoUrl: details.profile_path ? `${TMDB_IMAGE}/w780${details.profile_path}` : null
+      };
+    },
+
+    async credits(sourceId, kind) {
+      const match = /^(movie|tv):(\d+)$/.exec(sourceId);
+      if (!match) throw new SourceError("无效的 TMDB 条目");
+      const type = match[1] as TmdbType;
+      const details = await tmdb<{ created_by?: { id: number; name: string; profile_path?: string | null }[]; credits?: TmdbCredits }>(`/${type}/${match[2]}`, {
+        append_to_response: "credits"
+      });
+      const photo = (path: string | null | undefined) => (path ? `${TMDB_IMAGE}/w185${path}` : null);
+      const crew = details.credits?.crew ?? [];
+      const hits: CreditHit[] = [
+        ...(type === "tv"
+          ? (details.created_by ?? []).map((person) => ({ id: person.id, name: person.name, role: "creator" as const, profile_path: person.profile_path }))
+          : crew.filter((member) => member.job === "Director").map((member) => ({ ...member, role: "director" as const }))),
+        ...crew.filter((member) => member.job === "Screenplay" || member.job === "Writer").map((member) => ({ ...member, role: "screenwriter" as const })),
+        ...(details.credits?.cast ?? [])
+          .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+          .slice(0, CAST_LIMIT)
+          .map((member) => ({ ...member, role: kind === "anime" ? ("voice" as const) : ("actor" as const) }))
+      ].map((member) => {
+        const character = "character" in member ? clean(member.character as string) : "";
+        // Animated films list voice actors as cast with "(voice)" after the character.
+        const voiced = /\s*\(voice\)$/i.test(character);
+        return {
+          sourceId: String(member.id),
+          name: clean(member.name),
+          role: voiced ? ("voice" as const) : member.role,
+          character: character.replace(/\s*\(voice\)$/i, "") || null,
+          photoUrl: photo(member.profile_path)
+        };
+      });
+      // One suggestion per person and role (TMDB lists a writer once per writing credit).
+      const seen = new Set<string>();
+      return hits.filter((hit) => {
+        const key = `${hit.sourceId}:${hit.role}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
     },
 
     async download(url) {

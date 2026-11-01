@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 
 import { FixPreviewDialog, PreviewButton, usePreview } from "../components/music/MusicTools";
+import { RelationsPanel } from "../components/relations/RelationsPanel";
 import { Dialog } from "../components/ui/Dialog";
 import { Field, Switch } from "../components/ui/Field";
 import { Panel } from "../components/ui/Panel";
@@ -297,6 +298,8 @@ function MediaEditor({ item }: { item: AdminMediaItem }) {
               )}
             </div>
           </section>
+
+          <RelationsPanel subject={{ type: "media", id: item.id, kind: item.kind }} />
         </div>
 
         <div className="space-y-5">

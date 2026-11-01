@@ -7,7 +7,7 @@ import { beforeAll, describe, expect, it, vi } from "vitest";
 import { SourceError, type MediaSources, type SourceDetails } from "../src/media/sources";
 import { isMediaPublic } from "../src/media/types";
 import { MemorySettingsRepository } from "../src/settings/types";
-import { buildTestServer, csrf, login, multipartFile } from "./helpers";
+import { buildTestServer, csrf, login, multipartFile, offlineMediaSources } from "./helpers";
 import { MemoryMediaRepository } from "./memory-media-repository";
 
 let png: Buffer;
@@ -32,6 +32,7 @@ const details = (overrides: Partial<SourceDetails> = {}): SourceDetails => ({
 
 function fakeSources(overrides: Partial<MediaSources> = {}): MediaSources {
   return {
+    ...offlineMediaSources,
     available: () => ({ tmdb: true, bangumi: true }),
     search: async (source) => [
       { source, sourceId: "movie:129", mediaType: "movie", title: "千与千寻", originalTitle: null, year: 2001, posterUrl: null, overview: "" },
@@ -58,7 +59,7 @@ async function setup(sources: MediaSources = fakeSources()) {
 }
 
 describe("collection visibility rules", () => {
-  const settings = { show: { movie: true, tv: false, anime: true, music: true }, showWant: false };
+  const settings = { show: { movie: true, tv: false, anime: true, music: true, people: true }, showWant: false };
   it("combines the entry, its kind and the want switch", () => {
     expect(isMediaPublic({ kind: "movie", status: "done", visibility: "public" }, settings)).toBe(true);
     expect(isMediaPublic({ kind: "movie", status: "done", visibility: "private" }, settings)).toBe(false);
@@ -218,11 +219,15 @@ describe("admin collection", () => {
   it("saves collection settings and reports configured sources", async () => {
     const { app, cookie, headers } = await setup();
     const initial = (await app.inject({ url: "/api/admin/collection/settings", headers: { cookie } })).json();
-    expect(initial).toEqual({ settings: { show: { movie: true, tv: true, anime: true, music: true }, showWant: true }, sources: { tmdb: true, bangumi: true } });
+    expect(initial).toEqual({ settings: { show: { movie: true, tv: true, anime: true, music: true, people: true }, showWant: true }, sources: { tmdb: true, bangumi: true } });
 
-    const next = { show: { movie: true, tv: false, anime: true, music: true }, showWant: false };
+    const next = { show: { movie: true, tv: false, anime: true, music: true, people: false }, showWant: false };
     const saved = await app.inject({ method: "PUT", url: "/api/admin/collection/settings", headers, payload: next });
     expect(saved.json().settings).toEqual(next);
+    // Settings from before people existed show people.
+    const legacy = { show: { movie: true, tv: true, anime: true, music: true }, showWant: true };
+    const upgraded = await app.inject({ method: "PUT", url: "/api/admin/collection/settings", headers, payload: legacy });
+    expect(upgraded.json().settings.show.people).toBe(true);
     expect((await app.inject({ method: "PUT", url: "/api/admin/collection/settings", headers, payload: { showWant: false } })).statusCode).toBe(400);
   });
 
@@ -250,7 +255,7 @@ describe("admin collection", () => {
 describe("public collection", () => {
   it("is empty without a database", async () => {
     const app = await buildTestServer();
-    expect((await app.inject("/api/collection")).json()).toEqual({ kinds: [], items: [] });
+    expect((await app.inject("/api/collection")).json()).toEqual({ kinds: [], items: [], people: [] });
   });
 
   it("lists only what the site may show, without synopses or reviews", async () => {
@@ -291,7 +296,7 @@ describe("public collection", () => {
     media.get = async () => {
       throw refused;
     };
-    expect((await app.inject("/api/collection")).json()).toEqual({ kinds: [], items: [] });
+    expect((await app.inject("/api/collection")).json()).toEqual({ kinds: [], items: [], people: [] });
     expect((await app.inject(`/api/collection/${item.id}`)).statusCode).toBe(503);
   });
 });
