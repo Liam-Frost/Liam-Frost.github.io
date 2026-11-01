@@ -1,68 +1,200 @@
-# Liam Frost Personal Site
+# Liam Frost · Personal Site
 
-Personal site migration from a static React portfolio to a full-stack application for photography, projects, and future media collections.
+A personal website for photography, software projects, and a collection of films, books, games, and music. Built as a TypeScript monorepo with a public site, a separate admin app, and a Fastify API.
 
-Website: [www.twilightfrosty.com](https://www.twilightfrosty.com).
+[![CI](https://github.com/Liam-Frost/Liam-Frost.github.io/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Liam-Frost/Liam-Frost.github.io/actions/workflows/ci.yml)
+[![Docker smoke test](https://github.com/Liam-Frost/Liam-Frost.github.io/actions/workflows/docker.yml/badge.svg?branch=dev)](https://github.com/Liam-Frost/Liam-Frost.github.io/actions/workflows/docker.yml)
+[![CodeQL enabled](https://img.shields.io/badge/CodeQL-enabled-2088FF?logo=github)](https://github.com/Liam-Frost/Liam-Frost.github.io/security/code-scanning)
+[![Node.js 22.22+](https://img.shields.io/badge/Node.js-%E2%89%A522.22-339933?logo=nodedotjs&logoColor=white)](https://nodejs.org/)
+[![Code license: MIT](https://img.shields.io/badge/code_license-MIT-blue)](LICENSE)
 
-The public site currently uses GitHub Pages with API requests disabled. The full-stack
-Docker setup is available for local verification; VPS production deployment is still pending.
+**[Visit the website](https://www.twilightfrosty.com)** · [Documentation](docs/README.md) · [Report a bug](https://github.com/Liam-Frost/Liam-Frost.github.io/issues) · [Report a vulnerability](SECURITY.md)
 
-## Structure
+## Features
 
-- `apps/web`: React + Vite front-end. The visual UI is preserved from the original static site.
-- `apps/admin`: standalone admin app (React + Tailwind), served by the API at `ADMIN_PATH` (default `/admin`).
-- `apps/api`: Fastify API service: health, photos, projects, the Spotify player playlist, admin auth, and hosting of the site and admin builds in production.
-- `packages/content`: Shared content seed data and content types used by both web and API.
-- `packages/shared`: Constants and API types shared by API, web and admin.
-- `docs`: Project documentation, progress, logs, and decision records.
-- `docker`, `Dockerfile`, `compose.yaml`: production image and the full local stack (PostgreSQL + app + Caddy).
-- `scripts`: One-off maintenance helpers.
+- **Photography portfolio** — responsive galleries, fullscreen viewing, image metadata, and adaptive image quality.
+- **Project showcase** — technology filters, localized project details, Markdown descriptions, and image galleries.
+- **Media collection** — films, series, anime, books, comics, games, music, and people, with ratings, reviews, progress, relationships, and a yearly review.
+- **Music and game integrations** — Spotify account imports and playlist management, a music player, and Steam library synchronization.
+- **Separate admin app** — manage photos, projects, collections, uploads, and bulk actions without adding admin code to the public bundle.
+- **Multilingual interface** — English, Simplified Chinese, Traditional Chinese, Japanese, and French on the public site, with light and dark themes.
 
-## Commands
+### Project status
 
-- `npm run dev`: run API, web and admin together.
-- `npm run dev:web`: run the front-end dev server (`localhost:5173`).
-- `npm run dev:api`: run the API dev server on `localhost:8787` by default.
-- `npm run dev:admin`: run the admin dev server; open `http://localhost:5174<ADMIN_PATH>` (default `/admin`).
-- `npm run build`: build web and admin, type-check the API and bundle it into `apps/api/dist`.
-- `docker compose up -d --wait`: run the full production stack locally at `http://localhost:8080` (see `docs/local-development.md`).
-- `bash docker/smoke-test.sh`: build the image and check the whole stack end to end.
-- `npm test`: run the API tests.
-- `npm run typecheck`: run workspace type checks.
-- `npm run lint`: check JavaScript, TypeScript and React Hooks rules (warnings fail CI).
-- `npm run lint:fix`: apply safe ESLint fixes; review the diff afterwards.
-- `npm run format:check`: check formatting.
-- `npm run format`: format supported source, configuration and documentation files.
-- `npm run auth:hash -- your-password`: generate an admin password hash for `ADMIN_PASSWORD_HASH`.
-- `npm run db:generate`: generate the Prisma client for the API.
-- `npm run db:migrate`: run Prisma development migrations, regenerate the client, then seed photo data.
-- `npm run db:deploy`: apply committed migrations (production).
-- `npm run db:push`: push the Prisma schema to a local/development PostgreSQL database.
-- `npm run db:seed`: seed the database from the shared photo content package.
+The public website currently runs on **GitHub Pages as a static build**, with API fetching disabled. The full-stack application is implemented and exercised by Docker integration tests; **VPS production deployment is pending**. Database-backed features and the admin app require the API and are not available through the static Pages build.
 
-## Migration Notes
+This is a personal project under active development.
 
-The front-end initializes from the shared static photo seed and then fetches `/api/photos`. This keeps the page stable if the API is not running during early migration, while allowing the VPS deployment to use the backend API.
+## Technology
 
-See `docs/README.md` for the full project record.
+| Area               | Stack                                            |
+| ------------------ | ------------------------------------------------ |
+| Public site        | React, React Router, Vite, TypeScript            |
+| Admin              | React, Tailwind CSS, TanStack Query              |
+| API                | Fastify, Zod, Node.js                            |
+| Data               | PostgreSQL 16, Prisma                            |
+| Images             | sharp, EXIF extraction, local upload storage     |
+| Full-stack runtime | Docker Compose, Caddy, one application image     |
+| Quality            | Vitest, ESLint, Prettier, GitHub Actions, CodeQL |
 
-## Contributing and checks
+The full-stack runtime uses one origin: Caddy forwards requests to Fastify, which serves the public build, the admin build, API routes, and uploads. During development, Vite serves each frontend and proxies API requests.
 
-Use Node.js 22.22 or newer (CI uses Node 22), then install with `npm ci`.
-Run `npm run lint`, `npm run format:check`, `npm run typecheck`, `npm test` and
-`npm run build` before submitting changes. Docker integration checks also run for
-pull requests to `main`; see [repository maintenance](docs/repository-maintenance.md)
-for branch protection, dependency updates and security scan follow-up.
+## Quick start
 
-Report security vulnerabilities privately using the instructions in [SECURITY.md](SECURITY.md).
+### Requirements
+
+- **Node.js 22.22+** and npm. CI runs on Node 22.
+- **PostgreSQL** for the full application. Docker Compose can provide a local PostgreSQL 16 instance.
+- **Docker with Compose v2** only if using the container workflow or integration tests.
+
+### 1. Install dependencies
+
+```sh
+git clone https://github.com/Liam-Frost/Liam-Frost.github.io.git
+cd Liam-Frost.github.io
+npm ci
+```
+
+To preview only the public frontend with bundled photo content:
+
+```sh
+npm run dev:web
+```
+
+Open <http://localhost:5173>. Continue below for the API, database-backed content, and admin app.
+
+### 2. Configure the API and database
+
+Copy the example environment file:
+
+```sh
+cp apps/api/.env.example apps/api/.env
+```
+
+Set `DATABASE_URL` in `apps/api/.env` to your local PostgreSQL connection. To use the development database from this repository:
+
+```sh
+docker compose up -d postgres
+```
+
+With the default Compose password and port, the example `DATABASE_URL` already matches that database. If you change the root Compose settings, update the API connection string to match.
+
+Generate an admin password hash and a session secret:
+
+```sh
+npm run auth:hash -- "replace-with-your-own-password"
+node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"
+```
+
+Put the outputs in `ADMIN_PASSWORD_HASH` and `ADMIN_SESSION_SECRET` respectively. You can also change `ADMIN_USERNAME` and `ADMIN_PATH`. Both values must be configured to enable admin login.
+
+Optional provider keys enable the corresponding collection sources and account integrations. See the comments in [apps/api/.env.example](apps/api/.env.example) and the [admin guide](docs/admin.md). Basic local development does not require provider credentials.
+
+### 3. Initialize and run
+
+```sh
+npm run db:deploy
+npm run db:seed
+npm run dev
+```
+
+`db:deploy` applies the committed migrations. `db:seed` imports the repository's example photo content into your local database; replace that content with your own before publishing a derivative site.
+
+| Service     | Default address                    |
+| ----------- | ---------------------------------- |
+| Public site | <http://localhost:5173>            |
+| Admin       | <http://localhost:5174/admin>      |
+| API health  | <http://localhost:8787/api/health> |
+
+The admin address follows `ADMIN_PATH`. Development reads `apps/api/.env`; Docker Compose reads the root `.env`. See [local development](docs/local-development.md) for alternative database setups, proxy configuration, and port conflicts.
+
+## Run the complete stack with Docker
+
+Docker runs PostgreSQL, the application image, and Caddy. It serves the public site and admin on the same origin.
+
+```sh
+cp .env.example .env
+docker compose build
+docker compose run --rm --no-deps --entrypoint node app apps/api/dist/hash-password.js "replace-with-your-own-password"
+```
+
+Set the printed hash as `ADMIN_PASSWORD_HASH` in the root `.env`, and set a random `ADMIN_SESSION_SECRET` of at least 32 characters. Then start the stack:
+
+```sh
+docker compose up -d --wait
+docker compose exec app node apps/api/dist/seed.js
+```
+
+Open <http://localhost:8080> and <http://localhost:8080/admin>, or the configured admin path. The application applies pending migrations at startup. Database records and uploads persist in Docker volumes.
+
+This is a **local verification setup**. Production credentials, HTTPS, off-server backups, monitoring, and a tested rollback procedure must be configured before a public VPS deployment. See [full local run](docs/local-development.md#full-local-run-docker-compose).
+
+## Development commands
+
+| Command                                                     | Purpose                                                          |
+| ----------------------------------------------------------- | ---------------------------------------------------------------- |
+| `npm run dev`                                               | Start the API and both Vite apps                                 |
+| `npm run dev:web` / `npm run dev:admin` / `npm run dev:api` | Start an individual app                                          |
+| `npm run build`                                             | Build the public site, admin, and API                            |
+| `npm run typecheck`                                         | Check workspace TypeScript types                                 |
+| `npm test`                                                  | Run API and integration-style route tests with Vitest            |
+| `npm run lint`                                              | Check JavaScript, TypeScript, and React Hooks rules              |
+| `npm run format:check`                                      | Verify formatting                                                |
+| `npm run format`                                            | Apply Prettier formatting                                        |
+| `npm run db:migrate`                                        | Create development migrations and seed photos                    |
+| `npm run db:deploy`                                         | Apply committed migrations                                       |
+| `npm run db:studio`                                         | Open Prisma Studio                                               |
+| `bash docker/smoke-test.sh`                                 | Build and exercise the full container stack with disposable data |
+
+## Repository layout
+
+```text
+apps/
+  web/             Public React site
+  admin/           Separate admin application
+  api/             Fastify service, Prisma schema, migrations, and tests
+packages/
+  content/         Photo seed data and content types
+  shared/          API types, shared constants, and path rules
+docker/            Caddy configuration, entrypoint, and smoke tests
+docs/              Setup guides, architecture, decisions, and progress
+scripts/           Maintenance helpers
+.github/           CI workflows and Dependabot configuration
+```
+
+## Contributing and quality checks
+
+Open an issue for a bug or proposed change, then submit a focused pull request. For personal reuse, update the site identity, content, and provider configuration rather than publishing the original personal content unchanged.
+
+Before submitting a change, run:
+
+```sh
+npm run lint
+npm run format:check
+npm run typecheck
+npm test
+npm run build
+```
+
+PRs targeting `main` require the **Quality checks** and **smoke** checks to pass. CI covers formatting, lint, types, tests, and the full build; the Docker check exercises the production image, authentication, uploads, migrations, and persistence. The Docker badge above tracks `dev`, where that workflow runs on every push. The CodeQL badge links to the repository's scan results.
+
+[Repository maintenance](docs/repository-maintenance.md) documents branch rules, dependency updates, security findings, and outstanding setup tasks.
+
+## Documentation
+
+- [Local development and Docker](docs/local-development.md)
+- [Admin setup and integrations](docs/admin.md)
+- [Database and migrations](docs/database.md)
+- [Architecture](docs/architecture.md)
+- [Repository maintenance](docs/repository-maintenance.md)
+- [Project documentation index](docs/README.md)
+
+## Security
+
+Report vulnerabilities privately through [GitHub's vulnerability reporting form](https://github.com/Liam-Frost/Liam-Frost.github.io/security/advisories/new), following [SECURITY.md](SECURITY.md). Keep credentials, session cookies, and personal data out of public issues and logs.
 
 ## License and attribution
 
-Original software source code and technical documentation are licensed under the
-[MIT License](LICENSE). Retain the copyright and license notice when copying or
-redistributing the software or substantial portions of it. Visible website credit
-is optional; a link back to this repository is appreciated.
+Original software source code and technical documentation are available under the **[MIT License](LICENSE)**. Preserve the copyright and license notice when copying or redistributing the software or substantial portions of it. Visible website attribution is optional; a link to this repository is appreciated.
 
-Photographs, personal writing, portraits, branding and third-party materials are
-outside this software license. See [content and third-party rights](CONTENT-LICENSE.md)
-before reusing content, including material embedded in seed data.
+**Photographs, personal writing, portraits, branding, and third-party materials are excluded from the software license.** See [content and third-party rights](CONTENT-LICENSE.md), including the rules for content embedded in seed data or referenced by URL.

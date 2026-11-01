@@ -1,5 +1,12 @@
 # Development Log
 
+## 2026-11-01: README and repository presentation
+
+- Rewrote the README around project features, actual deployment status, stack, reproducible local setup, Docker, commands, contribution checks, documentation, security and licensing.
+- Added CI/main, Docker/dev, CodeQL-enabled, Node and code-license badges without inventing release or coverage metrics.
+- Updated GitHub description, homepage and topics to reflect the multilingual portfolio, media collection and full-stack implementation.
+- Checked README formatting, relative links and badge endpoints. Documentation-only change; application tests are handled by the PR checks.
+
 ## 2026-11-01: Repository maintenance
 
 - Added PR/push CI for lint, formatting, typecheck, tests and full build; retained Docker integration checks.
