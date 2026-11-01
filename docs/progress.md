@@ -278,8 +278,8 @@ Status: implementation complete; Claude Code review complete and fixes applied. 
 
 ### Upcoming
 
-- The user tests the Spotify connection (`npm run db:deploy` first) and merges the PR.
-- New collection kinds (books, games, comics, people) and links between entries — proposal pending the user's confirmation.
+- PR #13 was merged. The user tests the Spotify connection (`npm run db:deploy` first).
+- Confirmed plan (`docs/plan-collection.md`): Stage 14 links between entries and people, Stage 15 books and comics, Stage 16 games (needs IGDB credentials); the yearly review moves to Stage 17.
 - Stage 10: VPS deployment and CI/CD (needs the VPS provider/OS/specs, DNS manager and domain from the user).
 - Stage 5: back-end foundation and admin auth refinement (`ADMIN_PATH`, IP allowlist, CSRF, Zod, tests). See `docs/plan-admin-projects-deploy.md`.
 
