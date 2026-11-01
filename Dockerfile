@@ -1,7 +1,7 @@
 # One image for the whole site: Fastify serves the API, the public site (apps/web/dist), the admin app
 # (apps/admin/dist) and uploaded images. See docs/local-development.md.
 
-FROM node:22-bookworm-slim AS base
+FROM node:26-bookworm-slim AS base
 # Prisma's migration engine needs OpenSSL.
 RUN apt-get update \
   && apt-get install -y --no-install-recommends openssl ca-certificates \
