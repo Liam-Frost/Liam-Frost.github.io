@@ -107,12 +107,23 @@ Requires `DATABASE_URL`. Searching films and series needs `TMDB_API_KEY` (a TMDB
 
 - **Add**: "添加电影 / 剧集 / 动漫" searches the source; choosing a result makes the server fetch its details (titles in every site language TMDB has, original title, year, genres, directors / studios, synopsis, episode count) and download the poster into the image pipeline. Entries already in the collection are marked and open instead. Entries can also be created by hand with just a title.
 - **Editor** (`<ADMIN_PATH>/collection/<id>`): status (想看 / 在看 / 看过 / 弃了), five-star rating (click the current star to clear), date finished, rewatch count, episode progress for series and anime; title, short review and synopsis per language; original title, year, genres, credits; poster replacement; public and featured switches.
-- **Display settings**: which kinds the site shows, and a global switch for "want to watch" entries. An entry appears on the site only if it is public, its kind is shown, and it is not a "want" entry while that switch is off. Posters follow the same rule (the admin always sees them).
+- **Display settings**: which kinds the site shows (and whether it shows people), and a global switch for "want to watch" entries. An entry appears on the site only if it is public, its kind is shown, and it is not a "want" entry while that switch is off. Posters follow the same rule (the admin always sees them).
 - New entries are public with status 看过; posters are stored under `UPLOAD_DIR/media/<id>/`.
 - Anime gets its romaji name from AniList as the English and French title (editable like any title).
 - The site shows the collection at `/collection` and the latest finished or ongoing entries in the home section 最近在看 (public API: `GET /api/collection`, `GET /api/collection/:id`).
 
 API: `GET /api/admin/media`, `GET /api/admin/media/search?kind&source&q`, `POST /api/admin/media/import`, `POST /api/admin/media`, `GET/PATCH/DELETE /api/admin/media/:id`, `POST /api/admin/media/:id/poster`, `GET/PUT /api/admin/collection/settings`. Posters: `/uploads/media/<id>/<imageId>/<n>.webp`.
+
+## People and Links
+
+People (人物, `<ADMIN_PATH>/people`) are actors, directors, singers, writers, studios: anyone linked to collection entries. Links (关联) connect entries to each other and people to entries.
+
+- **Add a person**: search TMDB (films and series people; name in every site language TMDB has, biography, IMDb / homepage links and photo are imported), or add by hand with a name (singers, writers, manga artists). Edit names and biographies per language, original name, links (https), photo, public and featured switches.
+- **Links panel** (关联 on an entry, 作品 on a person): add, edit (role, note per language) and remove links. Kinds of links from an entry: 参与者 (a person and their role), 原声歌曲 / 出自作品 (a song is a work's opening, ending, insert song, theme or score), 改编自 / 被改编为, 前作 / 续作, 相关作品. The person picker can create a person by name on the spot. A link is stored once and listed on both ends.
+- **Suggestions** (查找建议 on an entry): TMDB directors / creators, writers and main cast (voice roles for anime and animated films), with the character as the note; a song's singers matched to people by name; AniList adaptations, sequels and side stories of an anime that are already in the collection (only anime-to-anime: a manga often has the anime's title). Nothing is linked until you click 添加; a TMDB person is imported with their photo when they are not in 人物 yet.
+- **On the site**: a person is shown when they are public, 显示设置 → 人物 is on, and they are credited in at least one entry the site shows. Links appear when both ends are shown. The collection page gets a 人物 tab; an entry's panel lists its people, soundtrack, source, adaptations, sequels and related works, and each opens in the same panel. Photos follow the same rule as posters (public person, people switch on); the admin always sees them.
+
+API: `GET/POST /api/admin/people`, `GET /api/admin/people/search?q`, `POST /api/admin/people/import`, `GET/PATCH/DELETE /api/admin/people/:id`, `POST /api/admin/people/:id/photo`, `GET /api/admin/people/:id/relations`, `GET /api/admin/media/:id/relations`, `GET /api/admin/media/:id/suggestions`, `POST /api/admin/relations`, `PATCH/DELETE /api/admin/relations/:id`. Public: `GET /api/collection` (now with `people`), `GET /api/collection/:id` (now with `links`), `GET /api/people/:id`. Photos: `/uploads/people/<id>/<imageId>/<n>.webp`.
 
 ## Music (Songs and the Player)
 
