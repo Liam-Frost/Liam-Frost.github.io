@@ -1,8 +1,23 @@
-import type { AdminMediaItem, PublicMedia, PublicMediaSummary } from "@liam-frost/shared";
+import type { AdminMediaItem, MediaMusic, PublicMedia, PublicMediaSummary } from "@liam-frost/shared";
 
 import { toProjectImage } from "../projects/mapping";
 import type { LocalImageStore } from "../storage/local";
 import type { MediaRow } from "./types";
+
+const text = (value: unknown) => (typeof value === "string" && value ? value : null);
+
+/** Song details stored in `extra.music`; null for other kinds. */
+export function musicOf(row: Pick<MediaRow, "kind" | "extra">): MediaMusic | null {
+  if (row.kind !== "track") return null;
+  const music = (row.extra.music ?? {}) as Record<string, unknown>;
+  return {
+    album: text(music.album),
+    durationMs: typeof music.durationMs === "number" ? music.durationMs : null,
+    previewUrl: text(music.previewUrl),
+    spotifyUrl: text(music.spotifyUrl),
+    appleUrl: text(music.appleUrl)
+  };
+}
 
 export function toAdminMedia(row: MediaRow, store: LocalImageStore): AdminMediaItem {
   return {
@@ -24,6 +39,8 @@ export function toAdminMedia(row: MediaRow, store: LocalImageStore): AdminMediaI
     watchedOn: row.watchedOn,
     rewatchCount: row.rewatchCount,
     progress: row.progress,
+    music: musicOf(row),
+    inPlayer: row.inPlayer,
     featured: row.featured,
     visibility: row.visibility,
     createdAt: row.createdAt.toISOString(),
@@ -46,6 +63,7 @@ export function toPublicMediaSummary(row: MediaRow, store: LocalImageStore): Pub
     watchedOn: row.watchedOn,
     rewatchCount: row.rewatchCount,
     progress: row.progress,
+    music: musicOf(row),
     featured: row.featured,
     hasReview: Object.values(row.review).some((text) => text?.trim()),
     updatedAt: row.updatedAt.toISOString()

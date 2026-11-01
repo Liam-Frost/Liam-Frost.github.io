@@ -71,19 +71,22 @@ export default function MediaCard({ item, to, state, priority }: { item: PublicM
 export function MediaRow({ item, to, state }: { item: PublicMediaSummary; to: To; state?: unknown }) {
   const { lang, t } = useI18n();
   const title = mediaTitle(item, lang);
+  const isMusic = item.kind === "track";
   const genres = item.genres
     .slice(0, 3)
     .map((genre) => pickLocalized(genre, lang))
     .filter(Boolean);
+  // Songs: artists and album; films, series and anime: year, genres and the first credit.
+  const meta = isMusic ? [item.credits.join(", "), item.music?.album, item.year] : [item.year, ...genres, item.credits[0]];
   return (
     <Link className="mediaRow" to={to} state={state} aria-label={t("collection.open", { title })}>
-      <div className="mediaRowPoster">
+      <div className={isMusic ? "mediaRowPoster isSquare" : "mediaRowPoster"}>
         <Poster item={item} sizes="64px" />
       </div>
       <div className="mediaRowMain">
         <h3 className="mediaCardTitle">{title}</h3>
         {item.originalTitle && item.originalTitle !== title ? <p className="mediaRowOriginal">{item.originalTitle}</p> : null}
-        <p className="mediaRowMeta">{[item.year, ...genres, item.credits[0]].filter(Boolean).join(" · ")}</p>
+        <p className="mediaRowMeta">{meta.filter(Boolean).join(" · ")}</p>
       </div>
       <div className="mediaRowSide">
         {item.status ? <span className={`mediaBadge mediaBadge-${item.status}`}>{t(statusKey(item.status))}</span> : null}

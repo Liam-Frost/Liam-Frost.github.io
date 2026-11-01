@@ -23,7 +23,69 @@ function playOrder(count: number, shuffle: boolean, avoidFirst?: number) {
 
 export default function SpotifyDock() {
   const player = useSpotifyPlayer();
-  return player ? <Dock player={player} /> : null;
+  if (!player) return null;
+  if (player.mode !== "embed") return <Dock player={player} />;
+  const src = embedSrc(player.embedUrl);
+  return src ? <EmbedDock player={player} src={src} /> : null;
+}
+
+/** https://open.spotify.com/{type}/{id} → Spotify's embedded player for it; null for anything else. */
+function embedSrc(link: string) {
+  const match = /^https:\/\/open\.spotify\.com(\/(?:playlist|album|track|artist)\/[A-Za-z0-9]+)$/.exec(link);
+  return match ? `https://open.spotify.com/embed${match[1]}?utm_source=generator` : null;
+}
+
+/**
+ * Spotify's own embedded player in the dock. It plays inside its iframe, so the page cannot tell whether
+ * it is playing; the iframe stays mounted while collapsed so music keeps going.
+ */
+function EmbedDock({ player, src }: { player: PublicSpotifyPlayer; src: string }) {
+  const [isExpanded, setIsExpanded] = useState(true);
+  const [isHovering, setIsHovering] = useState(false);
+  const [hasAutoCollapsed, setHasAutoCollapsed] = useState(false);
+
+  useEffect(() => {
+    const delay = player.autoCollapseSeconds;
+    if (!delay || hasAutoCollapsed || isHovering || !isExpanded) return;
+    const timer = window.setTimeout(() => {
+      setIsExpanded(false);
+      setHasAutoCollapsed(true);
+    }, delay * 1000);
+    return () => window.clearTimeout(timer);
+  }, [player.autoCollapseSeconds, hasAutoCollapsed, isExpanded, isHovering]);
+
+  const collapse = () => {
+    setHasAutoCollapsed(true);
+    setIsExpanded(false);
+  };
+
+  return (
+    <aside
+      className={`spotifyDock isEmbed ${isExpanded ? "isExpanded" : "isCollapsed"}`}
+      aria-label="Spotify player"
+      onMouseEnter={() => setIsHovering(true)}
+      onMouseLeave={() => setIsHovering(false)}
+    >
+      <div className="spotifyDockPanel">
+        <iframe
+          title="Spotify"
+          src={src}
+          width="100%"
+          height="152"
+          allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+          loading="lazy"
+        />
+      </div>
+
+      <button className="spotifyDockClose" type="button" aria-label="Hide Spotify player" onClick={collapse}>
+        <CloseIcon />
+      </button>
+
+      <button className="spotifyDockButton" type="button" aria-label="Show Spotify player" onClick={() => setIsExpanded(true)}>
+        <SpotifyLogo />
+      </button>
+    </aside>
+  );
 }
 
 function Dock({ player }: { player: PublicSpotifyPlayer }) {
@@ -200,9 +262,7 @@ function Dock({ player }: { player: PublicSpotifyPlayer }) {
       </div>
 
       <button className="spotifyDockClose" type="button" aria-label="Hide Spotify player" onClick={collapse}>
-        <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
-          <path d="M4.2 4.2 8 8m0 0 3.8 3.8M8 8l3.8-3.8M8 8l-3.8 3.8" />
-        </svg>
+        <CloseIcon />
       </button>
 
       <button
@@ -211,14 +271,28 @@ function Dock({ player }: { player: PublicSpotifyPlayer }) {
         aria-label={isPlaying ? `Show Spotify player (playing ${track.title})` : "Show Spotify player"}
         onClick={expand}
       >
-        <svg viewBox="0 0 64 64" aria-hidden="true" focusable="false">
-          <circle cx="32" cy="32" r="31" fill="currentColor" />
-          <path
-            d="M46.8 27.7c-8.1-4.8-21.1-5.2-28.7-2.9a2.3 2.3 0 0 1-1.4-4.4c8.8-2.7 23.2-2.2 32.5 3.3a2.3 2.3 0 0 1-2.4 4Zm-2.7 7.1c-6.8-4.1-17.2-5.3-25.2-2.9a2 2 0 0 1-1.2-3.8c9.2-2.8 20.7-1.5 28.5 3.2a2 2 0 0 1-2.1 3.5Zm-2.4 6.8c-5.9-3.5-13.2-4.3-21.8-2.3a1.7 1.7 0 0 1-.8-3.3c9.5-2.2 17.6-1.3 24.4 2.7a1.7 1.7 0 0 1-1.8 2.9Z"
-            fill="#0b1410"
-          />
-        </svg>
+        <SpotifyLogo />
       </button>
     </aside>
+  );
+}
+
+function CloseIcon() {
+  return (
+    <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+      <path d="M4.2 4.2 8 8m0 0 3.8 3.8M8 8l3.8-3.8M8 8l-3.8 3.8" />
+    </svg>
+  );
+}
+
+function SpotifyLogo() {
+  return (
+    <svg viewBox="0 0 64 64" aria-hidden="true" focusable="false">
+      <circle cx="32" cy="32" r="31" fill="currentColor" />
+      <path
+        d="M46.8 27.7c-8.1-4.8-21.1-5.2-28.7-2.9a2.3 2.3 0 0 1-1.4-4.4c8.8-2.7 23.2-2.2 32.5 3.3a2.3 2.3 0 0 1-2.4 4Zm-2.7 7.1c-6.8-4.1-17.2-5.3-25.2-2.9a2 2 0 0 1-1.2-3.8c9.2-2.8 20.7-1.5 28.5 3.2a2 2 0 0 1-2.1 3.5Zm-2.4 6.8c-5.9-3.5-13.2-4.3-21.8-2.3a1.7 1.7 0 0 1-.8-3.3c9.5-2.2 17.6-1.3 24.4 2.7a1.7 1.7 0 0 1-1.8 2.9Z"
+        fill="#0b1410"
+      />
+    </svg>
   );
 }

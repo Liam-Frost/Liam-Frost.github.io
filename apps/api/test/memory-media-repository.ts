@@ -45,6 +45,7 @@ export class MemoryMediaRepository implements MediaRepository {
       rewatchCount: 0,
       progress: null,
       extra: {},
+      inPlayer: false,
       featured: false,
       visibility: "public",
       ...item,

@@ -52,6 +52,8 @@ export default function CollectionPage() {
   }, [view]);
 
   const ofKind = useMemo(() => items.filter((item) => item.kind === kind), [items, kind]);
+  // Tabs for kinds that have entries (and the open one, e.g. from a shared link).
+  const tabKinds = kinds.filter((k) => k === kind || items.some((item) => item.kind === k));
 
   const genres = useMemo(() => {
     const byId = new Map<string, string>();
@@ -114,9 +116,9 @@ export default function CollectionPage() {
           <p className="sectionSubtitle">{t("collection.empty")}</p>
         ) : (
           <>
-            {kinds.length > 1 ? (
+            {tabKinds.length > 1 ? (
               <div className="filters collectionTabs" role="tablist" aria-label={t("collection.title")}>
-                {kinds.map((k) => (
+                {tabKinds.map((k) => (
                   <button
                     key={k}
                     type="button"
@@ -173,6 +175,7 @@ export default function CollectionPage() {
                     </option>
                   ))}
                 </select>
+                {kind === "track" ? null : (
                 <div className="collectionView" role="group" aria-label={t("collection.view.label")}>
                   {(["grid", "list"] as const).map((v) => (
                     <button key={v} type="button" aria-pressed={view === v} className={cx("btn", "btnSmall", view === v ? "btnSoft" : "btnGhost")} onClick={() => setView(v)}>
@@ -180,12 +183,13 @@ export default function CollectionPage() {
                     </button>
                   ))}
                 </div>
+                )}
               </div>
             </div>
 
             {visible.length === 0 ? (
               <p className="sectionSubtitle">{t("collection.noMatch")}</p>
-            ) : view === "grid" ? (
+            ) : view === "grid" && kind !== "track" ? (
               <div className="mediaGrid">
                 {visible.map((item, index) => (
                   <MediaCard key={item.id} item={item} to={itemLink(item.id)} state={{ fromList: true }} priority={index < 6} />

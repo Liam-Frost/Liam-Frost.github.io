@@ -187,6 +187,70 @@ export const mediaSearchQuerySchema = z.object({
   q: z.string().trim().min(1, "Enter a title to search").max(100)
 });
 
+/** An https URL on one of the given hosts; null or "" clears it. */
+const hostLink = (hosts: RegExp, message: string) =>
+  z
+    .string()
+    .trim()
+    .max(2048)
+    .nullable()
+    .refine((value) => {
+      if (!value) return true;
+      try {
+        const url = new URL(value);
+        return url.protocol === "https:" && hosts.test(url.hostname);
+      } catch {
+        return false;
+      }
+    }, message)
+    .transform((value) => value || null);
+
+/** Previews play in visitors' browsers; only iTunes' and Spotify's preview CDNs. */
+const previewLink = hostLink(/^(audio-ssl\.itunes\.apple\.com|p\.scdn\.co)$/, "Previews must come from iTunes or Spotify");
+const appleLink = hostLink(/^music\.apple\.com$/, "Must be an Apple Music link");
+
+export const musicSearchQuerySchema = z.object({
+  q: z.string().trim().min(1, "Enter a song to search").max(100),
+  country: z.enum(["US", "JP", "GB", "FR", "CN", "TW", "HK"]).default("US")
+});
+
+export const musicImportSchema = z
+  .object({
+    itunesId: z.string().regex(/^\d{1,15}$/, "Invalid iTunes id"),
+    country: z.enum(["US", "JP", "GB", "FR", "CN", "TW", "HK"]).default("US")
+  })
+  .strict();
+
+/** Where the browser returns after connecting Spotify: an http(s) URL (the admin page that started it). */
+export const spotifyConnectSchema = z
+  .object({
+    returnTo: z
+      .string()
+      .max(2048)
+      .refine((value) => {
+        try {
+          return ["http:", "https:"].includes(new URL(value).protocol);
+        } catch {
+          return false;
+        }
+      }, "Invalid return address")
+  })
+  .strict();
+
+export const spotifyCallbackQuerySchema = z.object({
+  state: z.string().regex(/^[0-9a-f]{32}$/),
+  code: z.string().max(2048).optional(),
+  error: z.string().max(200).optional()
+});
+
+export const musicAccountImportSchema = z.discriminatedUnion("source", [
+  z.object({ source: z.literal("liked") }).strict(),
+  z.object({ source: z.literal("playlist"), playlistId: z.string().regex(/^[A-Za-z0-9]{22}$/, "Invalid playlist id") }).strict()
+]);
+
+export const playlistImportSchema = z.object({ playlistUrl: z.string().trim().min(1, "Enter a playlist link").max(500) }).strict();
+export const musicJobParamsSchema = z.object({ id: z.string().regex(/^[0-9a-f]{16}$/, "Invalid job id") });
+
 /** YYYY-MM-DD; null or "" clears it. */
 const isoDate = z
   .string()
@@ -225,6 +289,20 @@ export const mediaUpdateSchema = z
       .strict()
       .refine((value) => value.total === null || value.watched <= value.total, "Watched episodes exceed the total")
       .nullable(),
+    music: z
+      .object({
+        album: z
+          .string()
+          .trim()
+          .max(200)
+          .nullable()
+          .transform((value) => value || null),
+        previewUrl: previewLink,
+        appleUrl: appleLink
+      })
+      .partial()
+      .strict(),
+    inPlayer: z.boolean(),
     featured: z.boolean(),
     visibility: z.enum(["public", "private"])
   })

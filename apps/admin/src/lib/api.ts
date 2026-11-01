@@ -7,6 +7,8 @@ import {
   type AdminMediaResponse,
   type AdminMediaSearchResponse,
   type AdminMediaUpdate,
+  type AdminMusicImport,
+  type AdminMusicSearchResponse,
   type AdminPhotoResponse,
   type AdminPhotosResponse,
   type AdminPhotoUpdate,
@@ -19,6 +21,10 @@ import {
   type ApiErrorBody,
   type CollectionSettings,
   type MediaKind,
+  type MusicImportJob,
+  type MusicImportRequest,
+  type SpotifyAccountStatus,
+  type SpotifyOwnPlaylist,
   type SpotifySettings
 } from "@liam-frost/shared";
 
@@ -144,7 +150,6 @@ export const api = {
 
   spotify: () => request<AdminSpotifyResponse>("/api/admin/spotify"),
   updateSpotify: (settings: SpotifySettings) => request<AdminSpotifyResponse>("/api/admin/spotify", { method: "PUT", json: settings }),
-  syncSpotify: () => request<AdminSpotifyResponse>("/api/admin/spotify/sync", { method: "POST" }),
 
   media: () => request<AdminMediaListResponse>("/api/admin/media"),
   mediaItem: (id: string) => request<AdminMediaResponse>(mediaPath(id)),
@@ -155,6 +160,15 @@ export const api = {
   updateMedia: (id: string, update: AdminMediaUpdate) => request<AdminMediaResponse>(mediaPath(id), { method: "PATCH", json: update }),
   deleteMedia: (id: string) => request<void>(mediaPath(id), { method: "DELETE" }),
   uploadMediaPoster: (id: string, file: File) => uploadFile<AdminMediaResponse>(`${mediaPath(id)}/poster`, file),
+  searchMusic: (q: string, country: string) => request<AdminMusicSearchResponse>(`/api/admin/music/search?${new URLSearchParams({ q, country })}`),
+  importMusic: (body: AdminMusicImport) => request<AdminMediaResponse>("/api/admin/music/import", { method: "POST", json: body }),
+  startPlaylistImport: (playlistUrl: string) => request<{ job: MusicImportJob }>("/api/admin/music/playlist-import", { method: "POST", json: { playlistUrl } }),
+  startSpotifyImport: (body: MusicImportRequest) => request<{ job: MusicImportJob }>("/api/admin/music/spotify-import", { method: "POST", json: body }),
+  spotifyAccount: () => request<SpotifyAccountStatus>("/api/admin/spotify/account"),
+  connectSpotify: (returnTo: string) => request<{ url: string }>("/api/admin/spotify/connect", { method: "POST", json: { returnTo } }),
+  disconnectSpotify: () => request<void>("/api/admin/spotify/account", { method: "DELETE" }),
+  spotifyPlaylists: () => request<{ playlists: SpotifyOwnPlaylist[] }>("/api/admin/spotify/playlists"),
+  musicJob: (id: string) => request<{ job: MusicImportJob }>(`/api/admin/music/jobs/${encodeURIComponent(id)}`),
   collectionSettings: () => request<AdminCollectionSettingsResponse>("/api/admin/collection/settings"),
   updateCollectionSettings: (settings: CollectionSettings) =>
     request<AdminCollectionSettingsResponse>("/api/admin/collection/settings", { method: "PUT", json: settings })

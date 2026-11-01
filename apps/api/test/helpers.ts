@@ -5,12 +5,14 @@ import { join } from "node:path";
 
 import { hashPassword } from "../src/auth/password";
 import { loadConfig } from "../src/config/env";
+import type { MusicSource } from "../src/media/itunes";
 import { SourceError, type MediaSources } from "../src/media/sources";
 import type { MediaRepository } from "../src/media/types";
 import type { PhotoRepository } from "../src/photos/types";
 import type { ProjectRepository } from "../src/projects/types";
 import { buildServer } from "../src/server";
 import type { SettingsRepository } from "../src/settings/types";
+import type { SpotifyAccount } from "../src/spotify/account";
 import type { PlaylistFetcher } from "../src/spotify/playlist";
 
 export const USERNAME = "liam";
@@ -48,6 +50,12 @@ export type TestServerOptions = {
   settings?: SettingsRepository | null;
   /** Defaults to one that fails, so tests never reach Spotify. */
   fetchPlaylist?: PlaylistFetcher;
+  /** Defaults to one that fails, so tests never reach iTunes. */
+  musicSource?: MusicSource;
+  /** Defaults to an account without a Spotify app. */
+  spotifyAccount?: SpotifyAccount;
+  /** Defaults to no preview, so tests never reach Spotify. */
+  trackPreview?: (trackId: string) => Promise<string | null>;
 };
 
 /**
@@ -72,7 +80,10 @@ export async function buildTestServer(env: Record<string, string | undefined> = 
     media: options.media ?? null,
     mediaSources: options.mediaSources ?? offlineMediaSources,
     settings: options.settings ?? null,
-    fetchPlaylist: options.fetchPlaylist ?? (() => Promise.reject(new Error("no network in tests")))
+    fetchPlaylist: options.fetchPlaylist ?? (() => Promise.reject(new Error("no network in tests"))),
+    musicSource: options.musicSource ?? { search: offline, lookup: offline, findPreview: async () => null },
+    spotifyAccount: options.spotifyAccount,
+    trackPreview: options.trackPreview ?? (async () => null)
   });
 }
 

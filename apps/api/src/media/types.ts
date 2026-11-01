@@ -22,6 +22,7 @@ export type MediaRow = {
   rewatchCount: number;
   progress: MediaProgress | null;
   extra: Record<string, unknown>;
+  inPlayer: boolean;
   featured: boolean;
   visibility: PhotoVisibility;
   createdAt: Date;

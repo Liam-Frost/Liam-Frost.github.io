@@ -1,9 +1,12 @@
-import type { SpotifyPlaylistInfo, SpotifyTrack } from "@liam-frost/shared";
+import type { SpotifyTrack } from "@liam-frost/shared";
 
-export type FetchedPlaylist = SpotifyPlaylistInfo & { tracks: SpotifyTrack[] };
+export type FetchedPlaylist = { id: string; name: string; image: string; link: string; tracks: SpotifyTrack[] };
 
-/** Loads a playlist; `knownCovers` maps track ids to cover URLs from earlier syncs. */
-export type PlaylistFetcher = (playlistId: string, knownCovers: ReadonlyMap<string, string>) => Promise<FetchedPlaylist>;
+/**
+ * Loads a playlist; `knownCovers` maps track ids to cover URLs already known. Cover lookups stop after
+ * `coverBudgetMs` (default 20 s); tracks without their own cover get the playlist's.
+ */
+export type PlaylistFetcher = (playlistId: string, knownCovers: ReadonlyMap<string, string>, options?: { coverBudgetMs?: number }) => Promise<FetchedPlaylist>;
 
 /** Errors worth showing in the admin as they are. */
 export class PlaylistError extends Error {}
@@ -75,8 +78,10 @@ export function parseEmbedPage(html: string): { name: string; image: string; tra
   const seen = new Set<string>();
   for (const track of entity.trackList) {
     const id = /^spotify:track:([A-Za-z0-9]{22})$/.exec(track.uri ?? "")?.[1];
-    const previewUrl = track.audioPreview?.url ?? "";
-    if (!id || seen.has(id) || track.isPlayable === false || !previewUrl.startsWith("https://")) continue;
+    const preview = track.audioPreview?.url ?? "";
+    // Songs without a preview are kept (with ""): imports add them, only the player needs previews.
+    const previewUrl = preview.startsWith("https://") ? preview : "";
+    if (!id || seen.has(id) || track.isPlayable === false) continue;
     seen.add(id);
     tracks.push({
       id,
@@ -112,7 +117,7 @@ async function trackCover(fetchImpl: typeof fetch, id: string) {
 }
 
 export function createPlaylistFetcher(fetchImpl: typeof fetch = fetch): PlaylistFetcher {
-  return async (playlistId, knownCovers) => {
+  return async (playlistId, knownCovers, options = {}) => {
     let response: Response;
     try {
       response = await get(fetchImpl, `https://open.spotify.com/embed/playlist/${playlistId}`);
@@ -125,12 +130,12 @@ export function createPlaylistFetcher(fetchImpl: typeof fetch = fetch): Playlist
     }
 
     const parsed = parseEmbedPage(await response.text());
-    if (!parsed.tracks.length) throw new PlaylistError("歌单里没有可试听的歌曲");
+    if (!parsed.tracks.length) throw new PlaylistError("歌单里没有可以导入的歌曲");
 
     // Covers from earlier syncs are reused; only new tracks are looked up, within a time budget.
     const covers = new Map(knownCovers);
     const missing = parsed.tracks.filter((track) => !covers.has(track.id));
-    const deadline = Date.now() + COVER_BUDGET_MS;
+    const deadline = Date.now() + (options.coverBudgetMs ?? COVER_BUDGET_MS);
     for (let i = 0; i < missing.length && Date.now() < deadline; i += COVER_CONCURRENCY) {
       const batch = missing.slice(i, i + COVER_CONCURRENCY);
       const found = await Promise.all(batch.map((track) => trackCover(fetchImpl, track.id)));
@@ -147,4 +152,50 @@ export function createPlaylistFetcher(fetchImpl: typeof fetch = fetch): Playlist
       tracks: parsed.tracks.map((track) => ({ ...track, image: covers.get(track.id) || parsed.image }))
     };
   };
+}
+
+const EMBED_TYPES = ["playlist", "album", "track", "artist"] as const;
+export type SpotifyEmbedType = (typeof EMBED_TYPES)[number];
+
+/**
+ * Normalizes a Spotify link or URI for the embedded player: open.spotify.com/[intl-xx/][embed/]{type}/{id}
+ * or spotify:{type}:{id} → https://open.spotify.com/{type}/{id}; null for anything else.
+ */
+export function spotifyLink(value: string): string | null {
+  const trimmed = value.trim();
+  const uri = /^spotify:([a-z]+):([A-Za-z0-9]{22})$/.exec(trimmed);
+  let type: string | undefined;
+  let id: string | undefined;
+  if (uri) {
+    [, type, id] = uri;
+  } else {
+    let url: URL;
+    try {
+      url = new URL(trimmed);
+    } catch {
+      return null;
+    }
+    if (url.protocol !== "https:" || url.hostname !== "open.spotify.com") return null;
+    const match = /^\/(?:intl-[a-z-]+\/)?(?:embed\/)?([a-z]+)\/([A-Za-z0-9]{22})\/?$/.exec(url.pathname);
+    if (!match) return null;
+    [, type, id] = match;
+  }
+  return (EMBED_TYPES as readonly string[]).includes(type!) ? `https://open.spotify.com/${type}/${id}` : null;
+}
+
+/** The 30-second preview of one track, from its embed page; null when it has none or the page fails. */
+export async function fetchTrackPreview(trackId: string, fetchImpl: typeof fetch = fetch): Promise<string | null> {
+  try {
+    const response = await get(fetchImpl, `https://open.spotify.com/embed/track/${trackId}`);
+    if (!response.ok) {
+      await response.body?.cancel();
+      return null;
+    }
+    const script = /<script id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/.exec(await response.text());
+    const entity = script ? JSON.parse(script[1])?.props?.pageProps?.state?.data?.entity : null;
+    const url: unknown = entity?.audioPreview?.url;
+    return typeof url === "string" && url.startsWith("https://p.scdn.co/") ? url : null;
+  } catch {
+    return null;
+  }
 }

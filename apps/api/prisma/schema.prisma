@@ -140,8 +140,10 @@ model MediaItem {
   rewatchCount  Int          @default(0)
   /// { watched, total } episodes.
   progress      Json?
-  /// Kind-specific data (e.g. preview URLs for music).
+  /// Kind-specific data; music: { album, durationMs, previewUrl, spotifyUrl, appleUrl }.
   extra         Json
+  /// Music: plays in the site's player.
+  inPlayer      Boolean      @default(false)
   featured      Boolean      @default(false)
   visibility    Visibility   @default(PUBLIC)
   createdAt     DateTime     @default(now())
