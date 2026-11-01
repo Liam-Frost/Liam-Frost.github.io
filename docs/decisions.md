@@ -52,6 +52,12 @@ React and related dependencies should be upgraded to the latest versions. This u
 
 ## Model Decisions
 
+### 2026-11-04: IGDB Searches Skip Mods and Updates
+
+Game searches leave out IGDB game types 3, 5, 12, 13 and 14 (bundles, mods, forks, packs, updates).
+
+Reason: IGDB ranked a fan mod named "Hollow Knight" (Vita only, no developer) above the game itself; the sample import picked the mod. Ports, remakes, remasters and expansions stay searchable.
+
 ### 2026-11-03: Book and Comic Sources Without Keys
 
 Books come from Open Library and Bangumi, comics from AniList and Bangumi; Google Books is used when `GOOGLE_BOOKS_API_KEY` is set (added the same day, once the user had a key).

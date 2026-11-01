@@ -51,7 +51,14 @@ const SAMPLES: Sample[] = [
   { kind: "book", source: "openlibrary", sourceId: "OL17267881W", patch: { rating: 5, watchedOn: "2026-03-14", review: { zh: "黑暗森林那一段读得背后发凉。" } } },
   { kind: "book", source: "bangumi", query: "涼宮ハルヒの憂鬱", patch: { status: "watching", progress: { watched: 120, total: null } } },
   { kind: "comic", source: "anilist", sourceId: "111258", patch: { status: "watching", rating: 5, progress: { watched: 5, total: null } } },
-  { kind: "comic", source: "bangumi", query: "葬送のフリーレン", patch: { rating: 4, watchedOn: "2026-09-30" } }
+  { kind: "comic", source: "bangumi", query: "葬送のフリーレン", patch: { rating: 4, watchedOn: "2026-09-30" } },
+  {
+    kind: "game",
+    source: "igdb",
+    sourceId: "119133",
+    patch: { rating: 5, watchedOn: "2026-02-20", review: { zh: "第一次打过大树守卫的时候手都在抖。" } }
+  },
+  { kind: "game", source: "igdb", query: "Hollow Knight", patch: { status: "watching", rating: 4 } }
 ];
 
 // Like the server: honour HTTPS_PROXY for TMDB / Bangumi when set.
@@ -63,14 +70,15 @@ if (!databaseUrl) throw new Error("DATABASE_URL is required (see apps/api/.env.e
 
 const prisma = createPrismaClient(databaseUrl);
 const media = new PrismaMediaRepository(prisma);
-const sources = createMediaSources({ tmdbKey: process.env.TMDB_API_KEY, googleBooksKey: process.env.GOOGLE_BOOKS_API_KEY });
+const twitch = process.env.TWITCH_CLIENT_ID && process.env.TWITCH_CLIENT_SECRET ? { clientId: process.env.TWITCH_CLIENT_ID, clientSecret: process.env.TWITCH_CLIENT_SECRET } : null;
+const sources = createMediaSources({ tmdbKey: process.env.TMDB_API_KEY, googleBooksKey: process.env.GOOGLE_BOOKS_API_KEY, twitch });
 const store = new LocalImageStore(process.env.UPLOAD_DIR?.trim() || fileURLToPath(new URL("../../uploads", import.meta.url)));
 
 let added = 0;
 try {
   for (const sample of SAMPLES) {
-    if (sample.source === "tmdb" && !sources.available().tmdb) {
-      console.log(`skip  ${sample.sourceId}: TMDB_API_KEY is not set`);
+    if (!sources.available()[sample.source]) {
+      console.log(`skip  ${sample.sourceId ?? sample.query}: ${sample.source} is not configured`);
       continue;
     }
     const sourceId = sample.sourceId ?? (await sources.search(sample.source, sample.kind, sample.query!))[0]?.sourceId;

@@ -1,4 +1,4 @@
-import type { AdminMediaItem, MediaMusic, MediaPublication, PublicMedia, PublicMediaSummary } from "@liam-frost/shared";
+import type { AdminMediaItem, MediaGame, MediaMusic, MediaPublication, PublicMedia, PublicMediaSummary } from "@liam-frost/shared";
 
 import { toProjectImage } from "../projects/mapping";
 import type { LocalImageStore } from "../storage/local";
@@ -33,6 +33,19 @@ export function publicationOf(row: Pick<MediaRow, "kind" | "extra">): MediaPubli
   };
 }
 
+const names = (value: unknown) => (Array.isArray(value) ? value.filter((item): item is string => typeof item === "string" && item.length > 0) : []);
+
+/** Game details stored in `extra.game`; null for other kinds. */
+export function gameOf(row: Pick<MediaRow, "kind" | "extra">): MediaGame | null {
+  if (row.kind !== "game") return null;
+  const game = (row.extra.game ?? {}) as Record<string, unknown>;
+  return {
+    platforms: names(game.platforms),
+    publishers: names(game.publishers),
+    playtimeHours: typeof game.playtimeHours === "number" && Number.isInteger(game.playtimeHours) && game.playtimeHours >= 0 ? game.playtimeHours : null
+  };
+}
+
 export function toAdminMedia(row: MediaRow, store: LocalImageStore): AdminMediaItem {
   return {
     id: row.id,
@@ -55,6 +68,7 @@ export function toAdminMedia(row: MediaRow, store: LocalImageStore): AdminMediaI
     progress: row.progress,
     music: musicOf(row),
     publication: publicationOf(row),
+    game: gameOf(row),
     inPlayer: row.inPlayer,
     featured: row.featured,
     visibility: row.visibility,
@@ -80,6 +94,7 @@ export function toPublicMediaSummary(row: MediaRow, store: LocalImageStore): Pub
     progress: row.progress,
     music: musicOf(row),
     publication: publicationOf(row),
+    game: gameOf(row),
     featured: row.featured,
     hasReview: Object.values(row.review).some((text) => text?.trim()),
     updatedAt: row.updatedAt.toISOString()

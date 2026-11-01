@@ -47,6 +47,9 @@ type Draft = {
   pages: string;
   volumes: string;
   ongoing: "" | "yes" | "no";
+  platforms: string[];
+  publishers: string[];
+  playtime: string;
   inPlayer: boolean;
   featured: boolean;
   visibility: AdminMediaItem["visibility"];
@@ -72,6 +75,9 @@ function toDraft(item: AdminMediaItem): Draft {
     pages: item.publication?.pages ? String(item.publication.pages) : "",
     volumes: item.publication?.volumes ? String(item.publication.volumes) : "",
     ongoing: item.publication?.ongoing === true ? "yes" : item.publication?.ongoing === false ? "no" : "",
+    platforms: item.game?.platforms ?? [],
+    publishers: item.game?.publishers ?? [],
+    playtime: item.game?.playtimeHours === null || item.game?.playtimeHours === undefined ? "" : String(item.game.playtimeHours),
     inPlayer: item.inPlayer,
     featured: item.featured,
     visibility: item.visibility
@@ -108,6 +114,8 @@ function MediaEditor({ item }: { item: AdminMediaItem }) {
   const [error, setError] = useState("");
   const [genreInput, setGenreInput] = useState("");
   const [creditInput, setCreditInput] = useState("");
+  const [platformInput, setPlatformInput] = useState("");
+  const [publisherInput, setPublisherInput] = useState("");
   const [deleting, setDeleting] = useState(false);
   const update = useUpdateMedia(item.id);
   const remove = useDeleteMedia();
@@ -116,6 +124,9 @@ function MediaEditor({ item }: { item: AdminMediaItem }) {
   const kind = item.kind as CollectionKind;
   const isMusic = kind === "track";
   const isRead = isReadKind(kind);
+  const isGame = kind === "game";
+  // "看完" / "读完" / "玩过" and their rewatch counterparts.
+  const verb = isGame ? "玩" : isRead ? "读" : "看";
   // Progress: episodes of series and anime, volumes of comics, pages of books.
   const hasEpisodes = kind === "tv" || kind === "anime" || isRead;
   const unit = kind === "comic" ? "卷" : kind === "book" ? "页" : "集";
@@ -138,6 +149,11 @@ function MediaEditor({ item }: { item: AdminMediaItem }) {
     if (value && draft.genres.length < 20 && !draft.genres.some((g) => pickText(g) === value)) set("genres", [...draft.genres, { [lang]: value }]);
     setGenreInput("");
   };
+  const addChip = (field: "platforms" | "publishers", input: string, clear: () => void) => {
+    const value = input.trim();
+    if (value && draft[field].length < 20 && !draft[field].includes(value)) set(field, [...draft[field], value]);
+    clear();
+  };
   const addCredit = () => {
     const value = creditInput.trim();
     if (value && draft.credits.length < 20 && !draft.credits.includes(value)) set("credits", [...draft.credits, value]);
@@ -150,7 +166,7 @@ function MediaEditor({ item }: { item: AdminMediaItem }) {
     const year = draft.year.trim() ? Number(draft.year) : null;
     if (year !== null && !(Number.isInteger(year) && year >= 1870 && year <= 2100)) return setError("年份无效");
     const rewatchCount = Number(draft.rewatchCount || 0);
-    if (!Number.isInteger(rewatchCount) || rewatchCount < 0) return setError("重看次数无效");
+    if (!Number.isInteger(rewatchCount) || rewatchCount < 0) return setError(`重${verb}次数无效`);
     const watched = draft.watched.trim() ? Number(draft.watched) : null;
     const total = draft.total.trim() ? Number(draft.total) : null;
     if ((watched !== null && !(Number.isInteger(watched) && watched >= 0)) || (total !== null && !(Number.isInteger(total) && total >= 1))) {
@@ -161,6 +177,8 @@ function MediaEditor({ item }: { item: AdminMediaItem }) {
     const pages = optionalCount(draft.pages);
     const volumes = optionalCount(draft.volumes);
     if ([pages, volumes].some((n) => n !== null && !(Number.isInteger(n) && n >= 1))) return setError("页数和卷数需要是正整数");
+    const playtimeHours = draft.playtime.trim() ? Number(draft.playtime) : null;
+    if (playtimeHours !== null && !(Number.isInteger(playtimeHours) && playtimeHours >= 0)) return setError("游玩时长需要是整数小时");
     setError("");
 
     const shared: AdminMediaUpdate = {
@@ -186,7 +204,8 @@ function MediaEditor({ item }: { item: AdminMediaItem }) {
           progress: hasEpisodes && (watched !== null || total !== null) ? { watched: watched ?? 0, total } : null,
           ...(isRead
             ? { publication: { publisher: draft.publisher, pages, volumes, ongoing: draft.ongoing === "" ? null : draft.ongoing === "yes" } }
-            : {})
+            : {}),
+          ...(isGame ? { game: { platforms: draft.platforms, publishers: draft.publishers, playtimeHours } } : {})
         };
     update.mutate(body, {
       onSuccess: ({ item: next }) => {
@@ -273,7 +292,7 @@ function MediaEditor({ item }: { item: AdminMediaItem }) {
                 <p className="mb-1.5 text-[12.5px] font-medium text-brand-dark">评分</p>
                 <StarRating value={draft.rating} onChange={(value) => set("rating", value)} />
               </div>
-              <Field label={isRead ? "读完的日期" : "看完的日期"} htmlFor="media-watched-on">
+              <Field label={isGame ? "玩完的日期" : `${verb}完的日期`} htmlFor="media-watched-on">
                 <div className="flex gap-2">
                   <input id="media-watched-on" type="date" className="field" value={draft.watchedOn} max={today()} onChange={(e) => set("watchedOn", e.target.value)} />
                   <button type="button" className="btn-secondary shrink-0" onClick={() => set("watchedOn", today())}>
@@ -281,7 +300,7 @@ function MediaEditor({ item }: { item: AdminMediaItem }) {
                   </button>
                 </div>
               </Field>
-              <Field label={isRead ? "重读次数" : "重看次数"} htmlFor="media-rewatch">
+              <Field label={`重${verb}次数`} htmlFor="media-rewatch">
                 <input id="media-rewatch" type="number" min={0} max={999} className="field w-28" value={draft.rewatchCount} onChange={(e) => set("rewatchCount", e.target.value)} />
               </Field>
               {hasEpisodes ? (
@@ -291,6 +310,11 @@ function MediaEditor({ item }: { item: AdminMediaItem }) {
                     <span className="text-subtle">/</span>
                     <input type="number" min={1} className="field w-24" aria-label={`总${unit}数`} value={draft.total} onChange={(e) => set("total", e.target.value)} />
                   </div>
+                </Field>
+              ) : null}
+              {isGame ? (
+                <Field label="游玩时长（小时）" htmlFor="media-playtime" hint="可选">
+                  <input id="media-playtime" type="number" min={0} className="field w-28" value={draft.playtime} onChange={(e) => set("playtime", e.target.value)} />
                 </Field>
               ) : null}
             </div>
@@ -426,7 +450,7 @@ function MediaEditor({ item }: { item: AdminMediaItem }) {
             />
             <ChipsField
               id="media-credits"
-              label={isMusic ? "歌手" : isRead ? "作者" : kind === "anime" ? "导演 / 制作" : "导演 / 主创"}
+              label={isMusic ? "歌手" : isRead ? "作者" : isGame ? "开发商" : kind === "anime" ? "导演 / 制作" : "导演 / 主创"}
               hint="回车添加"
               values={draft.credits}
               input={creditInput}
@@ -434,6 +458,30 @@ function MediaEditor({ item }: { item: AdminMediaItem }) {
               onAdd={addCredit}
               onRemove={(index) => set("credits", draft.credits.filter((_, i) => i !== index))}
             />
+            {isGame ? (
+              <>
+                <ChipsField
+                  id="media-platforms"
+                  label="平台"
+                  hint="回车添加"
+                  values={draft.platforms}
+                  input={platformInput}
+                  onInput={setPlatformInput}
+                  onAdd={() => addChip("platforms", platformInput, () => setPlatformInput(""))}
+                  onRemove={(index) => set("platforms", draft.platforms.filter((_, i) => i !== index))}
+                />
+                <ChipsField
+                  id="media-publishers"
+                  label="发行商"
+                  hint="回车添加"
+                  values={draft.publishers}
+                  input={publisherInput}
+                  onInput={setPublisherInput}
+                  onAdd={() => addChip("publishers", publisherInput, () => setPublisherInput(""))}
+                  onRemove={(index) => set("publishers", draft.publishers.filter((_, i) => i !== index))}
+                />
+              </>
+            ) : null}
             {item.sourceUrl && !isMusic ? (
               <a href={item.sourceUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[12.5px] text-brand hover:underline">
                 在 {SOURCE_LABELS[item.source]} 查看 <ExternalLink aria-hidden="true" className="size-3.5" />
@@ -533,7 +581,7 @@ function PosterPanel({ item }: { item: AdminMediaItem }) {
   const input = useRef<HTMLInputElement>(null);
   // Songs have square covers; films, series and anime have 2:3 posters.
   const square = item.kind === "track";
-  const noun = square || isReadKind(item.kind) ? "封面" : "海报";
+  const noun = square || isReadKind(item.kind) || item.kind === "game" ? "封面" : "海报";
 
   return (
     <Panel title={noun}>

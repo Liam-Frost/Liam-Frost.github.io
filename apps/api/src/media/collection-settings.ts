@@ -7,7 +7,7 @@ const KEY = "collection";
 const CACHE_MS = 30_000;
 
 export const DEFAULT_COLLECTION_SETTINGS: CollectionSettings = {
-  show: { movie: true, tv: true, anime: true, book: true, comic: true, music: true, people: true },
+  show: { movie: true, tv: true, anime: true, book: true, comic: true, game: true, music: true, people: true },
   showWant: true
 };
 

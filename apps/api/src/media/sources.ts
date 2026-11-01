@@ -1,4 +1,4 @@
-import type { LocalizedText, MediaKind, MediaPublication, MediaSearchResult, MediaSearchSource, PersonRole, PersonSearchResult } from "@liam-frost/shared";
+import type { LocalizedText, MediaGame, MediaKind, MediaPublication, MediaSearchResult, MediaSearchSource, PersonRole, PersonSearchResult } from "@liam-frost/shared";
 
 /** Errors worth showing in the admin as they are. */
 export class SourceError extends Error {}
@@ -21,6 +21,8 @@ export type SourceDetails = {
   episodes: number | null;
   /** Books and comics. */
   publication: MediaPublication | null;
+  /** Games. */
+  game?: MediaGame | null;
 };
 
 export type PersonHit = Omit<PersonSearchResult, "existingId">;
@@ -99,6 +101,39 @@ const ANILIST_GENRES: Record<string, Omit<LocalizedText, "en">> = {
 const ANILIST_AUTHOR_ROLES = /^(Story & Art|Story|Art|Original Creator|Original Story)\b/;
 const OPENLIBRARY = "https://openlibrary.org";
 const GOOGLE_BOOKS = "https://www.googleapis.com/books/v1";
+const IGDB = "https://api.igdb.com/v4";
+const TWITCH_TOKEN = "https://id.twitch.tv/oauth2/token";
+const IGDB_IMAGE = "https://images.igdb.com/igdb/image/upload";
+/** IGDB game types left out of searches: bundles, mods, forks, packs and updates (fans' mods often rank first). */
+const IGDB_SKIPPED_TYPES = "3,5,12,13,14";
+const IGDB_FIELDS =
+  "name,summary,url,first_release_date,cover.image_id,genres.name,platforms.name,involved_companies.developer,involved_companies.publisher,involved_companies.company.name,alternative_names.name,alternative_names.comment,game_localizations.name,game_localizations.region.identifier";
+/** IGDB's genre list in the site's other languages (English is IGDB's own). */
+const IGDB_GENRES: Record<string, Omit<LocalizedText, "en">> = {
+  Adventure: { zh: "冒险", "zh-Hant": "冒險", ja: "アドベンチャー", fr: "Aventure" },
+  Arcade: { zh: "街机", "zh-Hant": "街機", ja: "アーケード", fr: "Arcade" },
+  "Card & Board Game": { zh: "卡牌桌游", "zh-Hant": "卡牌桌遊", ja: "カード・ボード", fr: "Cartes et plateau" },
+  Fighting: { zh: "格斗", "zh-Hant": "格鬥", ja: "格闘", fr: "Combat" },
+  "Hack and slash/Beat 'em up": { zh: "动作砍杀", "zh-Hant": "動作砍殺", ja: "ハクスラ", fr: "Beat 'em up" },
+  Indie: { zh: "独立", "zh-Hant": "獨立", ja: "インディー", fr: "Indépendant" },
+  MOBA: { zh: "MOBA", "zh-Hant": "MOBA", ja: "MOBA", fr: "MOBA" },
+  Music: { zh: "音乐", "zh-Hant": "音樂", ja: "音楽", fr: "Musique" },
+  Pinball: { zh: "弹珠台", "zh-Hant": "彈珠台", ja: "ピンボール", fr: "Flipper" },
+  Platform: { zh: "平台跳跃", "zh-Hant": "平台跳躍", ja: "アクション", fr: "Plateforme" },
+  "Point-and-click": { zh: "点击解谜", "zh-Hant": "點擊解謎", ja: "ポイントアンドクリック", fr: "Point'n click" },
+  Puzzle: { zh: "解谜", "zh-Hant": "解謎", ja: "パズル", fr: "Réflexion" },
+  "Quiz/Trivia": { zh: "问答", "zh-Hant": "問答", ja: "クイズ", fr: "Quiz" },
+  Racing: { zh: "竞速", "zh-Hant": "競速", ja: "レース", fr: "Course" },
+  "Real Time Strategy (RTS)": { zh: "即时战略", "zh-Hant": "即時戰略", ja: "RTS", fr: "Stratégie en temps réel" },
+  "Role-playing (RPG)": { zh: "角色扮演", "zh-Hant": "角色扮演", ja: "RPG", fr: "Jeu de rôle" },
+  Shooter: { zh: "射击", "zh-Hant": "射擊", ja: "シューティング", fr: "Tir" },
+  Simulator: { zh: "模拟", "zh-Hant": "模擬", ja: "シミュレーション", fr: "Simulation" },
+  Sport: { zh: "体育", "zh-Hant": "體育", ja: "スポーツ", fr: "Sport" },
+  Strategy: { zh: "策略", "zh-Hant": "策略", ja: "ストラテジー", fr: "Stratégie" },
+  Tactical: { zh: "战术", "zh-Hant": "戰術", ja: "タクティクス", fr: "Tactique" },
+  "Turn-based strategy (TBS)": { zh: "回合制策略", "zh-Hant": "回合制策略", ja: "ターン制ストラテジー", fr: "Stratégie au tour par tour" },
+  "Visual Novel": { zh: "视觉小说", "zh-Hant": "視覺小說", ja: "ビジュアルノベル", fr: "Visual novel" }
+};
 /** Google Books languages ("zh-CN", "ja", ...) as site languages. */
 const GOOGLE_LANGS: Record<string, SiteLang> = { zh: "zh", "zh-CN": "zh", "zh-TW": "zh-Hant", "zh-HK": "zh-Hant", ja: "ja", en: "en", fr: "fr" };
 /**
@@ -155,6 +190,7 @@ const POSTER_HOSTS = [
   /^covers\.openlibrary\.org$/,
   /^books\.google\.com$/,
   /^books\.googleusercontent\.com$/,
+  /^images\.igdb\.com$/,
   /^archive\.org$/,
   /^ia\d+\.us\.archive\.org$/
 ];
@@ -251,6 +287,20 @@ type AniListManga = {
   staff?: { edges?: { role?: string; node?: { name?: { full?: string; native?: string } } }[] };
 };
 
+type IgdbGame = {
+  id: number;
+  name?: string;
+  summary?: string;
+  url?: string;
+  first_release_date?: number;
+  cover?: { image_id?: string };
+  genres?: { name?: string }[];
+  platforms?: { name?: string }[];
+  involved_companies?: { developer?: boolean; publisher?: boolean; company?: { name?: string } }[];
+  alternative_names?: { name?: string; comment?: string }[];
+  game_localizations?: { name?: string; region?: { identifier?: string } }[];
+};
+
 type GoogleVolume = {
   id: string;
   volumeInfo?: {
@@ -299,10 +349,18 @@ type BangumiSubject = {
 const BANGUMI_CREDIT_KEYS = ["导演", "监督", "动画制作", "原作"];
 const BANGUMI_BOOK_CREDIT_KEYS = ["作者", "原作", "作画", "插图"];
 
-export function createMediaSources(options: { tmdbKey?: string; googleBooksKey?: string; fetchImpl?: typeof fetch }): MediaSources {
+export function createMediaSources(options: {
+  tmdbKey?: string;
+  googleBooksKey?: string;
+  twitch?: { clientId: string; clientSecret: string } | null;
+  fetchImpl?: typeof fetch;
+  now?: () => number;
+}): MediaSources {
   const fetchImpl = options.fetchImpl ?? fetch;
   const tmdbKey = options.tmdbKey?.trim() ?? "";
   const googleBooksKey = options.googleBooksKey?.trim() ?? "";
+  const twitch = options.twitch ?? null;
+  const now = options.now ?? Date.now;
   // A v4 read access token is a JWT; a v3 API key is a short hex string.
   const tmdbBearer = tmdbKey.startsWith("eyJ");
 
@@ -408,6 +466,51 @@ export function createMediaSources(options: { tmdbKey?: string; googleBooksKey?:
     }
   };
 
+  // IGDB takes an app token from the Twitch app (valid for about two months); one is kept until shortly
+  // before it expires, or until IGDB rejects it.
+  let igdbToken: { value: string; expiresAt: number } | null = null;
+  const igdbAccess = async () => {
+    if (!twitch) throw new SourceError("未配置 TWITCH_CLIENT_ID / TWITCH_CLIENT_SECRET");
+    if (igdbToken && igdbToken.expiresAt > now() + 60_000) return igdbToken.value;
+    const body = new URLSearchParams({ client_id: twitch.clientId, client_secret: twitch.clientSecret, grant_type: "client_credentials" });
+    let token: { access_token?: string; expires_in?: number };
+    try {
+      token = (await (await request(TWITCH_TOKEN, { method: "POST", body }, "Twitch")).json()) as typeof token;
+    } catch (error) {
+      if (error instanceof SourceError && /HTTP 40[03]|拒绝/.test(error.message)) throw new SourceError("Twitch 拒绝了应用凭证，请检查 TWITCH_CLIENT_ID 和 TWITCH_CLIENT_SECRET");
+      throw error;
+    }
+    if (!token.access_token) throw new SourceError("Twitch 没有返回令牌");
+    igdbToken = { value: token.access_token, expiresAt: now() + (token.expires_in ?? 3600) * 1000 };
+    return igdbToken.value;
+  };
+  const igdb = async <T>(endpoint: string, query: string, retry = true): Promise<T> => {
+    const token = await igdbAccess();
+    const response = await fetchImpl(`${IGDB}/${endpoint}`, {
+      method: "POST",
+      headers: { "Client-ID": twitch!.clientId, authorization: `Bearer ${token}`, accept: "application/json", "content-type": "text/plain" },
+      body: query,
+      signal: AbortSignal.timeout(TIMEOUT_MS)
+    }).catch(() => {
+      throw new SourceError("无法连接 IGDB。如果访问它需要代理，请在 apps/api/.env 中设置 HTTPS_PROXY 后重启 API");
+    });
+    if (response.status === 401 && retry) {
+      // A revoked or expired token: get a new one once.
+      await response.body?.cancel();
+      igdbToken = null;
+      return igdb<T>(endpoint, query, false);
+    }
+    if (!response.ok) {
+      await response.body?.cancel();
+      throw new SourceError(`IGDB 返回错误（HTTP ${response.status}）`);
+    }
+    return response.json() as Promise<T>;
+  };
+  const igdbCover = (game: IgdbGame, size: string) => (game.cover?.image_id ? `${IGDB_IMAGE}/${size}/${game.cover.image_id}.jpg` : null);
+  const igdbYear = (game: IgdbGame) => (game.first_release_date ? new Date(game.first_release_date * 1000).getUTCFullYear() : null);
+  const igdbCompanies = (game: IgdbGame, role: "developer" | "publisher") =>
+    [...new Set((game.involved_companies ?? []).filter((company) => company[role]).map((company) => clean(company.company?.name)).filter(Boolean))];
+
   const openLibrary = async <T>(path: string, params: Record<string, string> = {}): Promise<T> => {
     const url = new URL(OPENLIBRARY + path);
     for (const [key, value] of Object.entries(params)) url.searchParams.set(key, value);
@@ -468,7 +571,7 @@ export function createMediaSources(options: { tmdbKey?: string; googleBooksKey?:
   const bangumiPoster = (subject: BangumiSubject) => subject.images?.large || subject.images?.common || null;
 
   return {
-    available: () => ({ tmdb: Boolean(tmdbKey), bangumi: true, openlibrary: true, googlebooks: Boolean(googleBooksKey), anilist: true }),
+    available: () => ({ tmdb: Boolean(tmdbKey), bangumi: true, openlibrary: true, googlebooks: Boolean(googleBooksKey), anilist: true, igdb: Boolean(twitch) }),
 
     async search(source, kind, query) {
       if (source === "openlibrary") {
@@ -502,6 +605,26 @@ export function createMediaSources(options: { tmdbKey?: string; googleBooksKey?:
             overview: plainText(info.description)
           };
         });
+      }
+
+      if (source === "igdb") {
+        // Apicalypse strings are double-quoted; quotes and backslashes in the search would end them.
+        const text = query.replace(/["\\]/g, " ").trim();
+        const games = await igdb<IgdbGame[]>(
+          "games",
+          `search "${text}"; fields name,first_release_date,cover.image_id,involved_companies.developer,involved_companies.company.name,platforms.name; where version_parent = null & game_type != (${IGDB_SKIPPED_TYPES}); limit 20;`
+        );
+        return games.map((game) => ({
+          source: "igdb" as const,
+          sourceId: String(game.id),
+          mediaType: null,
+          creators: igdbCompanies(game, "developer").slice(0, 2),
+          title: clean(game.name),
+          originalTitle: null,
+          year: igdbYear(game),
+          posterUrl: igdbCover(game, "t_cover_small"),
+          overview: (game.platforms ?? []).map((platform) => clean(platform.name)).filter(Boolean).join(" · ")
+        }));
       }
 
       if (source === "anilist") {
@@ -654,6 +777,40 @@ export function createMediaSources(options: { tmdbKey?: string; googleBooksKey?:
           posterUrl: googleCover(info.imageLinks, ["extraLarge", "large", "medium", "small", "thumbnail"], 800),
           episodes: null,
           publication: { publisher: clean(info.publisher) || null, pages: info.pageCount || info.printedPageCount || null, volumes: null, ongoing: null }
+        };
+      }
+
+      if (source === "igdb") {
+        if (!/^\d{1,12}$/.test(sourceId)) throw new SourceError("无效的 IGDB 条目");
+        const [game] = await igdb<IgdbGame[]>("games", `fields ${IGDB_FIELDS}; where id = ${sourceId};`);
+        if (!game) throw new SourceError("IGDB 上找不到这个条目");
+        const name = clean(game.name);
+        // Local names: IGDB's localizations, then alternative names labelled with their language.
+        const localized = (regions: string[], comment: RegExp) =>
+          clean(game.game_localizations?.find((entry) => regions.includes(entry.region?.identifier ?? ""))?.name) ||
+          clean(game.alternative_names?.find((entry) => comment.test(entry.comment ?? ""))?.name);
+        return {
+          sourceId,
+          sourceUrl: game.url ?? `https://www.igdb.com/games/${sourceId}`,
+          title: compact({
+            zh: localized(["zh-CN"], /chinese.*simplified/i),
+            "zh-Hant": localized(["zh-TW", "zh-HK"], /chinese.*traditional/i),
+            en: name,
+            ja: localized(["ja-JP"], /japanese/i)
+          }),
+          originalTitle: name || null,
+          year: igdbYear(game),
+          genres: (game.genres ?? []).map((genre) => clean(genre.name)).filter(Boolean).map((genre) => compact({ en: genre, ...IGDB_GENRES[genre] })),
+          credits: igdbCompanies(game, "developer").slice(0, 3),
+          overview: compact({ en: clean(game.summary) }),
+          posterUrl: igdbCover(game, "t_cover_big_2x"),
+          episodes: null,
+          publication: null,
+          game: {
+            platforms: (game.platforms ?? []).map((platform) => clean(platform.name)).filter(Boolean),
+            publishers: igdbCompanies(game, "publisher").slice(0, 3),
+            playtimeHours: null
+          }
         };
       }
 
