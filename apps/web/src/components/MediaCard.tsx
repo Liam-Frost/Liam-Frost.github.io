@@ -28,7 +28,7 @@ export function mediaTitle(item: Pick<PublicMediaSummary, "title" | "originalTit
 export const isReadKind = (kind: PublicMediaSummary["kind"]) => kind === "book" || kind === "comic";
 
 export const statusKey = (status: NonNullable<PublicMediaSummary["status"]>, kind: PublicMediaSummary["kind"]) =>
-  (isReadKind(kind) ? `collection.read.${status}` : `collection.status.${status}`) as Key;
+  (kind === "game" ? `collection.play.${status}` : isReadKind(kind) ? `collection.read.${status}` : `collection.status.${status}`) as Key;
 
 function Poster({ item, sizes, priority }: { item: PublicMediaSummary; sizes: string; priority?: boolean }) {
   const { lang } = useI18n();

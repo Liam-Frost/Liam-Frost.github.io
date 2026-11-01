@@ -33,10 +33,10 @@ export const STATUS_LABELS = {
 } as const;
 
 /** Kinds added by searching a source (songs have their own tools). */
-export const WATCH_KINDS = ["movie", "tv", "anime", "book", "comic"] as const;
+export const WATCH_KINDS = ["movie", "tv", "anime", "book", "comic", "game"] as const;
 export type WatchKind = (typeof WATCH_KINDS)[number];
 
-export const KIND_LABELS: Record<WatchKind, string> = { movie: "电影", tv: "剧集", anime: "动漫", book: "图书", comic: "漫画" };
+export const KIND_LABELS: Record<WatchKind, string> = { movie: "电影", tv: "剧集", anime: "动漫", book: "图书", comic: "漫画", game: "游戏" };
 
 /** Sources each kind is searched on, the default first. */
 export const KIND_SOURCES: Record<WatchKind, readonly MediaSearchSource[]> = {
@@ -44,7 +44,8 @@ export const KIND_SOURCES: Record<WatchKind, readonly MediaSearchSource[]> = {
   tv: ["tmdb"],
   anime: ["bangumi", "tmdb"],
   book: ["openlibrary", "googlebooks", "bangumi"],
-  comic: ["anilist", "bangumi"]
+  comic: ["anilist", "bangumi"],
+  game: ["igdb"]
 };
 
 /** Books and comics are read: 想读 / 在读 / 读过. */
@@ -87,8 +88,16 @@ export const READ_STATUS_LABELS: Record<MediaStatus, string> = {
   dropped: "弃了"
 };
 
-/** Status names for a kind: watched for films, series and anime, read for books and comics. */
-export const statusLabels = (kind: string): Record<MediaStatus, string> => (isReadKind(kind) ? READ_STATUS_LABELS : MEDIA_STATUS_LABELS);
+export const PLAY_STATUS_LABELS: Record<MediaStatus, string> = {
+  want: "想玩",
+  watching: "在玩",
+  done: "玩过",
+  dropped: "弃了"
+};
+
+/** Status names for a kind: watched for films, series and anime, read for books and comics, played for games. */
+export const statusLabels = (kind: string): Record<MediaStatus, string> =>
+  kind === "game" ? PLAY_STATUS_LABELS : isReadKind(kind) ? READ_STATUS_LABELS : MEDIA_STATUS_LABELS;
 
 export const PERSON_ROLE_LABELS: Record<PersonRole, string> = {
   director: "导演",
@@ -136,6 +145,7 @@ export const SOURCE_LABELS: Record<MediaSource, string> = {
   openlibrary: "Open Library",
   googlebooks: "Google Books",
   anilist: "AniList",
+  igdb: "IGDB",
   spotify: "Spotify",
   itunes: "Apple Music",
   manual: "手动添加"

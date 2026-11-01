@@ -34,7 +34,7 @@ const details = (overrides: Partial<SourceDetails> = {}): SourceDetails => ({
 function fakeSources(overrides: Partial<MediaSources> = {}): MediaSources {
   return {
     ...offlineMediaSources,
-    available: () => ({ tmdb: true, bangumi: true, openlibrary: true, googlebooks: true, anilist: true }),
+    available: () => ({ tmdb: true, bangumi: true, openlibrary: true, googlebooks: true, anilist: true, igdb: true }),
     search: async (source) => [
       { source, sourceId: "movie:129", mediaType: "movie", creators: [], title: "千与千寻", originalTitle: null, year: 2001, posterUrl: null, overview: "" },
       { source, sourceId: "movie:4935", mediaType: "movie", creators: [], title: "哈尔的移动城堡", originalTitle: null, year: 2004, posterUrl: null, overview: "" }
@@ -60,7 +60,7 @@ async function setup(sources: MediaSources = fakeSources()) {
 }
 
 describe("collection visibility rules", () => {
-  const settings = { show: { movie: true, tv: false, anime: true, book: true, comic: false, music: true, people: true }, showWant: false };
+  const settings = { show: { movie: true, tv: false, anime: true, book: true, comic: false, game: true, music: true, people: true }, showWant: false };
   it("combines the entry, its kind and the want switch", () => {
     expect(isMediaPublic({ kind: "movie", status: "done", visibility: "public" }, settings)).toBe(true);
     expect(isMediaPublic({ kind: "movie", status: "done", visibility: "private" }, settings)).toBe(false);
@@ -220,7 +220,7 @@ describe("admin collection", () => {
   it("saves collection settings and reports configured sources", async () => {
     const { app, cookie, headers } = await setup();
     const initial = (await app.inject({ url: "/api/admin/collection/settings", headers: { cookie } })).json();
-    expect(initial).toEqual({ settings: { show: { movie: true, tv: true, anime: true, book: true, comic: true, music: true, people: true }, showWant: true }, sources: { tmdb: true, bangumi: true, openlibrary: true, googlebooks: true, anilist: true } });
+    expect(initial).toEqual({ settings: { show: { movie: true, tv: true, anime: true, book: true, comic: true, game: true, music: true, people: true }, showWant: true }, sources: { tmdb: true, bangumi: true, openlibrary: true, googlebooks: true, anilist: true, igdb: true } });
 
     const next = { show: { movie: true, tv: false, anime: true, music: true, people: false }, showWant: false };
     const saved = await app.inject({ method: "PUT", url: "/api/admin/collection/settings", headers, payload: next });
@@ -271,7 +271,7 @@ describe("public collection", () => {
     await app.inject({ method: "PUT", url: "/api/admin/collection/settings", headers, payload: { show: { movie: true, tv: false, anime: true, music: true }, showWant: false } });
 
     const body = (await app.inject("/api/collection")).json();
-    expect(body.kinds).toEqual(["movie", "anime", "book", "comic", "track"]);
+    expect(body.kinds).toEqual(["movie", "anime", "book", "comic", "game", "track"]);
     expect(body.items.map((item: { id: string }) => item.id)).toEqual([shown.id]);
     expect(body.items[0]).toMatchObject({ rating: 5, hasReview: true });
     expect(body.items[0]).not.toHaveProperty("review");
@@ -349,5 +349,33 @@ describe("books and comics", () => {
     expect((await search("kind=book&source=tmdb&q=x")).statusCode).toBe(400);
     expect((await search("kind=comic&source=anilist&q=x")).statusCode).toBe(200);
     expect((await search("kind=movie&source=anilist&q=x")).statusCode).toBe(400);
+  });
+});
+
+describe("games", () => {
+  it("imports a game with its platforms and publishers, and records playtime", async () => {
+    const game = details({
+      sourceId: "119133",
+      sourceUrl: "https://www.igdb.com/games/elden-ring",
+      title: { en: "Elden Ring", zh: "艾尔登法环" },
+      credits: ["FromSoftware"],
+      game: { platforms: ["PC (Microsoft Windows)"], publishers: ["Bandai Namco Entertainment"], playtimeHours: null }
+    });
+    const { app, headers, patch } = await setup(fakeSources({ details: async () => game }));
+    const post = (payload: object) => app.inject({ method: "POST", url: "/api/admin/media/import", headers, payload });
+
+    expect((await post({ kind: "game", source: "tmdb", sourceId: "movie:1" })).statusCode).toBe(400);
+    const { item } = (await post({ kind: "game", source: "igdb", sourceId: "119133" })).json();
+    expect(item).toMatchObject({
+      kind: "game",
+      progress: null,
+      game: { platforms: ["PC (Microsoft Windows)"], publishers: ["Bandai Namco Entertainment"], playtimeHours: null },
+      publication: null
+    });
+
+    const edited = await patch(item.id, { game: { playtimeHours: 132, platforms: ["PlayStation 5"] }, status: "watching" });
+    expect(edited.json().item.game).toEqual({ platforms: ["PlayStation 5"], publishers: ["Bandai Namco Entertainment"], playtimeHours: 132 });
+    expect((await patch(item.id, { game: { playtimeHours: -1 } })).statusCode).toBe(400);
+    expect((await patch(item.id, { publication: { pages: 10 } })).statusCode).toBe(400);
   });
 });

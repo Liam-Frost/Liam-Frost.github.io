@@ -63,6 +63,8 @@ const envSchema = z.object({
   UPLOAD_MAX_MB: optionalNumber.pipe(z.number().int().min(1).max(200).default(40)),
   TMDB_API_KEY: optionalString,
   GOOGLE_BOOKS_API_KEY: optionalString,
+  TWITCH_CLIENT_ID: optionalString,
+  TWITCH_CLIENT_SECRET: optionalString,
   SPOTIFY_CLIENT_ID: optionalString,
   SPOTIFY_CLIENT_SECRET: optionalString,
   SPOTIFY_REDIRECT_URI: optionalString
@@ -98,6 +100,8 @@ export type AppConfig = {
   tmdbApiKey: string;
   /** Google Books API key; empty disables Google Books as a book source. */
   googleBooksApiKey: string;
+  /** Twitch app for IGDB game searches; null when not configured. */
+  twitch: { clientId: string; clientSecret: string } | null;
   /** Spotify developer app for importing the admin's Liked Songs and playlists; null when not set up. */
   spotify: { clientId: string; clientSecret: string; redirectUri: string } | null;
 };
@@ -130,6 +134,9 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
   const spotifySecret = values.SPOTIFY_CLIENT_SECRET ?? "";
   if (Boolean(spotifyId) !== Boolean(spotifySecret)) {
     issues.push("SPOTIFY_CLIENT_ID and SPOTIFY_CLIENT_SECRET must be set together");
+  }
+  if (Boolean(values.TWITCH_CLIENT_ID) !== Boolean(values.TWITCH_CLIENT_SECRET)) {
+    issues.push("TWITCH_CLIENT_ID and TWITCH_CLIENT_SECRET must be set together");
   }
   // Spotify only allows plain HTTP redirects to loopback IPs; the default matches a local API.
   const spotifyRedirect = values.SPOTIFY_REDIRECT_URI ?? `http://127.0.0.1:${values.PORT}/api/admin/spotify/callback`;
@@ -195,6 +202,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     },
     tmdbApiKey: values.TMDB_API_KEY ?? "",
     googleBooksApiKey: values.GOOGLE_BOOKS_API_KEY ?? "",
+    twitch: values.TWITCH_CLIENT_ID && values.TWITCH_CLIENT_SECRET ? { clientId: values.TWITCH_CLIENT_ID, clientSecret: values.TWITCH_CLIENT_SECRET } : null,
     spotify: spotifyId && spotifySecret ? { clientId: spotifyId, clientSecret: spotifySecret, redirectUri: spotifyRedirect } : null
   };
 }
