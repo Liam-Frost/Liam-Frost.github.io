@@ -13,6 +13,8 @@ import {
 } from "../src/people/types";
 import type { MemoryMediaRepository } from "./memory-media-repository";
 
+const PERSON_FIELDS = new Set(["id", "source", "sourceId", "sourceUrl", "name", "originalName", "photo", "bio", "links", "featured", "visibility"]);
+
 /** In-memory PersonRepository with the same rules as the Prisma one (unique source person, by name). */
 export class MemoryPersonRepository implements PersonRepository {
   rows = new Map<string, PersonRow>();
@@ -31,6 +33,9 @@ export class MemoryPersonRepository implements PersonRepository {
   }
 
   async create(person: NewPerson) {
+    // Prisma rejects fields the table does not have; so does this.
+    const unknown = Object.keys(person).filter((key) => !PERSON_FIELDS.has(key));
+    if (unknown.length) throw new Error(`Unknown person fields: ${unknown.join(", ")}`);
     if (person.sourceId && (await this.findBySource(person.source, [person.sourceId])).size) throw new DuplicatePersonError();
     const now = new Date();
     const row: PersonRow = {

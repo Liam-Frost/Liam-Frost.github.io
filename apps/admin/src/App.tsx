@@ -10,6 +10,8 @@ import { CenteredCard, LoginPage, NotConfiguredPage } from "./pages/LoginPage";
 import { CollectionPage } from "./pages/CollectionPage";
 import { MediaEditPage } from "./pages/MediaEditPage";
 import { MusicPage } from "./pages/MusicPage";
+import { PeoplePage } from "./pages/PeoplePage";
+import { PersonEditPage } from "./pages/PersonEditPage";
 import { PhotosPage } from "./pages/PhotosPage";
 import { ProjectEditPage } from "./pages/ProjectEditPage";
 import { ProjectsPage } from "./pages/ProjectsPage";
@@ -76,6 +78,8 @@ function SessionGate() {
         <Route path="projects/:id" element={<ProjectEditPage />} />
         <Route path="collection" element={<CollectionPage />} />
         <Route path="collection/:id" element={<MediaEditPage />} />
+        <Route path="people" element={<PeoplePage />} />
+        <Route path="people/:id" element={<PersonEditPage />} />
         <Route path="music" element={<MusicPage />} />
         <Route path="*" element={<SectionNotFound />} />
       </Route>

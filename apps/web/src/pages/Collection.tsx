@@ -3,7 +3,10 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router";
 
 import MediaCard, { MediaRow } from "../components/MediaCard";
+import type { CollectionLinkTo } from "../components/CollectionLinks";
 import MediaDetail from "../components/MediaDetail";
+import PersonCard from "../components/PersonCard";
+import PersonDetail from "../components/PersonDetail";
 import Reveal from "../components/Reveal";
 import { useCollection } from "../data/useCollection";
 import { cx } from "../lib/cx";
@@ -27,7 +30,7 @@ const genreId = (genre: PublicMediaSummary["genres"][number]) => genre.zh || gen
 
 export default function CollectionPage() {
   const { lang, t } = useI18n();
-  const { kinds, items, status: loadStatus } = useCollection();
+  const { kinds, items, people, status: loadStatus } = useCollection();
   const [params, setParams] = useSearchParams();
   const navigate = useNavigate();
   const location = useLocation();
@@ -40,8 +43,11 @@ export default function CollectionPage() {
   const kind = (kinds.find((k) => k === params.get("kind")) ?? kinds.find((k) => items.some((item) => item.kind === k)) ?? kinds[0]) as
     | MediaKind
     | undefined;
+  // The people tab: people credited in shown entries.
+  const showingPeople = params.get("kind") === "people" && people.length > 0;
   const status = STATUSES.find((s) => s === params.get("status")) ?? null;
   const openId = params.get("item");
+  const openPerson = params.get("person");
 
   useEffect(() => {
     try {
@@ -79,19 +85,24 @@ export default function CollectionPage() {
     setParams(value, { replace: true });
   };
 
-  const switchKind = (next: MediaKind) => {
+  const switchKind = (next: MediaKind | "people") => {
     setGenre("");
     setYear("");
     select({ kind: next, status: null });
   };
 
-  // Entries open in a side panel addressed by ?item=, so links can be shared and Back closes it.
-  const itemLink = (id: string) => {
+  // Entries and people open in a side panel addressed by ?item= / ?person=, so links can be shared and
+  // Back closes it (or returns to the panel a link was followed from).
+  const panelLink = (key: "item" | "person", id: string) => {
     const value = new URLSearchParams(params);
-    value.set("item", id);
-    if (kind) value.set("kind", kind);
+    value.delete("item");
+    value.delete("person");
+    value.set(key, id);
+    if (!value.get("kind") && kind) value.set("kind", kind);
     return { search: `?${value}` };
   };
+  const itemLink = (id: string) => panelLink("item", id);
+  const linkTo: CollectionLinkTo = { item: itemLink, person: (id) => panelLink("person", id) };
   const close = useCallback(() => {
     if ((location.state as { fromList?: boolean } | null)?.fromList) {
       navigate(-1);
@@ -99,6 +110,7 @@ export default function CollectionPage() {
     }
     const value = new URLSearchParams(params);
     value.delete("item");
+    value.delete("person");
     setParams(value, { replace: true });
   }, [location.state, navigate, params, setParams]);
 
@@ -116,23 +128,42 @@ export default function CollectionPage() {
           <p className="sectionSubtitle">{t("collection.empty")}</p>
         ) : (
           <>
-            {tabKinds.length > 1 ? (
+            {tabKinds.length + (people.length ? 1 : 0) > 1 ? (
               <div className="filters collectionTabs" role="tablist" aria-label={t("collection.title")}>
                 {tabKinds.map((k) => (
                   <button
                     key={k}
                     type="button"
                     role="tab"
-                    aria-selected={k === kind}
-                    className={cx("btn", "btnSmall", k === kind ? "btnSoft" : "btnGhost")}
+                    aria-selected={!showingPeople && k === kind}
+                    className={cx("btn", "btnSmall", !showingPeople && k === kind ? "btnSoft" : "btnGhost")}
                     onClick={() => switchKind(k)}
                   >
                     {t(`collection.kind.${k}` as Key)} <span className="collectionCount">{items.filter((item) => item.kind === k).length}</span>
                   </button>
                 ))}
+                {people.length ? (
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={showingPeople}
+                    className={cx("btn", "btnSmall", showingPeople ? "btnSoft" : "btnGhost")}
+                    onClick={() => switchKind("people")}
+                  >
+                    {t("collection.kind.people")} <span className="collectionCount">{people.length}</span>
+                  </button>
+                ) : null}
               </div>
             ) : null}
 
+            {showingPeople ? (
+              <div className="personGrid">
+                {people.map((person) => (
+                  <PersonCard key={person.id} person={person} to={linkTo.person(person.id)} />
+                ))}
+              </div>
+            ) : (
+            <>
             <div className="filters collectionFilters">
               {[null, ...STATUSES.filter((s) => ofKind.some((item) => item.status === s))].map((s) => (
                 <button
@@ -203,12 +234,19 @@ export default function CollectionPage() {
               </div>
             )}
 
+            </>
+            )}
+
             <p className="collectionAttribution">{t("collection.attribution")}</p>
           </>
         )}
       </div>
 
-      {openId ? <MediaDetail id={openId} onClose={close} /> : null}
+      {openPerson ? (
+        <PersonDetail id={openPerson} onClose={close} linkTo={linkTo} />
+      ) : openId ? (
+        <MediaDetail id={openId} onClose={close} linkTo={linkTo} />
+      ) : null}
     </section>
   );
 }

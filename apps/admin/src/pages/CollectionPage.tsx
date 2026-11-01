@@ -347,7 +347,7 @@ function SettingsDialog({ settings, onClose }: { settings: CollectionSettings; o
   const [draft, setDraft] = useState(settings);
   const update = useUpdateCollectionSettings();
   const toast = useToast();
-  const kinds = [...WATCH_KINDS.map((k) => [k, KIND_LABELS[k]] as const), ["music", "音乐"] as const];
+  const kinds = [...WATCH_KINDS.map((k) => [k, KIND_LABELS[k]] as const), ["music", "音乐"] as const, ["people", "人物"] as const];
 
   const save = () =>
     update.mutate(draft, {

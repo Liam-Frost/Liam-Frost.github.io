@@ -453,13 +453,18 @@ export function createMediaSources(options: { tmdbKey?: string; fetchImpl?: type
           .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
           .slice(0, CAST_LIMIT)
           .map((member) => ({ ...member, role: kind === "anime" ? ("voice" as const) : ("actor" as const) }))
-      ].map((member) => ({
-        sourceId: String(member.id),
-        name: clean(member.name),
-        role: member.role,
-        character: "character" in member ? clean(member.character as string) || null : null,
-        photoUrl: photo(member.profile_path)
-      }));
+      ].map((member) => {
+        const character = "character" in member ? clean(member.character as string) : "";
+        // Animated films list voice actors as cast with "(voice)" after the character.
+        const voiced = /\s*\(voice\)$/i.test(character);
+        return {
+          sourceId: String(member.id),
+          name: clean(member.name),
+          role: voiced ? ("voice" as const) : member.role,
+          character: character.replace(/\s*\(voice\)$/i, "") || null,
+          photoUrl: photo(member.profile_path)
+        };
+      });
       // One suggestion per person and role (TMDB lists a writer once per writing credit).
       const seen = new Set<string>();
       return hits.filter((hit) => {

@@ -1,4 +1,4 @@
-import type { PublicCollection, PublicMedia } from "@liam-frost/shared";
+import type { PublicCollection, PublicMedia, PublicPerson } from "@liam-frost/shared";
 import { useEffect, useState } from "react";
 
 import { apiFetchEnabled, apiUrl } from "../lib/api";
@@ -22,7 +22,7 @@ export function useCollection() {
         return response.json() as Promise<PublicCollection>;
       })
       .then((data) => {
-        setCollection(Array.isArray(data?.items) ? data : EMPTY);
+        setCollection(Array.isArray(data?.items) ? { ...data, people: Array.isArray(data.people) ? data.people : [] } : EMPTY);
         setStatus("ready");
       })
       .catch((error: unknown) => {
@@ -35,35 +35,47 @@ export function useCollection() {
   return { ...collection, status };
 }
 
-/** One entry with its synopsis and review; null id loads nothing. */
-export function useCollectionItem(id: string | null) {
-  const [item, setItem] = useState<PublicMedia | null>(null);
+/** One public resource by path; null loads nothing. 404s and failures read as missing. */
+function useDetail<T>(path: string | null) {
+  const [data, setData] = useState<T | null>(null);
   const [status, setStatus] = useState<"idle" | "loading" | "ready" | "missing">("idle");
 
   useEffect(() => {
-    if (!id || !apiFetchEnabled) {
-      setItem(null);
-      setStatus(id ? "missing" : "idle");
+    if (!path || !apiFetchEnabled) {
+      setData(null);
+      setStatus(path ? "missing" : "idle");
       return;
     }
     const controller = new AbortController();
     setStatus("loading");
-    fetch(apiUrl(`/api/collection/${encodeURIComponent(id)}`), { signal: controller.signal })
+    fetch(apiUrl(path), { signal: controller.signal })
       .then((response) => {
-        if (!response.ok) throw new Error(`Entry not found: ${response.status}`);
-        return response.json() as Promise<PublicMedia>;
+        if (!response.ok) throw new Error(`Not found: ${response.status}`);
+        return response.json() as Promise<T>;
       })
-      .then((data) => {
-        setItem(data);
+      .then((value) => {
+        setData(value);
         setStatus("ready");
       })
       .catch((error: unknown) => {
         if (error instanceof DOMException && error.name === "AbortError") return;
-        setItem(null);
+        setData(null);
         setStatus("missing");
       });
     return () => controller.abort();
-  }, [id]);
+  }, [path]);
 
-  return { item, status };
+  return { data, status };
+}
+
+/** One entry with its synopsis, review and links; null id loads nothing. */
+export function useCollectionItem(id: string | null) {
+  const { data, status } = useDetail<PublicMedia>(id ? `/api/collection/${encodeURIComponent(id)}` : null);
+  return { item: data, status };
+}
+
+/** One person with their entries; null id loads nothing. */
+export function usePublicPerson(id: string | null) {
+  const { data, status } = useDetail<PublicPerson>(id ? `/api/people/${encodeURIComponent(id)}` : null);
+  return { person: data, status };
 }
