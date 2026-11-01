@@ -17,6 +17,13 @@ Establish LF formatting through EditorConfig and Git attributes. Security alert
 triage and outstanding certificate/development-tool advisories are recorded in
 `repository-maintenance.md` rather than silently dismissed or force-upgraded.
 
+PR CodeQL findings prompted a follow-up: register the maintained Fastify rate-limit
+plugin before routes (making `buildServer` asynchronous), with a shared 600/minute
+client budget, health exemption, bounded cache and structured 429 responses. Keep
+the stricter login limiter. Remove residual angle brackets from provider descriptions
+so malformed nested tags cannot re-form markup. Validate both changes with regression
+coverage and CI; do not suppress the scan findings.
+
 ### 2026-11-04: Stage 17 Scope
 
 Before the yearly review, Stage 17 adds bulk actions in the admin, music views by album / artist / playlist with real playlists, and a Steam library sync (playtime, last played; purchase dates are not available from Steam's public API and are entered by hand). Plan: `docs/plan-collection.md` (Stage 17a-d).

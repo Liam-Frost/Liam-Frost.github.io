@@ -222,7 +222,12 @@ export class SteamSync {
           .map((name) => ({ zh: name })),
         credits: (details.developers ?? []).slice(0, 3),
         overview: details.short_description
-          ? { zh: details.short_description.replace(/<[^>]+>/g, "").trim() }
+          ? {
+              zh: details.short_description
+                .replace(/<[^<>]*>/g, "")
+                .replace(/[<>]/g, "")
+                .trim()
+            }
           : {},
         poster,
         status: initial.status,

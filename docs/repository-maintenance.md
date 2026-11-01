@@ -59,26 +59,25 @@ GitHub CodeQL initially reported ten open alerts:
 - **#10, polynomial regex in `normalizeAdminPath`: fixed locally.** Replace the
   potentially quadratic trailing-slash regex with two linear scans. Regression
   coverage includes long valid slash runs, invalid suffixes and all-slash input.
-- **#8 and #9, incomplete HTML removal in imported descriptions:** reviewed. The
-  regexes convert provider descriptions to plain-looking text; they are not HTML
-  sanitizers. Consumers render the values as React text or controlled textarea
-  values, which escape markup. Do not pass these values to `dangerouslySetInnerHTML`
-  or treat them as sanitized HTML. A future HTML rendering feature must use a
-  maintained sanitizer and include hostile-input tests.
-- **#3 and #4, login/session rate limiting:** reviewed. Login already uses the
-  bounded per-IP `LoginRateLimiter` before password verification; regression tests
-  cover rejection after repeated failures. Session identification performs a
-  signed-cookie check rather than password hashing. CodeQL does not recognize the
-  custom limiter. This is not a claim of distributed denial-of-service protection.
-- **#1, #2, #6 and #7, static admin/public file serving, and #5, player metadata:**
-  reviewed; these routes have no general request rate limiter. This remains an
-  availability hardening item for the VPS deployment: choose limits that allow
-  normal image/asset bursts and shared-IP traffic, apply them at the appropriate
-  application/proxy boundary, and test `429` behavior before production exposure.
+- **#8 and #9, incomplete HTML removal in imported descriptions:** remove complete
+  tags and then remaining angle brackets so nested malformed tags cannot form
+  markup after replacement. Steam import coverage includes nested hostile tags.
+  Consumers still render these values as React text or textarea values. A future
+  HTML rendering feature must use a maintained sanitizer; this cleanup is intended
+  for plain-text display, not arbitrary HTML output.
+- **#1–#7, missing rate limiting:** register `@fastify/rate-limit` before defining
+  routes. The default is 600 requests per minute per client, shared across routes,
+  including public/admin assets, metadata, login and logout. Health probes are
+  exempt. Login retains its stricter eight-attempts-per-15-minute limiter. The
+  regression test verifies a shared budget, `429`, `Retry-After`, IP isolation and
+  health availability. Use the configured trusted proxy boundary so clients are
+  identified correctly; IPv6 uses the plugin's subnet grouping. The in-memory
+  bounded LRU store is single-instance protection, not distributed DDoS protection.
+  Reassess limits for shared-IP visitors and normal asset bursts before VPS launch.
 
-No alerts were automatically dismissed. CodeQL must analyze the merged change
-before GitHub can confirm #10 is resolved. The scan results are not a complete
-application security audit.
+No alerts were automatically dismissed. Main-branch alert status updates after the
+merged change is analyzed; PR checks validate the proposed fixes first. The scan
+results are not a complete application security audit.
 
 Dependency audit at this stage: production dependencies have zero reported
 vulnerabilities. The complete tree reports twelve moderate affected packages
@@ -97,6 +96,13 @@ yet`. Check **Settings → Pages** for DNS/certificate errors, compare the domai
 DNS records with GitHub's instructions, and enable **Enforce HTTPS** after issuance.
 Do not remove or replace DNS records without checking the current records and
 other services using the domain. HTTPS enforcement has not been completed.
+
+GitHub's DNS health check confirms both the `www` domain and apex are proxied
+through Cloudflare and currently reports `is_https_eligible: false`. The Cloudflare
+DNS owner needs to review the origin records and proxy settings. GitHub recommends
+the `www` CNAME point directly to `Liam-Frost.github.io`, rather than to the apex.
+See [GitHub's domain instructions](https://docs.github.com/en/pages/configuring-a-custom-domain-for-your-github-pages-site/managing-a-custom-domain-for-your-github-pages-site)
+and [certificate troubleshooting](https://docs.github.com/en/pages/getting-started-with-github-pages/securing-your-github-pages-site-with-https).
 
 ## Deployment boundary
 

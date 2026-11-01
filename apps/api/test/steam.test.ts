@@ -79,6 +79,7 @@ function steam(options: { valid?: boolean; library?: object[] | null } = {}): Ha
           success: true,
           data: {
             name: "小小独立游戏",
+            short_description: "Hello <<script>script>alert(1)<</script>/script> world",
             developers: ["Solo Dev"],
             publishers: ["Solo Dev"],
             genres: [{ description: "独立" }],
@@ -289,6 +290,8 @@ describe("Steam library sync", () => {
     });
 
     const indie = games.find((g) => g.source === "steam")!;
+    expect(indie.overview.zh).toContain("Hello");
+    expect(indie.overview.zh).not.toMatch(/[<>]/);
     expect(indie).toMatchObject({
       sourceId: "999999",
       status: "want",
