@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 
 import { apiFetchEnabled, apiUrl } from "../lib/api";
 
-const EMPTY: PublicCollection = { kinds: [], items: [] };
+const EMPTY: PublicCollection = { kinds: [], items: [], people: [] };
 
 /**
  * The public collection. It only exists in the database, so without the API (static builds) or when it

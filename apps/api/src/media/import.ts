@@ -7,10 +7,10 @@ import type { LocalImageStore } from "../storage/local";
 import { SourceError, type MediaSources, type SearchSource } from "./sources";
 import { DuplicateMediaError, type MediaRepository, type MediaRow } from "./types";
 
-/** Saves a processed poster under the entry's folder; the caller attaches it to the entry. */
-export async function storePoster(store: LocalImageStore, entryId: string, image: ProcessedImage): Promise<StoredImage> {
+/** Saves a processed poster (or a person's photo) under the owner's folder; the caller attaches it. */
+export async function storePoster(store: LocalImageStore, entryId: string, image: ProcessedImage, folder: "media" | "people" = "media"): Promise<StoredImage> {
   const imageId = randomBytes(6).toString("hex");
-  const key = `media/${entryId}/${imageId}`;
+  const key = `${folder}/${entryId}/${imageId}`;
   await saveImage(store, key, image);
   return { id: imageId, key, width: image.width, height: image.height, variants: image.variants.map(({ width, height }) => ({ width, height })) };
 }

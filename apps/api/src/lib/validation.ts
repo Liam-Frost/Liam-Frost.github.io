@@ -1,3 +1,4 @@
+import { PERSON_ROLES, SOUNDTRACK_ROLES } from "@liam-frost/shared";
 import { z } from "zod";
 
 import { badRequest } from "./errors";
@@ -311,7 +312,79 @@ export const mediaUpdateSchema = z
 
 export const collectionSettingsSchema = z
   .object({
-    show: z.object({ movie: z.boolean(), tv: z.boolean(), anime: z.boolean(), music: z.boolean() }).strict(),
+    // Settings saved before people existed have no `people`; they show people.
+    show: z.object({ movie: z.boolean(), tv: z.boolean(), anime: z.boolean(), music: z.boolean(), people: z.boolean().default(true) }).strict(),
     showWant: z.boolean()
   })
+  .strict();
+
+export const personIdSchema = projectIdSchema;
+
+export const personSearchQuerySchema = z.object({ q: z.string().trim().min(1, "Enter a name to search").max(100) });
+
+export const personCreateSchema = z
+  .object({
+    name: requiredText(120, "Name is required in at least one language"),
+    originalName: clearableString(120).optional()
+  })
+  .strict();
+
+export const personImportSchema = z
+  .object({ source: z.literal("tmdb"), sourceId: z.string().trim().regex(/^\d{1,12}$/, "Invalid source id") })
+  .strict();
+
+/** An https link. */
+const httpsLink = z
+  .string()
+  .trim()
+  .max(2048)
+  .refine((value) => {
+    try {
+      return new URL(value).protocol === "https:";
+    } catch {
+      return false;
+    }
+  }, "Links must be https URLs");
+
+export const personUpdateSchema = z
+  .object({
+    name: requiredText(120, "Name is required in at least one language"),
+    originalName: clearableString(120),
+    bio: localizedText(5000),
+    links: z.array(httpsLink).max(10, "At most 10 links"),
+    featured: z.boolean(),
+    visibility: z.enum(["public", "private"])
+  })
+  .partial()
+  .strict();
+
+const relationRole = z.enum([...PERSON_ROLES, ...SOUNDTRACK_ROLES] as [string, ...string[]]);
+
+export const relationIdSchema = projectIdSchema;
+
+export const relationCreateSchema = z
+  .object({
+    from: z.object({ type: z.enum(["media", "person"]), id: uuid }).strict(),
+    toId: uuid,
+    type: z.enum(["soundtrack", "adaptation", "sequel", "related", "credit"]),
+    role: relationRole.nullable().default(null),
+    note: localizedText(200).default({})
+  })
+  .strict()
+  .superRefine((value, ctx) => {
+    const issue = (message: string) => ctx.addIssue({ code: "custom", message });
+    if (value.type === "credit") {
+      if (value.from.type !== "person") issue("Credits link a person to an entry");
+      if (!value.role || !(PERSON_ROLES as readonly string[]).includes(value.role)) issue("Credits need a person's role");
+      return;
+    }
+    if (value.from.type !== "media") issue("Only credits start at a person");
+    if (value.from.id === value.toId) issue("An entry cannot link to itself");
+    if (value.type === "soundtrack" && value.role && !(SOUNDTRACK_ROLES as readonly string[]).includes(value.role)) issue("Invalid soundtrack role");
+    if (value.type !== "soundtrack" && value.role) issue("Only credits and soundtracks have a role");
+  });
+
+export const relationUpdateSchema = z
+  .object({ role: relationRole.nullable(), note: localizedText(200) })
+  .partial()
   .strict();

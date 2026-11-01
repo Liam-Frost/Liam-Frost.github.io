@@ -5,7 +5,7 @@ import { createMusicSource, type ItunesSong, type MusicSource } from "../src/med
 import { SourceError, type MediaSources } from "../src/media/sources";
 import { MemorySettingsRepository } from "../src/settings/types";
 import type { FetchedPlaylist, PlaylistFetcher } from "../src/spotify/playlist";
-import { buildTestServer, csrf, login } from "./helpers";
+import { buildTestServer, csrf, login, offlineMediaSources } from "./helpers";
 import { MemoryMediaRepository } from "./memory-media-repository";
 
 let jpg: Buffer;
@@ -109,6 +109,7 @@ async function setup(options: { music?: Partial<MusicSource>; fetchPlaylist?: Pl
   const settings = new MemorySettingsRepository();
   const download = vi.fn(options.download ?? (async () => jpg));
   const mediaSources: MediaSources = {
+    ...offlineMediaSources,
     available: () => ({ tmdb: false, bangumi: true }),
     search: async () => [],
     details: async () => {

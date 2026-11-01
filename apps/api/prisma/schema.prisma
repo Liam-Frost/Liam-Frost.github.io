@@ -148,7 +148,63 @@ model MediaItem {
   visibility    Visibility   @default(PUBLIC)
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
+  relationsFrom MediaRelation[] @relation("RelationFromMedia")
+  relationsTo   MediaRelation[] @relation("RelationToMedia")
 
   @@unique([source, sourceId])
   @@index([kind, visibility])
+}
+
+/// A person or group linked to collection entries: actors, directors, singers, writers, studios.
+model Person {
+  id           String          @id
+  /// tmdb or manual.
+  source       String
+  sourceId     String?
+  sourceUrl    String?
+  name         Json
+  originalName String?
+  /// Local photo: { id, key, width, height, variants }, like posters.
+  photo        Json?
+  bio          Json
+  /// External links (https URLs).
+  links        Json
+  featured     Boolean         @default(false)
+  visibility   Visibility      @default(PUBLIC)
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  relations    MediaRelation[]
+
+  @@unique([source, sourceId])
+}
+
+enum RelationType {
+  SOUNDTRACK @map("soundtrack")
+  ADAPTATION @map("adaptation")
+  SEQUEL     @map("sequel")
+  RELATED    @map("related")
+  CREDIT     @map("credit")
+}
+
+/// A link between two collection entries, or from a person to an entry. Exactly one of fromMediaId and
+/// fromPersonId is set (checked by the database). Stored once and shown on both sides.
+model MediaRelation {
+  id           String       @id
+  fromMediaId  String?
+  fromPersonId String?
+  toMediaId    String
+  type         RelationType
+  /// Credits: the person's role (director, actor, ...); soundtracks: opening, ending, insert, ...
+  role         String?
+  note         Json
+  /// One relation per start, end, type and role (related pairs in either direction count as one).
+  key          String       @unique
+  createdAt    DateTime     @default(now())
+  fromMedia    MediaItem?   @relation("RelationFromMedia", fields: [fromMediaId], references: [id], onDelete: Cascade)
+  fromPerson   Person?      @relation(fields: [fromPersonId], references: [id], onDelete: Cascade)
+  toMedia      MediaItem    @relation("RelationToMedia", fields: [toMediaId], references: [id], onDelete: Cascade)
+
+  @@index([fromMediaId])
+  @@index([fromPersonId])
+  @@index([toMediaId])
 }
