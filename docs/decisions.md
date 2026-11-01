@@ -2,6 +2,10 @@
 
 ## User Decisions
 
+### 2026-11-04: Stage 17 Scope
+
+Before the yearly review, Stage 17 adds bulk actions in the admin, music views by album / artist / playlist with real playlists, and a Steam library sync (playtime, last played; purchase dates are not available from Steam's public API and are entered by hand). Plan: `docs/plan-collection.md` (Stage 17a-d).
+
 ### 2026-11-01: More Collection Kinds and Links
 
 The collection should also cover books, comics, games and people (actors, directors, singers, writers and so on), and entries should link to each other: songs as soundtracks of works, adaptations of comics and books, and people's roles in works. Books, comics and games are new `MediaItem` kinds; people get their own table; links live in one relation table, stored once and shown on both sides. Plan: `docs/plan-collection.md` (Stages 14-16).

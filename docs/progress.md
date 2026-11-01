@@ -322,8 +322,8 @@ Status: implementation complete; Claude Code review complete and fixes applied.
 
 ### Upcoming
 
-- Stage 16 PR: `npm run db:deploy` applies the game migration.
-- Stage 17 (optional): yearly review.
+- PR #16 was merged; `npm run db:deploy` applies the game migration.
+- Stage 17 (`docs/plan-collection.md`): 17a bulk actions, 17b music views and playlists, 17c Steam sync (needs `STEAM_WEB_API_KEY`), 17d yearly review.
 - Stage 10: VPS deployment and CI/CD (needs the VPS and domain details).
 - Stage 10: VPS deployment and CI/CD (needs the VPS provider/OS/specs, DNS manager and domain from the user).
 - Stage 5: back-end foundation and admin auth refinement (`ADMIN_PATH`, IP allowlist, CSRF, Zod, tests). See `docs/plan-admin-projects-deploy.md`.
