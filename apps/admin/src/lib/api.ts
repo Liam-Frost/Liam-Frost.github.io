@@ -44,6 +44,8 @@ import {
   type MusicImportJob,
   type MusicImportRequest,
   type SpotifyAccountStatus,
+  type SteamAccountStatus,
+  type SteamSyncJob,
   type SpotifyOwnPlaylist,
   type SpotifySettings
 } from "@liam-frost/shared";
@@ -215,6 +217,11 @@ export const api = {
   deletePlaylist: (id: string) => request<void>(playlistPath(id), { method: "DELETE" }),
   playlistTracks: (id: string, body: AdminPlaylistTracks) => request<AdminPlaylistResponse>(`${playlistPath(id)}/tracks`, { method: "POST", json: body }),
   reorderPlaylist: (id: string, ids: string[]) => request<AdminPlaylistResponse>(`${playlistPath(id)}/order`, { method: "PUT", json: { ids } }),
+  steamAccount: () => request<SteamAccountStatus>("/api/admin/steam/account"),
+  connectSteam: (returnTo: string) => request<{ url: string }>("/api/admin/steam/connect", { method: "POST", json: { returnTo } }),
+  disconnectSteam: () => request<void>("/api/admin/steam/account", { method: "DELETE" }),
+  startSteamSync: () => request<{ job: SteamSyncJob }>("/api/admin/steam/sync", { method: "POST" }),
+  steamJob: (id: string) => request<{ job: SteamSyncJob }>(`/api/admin/steam/jobs/${encodeURIComponent(id)}`),
   collectionSettings: () => request<AdminCollectionSettingsResponse>("/api/admin/collection/settings"),
   updateCollectionSettings: (settings: CollectionSettings) =>
     request<AdminCollectionSettingsResponse>("/api/admin/collection/settings", { method: "PUT", json: settings })

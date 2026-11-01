@@ -7,6 +7,7 @@ import type { CollectionLinkTo } from "../components/CollectionLinks";
 import MediaDetail from "../components/MediaDetail";
 import PersonCard from "../components/PersonCard";
 import PersonDetail from "../components/PersonDetail";
+import YearReview, { reviewYears } from "../components/YearReview";
 import { PlayAllButton } from "../components/PlayButton";
 import { MUSIC_VIEWS, musicGroups, type MusicView } from "../data/musicGroups";
 import Reveal from "../components/Reveal";
@@ -45,8 +46,10 @@ export default function CollectionPage() {
   const kind = (kinds.find((k) => k === params.get("kind")) ?? kinds.find((k) => items.some((item) => item.kind === k)) ?? kinds[0]) as
     | MediaKind
     | undefined;
-  // The people tab: people credited in shown entries.
+  // The people tab: people credited in shown entries; the review tab: years with finished entries.
   const showingPeople = params.get("kind") === "people" && people.length > 0;
+  const hasReview = useMemo(() => reviewYears(items).length > 0, [items]);
+  const showingReview = params.get("kind") === "review" && hasReview;
   const status = STATUSES.find((s) => s === params.get("status")) ?? null;
   const openId = params.get("item");
   const openPerson = params.get("person");
@@ -92,7 +95,7 @@ export default function CollectionPage() {
     setParams(value, { replace: true });
   };
 
-  const switchKind = (next: MediaKind | "people") => {
+  const switchKind = (next: MediaKind | "people" | "review") => {
     setGenre("");
     setYear("");
     select({ kind: next, status: null, music: null, in: null });
@@ -147,15 +150,15 @@ export default function CollectionPage() {
           <p className="sectionSubtitle">{t("collection.empty")}</p>
         ) : (
           <>
-            {tabKinds.length + (people.length ? 1 : 0) > 1 ? (
+            {tabKinds.length + (people.length ? 1 : 0) + (hasReview ? 1 : 0) > 1 ? (
               <div className="filters collectionTabs" role="tablist" aria-label={t("collection.title")}>
                 {tabKinds.map((k) => (
                   <button
                     key={k}
                     type="button"
                     role="tab"
-                    aria-selected={!showingPeople && k === kind}
-                    className={cx("btn", "btnSmall", !showingPeople && k === kind ? "btnSoft" : "btnGhost")}
+                    aria-selected={!showingPeople && !showingReview && k === kind}
+                    className={cx("btn", "btnSmall", !showingPeople && !showingReview && k === kind ? "btnSoft" : "btnGhost")}
                     onClick={() => switchKind(k)}
                   >
                     {t(`collection.kind.${k}` as Key)} <span className="collectionCount">{items.filter((item) => item.kind === k).length}</span>
@@ -172,10 +175,23 @@ export default function CollectionPage() {
                     {t("collection.kind.people")} <span className="collectionCount">{people.length}</span>
                   </button>
                 ) : null}
+                {hasReview ? (
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={showingReview}
+                    className={cx("btn", "btnSmall", showingReview ? "btnSoft" : "btnGhost")}
+                    onClick={() => switchKind("review")}
+                  >
+                    {t("collection.kind.review")}
+                  </button>
+                ) : null}
               </div>
             ) : null}
 
-            {showingPeople ? (
+            {showingReview ? (
+              <YearReview items={items} linkTo={itemLink} />
+            ) : showingPeople ? (
               <div className="personGrid">
                 {people.map((person) => (
                   <PersonCard key={person.id} person={person} to={linkTo.person(person.id)} />

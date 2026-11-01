@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
 
 import { MediaBatchActions } from "../components/collection/MediaBatchActions";
+import { SteamDialog } from "../components/games/SteamDialog";
 import { PageHeader } from "../components/layout/AdminLayout";
 import { MusicSearchDialog, PlaylistImportDialog, SpotifyAccountDialog } from "../components/music/MusicTools";
 import { MusicTab } from "../components/music/MusicViews";
@@ -41,18 +42,25 @@ export function CollectionPage() {
   const [spotifyOpen, setSpotifyOpen] = useState(false);
   const toast = useToast();
 
-  // Back from Spotify's consent page: report the result and open the account dialog.
+  const [steamOpen, setSteamOpen] = useState(false);
+
+  // Back from Spotify's or Steam's sign-in page: report the result and open the account dialog.
   useEffect(() => {
-    const result = params.get("spotify");
-    if (!result) return;
-    if (result === "connected") toast("已连接 Spotify");
-    else toast(`连接 Spotify 失败：${params.get("reason") ?? "未知原因"}`, "error");
-    setSpotifyOpen(result === "connected");
-    const next = new URLSearchParams(params);
-    next.delete("spotify");
-    next.delete("reason");
-    setParams(next, { replace: true });
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- only when returning from Spotify
+    for (const [param, name, open] of [
+      ["spotify", "Spotify", setSpotifyOpen],
+      ["steam", "Steam", setSteamOpen]
+    ] as const) {
+      const result = params.get(param);
+      if (!result) continue;
+      if (result === "connected") toast(`已连接 ${name}`);
+      else toast(`连接 ${name} 失败：${params.get("reason") ?? "未知原因"}`, "error");
+      open(result === "connected");
+      const next = new URLSearchParams(params);
+      next.delete(param);
+      next.delete("reason");
+      setParams(next, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only when returning from a sign-in page
   }, []);
   const [editingSettings, setEditingSettings] = useState(false);
   const { data: items, isPending, error } = useMediaList();
@@ -86,6 +94,11 @@ export function CollectionPage() {
           <button type="button" className="btn-secondary" onClick={() => setEditingSettings(true)} disabled={!settings}>
             <Settings2 aria-hidden="true" className="size-4" /> 显示设置
           </button>
+          {kind === "game" ? (
+            <button type="button" className="btn-secondary" onClick={() => setSteamOpen(true)}>
+              Steam 游戏库
+            </button>
+          ) : null}
           {kind === "track" ? (
             <>
               <button type="button" className="btn-secondary" onClick={() => setSpotifyOpen(true)}>
@@ -133,6 +146,7 @@ export function CollectionPage() {
       {adding && kind !== "track" ? <AddMediaDialog kind={kind} available={settings?.sources} onClose={() => setAdding(false)} /> : null}
       {importing ? <PlaylistImportDialog onClose={() => setImporting(false)} /> : null}
       {spotifyOpen ? <SpotifyAccountDialog onClose={() => setSpotifyOpen(false)} /> : null}
+      {steamOpen ? <SteamDialog onClose={() => setSteamOpen(false)} /> : null}
       {editingSettings && settings ? <SettingsDialog settings={settings.settings} onClose={() => setEditingSettings(false)} /> : null}
     </>
   );

@@ -50,6 +50,7 @@ type Draft = {
   platforms: string[];
   publishers: string[];
   playtime: string;
+  purchasedOn: string;
   inPlayer: boolean;
   featured: boolean;
   visibility: AdminMediaItem["visibility"];
@@ -78,6 +79,7 @@ function toDraft(item: AdminMediaItem): Draft {
     platforms: item.game?.platforms ?? [],
     publishers: item.game?.publishers ?? [],
     playtime: item.game?.playtimeHours === null || item.game?.playtimeHours === undefined ? "" : String(item.game.playtimeHours),
+    purchasedOn: item.game?.purchasedOn ?? "",
     inPlayer: item.inPlayer,
     featured: item.featured,
     visibility: item.visibility
@@ -205,7 +207,7 @@ function MediaEditor({ item }: { item: AdminMediaItem }) {
           ...(isRead
             ? { publication: { publisher: draft.publisher, pages, volumes, ongoing: draft.ongoing === "" ? null : draft.ongoing === "yes" } }
             : {}),
-          ...(isGame ? { game: { platforms: draft.platforms, publishers: draft.publishers, playtimeHours } } : {})
+          ...(isGame ? { game: { platforms: draft.platforms, publishers: draft.publishers, playtimeHours, purchasedOn: draft.purchasedOn || null } } : {})
         };
     update.mutate(body, {
       onSuccess: ({ item: next }) => {
@@ -313,9 +315,18 @@ function MediaEditor({ item }: { item: AdminMediaItem }) {
                 </Field>
               ) : null}
               {isGame ? (
-                <Field label="游玩时长（小时）" htmlFor="media-playtime" hint="可选">
-                  <input id="media-playtime" type="number" min={0} className="field w-28" value={draft.playtime} onChange={(e) => set("playtime", e.target.value)} />
-                </Field>
+                <>
+                  <Field
+                    label="游玩时长（小时）"
+                    htmlFor="media-playtime"
+                    hint={item.game?.steamAppId ? `Steam 同步时会更新${item.game.lastPlayedOn ? `；最后游玩 ${item.game.lastPlayedOn}` : ""}` : "可选"}
+                  >
+                    <input id="media-playtime" type="number" min={0} className="field w-28" value={draft.playtime} onChange={(e) => set("playtime", e.target.value)} />
+                  </Field>
+                  <Field label="购入日期" htmlFor="media-purchased" hint="可选；Steam 不提供购买时间">
+                    <input id="media-purchased" type="date" className="field" value={draft.purchasedOn} max={today()} onChange={(e) => set("purchasedOn", e.target.value)} />
+                  </Field>
+                </>
               ) : null}
             </div>
           </Panel>
@@ -481,6 +492,11 @@ function MediaEditor({ item }: { item: AdminMediaItem }) {
                   onRemove={(index) => set("publishers", draft.publishers.filter((_, i) => i !== index))}
                 />
               </>
+            ) : null}
+            {item.game?.steamAppId && item.source !== "steam" ? (
+              <a href={`https://store.steampowered.com/app/${item.game.steamAppId}/`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[12.5px] text-brand hover:underline">
+                在 Steam 查看 <ExternalLink aria-hidden="true" className="size-3.5" />
+              </a>
             ) : null}
             {item.sourceUrl && !isMusic ? (
               <a href={item.sourceUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[12.5px] text-brand hover:underline">
