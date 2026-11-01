@@ -5,6 +5,7 @@ import type { CollectionSettingsStore } from "../media/collection-settings";
 import { DEFAULT_COLLECTION_SETTINGS } from "../media/collection-settings";
 import { musicOf } from "../media/mapping";
 import { isMediaPublic, type MediaRepository, type MediaRow } from "../media/types";
+import type { PlaylistRepository } from "../playlists/types";
 import type { SettingsRepository } from "../settings/types";
 import type { LocalImageStore } from "../storage/local";
 import { variantFileName } from "../photos/mapping";
@@ -18,7 +19,8 @@ export const DEFAULT_SPOTIFY_SETTINGS: SpotifySettings = {
   embedUrl: "https://open.spotify.com/playlist/37i9dQZF1DX9AUX5YVf3hc",
   shuffle: true,
   volume: 30,
-  autoCollapseSeconds: 3
+  autoCollapseSeconds: 3,
+  playlistId: null
 };
 
 const settingsShape = {
@@ -27,7 +29,8 @@ const settingsShape = {
   embedUrl: z.string().trim().max(500),
   shuffle: z.boolean(),
   volume: z.number().int().min(0).max(100),
-  autoCollapseSeconds: z.number().int().min(0).max(120)
+  autoCollapseSeconds: z.number().int().min(0).max(120),
+  playlistId: z.string().regex(/^[0-9a-f-]{36}$/, "Invalid playlist").nullable().default(null)
 };
 
 /** Input from the admin: every field, nothing else. The embed link is normalized (and required for "embed"). */
@@ -54,7 +57,8 @@ export class SpotifyService {
     private readonly repo: SettingsRepository,
     private readonly media: MediaRepository | null,
     private readonly collection: CollectionSettingsStore | null,
-    private readonly store: LocalImageStore
+    private readonly store: LocalImageStore,
+    private readonly playlists: PlaylistRepository | null = null
   ) {}
 
   async settings(): Promise<SpotifySettings> {
@@ -67,15 +71,27 @@ export class SpotifyService {
     await this.repo.set(SETTINGS_KEY, settings);
   }
 
-  /** Songs the player plays, in the order they were added (an imported playlist plays first to last). */
-  async tracks(): Promise<SpotifyTrack[]> {
+  /**
+   * Songs the player plays: the chosen playlist's songs in playlist order, or (without one, or when it is
+   * gone or hidden) every song marked "in player" in the order they were added. Only public songs with
+   * a preview play.
+   */
+  async tracks(playlistId: string | null = null): Promise<SpotifyTrack[]> {
     if (!this.media) return [];
-    const [rows, settings] = await Promise.all([this.media.list({ kind: "track" }), this.collection?.get() ?? DEFAULT_COLLECTION_SETTINGS]);
-    return rows
-      .filter((row) => row.inPlayer && isMediaPublic(row, settings))
-      .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
-      .map((row) => this.toTrack(row))
-      .filter((track): track is SpotifyTrack => track !== null);
+    const [rows, settings, playlist] = await Promise.all([
+      this.media.list({ kind: "track" }),
+      this.collection?.get() ?? DEFAULT_COLLECTION_SETTINGS,
+      playlistId && this.playlists ? this.playlists.get(playlistId) : null
+    ]);
+    const shown = rows.filter((row) => isMediaPublic(row, settings));
+    let picked: MediaRow[];
+    if (playlist && playlist.visibility === "public") {
+      const byId = new Map(shown.map((row) => [row.id, row]));
+      picked = playlist.trackIds.map((id) => byId.get(id)).filter((row): row is MediaRow => row !== undefined);
+    } else {
+      picked = shown.filter((row) => row.inPlayer).sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+    }
+    return picked.map((row) => this.toTrack(row)).filter((track): track is SpotifyTrack => track !== null);
   }
 
   private toTrack(row: MediaRow): SpotifyTrack | null {
@@ -96,6 +112,6 @@ export class SpotifyService {
     const settings = await this.settings();
     // The embedded player plays Spotify's own list; the site's card plays the collection's songs.
     if (!settings.enabled || settings.mode === "embed") return { ...settings, tracks: [] };
-    return { ...settings, tracks: await this.tracks() };
+    return { ...settings, tracks: await this.tracks(settings.playlistId) };
   }
 }

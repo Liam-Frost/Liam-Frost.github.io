@@ -297,3 +297,21 @@ describe("public people and links", () => {
     expect((await app.inject({ url, headers: { cookie } })).statusCode).toBe(200);
   });
 });
+
+describe("bulk actions on people", () => {
+  it("hides and deletes many people with their links", async () => {
+    const { app, headers, link, manual } = await setup();
+    const a = await manual("A");
+    const b = await manual("B");
+    await link({ from: { type: "person", id: a.id }, toId: ids.film, type: "credit", role: "director" });
+    const batch = (payload: object) => app.inject({ method: "POST", url: "/api/admin/people/batch", headers, payload });
+
+    expect((await batch({ action: "update", ids: [a.id, b.id], patch: { visibility: "private" } })).json()).toEqual({ done: [a.id, b.id], failed: [] });
+    expect((await app.inject({ url: "/api/admin/people", headers })).json().people.every((p: { visibility: string }) => p.visibility === "private")).toBe(true);
+    expect((await batch({ action: "update", ids: [a.id], patch: { name: { en: "x" } } })).statusCode).toBe(400);
+
+    expect((await batch({ action: "delete", ids: [a.id, b.id] })).json()).toEqual({ done: [a.id, b.id], failed: [] });
+    expect((await app.inject({ url: `/api/admin/media/${ids.film}/relations`, headers })).json().relations).toEqual([]);
+    expect((await batch({ action: "delete", ids: [a.id] })).json().failed).toEqual([{ id: a.id, message: "Person not found" }]);
+  });
+});

@@ -8,6 +8,7 @@ import { toPublicMedia, toPublicMediaSummary } from "../media/mapping";
 import { isMediaPublic, type MediaRepository, type MediaRow } from "../media/types";
 import { toPublicLinks, toPublicPerson, toPublicPersonSummary } from "../people/mapping";
 import type { PersonRepository, PersonRow, RelationRepository, RelationRow } from "../people/types";
+import type { PlaylistRepository } from "../playlists/types";
 import type { LocalImageStore } from "../storage/local";
 
 /** Kinds the public page has sections for, with the display switch each one follows. */
@@ -26,6 +27,7 @@ type Deps = {
   media: MediaRepository | null;
   people: PersonRepository | null;
   relations: RelationRepository | null;
+  playlists?: PlaylistRepository | null;
   collection: CollectionSettingsStore | null;
   store: LocalImageStore;
 };
@@ -73,18 +75,24 @@ export function registerCollectionRoutes(app: FastifyInstance, deps: Deps) {
   };
 
   app.get("/api/collection", async (request): Promise<PublicCollection> => {
-    if (!deps.media) return { kinds: [], items: [], people: [] };
+    if (!deps.media) return { kinds: [], items: [], people: [], playlists: [] };
     try {
       const shown = await visible();
       const kinds = PAGE_KINDS.filter(([, show]) => shown.settings.show[show]).map(([kind]) => kind);
+      // A playlist shows the songs the site shows, in its order; empty ones are left out.
+      const playlists = (await (deps.playlists?.list() ?? Promise.resolve([])))
+        .map((row) => ({ row, trackIds: row.trackIds.filter((id) => shown.media.get(id)?.kind === "track") }))
+        .filter(({ trackIds }) => trackIds.length > 0)
+        .map(({ row, trackIds }) => ({ id: row.id, name: row.name, description: row.description, trackIds, sourceUrl: row.sourceUrl }));
       return {
         kinds,
         items: [...shown.media.values()].map((row) => toPublicMediaSummary(row, deps.store)),
-        people: [...shown.people.values()].map(({ row, credits }) => toPublicPersonSummary(row, credits, deps.store))
+        people: [...shown.people.values()].map(({ row, credits }) => toPublicPersonSummary(row, credits, deps.store)),
+        playlists
       };
     } catch (error) {
       request.log.warn({ error }, "Collection unavailable");
-      return { kinds: [], items: [], people: [] };
+      return { kinds: [], items: [], people: [], playlists: [] };
     }
   });
 

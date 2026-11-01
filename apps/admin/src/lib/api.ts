@@ -1,6 +1,15 @@
 import {
   ADMIN_REQUEST_HEADER,
+  type AdminBatchRequest,
+  type AdminBatchResult,
   type AdminCollectionSettingsResponse,
+  type AdminMediaBatchPatch,
+  type AdminPersonUpdate as AdminPersonUpdateBody,
+  type AdminPlaylistCreate,
+  type AdminPlaylistResponse,
+  type AdminPlaylistsResponse,
+  type AdminPlaylistTracks,
+  type AdminPlaylistUpdate,
   type AdminMediaCreate,
   type AdminMediaImport,
   type AdminMediaListResponse,
@@ -35,6 +44,8 @@ import {
   type MusicImportJob,
   type MusicImportRequest,
   type SpotifyAccountStatus,
+  type SteamAccountStatus,
+  type SteamSyncJob,
   type SpotifyOwnPlaylist,
   type SpotifySettings
 } from "@liam-frost/shared";
@@ -138,6 +149,7 @@ const projectPath = (id: string) => `/api/admin/projects/${encodeURIComponent(id
 const mediaPath = (id: string) => `/api/admin/media/${encodeURIComponent(id)}`;
 const personPath = (id: string) => `/api/admin/people/${encodeURIComponent(id)}`;
 const relationPath = (id: string) => `/api/admin/relations/${encodeURIComponent(id)}`;
+const playlistPath = (id: string) => `/api/admin/playlists/${encodeURIComponent(id)}`;
 
 export const api = {
   session: () => request<AdminSessionResponse>("/api/admin/session"),
@@ -172,6 +184,9 @@ export const api = {
   createMedia: (body: AdminMediaCreate) => request<AdminMediaResponse>("/api/admin/media", { method: "POST", json: body }),
   updateMedia: (id: string, update: AdminMediaUpdate) => request<AdminMediaResponse>(mediaPath(id), { method: "PATCH", json: update }),
   deleteMedia: (id: string) => request<void>(mediaPath(id), { method: "DELETE" }),
+  batchMedia: (body: AdminBatchRequest<AdminMediaBatchPatch>) => request<AdminBatchResult>("/api/admin/media/batch", { method: "POST", json: body }),
+  batchPeople: (body: AdminBatchRequest<Pick<AdminPersonUpdateBody, "visibility" | "featured">>) =>
+    request<AdminBatchResult>("/api/admin/people/batch", { method: "POST", json: body }),
   uploadMediaPoster: (id: string, file: File) => uploadFile<AdminMediaResponse>(`${mediaPath(id)}/poster`, file),
   searchMusic: (q: string, country: string) => request<AdminMusicSearchResponse>(`/api/admin/music/search?${new URLSearchParams({ q, country })}`),
   importMusic: (body: AdminMusicImport) => request<AdminMediaResponse>("/api/admin/music/import", { method: "POST", json: body }),
@@ -196,6 +211,17 @@ export const api = {
   createRelation: (body: AdminRelationCreate) => request<AdminRelationResponse>("/api/admin/relations", { method: "POST", json: body }),
   updateRelation: (id: string, update: AdminRelationUpdate) => request<AdminRelationResponse>(relationPath(id), { method: "PATCH", json: update }),
   deleteRelation: (id: string) => request<void>(relationPath(id), { method: "DELETE" }),
+  playlists: () => request<AdminPlaylistsResponse>("/api/admin/playlists"),
+  createPlaylist: (body: AdminPlaylistCreate) => request<AdminPlaylistResponse>("/api/admin/playlists", { method: "POST", json: body }),
+  updatePlaylist: (id: string, update: AdminPlaylistUpdate) => request<AdminPlaylistResponse>(playlistPath(id), { method: "PATCH", json: update }),
+  deletePlaylist: (id: string) => request<void>(playlistPath(id), { method: "DELETE" }),
+  playlistTracks: (id: string, body: AdminPlaylistTracks) => request<AdminPlaylistResponse>(`${playlistPath(id)}/tracks`, { method: "POST", json: body }),
+  reorderPlaylist: (id: string, ids: string[]) => request<AdminPlaylistResponse>(`${playlistPath(id)}/order`, { method: "PUT", json: { ids } }),
+  steamAccount: () => request<SteamAccountStatus>("/api/admin/steam/account"),
+  connectSteam: (returnTo: string) => request<{ url: string }>("/api/admin/steam/connect", { method: "POST", json: { returnTo } }),
+  disconnectSteam: () => request<void>("/api/admin/steam/account", { method: "DELETE" }),
+  startSteamSync: () => request<{ job: SteamSyncJob }>("/api/admin/steam/sync", { method: "POST" }),
+  steamJob: (id: string) => request<{ job: SteamSyncJob }>(`/api/admin/steam/jobs/${encodeURIComponent(id)}`),
   collectionSettings: () => request<AdminCollectionSettingsResponse>("/api/admin/collection/settings"),
   updateCollectionSettings: (settings: CollectionSettings) =>
     request<AdminCollectionSettingsResponse>("/api/admin/collection/settings", { method: "PUT", json: settings })

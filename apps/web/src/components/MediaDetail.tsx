@@ -6,7 +6,7 @@ import PlayButton from "./PlayButton";
 import { isReadKind, mediaTitle, Stars, statusKey } from "./MediaCard";
 import { imageSrcSet } from "./ProjectCard";
 
-const SOURCE_NAMES: Record<string, string> = { tmdb: "TMDB", bangumi: "Bangumi", openlibrary: "Open Library", googlebooks: "Google Books", anilist: "AniList", igdb: "IGDB" };
+const SOURCE_NAMES: Record<string, string> = { tmdb: "TMDB", bangumi: "Bangumi", openlibrary: "Open Library", googlebooks: "Google Books", anilist: "AniList", igdb: "IGDB", steam: "Steam" };
 
 /** Side panel with one entry's details and links; Esc, the backdrop and the close button call onClose. */
 export default function MediaDetail({ id, onClose, linkTo }: { id: string; onClose: () => void; linkTo: CollectionLinkTo }) {
@@ -67,6 +67,8 @@ export default function MediaDetail({ id, onClose, linkTo }: { id: string; onClo
                 ) : null}
                 {item.rewatchCount ? <li>{t(isGame ? "collection.replay" : isRead ? "collection.reread" : "collection.rewatch", { n: item.rewatchCount })}</li> : null}
                 {game?.playtimeHours ? <li>{t("collection.playtime", { n: game.playtimeHours })}</li> : null}
+                {game?.lastPlayedOn ? <li>{t("collection.lastPlayed", { date: game.lastPlayedOn })}</li> : null}
+                {game?.purchasedOn ? <li>{t("collection.purchasedOn", { date: game.purchasedOn })}</li> : null}
                 {game?.platforms.length ? <li>{t("collection.platforms", { platforms: game.platforms.join(" · ") })}</li> : null}
                 {game?.publishers.length ? <li>{t("collection.publishers", { publishers: game.publishers.join(" · ") })}</li> : null}
                 {publication?.publisher ? <li>{t("collection.publisher", { publisher: publication.publisher })}</li> : null}

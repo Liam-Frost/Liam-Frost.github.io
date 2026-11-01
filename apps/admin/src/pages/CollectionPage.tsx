@@ -1,16 +1,21 @@
 import type { AdminMediaItem, CollectionSettings, MediaSearchResult, MediaSearchSource, MediaStatus } from "@liam-frost/shared";
 import { Clapperboard, EyeOff, Plus, Search, Settings2, Star } from "lucide-react";
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
 
+import { MediaBatchActions } from "../components/collection/MediaBatchActions";
+import { SteamDialog } from "../components/games/SteamDialog";
 import { PageHeader } from "../components/layout/AdminLayout";
-import { MusicList, MusicSearchDialog, PlaylistImportDialog, SpotifyAccountDialog } from "../components/music/MusicTools";
+import { MusicSearchDialog, PlaylistImportDialog, SpotifyAccountDialog } from "../components/music/MusicTools";
+import { MusicTab } from "../components/music/MusicViews";
+import { BatchBar, SelectMark } from "../components/ui/BatchBar";
 import { DatabaseNotice } from "../components/ui/DatabaseNotice";
 import { Dialog } from "../components/ui/Dialog";
 import { Field, Switch } from "../components/ui/Field";
 import { StarRating } from "../components/ui/StarRating";
 import { useToast } from "../components/ui/Toast";
 import { useCollectionSettings, useCreateMedia, useImportMedia, useMediaList, useUpdateCollectionSettings } from "../hooks/useMedia";
+import { useSelection, type Selection } from "../hooks/useSelection";
 import { api, ApiError } from "../lib/api";
 import {
   COLLECTION_KIND_LABELS,
@@ -37,18 +42,25 @@ export function CollectionPage() {
   const [spotifyOpen, setSpotifyOpen] = useState(false);
   const toast = useToast();
 
-  // Back from Spotify's consent page: report the result and open the account dialog.
+  const [steamOpen, setSteamOpen] = useState(false);
+
+  // Back from Spotify's or Steam's sign-in page: report the result and open the account dialog.
   useEffect(() => {
-    const result = params.get("spotify");
-    if (!result) return;
-    if (result === "connected") toast("已连接 Spotify");
-    else toast(`连接 Spotify 失败：${params.get("reason") ?? "未知原因"}`, "error");
-    setSpotifyOpen(result === "connected");
-    const next = new URLSearchParams(params);
-    next.delete("spotify");
-    next.delete("reason");
-    setParams(next, { replace: true });
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- only when returning from Spotify
+    for (const [param, name, open] of [
+      ["spotify", "Spotify", setSpotifyOpen],
+      ["steam", "Steam", setSteamOpen]
+    ] as const) {
+      const result = params.get(param);
+      if (!result) continue;
+      if (result === "connected") toast(`已连接 ${name}`);
+      else toast(`连接 ${name} 失败：${params.get("reason") ?? "未知原因"}`, "error");
+      open(result === "connected");
+      const next = new URLSearchParams(params);
+      next.delete(param);
+      next.delete("reason");
+      setParams(next, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only when returning from a sign-in page
   }, []);
   const [editingSettings, setEditingSettings] = useState(false);
   const { data: items, isPending, error } = useMediaList();
@@ -82,6 +94,11 @@ export function CollectionPage() {
           <button type="button" className="btn-secondary" onClick={() => setEditingSettings(true)} disabled={!settings}>
             <Settings2 aria-hidden="true" className="size-4" /> 显示设置
           </button>
+          {kind === "game" ? (
+            <button type="button" className="btn-secondary" onClick={() => setSteamOpen(true)}>
+              Steam 游戏库
+            </button>
+          ) : null}
           {kind === "track" ? (
             <>
               <button type="button" className="btn-secondary" onClick={() => setSpotifyOpen(true)}>
@@ -120,7 +137,7 @@ export function CollectionPage() {
       </div>
 
       {kind === "track" ? (
-        <MusicList items={ofKind} />
+        <MusicTab items={ofKind} />
       ) : (
         <WatchList kind={kind} items={ofKind} status={status} onStatus={(s) => select({ status: s })} />
       )}
@@ -129,6 +146,7 @@ export function CollectionPage() {
       {adding && kind !== "track" ? <AddMediaDialog kind={kind} available={settings?.sources} onClose={() => setAdding(false)} /> : null}
       {importing ? <PlaylistImportDialog onClose={() => setImporting(false)} /> : null}
       {spotifyOpen ? <SpotifyAccountDialog onClose={() => setSpotifyOpen(false)} /> : null}
+      {steamOpen ? <SteamDialog onClose={() => setSteamOpen(false)} /> : null}
       {editingSettings && settings ? <SettingsDialog settings={settings.settings} onClose={() => setEditingSettings(false)} /> : null}
     </>
   );
@@ -143,6 +161,8 @@ function WatchList({ kind, items: ofKind, status, onStatus }: { kind: WatchKind;
       (!status || item.status === status) &&
       (!needle || [...Object.values(item.title), item.originalTitle ?? ""].some((text) => text?.toLowerCase().includes(needle)))
   );
+  const order = useMemo(() => visible.map((item) => item.id), [visible]);
+  const selection = useSelection(order);
 
   return (
     <>
@@ -158,9 +178,16 @@ function WatchList({ kind, items: ofKind, status, onStatus }: { kind: WatchKind;
             {s ? statusLabels(kind)[s] : "全部"} {s ? ofKind.filter((item) => item.status === s).length : ofKind.length}
           </button>
         ))}
-        <div className="relative ml-auto w-full sm:w-60">
-          <Search aria-hidden="true" className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-faint" />
-          <input className="field pl-9" placeholder="筛选标题" aria-label="筛选标题" value={filter} onChange={(e) => setFilter(e.target.value)} />
+        <div className="ml-auto flex w-full items-center gap-2 sm:w-auto">
+          <div className="relative flex-1 sm:w-60">
+            <Search aria-hidden="true" className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-faint" />
+            <input className="field pl-9" placeholder="筛选标题" aria-label="筛选标题" value={filter} onChange={(e) => setFilter(e.target.value)} />
+          </div>
+          {visible.length && !selection.active ? (
+            <button type="button" className="btn-secondary shrink-0" onClick={selection.start}>
+              选择
+            </button>
+          ) : null}
         </div>
       </div>
 
@@ -172,20 +199,31 @@ function WatchList({ kind, items: ofKind, status, onStatus }: { kind: WatchKind;
         <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
           {visible.map((item) => (
             <li key={item.id}>
-              <MediaCard item={item} />
+              <MediaCard item={item} selection={selection} />
             </li>
           ))}
         </ul>
       )}
+
+      <BatchBar selection={selection} total={visible.length}>
+        <MediaBatchActions kind={kind} selection={selection} />
+      </BatchBar>
     </>
   );
 }
 
-function MediaCard({ item }: { item: AdminMediaItem }) {
+function MediaCard({ item, selection }: { item: AdminMediaItem; selection: Selection }) {
   const title = pickText(item.title, "未命名");
-  return (
-    <Link to={`/collection/${item.id}`} className="card group block overflow-hidden transition-shadow hover:shadow-card-hover">
+  const selected = selection.isSelected(item.id);
+  const className = `card group block w-full overflow-hidden text-left transition-shadow hover:shadow-card-hover ${selected ? "ring-2 ring-brand" : ""}`;
+  const body = (
+    <>
       <div className="relative aspect-[2/3] bg-line-soft">
+        {selection.active ? (
+          <span className="absolute top-2 right-2 z-10">
+            <SelectMark checked={selected} />
+          </span>
+        ) : null}
         {item.poster ? (
           <img src={item.poster.variants[0].url} alt="" loading="lazy" className="size-full object-cover" />
         ) : (
@@ -216,6 +254,16 @@ function MediaCard({ item }: { item: AdminMediaItem }) {
           <StarRating value={item.rating} size="sm" />
         </div>
       </div>
+    </>
+  );
+  // While selecting, a click selects (Shift: a range) instead of opening the editor.
+  return selection.active ? (
+    <button type="button" aria-pressed={selected} aria-label={`选择 ${title}`} className={className} onClick={(e) => selection.toggle(item.id, e.shiftKey)}>
+      {body}
+    </button>
+  ) : (
+    <Link to={`/collection/${item.id}`} className={className}>
+      {body}
     </Link>
   );
 }

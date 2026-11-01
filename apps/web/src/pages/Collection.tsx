@@ -7,6 +7,9 @@ import type { CollectionLinkTo } from "../components/CollectionLinks";
 import MediaDetail from "../components/MediaDetail";
 import PersonCard from "../components/PersonCard";
 import PersonDetail from "../components/PersonDetail";
+import YearReview, { reviewYears } from "../components/YearReview";
+import { PlayAllButton } from "../components/PlayButton";
+import { MUSIC_VIEWS, musicGroups, type MusicView } from "../data/musicGroups";
 import Reveal from "../components/Reveal";
 import { useCollection } from "../data/useCollection";
 import { cx } from "../lib/cx";
@@ -30,7 +33,7 @@ const genreId = (genre: PublicMediaSummary["genres"][number]) => genre.zh || gen
 
 export default function CollectionPage() {
   const { lang, t } = useI18n();
-  const { kinds, items, people, status: loadStatus } = useCollection();
+  const { kinds, items, people, playlists, status: loadStatus } = useCollection();
   const [params, setParams] = useSearchParams();
   const navigate = useNavigate();
   const location = useLocation();
@@ -43,8 +46,10 @@ export default function CollectionPage() {
   const kind = (kinds.find((k) => k === params.get("kind")) ?? kinds.find((k) => items.some((item) => item.kind === k)) ?? kinds[0]) as
     | MediaKind
     | undefined;
-  // The people tab: people credited in shown entries.
+  // The people tab: people credited in shown entries; the review tab: years with finished entries.
   const showingPeople = params.get("kind") === "people" && people.length > 0;
+  const hasReview = useMemo(() => reviewYears(items).length > 0, [items]);
+  const showingReview = params.get("kind") === "review" && hasReview;
   const status = STATUSES.find((s) => s === params.get("status")) ?? null;
   const openId = params.get("item");
   const openPerson = params.get("person");
@@ -57,7 +62,12 @@ export default function CollectionPage() {
     }
   }, [view]);
 
-  const ofKind = useMemo(() => items.filter((item) => item.kind === kind), [items, kind]);
+  const allOfKind = useMemo(() => items.filter((item) => item.kind === kind), [items, kind]);
+  // Music: every song, or the songs of one album / artist / playlist (?music=albums&in=<key>).
+  const musicView = kind === "track" ? (MUSIC_VIEWS.find((v) => v === params.get("music")) ?? null) : null;
+  const groups = useMemo(() => (musicView ? musicGroups(musicView, allOfKind, playlists, lang) : []), [musicView, allOfKind, playlists, lang]);
+  const openGroup = musicView ? (groups.find((group) => group.key === params.get("in")) ?? null) : null;
+  const ofKind = openGroup ? openGroup.items : allOfKind;
   // Tabs for kinds that have entries (and the open one, e.g. from a shared link).
   const tabKinds = kinds.filter((k) => k === kind || items.some((item) => item.kind === k));
 
@@ -85,10 +95,22 @@ export default function CollectionPage() {
     setParams(value, { replace: true });
   };
 
-  const switchKind = (next: MediaKind | "people") => {
+  const switchKind = (next: MediaKind | "people" | "review") => {
     setGenre("");
     setYear("");
-    select({ kind: next, status: null });
+    select({ kind: next, status: null, music: null, in: null });
+  };
+  // Albums, artists and playlists are pages of their own: Back returns to the list.
+  const openMusic = (next: { music: MusicView | null; in?: string | null }) => {
+    const value = new URLSearchParams(params);
+    for (const [key, v] of Object.entries({ music: next.music, in: next.in ?? null })) {
+      if (v) value.set(key, v);
+      else value.delete(key);
+    }
+    value.delete("status");
+    setGenre("");
+    setYear("");
+    setParams(value);
   };
 
   // Entries and people open in a side panel addressed by ?item= / ?person=, so links can be shared and
@@ -128,15 +150,15 @@ export default function CollectionPage() {
           <p className="sectionSubtitle">{t("collection.empty")}</p>
         ) : (
           <>
-            {tabKinds.length + (people.length ? 1 : 0) > 1 ? (
+            {tabKinds.length + (people.length ? 1 : 0) + (hasReview ? 1 : 0) > 1 ? (
               <div className="filters collectionTabs" role="tablist" aria-label={t("collection.title")}>
                 {tabKinds.map((k) => (
                   <button
                     key={k}
                     type="button"
                     role="tab"
-                    aria-selected={!showingPeople && k === kind}
-                    className={cx("btn", "btnSmall", !showingPeople && k === kind ? "btnSoft" : "btnGhost")}
+                    aria-selected={!showingPeople && !showingReview && k === kind}
+                    className={cx("btn", "btnSmall", !showingPeople && !showingReview && k === kind ? "btnSoft" : "btnGhost")}
                     onClick={() => switchKind(k)}
                   >
                     {t(`collection.kind.${k}` as Key)} <span className="collectionCount">{items.filter((item) => item.kind === k).length}</span>
@@ -153,17 +175,60 @@ export default function CollectionPage() {
                     {t("collection.kind.people")} <span className="collectionCount">{people.length}</span>
                   </button>
                 ) : null}
+                {hasReview ? (
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={showingReview}
+                    className={cx("btn", "btnSmall", showingReview ? "btnSoft" : "btnGhost")}
+                    onClick={() => switchKind("review")}
+                  >
+                    {t("collection.kind.review")}
+                  </button>
+                ) : null}
               </div>
             ) : null}
 
-            {showingPeople ? (
+            {showingReview ? (
+              <YearReview items={items} linkTo={itemLink} />
+            ) : showingPeople ? (
               <div className="personGrid">
                 {people.map((person) => (
                   <PersonCard key={person.id} person={person} to={linkTo.person(person.id)} />
                 ))}
               </div>
+            ) : musicView && !openGroup ? (
+              <>
+                <MusicViewTabs view={musicView} onView={(music) => openMusic({ music })} />
+                {groups.length ? (
+                  <div className="personGrid groupGrid">
+                    {groups.map((group) => (
+                      <button key={group.key} type="button" className="groupCard" onClick={() => openMusic({ music: musicView, in: group.key })}>
+                        <GroupCovers covers={group.covers} round={musicView === "artists"} />
+                        <span className="personCardName">{group.title}</span>
+                        <span className="personCardMeta">{[group.subtitle, t("collection.music.songs", { n: group.items.length })].filter(Boolean).join(" · ")}</span>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="sectionSubtitle">{t("collection.noMatch")}</p>
+                )}
+              </>
             ) : (
             <>
+            {kind === "track" && !openGroup ? <MusicViewTabs view={null} onView={(music) => openMusic({ music })} /> : null}
+            {openGroup && musicView ? (
+              <div className="groupHeader">
+                <button type="button" className="btn btnGhost btnSmall" onClick={() => openMusic({ music: musicView })}>
+                  ← {t("collection.back")}
+                </button>
+                <div className="groupHeaderText">
+                  <h2 className="groupTitle">{openGroup.title}</h2>
+                  <p className="mediaRowMeta">{[openGroup.subtitle, t("collection.music.songs", { n: openGroup.items.length })].filter(Boolean).join(" · ")}</p>
+                </div>
+                <PlayAllButton items={visible} spotifyUrl={openGroup.spotifyUrl} />
+              </div>
+            ) : null}
             <div className="filters collectionFilters">
               {[null, ...STATUSES.filter((s) => ofKind.some((item) => item.status === s))].map((s) => (
                 <button
@@ -246,5 +311,32 @@ export default function CollectionPage() {
         <MediaDetail id={openId} onClose={close} linkTo={linkTo} />
       ) : null}
     </section>
+  );
+}
+
+/** All songs, or songs by album, artist or playlist. */
+function MusicViewTabs({ view, onView }: { view: MusicView | null; onView: (view: MusicView | null) => void }) {
+  const { t } = useI18n();
+  return (
+    <div className="filters musicViews" role="group" aria-label={t("collection.kind.track")}>
+      {([null, ...MUSIC_VIEWS] as (MusicView | null)[]).map((v) => (
+        <button key={v ?? "all"} type="button" aria-pressed={view === v} className={cx("btn", "btnSmall", view === v ? "btnSoft" : "btnGhost")} onClick={() => onView(v)}>
+          {t(v ? `collection.music.${v}` : "collection.music.all")}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/** One cover, or four in a square when there are four different ones. */
+function GroupCovers({ covers, round }: { covers: string[]; round?: boolean }) {
+  return (
+    <span className={cx("personCardPhoto", "groupCovers", round ? "" : "isSquare", covers.length >= 4 ? "isMosaic" : "")}>
+      {covers.length >= 4
+        ? covers.map((cover) => <img key={cover} src={cover} alt="" loading="lazy" decoding="async" />)
+        : covers[0]
+          ? <img src={covers[0]} alt="" loading="lazy" decoding="async" />
+          : <span className="mediaPosterEmpty" aria-hidden="true">♪</span>}
+    </span>
   );
 }

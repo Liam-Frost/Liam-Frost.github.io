@@ -7,7 +7,9 @@ import { DatabaseNotice } from "../components/ui/DatabaseNotice";
 import { Field, Switch } from "../components/ui/Field";
 import { Panel } from "../components/ui/Panel";
 import { useToast } from "../components/ui/Toast";
+import { usePlaylists } from "../hooks/usePlaylists";
 import { useSpotify, useUpdateSpotify } from "../hooks/useSpotify";
+import { pickText } from "../lib/i18n";
 
 /** Settings of the site's music player; its songs are managed in the collection's music tab. */
 export function MusicPage() {
@@ -30,7 +32,7 @@ export function MusicPage() {
         <SettingsForm settings={data.settings} />
         <Panel title="歌曲">
           <p className="text-[13.5px] text-muted">
-            网站自己的播放器里现在有 <span className="font-semibold text-brand-dark">{data.playerTracks}</span> 首歌（公开、加入播放器并且有试听）。
+            网站自己的播放器{data.settings.playlistId ? "（所选歌单）" : ""}里现在有 <span className="font-semibold text-brand-dark">{data.playerTracks}</span> 首歌（公开、加入播放器并且有试听）。
           </p>
           <Link to="/collection?kind=track" className="btn-secondary">
             管理歌曲
@@ -47,6 +49,7 @@ function SettingsForm({ settings }: { settings: SpotifySettings }) {
   const [error, setError] = useState("");
   const update = useUpdateSpotify();
   const toast = useToast();
+  const { data: playlists } = usePlaylists();
 
   const saved = JSON.stringify(settings);
   // The seconds field keeps its own text so it can be cleared while typing; the draft gets valid numbers only.
@@ -92,7 +95,20 @@ function SettingsForm({ settings }: { settings: SpotifySettings }) {
             <input id="spotify-embed" className="field" value={draft.embedUrl} maxLength={500} placeholder="https://open.spotify.com/playlist/…" onChange={(e) => set("embedUrl", e.target.value)} />
           </Field>
         ) : (
-          <Switch id="spotify-shuffle" checked={draft.shuffle} onChange={(on) => set("shuffle", on)} label="随机播放（关闭则按添加顺序）" />
+          <>
+            <Field label="播放内容" htmlFor="spotify-playlist" hint="选一个歌单时，播放歌单里公开并且有试听的歌，按歌单顺序；歌单被隐藏或删除后回到全部歌曲。">
+              <select id="spotify-playlist" className="field" value={draft.playlistId ?? ""} onChange={(e) => set("playlistId", e.target.value || null)}>
+                <option value="">所有“加入播放器”的歌</option>
+                {(playlists ?? []).map((playlist) => (
+                  <option key={playlist.id} value={playlist.id}>
+                    歌单：{pickText(playlist.name, "未命名歌单")}
+                    {playlist.visibility === "private" ? "（隐藏）" : ""}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Switch id="spotify-shuffle" checked={draft.shuffle} onChange={(on) => set("shuffle", on)} label="随机播放（关闭则按顺序）" />
+          </>
         )}
         {draft.mode === "custom" ? (
         <Field label={`默认音量：${draft.volume}%`} htmlFor="spotify-volume">

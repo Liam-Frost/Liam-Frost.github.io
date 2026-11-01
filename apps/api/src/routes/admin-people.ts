@@ -1,6 +1,7 @@
 import {
   PERSON_ROLES,
   SOUNDTRACK_ROLES,
+  type AdminBatchResult,
   type AdminPeopleResponse,
   type AdminPersonResponse,
   type AdminPersonSearchResponse,
@@ -21,6 +22,7 @@ import {
   mediaIdSchema,
   parseInput,
   personCreateSchema,
+  personBatchSchema,
   personIdSchema,
   personImportSchema,
   personSearchQuerySchema,
@@ -201,14 +203,40 @@ export function registerAdminPeopleRoutes(
     return respond(row);
   });
 
-  app.delete("/api/admin/people/:id", admin, async (request, reply) => {
-    const id = personId(request);
+  /** Deletes a person, their photo and their links. */
+  const removePerson = async (request: FastifyRequest, id: string) => {
     await lock.run(id, async () => {
       await getPerson(id);
       await repo().people.delete(id);
     });
     await store.remove(`people/${id}`).catch((error) => request.log.warn({ error, personId: id }, "Failed to remove person files"));
+  };
+
+  app.delete("/api/admin/people/:id", admin, async (request, reply) => {
+    await removePerson(request, personId(request));
     return reply.code(204).send();
+  });
+
+  /** Bulk delete, or change visibility / featured, of people; missing ones are reported. */
+  app.post("/api/admin/people/batch", admin, async (request): Promise<AdminBatchResult> => {
+    const input = parseInput(personBatchSchema, request.body);
+    repo();
+    const result: AdminBatchResult = { done: [], failed: [] };
+    for (const id of input.ids) {
+      try {
+        if (input.action === "delete") {
+          await removePerson(request, id);
+        } else {
+          const row = await lock.run(id, () => repo().people.update(id, input.patch));
+          if (!row) throw notFound("Person not found");
+        }
+        result.done.push(id);
+      } catch (error) {
+        if (!(error instanceof HttpError)) throw error;
+        result.failed.push({ id, message: error.message });
+      }
+    }
+    return result;
   });
 
   /** Replaces the photo with an uploaded image. */

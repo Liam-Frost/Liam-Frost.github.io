@@ -256,7 +256,7 @@ describe("admin collection", () => {
 describe("public collection", () => {
   it("is empty without a database", async () => {
     const app = await buildTestServer();
-    expect((await app.inject("/api/collection")).json()).toEqual({ kinds: [], items: [], people: [] });
+    expect((await app.inject("/api/collection")).json()).toEqual({ kinds: [], items: [], people: [], playlists: [] });
   });
 
   it("lists only what the site may show, without synopses or reviews", async () => {
@@ -297,7 +297,7 @@ describe("public collection", () => {
     media.get = async () => {
       throw refused;
     };
-    expect((await app.inject("/api/collection")).json()).toEqual({ kinds: [], items: [], people: [] });
+    expect((await app.inject("/api/collection")).json()).toEqual({ kinds: [], items: [], people: [], playlists: [] });
     expect((await app.inject(`/api/collection/${item.id}`)).statusCode).toBe(503);
   });
 });
@@ -374,8 +374,55 @@ describe("games", () => {
     });
 
     const edited = await patch(item.id, { game: { playtimeHours: 132, platforms: ["PlayStation 5"] }, status: "watching" });
-    expect(edited.json().item.game).toEqual({ platforms: ["PlayStation 5"], publishers: ["Bandai Namco Entertainment"], playtimeHours: 132 });
+    expect(edited.json().item.game).toEqual({ platforms: ["PlayStation 5"], publishers: ["Bandai Namco Entertainment"], playtimeHours: 132, steamAppId: null, lastPlayedOn: null, purchasedOn: null });
     expect((await patch(item.id, { game: { playtimeHours: -1 } })).statusCode).toBe(400);
     expect((await patch(item.id, { publication: { pages: 10 } })).statusCode).toBe(400);
+  });
+});
+
+describe("bulk actions", () => {
+  it("updates many entries with the single-edit rules, reporting the ones that do not fit", async () => {
+    const { app, headers, importEntry, media } = await setup();
+    const film = (await importEntry("movie:129")).json().item;
+    const other = (await importEntry("movie:4935")).json().item;
+    const song = await media.create({ id: "77777777-7777-4777-8777-777777777777", kind: "track", source: "manual", title: { en: "No preview" } });
+    const batch = (payload: object) => app.inject({ method: "POST", url: "/api/admin/media/batch", headers, payload });
+
+    const hidden = await batch({ action: "update", ids: [film.id, other.id, song.id], patch: { visibility: "private", featured: true } });
+    expect(hidden.json()).toEqual({ done: [film.id, other.id, song.id], failed: [] });
+    expect((await media.get(other.id))!).toMatchObject({ visibility: "private", featured: true });
+
+    // A song has no watch status, and cannot join the player without a preview.
+    const status = await batch({ action: "update", ids: [film.id, song.id], patch: { status: "want" } });
+    expect(status.json().done).toEqual([film.id]);
+    expect(status.json().failed).toEqual([{ id: song.id, message: "Music entries have no watch status or progress" }]);
+    const player = await batch({ action: "update", ids: [song.id, film.id], patch: { inPlayer: true } });
+    expect(player.json().failed.map((f: { id: string }) => f.id)).toEqual([song.id, film.id]);
+
+    const missing = "99999999-9999-4999-8999-999999999999";
+    expect((await batch({ action: "update", ids: [missing], patch: { featured: false } })).json().failed).toEqual([{ id: missing, message: "Entry not found" }]);
+  });
+
+  it("deletes many entries with their posters, and refuses malformed requests", async () => {
+    const { app, headers, importEntry, uploadDir } = await setup();
+    const ids = [(await importEntry("movie:129")).json().item.id, (await importEntry("movie:4935")).json().item.id];
+    const batch = (payload: object) => app.inject({ method: "POST", url: "/api/admin/media/batch", headers, payload });
+
+    for (const payload of [
+      { action: "delete", ids: [] },
+      { action: "delete", ids: [ids[0], ids[0]] },
+      { action: "delete", ids: ["nope"] },
+      { action: "update", ids, patch: {} },
+      { action: "update", ids, patch: { title: { en: "x" } } },
+      { action: "delete", ids: Array.from({ length: 501 }, (_, i) => `00000000-0000-4000-8000-${String(i).padStart(12, "0")}`) }
+    ]) {
+      expect((await batch(payload)).statusCode, JSON.stringify(payload).slice(0, 80)).toBe(400);
+    }
+
+    const deleted = await batch({ action: "delete", ids });
+    expect(deleted.json()).toEqual({ done: ids, failed: [] });
+    for (const id of ids) expect(existsSync(join(uploadDir, "media", id))).toBe(false);
+    expect((await app.inject({ url: "/api/admin/media", headers })).json().items).toEqual([]);
+    expect((await app.inject({ method: "POST", url: "/api/admin/media/batch", headers: csrf, payload: { action: "delete", ids } })).statusCode).toBe(401);
   });
 });

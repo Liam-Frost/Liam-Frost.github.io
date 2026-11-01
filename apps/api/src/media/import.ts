@@ -24,7 +24,9 @@ export async function importMedia(
   deps: { media: MediaRepository; sources: MediaSources; store: LocalImageStore; onPosterError?: (error: unknown) => void },
   kind: MediaKind,
   source: SearchSource,
-  sourceId: string
+  sourceId: string,
+  /** Fields set from the start instead of the defaults (e.g. a Steam sync adds games hidden). */
+  initial: Partial<Pick<MediaRow, "status" | "visibility" | "extra">> = {}
 ): Promise<MediaRow> {
   const { media, sources, store } = deps;
   if ((await media.findBySource(source, [sourceId])).has(sourceId)) throw new DuplicateMediaError();
@@ -66,7 +68,9 @@ export async function importMedia(
       status: "done",
       // Episodes of series and anime, volumes of comics; books track no progress by default.
       progress: (kind === "tv" || kind === "anime" || kind === "comic") && details.episodes ? { watched: 0, total: details.episodes } : null,
-      extra: { ...(details.publication ? { publication: details.publication } : {}), ...(details.game ? { game: details.game } : {}) }
+      extra: { ...(details.publication ? { publication: details.publication } : {}), ...(details.game ? { game: details.game } : {}) },
+      ...initial,
+      ...(initial.extra && details.game ? { extra: { ...initial.extra, game: { ...details.game, ...(initial.extra.game as object | undefined) } } } : {})
     });
   } catch (error) {
     if (poster) await store.remove(`media/${id}`).catch(() => undefined);

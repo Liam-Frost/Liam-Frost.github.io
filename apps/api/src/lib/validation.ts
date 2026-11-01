@@ -339,7 +339,8 @@ export const mediaUpdateSchema = z
       .object({
         platforms: z.array(z.string().trim().min(1).max(60)).max(20, "At most 20 platforms"),
         publishers: z.array(z.string().trim().min(1).max(100)).max(10, "At most 10 publishers"),
-        playtimeHours: z.number().int().min(0).max(100_000).nullable()
+        playtimeHours: z.number().int().min(0).max(100_000).nullable(),
+        purchasedOn: isoDate
       })
       .partial()
       .strict(),
@@ -349,6 +350,52 @@ export const mediaUpdateSchema = z
   })
   .partial()
   .strict();
+
+/** Bulk actions: up to 500 distinct ids; an update needs at least one change. */
+function batchSchema<T extends z.ZodType>(patch: T) {
+  return z.discriminatedUnion("action", [
+    z.object({ action: z.literal("delete"), ids: z.array(uuid).min(1).max(500, "At most 500 at a time") }).strict(),
+    z.object({ action: z.literal("update"), ids: z.array(uuid).min(1).max(500, "At most 500 at a time"), patch }).strict()
+  ]).refine((value) => new Set(value.ids).size === value.ids.length, "Duplicate ids");
+}
+
+const batchVisibility = { visibility: z.enum(["public", "private"]), featured: z.boolean() };
+
+export const mediaBatchSchema = batchSchema(
+  z
+    .object({ ...batchVisibility, status: z.enum(["want", "watching", "done", "dropped"]), inPlayer: z.boolean() })
+    .partial()
+    .strict()
+    .refine((value) => Object.keys(value).length > 0, "Nothing to change")
+);
+
+export const personBatchSchema = batchSchema(
+  z
+    .object(batchVisibility)
+    .partial()
+    .strict()
+    .refine((value) => Object.keys(value).length > 0, "Nothing to change")
+);
+
+export const playlistIdSchema = projectIdSchema;
+
+export const playlistCreateSchema = z
+  .object({ name: requiredText(120, "Name is required in at least one language"), description: localizedText(1000).optional() })
+  .strict();
+
+export const playlistUpdateSchema = z
+  .object({ name: requiredText(120, "Name is required in at least one language"), description: localizedText(1000), visibility: z.enum(["public", "private"]) })
+  .partial()
+  .strict();
+
+export const playlistTracksSchema = z
+  .object({ action: z.enum(["add", "remove"]), ids: z.array(uuid).min(1).max(1000, "At most 1000 at a time") })
+  .strict();
+
+export const playlistOrderSchema = z
+  .object({ ids: z.array(uuid).max(5000) })
+  .strict()
+  .refine((value) => new Set(value.ids).size === value.ids.length, "Duplicate ids in order");
 
 export const collectionSettingsSchema = z
   .object({

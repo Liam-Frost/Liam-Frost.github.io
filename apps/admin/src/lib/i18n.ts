@@ -146,6 +146,7 @@ export const SOURCE_LABELS: Record<MediaSource, string> = {
   googlebooks: "Google Books",
   anilist: "AniList",
   igdb: "IGDB",
+  steam: "Steam",
   spotify: "Spotify",
   itunes: "Apple Music",
   manual: "手动添加"
