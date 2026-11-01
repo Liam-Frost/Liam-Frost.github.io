@@ -304,7 +304,7 @@ function AddMediaDialog({ kind, available, onClose }: { kind: WatchKind; availab
         </button>
       </form>
 
-      {!sourceReady ? <p className="mt-3 text-[12.5px] text-status-warn">未配置 {source === "tmdb" ? "TMDB_API_KEY" : "GOOGLE_BOOKS_API_KEY"}，暂时只能手动添加。</p> : null}
+      {!sourceReady ? <p className="mt-3 text-[12.5px] text-status-warn">未配置 {source === "tmdb" ? "TMDB_API_KEY" : source === "igdb" ? "TWITCH_CLIENT_ID / TWITCH_CLIENT_SECRET" : "GOOGLE_BOOKS_API_KEY"}，暂时只能手动添加。</p> : null}
       {error ? (
         <p role="alert" className="mt-3 text-[12.5px] text-status-error">
           {error}
@@ -368,7 +368,8 @@ const SEARCH_HINTS: Record<MediaSearchSource, string> = {
   bangumi: "中文名或日文原名",
   openlibrary: "书名或作者，英文和原文书名最容易找到",
   googlebooks: "书名、作者或 ISBN，中文书也很全",
-  anilist: "日文原名、罗马音或英文名"
+  anilist: "日文原名、罗马音或英文名",
+  igdb: "游戏英文名最容易找到"
 };
 
 function SettingsDialog({ settings, onClose }: { settings: CollectionSettings; onClose: () => void }) {

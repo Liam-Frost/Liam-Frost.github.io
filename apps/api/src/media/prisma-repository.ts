@@ -6,13 +6,14 @@ import { DuplicateMediaError, type MediaPatch, type MediaRepository, type MediaR
 
 const ORDER = [{ watchedOn: { sort: "desc", nulls: "last" } }, { createdAt: "desc" }] satisfies Prisma.MediaItemOrderByWithRelationInput[];
 
-const KIND_TO_DB = { movie: "MOVIE", tv: "TV", anime: "ANIME", book: "BOOK", comic: "COMIC", track: "TRACK", album: "ALBUM" } as const;
+const KIND_TO_DB = { movie: "MOVIE", tv: "TV", anime: "ANIME", book: "BOOK", comic: "COMIC", game: "GAME", track: "TRACK", album: "ALBUM" } as const;
 const KIND_FROM_DB: Record<MediaItem["kind"], MediaKind> = {
   MOVIE: "movie",
   TV: "tv",
   ANIME: "anime",
   BOOK: "book",
   COMIC: "comic",
+  GAME: "game",
   TRACK: "track",
   ALBUM: "album"
 };

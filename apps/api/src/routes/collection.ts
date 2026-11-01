@@ -17,6 +17,7 @@ const PAGE_KINDS = [
   ["anime", "anime"],
   ["book", "book"],
   ["comic", "comic"],
+  ["game", "game"],
   ["track", "music"]
 ] as const;
 const PAGE_KIND_NAMES: readonly string[] = PAGE_KINDS.map(([kind]) => kind);

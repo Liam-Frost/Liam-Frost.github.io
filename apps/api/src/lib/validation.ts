@@ -160,10 +160,10 @@ export const projectOrderSchema = z
 
 export const projectImageSlotSchema = z.object({ slot: z.enum(["cover", "gallery"]) });
 
-const mediaKind = z.enum(["movie", "tv", "anime", "book", "comic", "track", "album"]);
+const mediaKind = z.enum(["movie", "tv", "anime", "book", "comic", "game", "track", "album"]);
 /** Kinds added by searching a source or by hand (songs have their own routes). */
-const watchKind = z.enum(["movie", "tv", "anime", "book", "comic"]);
-const searchSource = z.enum(["tmdb", "bangumi", "openlibrary", "googlebooks", "anilist"]);
+const watchKind = z.enum(["movie", "tv", "anime", "book", "comic", "game"]);
+const searchSource = z.enum(["tmdb", "bangumi", "openlibrary", "googlebooks", "anilist", "igdb"]);
 
 /** Which sources each kind is searched on. */
 const KIND_SOURCES: Record<z.infer<typeof watchKind>, readonly string[]> = {
@@ -171,14 +171,16 @@ const KIND_SOURCES: Record<z.infer<typeof watchKind>, readonly string[]> = {
   tv: ["tmdb"],
   anime: ["bangumi", "tmdb"],
   book: ["openlibrary", "googlebooks", "bangumi"],
-  comic: ["anilist", "bangumi"]
+  comic: ["anilist", "bangumi"],
+  game: ["igdb"]
 };
 const SOURCE_IDS: Record<z.infer<typeof searchSource>, RegExp> = {
   tmdb: /^(movie|tv):\d{1,12}$/,
   bangumi: /^\d{1,12}$/,
   openlibrary: /^OL\d{1,12}W$/,
   googlebooks: /^[A-Za-z0-9_-]{12}$/,
-  anilist: /^\d{1,9}$/
+  anilist: /^\d{1,9}$/,
+  igdb: /^\d{1,12}$/
 };
 
 export const mediaIdSchema = projectIdSchema;
@@ -333,6 +335,14 @@ export const mediaUpdateSchema = z
       })
       .partial()
       .strict(),
+    game: z
+      .object({
+        platforms: z.array(z.string().trim().min(1).max(60)).max(20, "At most 20 platforms"),
+        publishers: z.array(z.string().trim().min(1).max(100)).max(10, "At most 10 publishers"),
+        playtimeHours: z.number().int().min(0).max(100_000).nullable()
+      })
+      .partial()
+      .strict(),
     inPlayer: z.boolean(),
     featured: z.boolean(),
     visibility: z.enum(["public", "private"])
@@ -350,6 +360,7 @@ export const collectionSettingsSchema = z
         anime: z.boolean(),
         book: z.boolean().default(true),
         comic: z.boolean().default(true),
+        game: z.boolean().default(true),
         music: z.boolean(),
         people: z.boolean().default(true)
       })

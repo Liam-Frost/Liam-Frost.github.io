@@ -115,7 +115,7 @@ export function registerAdminMediaRoutes(
 
   app.patch("/api/admin/media/:id", admin, async (request): Promise<AdminMediaResponse> => {
     const id = mediaId(request);
-    const { music, publication, ...patch } = parseInput(mediaUpdateSchema, request.body);
+    const { music, publication, game, ...patch } = parseInput(mediaUpdateSchema, request.body);
     // Music details merge into `extra`; read and write under the entry's lock.
     return lock.run(id, async () => {
       const row = await get(id);
@@ -127,7 +127,9 @@ export function registerAdminMediaRoutes(
       if (publication !== undefined && row.kind !== "book" && row.kind !== "comic") throw badRequest("Only books and comics have publication details", "VALIDATION");
       const next: MediaPatch = { ...patch };
       if (music) next.extra = { ...row.extra, music: { ...(row.extra.music as object | undefined), ...music } };
+      if (game !== undefined && row.kind !== "game") throw badRequest("Only games have game details", "VALIDATION");
       if (publication) next.extra = { ...row.extra, publication: { ...(row.extra.publication as object | undefined), ...publication } };
+      if (game) next.extra = { ...(next.extra ?? row.extra), game: { ...(row.extra.game as object | undefined), ...game } };
       if (isMusic && (next.inPlayer ?? row.inPlayer) && !musicOf({ kind: row.kind, extra: next.extra ?? row.extra })?.previewUrl) {
         throw badRequest("Songs need a preview to be in the player", "VALIDATION");
       }

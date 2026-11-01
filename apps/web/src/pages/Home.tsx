@@ -38,12 +38,12 @@ export default function HomePage() {
   const { projects } = useProjects();
   const featuredProjects = useMemo(() => projects.filter((p) => p.featured).slice(0, 4), [projects]);
   // After the projects: the latest finished or ongoing films, series and anime (not "want to watch", and
-  // not books or comics, which are read); hidden when empty.
+  // not books, comics or games, which are read or played); hidden when empty.
   const { items: collection } = useCollection();
   const recentMedia = useMemo(
     () =>
       collection
-        .filter((item) => (item.status === "done" || item.status === "watching") && !isReadKind(item.kind))
+        .filter((item) => (item.status === "done" || item.status === "watching") && !isReadKind(item.kind) && item.kind !== "game")
         .sort((a, b) => (b.watchedOn ?? b.updatedAt.slice(0, 10)).localeCompare(a.watchedOn ?? a.updatedAt.slice(0, 10)) || b.updatedAt.localeCompare(a.updatedAt))
         .slice(0, 6),
     [collection]

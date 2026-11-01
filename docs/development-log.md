@@ -118,6 +118,8 @@
 - The model ran Claude Code review for Stage 15 and fixed the findings listed in its review record.
 - The user filled in the Twitch app credentials (checked: token and an IGDB search work), asked whether Google Books' API is free, and asked to play collection songs in the player and for a cover wall for music; both were added to the Stage 15 PR.
 - Spotify's embedded player cannot be started from the page without loading Spotify's iFrame API script; the site only switches what it shows, and the visitor presses play.
+- The user asked to wire in Google Books, merge PR #15 once tests passed, and start Stage 16. PR #15 was merged after CI passed.
+- Stage 16: the first live seed imported a fan mod instead of Hollow Knight (IGDB ranked the mod first); searches now skip mods and updates. A Python edit with a raw string doubled a regex escape (`\\d`), which a source test caught.
 - The user created a Google Books key; it was added to `.env` / `.env.example` with comments and wired in as a book source. Google's cover links are 128 px; `zoom=0` turned out to return the same 575 × 750 "no image" placeholder for different books, so covers use `fife=w800`.
 
 ## Notes

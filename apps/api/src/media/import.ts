@@ -66,7 +66,7 @@ export async function importMedia(
       status: "done",
       // Episodes of series and anime, volumes of comics; books track no progress by default.
       progress: (kind === "tv" || kind === "anime" || kind === "comic") && details.episodes ? { watched: 0, total: details.episodes } : null,
-      extra: details.publication ? { publication: details.publication } : {}
+      extra: { ...(details.publication ? { publication: details.publication } : {}), ...(details.game ? { game: details.game } : {}) }
     });
   } catch (error) {
     if (poster) await store.remove(`media/${id}`).catch(() => undefined);
