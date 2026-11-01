@@ -99,7 +99,7 @@ npm run db:studio
 
 ## MediaItem Model
 
-Collection entries (migration `20261031150000_media`): `kind` (movie, tv, anime, track, album), `source` and `sourceId` (unique together; TMDB ids are prefixed `movie:` / `tv:`), localized `title`, `overview`, `review` and `genres` as JSON, `credits`, local `poster` (same shape as project covers), `status`, `rating` (1-5), `watchedOn`, `rewatchCount`, `progress` (`{ watched, total }`), `extra` (kind-specific JSON), `featured`, `visibility`. The `collection` key in `Setting` holds the display switches.
+Collection entries (migration `20261031150000_media`; `book` and `comic` added by `20261103090000_books_comics`): `kind` (movie, tv, anime, book, comic, track, album), `source` and `sourceId` (unique together; TMDB ids are prefixed `movie:` / `tv:`), localized `title`, `overview`, `review` and `genres` as JSON, `credits`, local `poster` (same shape as project covers), `status`, `rating` (1-5), `watchedOn`, `rewatchCount`, `progress` (`{ watched, total }`: episodes, a comic's volumes or a book's pages), `extra` (kind-specific JSON: `music` for songs, `publication` `{ publisher, pages, volumes, ongoing }` for books and comics), `featured`, `visibility`. The `collection` key in `Setting` holds the display switches.
 
 ## Person and MediaRelation Models
 

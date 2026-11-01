@@ -287,11 +287,23 @@ Status: implementation complete; Claude Code review complete and fixes applied.
 - Verified with a temporary PostgreSQL and the real TMDB / Bangumi / AniList / iTunes services: imported Hayao Miyazaki and Rumi Hiiragi from Spirited Away's suggestions, linked Attack on Titan Season 2 as the sequel from AniList's suggestion, linked an iTunes song as the opening and its singer, added a related work by hand; checked the people tab, person and entry panels on desktop and phone width.
 - Ran Claude Code review for Stage 14 (`docs/reviews/2026-11-02-claude-code-stage-14.md`); browser testing found three bugs, fixed with tests where possible.
 
+### Stage 15: Books and Comics
+
+Status: implementation complete; Claude Code review complete and fixes applied.
+
+- `book` and `comic` kinds (migration `20261103090000_books_comics`); publication details (publisher, pages, volumes, serialization) in `extra.publication`; display switches for both (saved settings show them).
+- Sources: Open Library and Bangumi for books, AniList and Bangumi for comics; romaji for comics from Bangumi; poster downloads follow redirects hop by hop through image hosts (Open Library covers go through archive.org).
+- Suggestions: authors by name; AniList relations across anime, comics and light novels, matched by kind.
+- Admin: 图书 / 漫画 tabs with their sources, read statuses, page or volume progress, publication fields. Site: tabs, read statuses, progress in pages or volumes, publisher and serialization; the home section 最近在看 stays films, series and anime.
+- `npm run db:seed:collection` adds two books and two comics.
+- Tests: 139 passed.
+- Verified with a temporary PostgreSQL and the live sources: seeded all samples (三体 from Open Library, 凉宫春日的忧郁 from Bangumi, Bocchi the Rock! from AniList, 葬送的芙莉莲 from Bangumi), added Norwegian Wood from the admin's Open Library search, checked the editor, the site's comic tab and panel, and AniList suggestions linking the anime to its manga.
+- Ran Claude Code review for Stage 15 (`docs/reviews/2026-11-03-claude-code-stage-15.md`) and fixed the findings.
+
 ### Upcoming
 
-- PR #13 was merged. The user tests the Spotify connection (`npm run db:deploy` first).
-- Stage 14 PR: `npm run db:deploy` applies the people migration.
-- Next: Stage 15 books and comics, Stage 16 games (needs IGDB credentials); the yearly review moves to Stage 17.
+- Stage 15 PR: `npm run db:deploy` applies the book and comic migration (and the people migration if not applied yet).
+- Stage 16: games (IGDB, needs a Twitch developer app's Client ID and Secret in `apps/api/.env`); the yearly review is Stage 17.
 - Stage 10: VPS deployment and CI/CD (needs the VPS provider/OS/specs, DNS manager and domain from the user).
 - Stage 5: back-end foundation and admin auth refinement (`ADMIN_PATH`, IP allowlist, CSRF, Zod, tests). See `docs/plan-admin-projects-deploy.md`.
 

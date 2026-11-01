@@ -111,6 +111,12 @@
 - Text with Chinese characters sent with curl from Git Bash arrived garbled (console encoding); only test data was affected.
 - The model ran Claude Code review for Stage 14 and fixed the findings listed in its review record.
 
+- PR #14 was merged; Stage 15 (books and comics) started. The user asked how to fill in the Twitch app's OAuth redirect URL for IGDB (Stage 16): IGDB uses app tokens, so `http://localhost` is enough.
+- Probing the sources: Google Books without a key had a daily quota of 0; Open Library covers redirect twice (covers.openlibrary.org → archive.org → ia*.us.archive.org).
+- Testing with live data found AniList's default relation types reversed source and adaptation, Open Library publishers starting with an invisible U+200E, foreign-language Open Library subjects, and Bangumi's 漫画 tag repeating the platform; all fixed.
+- Git Bash heredocs turned `\\u200e` escapes into the characters themselves; edits with escapes go through script files.
+- The model ran Claude Code review for Stage 15 and fixed the findings listed in its review record.
+
 ## Notes
 
 - A direct Windows directory rename of `src` failed with `Permission denied`; the migration continued by moving source subdirectories individually.
