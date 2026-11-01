@@ -22,7 +22,14 @@ function resolvedIsDark(theme: ThemeMode) {
   return !window.matchMedia || !window.matchMedia("(prefers-color-scheme: light)").matches;
 }
 
-export default function AnimatedThemeToggler({ theme, cycleTheme, className, duration = 420, "aria-label": ariaLabel, title }: Props) {
+export default function AnimatedThemeToggler({
+  theme,
+  cycleTheme,
+  className,
+  duration = 420,
+  "aria-label": ariaLabel,
+  title
+}: Props) {
   const buttonRef = useRef<HTMLButtonElement | null>(null);
 
   const isDark = useMemo(() => resolvedIsDark(theme), [theme]);

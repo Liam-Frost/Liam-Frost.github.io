@@ -24,7 +24,8 @@ export const longestEdgeBySuffix: Record<FlickrSizeSuffix, number> = {
 const STATIC_HOST_RE = /^https?:\/\/live\.staticflickr\.com\/(.+)$/i;
 
 // Supports multi-character suffixes like _3k / _4k.
-const STATIC_URL_RE = /^https?:\/\/live\.staticflickr\.com\/(?<serverId>[^/]+)\/(?<photoId>\d+?)_(?<secret>[^_./]+?)(?:_(?<suffix>[a-z0-9]+))?\.(?<ext>[a-z0-9]+)(?:\?.*)?$/i;
+const STATIC_URL_RE =
+  /^https?:\/\/live\.staticflickr\.com\/(?<serverId>[^/]+)\/(?<photoId>\d+?)_(?<secret>[^_./]+?)(?:_(?<suffix>[a-z0-9]+))?\.(?<ext>[a-z0-9]+)(?:\?.*)?$/i;
 
 export function parseFlickrStaticUrl(url: string): FlickrStaticParts | null {
   if (!url) return null;
@@ -84,7 +85,10 @@ export function pickBestSuffixForEdge(
   return best;
 }
 
-export function capThumbSuffix(maxThumbSuffix: "n" | "z" | "c" | "b", originalLongestEdge: number): "n" | "z" | "c" | "b" {
+export function capThumbSuffix(
+  maxThumbSuffix: "n" | "z" | "c" | "b",
+  originalLongestEdge: number
+): "n" | "z" | "c" | "b" {
   const order: Array<"n" | "z" | "c" | "b"> = ["n", "z", "c", "b"];
   const maxIndex = order.indexOf(maxThumbSuffix);
 

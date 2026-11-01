@@ -1,5 +1,18 @@
 # Progress
 
+## Repository maintenance (2026-11-01)
+
+Local implementation and checks complete: PR CI, grouped Dependabot configuration,
+MIT license/content rights, security policy, lint and formatting baseline, README
+and maintenance documentation. All 157 tests, typecheck, lint, formatting and full
+build pass. The initial PR CI and Docker integration runs also passed. Follow-up
+CodeQL findings are addressed with global request limiting and stronger plain-text
+description cleanup; regression coverage now totals 162 tests.
+
+Pages HTTPS remains blocked on certificate issuance. Initial CodeQL alert triage,
+the fixed regex, request limiting and the development dependency
+advisory are documented in `repository-maintenance.md`. No VPS work is included.
+
 ## 2026-04-26
 
 ### Stage 0: Baseline Preservation

@@ -4,6 +4,7 @@ This folder is the source of truth for the migration from a static portfolio to 
 
 ## Documents
 
+- `repository-maintenance.md`: CI, formatting, branch rules, dependency updates and security follow-up.
 - `architecture.md`: current architecture and intended direction.
 - `admin.md`: admin authentication setup and current admin scope.
 - `database.md`: PostgreSQL/Prisma setup and seed workflow.

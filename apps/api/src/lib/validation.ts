@@ -29,9 +29,18 @@ const LANG_KEYS = ["zh", "zh-Hant", "en", "fr", "ja"] as const;
 /** Text per language; empty strings are dropped so "cleared" languages fall back on the site. */
 function localizedText(max: number) {
   return z
-    .object(Object.fromEntries(LANG_KEYS.map((lang) => [lang, z.string().trim().max(max).optional()])) as Record<(typeof LANG_KEYS)[number], z.ZodOptional<z.ZodString>>)
+    .object(
+      Object.fromEntries(
+        LANG_KEYS.map((lang) => [lang, z.string().trim().max(max).optional()])
+      ) as Record<(typeof LANG_KEYS)[number], z.ZodOptional<z.ZodString>>
+    )
     .strict()
-    .transform((value) => Object.fromEntries(Object.entries(value).filter(([, text]) => text)) as Partial<Record<(typeof LANG_KEYS)[number], string>>);
+    .transform(
+      (value) =>
+        Object.fromEntries(Object.entries(value).filter(([, text]) => text)) as Partial<
+          Record<(typeof LANG_KEYS)[number], string>
+        >
+    );
 }
 
 const requiredText = (max: number, message: string) =>
@@ -84,16 +93,24 @@ export const photoOrderSchema = z
   .strict()
   .refine((value) => new Set(value.ids).size === value.ids.length, "Duplicate ids in order");
 
-const uuid = z.string().regex(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/, "Invalid id");
+const uuid = z
+  .string()
+  .regex(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/, "Invalid id");
 
 export const projectIdSchema = z.object({ id: uuid });
-export const projectImageParamsSchema = z.object({ id: uuid, imageId: z.string().regex(/^[a-z0-9]{12}$/, "Invalid image id") });
+export const projectImageParamsSchema = z.object({
+  id: uuid,
+  imageId: z.string().regex(/^[a-z0-9]{12}$/, "Invalid image id")
+});
 
 export const slugSchema = z
   .string()
   .trim()
   .toLowerCase()
-  .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Slug may only contain lowercase letters, digits and single hyphens")
+  .regex(
+    /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
+    "Slug may only contain lowercase letters, digits and single hyphens"
+  )
   .max(80, "Slug is at most 80 characters");
 
 export const projectSlugParamsSchema = z.object({ slug: slugSchema });
@@ -138,11 +155,21 @@ export const projectUpdateSchema = z
     techStack: z
       .array(z.string().trim().min(1).max(30))
       .max(20, "At most 20 technologies")
-      .refine((list) => new Set(list.map((t) => t.toLowerCase())).size === list.length, "Duplicate technology"),
+      .refine(
+        (list) => new Set(list.map((t) => t.toLowerCase())).size === list.length,
+        "Duplicate technology"
+      ),
     links: z
       .object({ repo: link, demo: link, docs: link })
       .strict()
-      .transform((value) => Object.fromEntries(Object.entries(value).filter(([, url]) => url)) as { repo?: string; demo?: string; docs?: string }),
+      .transform(
+        (value) =>
+          Object.fromEntries(Object.entries(value).filter(([, url]) => url)) as {
+            repo?: string;
+            demo?: string;
+            docs?: string;
+          }
+      ),
     status: z.enum(["in-progress", "completed", "archived"]),
     startedAt: yearMonth,
     endedAt: yearMonth,
@@ -200,7 +227,10 @@ export const mediaImportSchema = z
     sourceId: z.string().trim().max(40)
   })
   .strict()
-  .refine((value) => KIND_SOURCES[value.kind].includes(value.source), "This source has no entries of that kind")
+  .refine(
+    (value) => KIND_SOURCES[value.kind].includes(value.source),
+    "This source has no entries of that kind"
+  )
   .refine((value) => SOURCE_IDS[value.source].test(value.sourceId), "Invalid source id");
 
 export const mediaSearchQuerySchema = z
@@ -209,7 +239,10 @@ export const mediaSearchQuerySchema = z
     source: searchSource,
     q: z.string().trim().min(1, "Enter a title to search").max(100)
   })
-  .refine((value) => KIND_SOURCES[value.kind].includes(value.source), "This source has no entries of that kind");
+  .refine(
+    (value) => KIND_SOURCES[value.kind].includes(value.source),
+    "This source has no entries of that kind"
+  );
 
 /** An https URL on one of the given hosts; null or "" clears it. */
 const hostLink = (hosts: RegExp, message: string) =>
@@ -230,7 +263,10 @@ const hostLink = (hosts: RegExp, message: string) =>
     .transform((value) => value || null);
 
 /** Previews play in visitors' browsers; only iTunes' and Spotify's preview CDNs. */
-const previewLink = hostLink(/^(audio-ssl\.itunes\.apple\.com|p\.scdn\.co)$/, "Previews must come from iTunes or Spotify");
+const previewLink = hostLink(
+  /^(audio-ssl\.itunes\.apple\.com|p\.scdn\.co)$/,
+  "Previews must come from iTunes or Spotify"
+);
 const appleLink = hostLink(/^music\.apple\.com$/, "Must be an Apple Music link");
 
 export const musicSearchQuerySchema = z.object({
@@ -269,11 +305,20 @@ export const spotifyCallbackQuerySchema = z.object({
 
 export const musicAccountImportSchema = z.discriminatedUnion("source", [
   z.object({ source: z.literal("liked") }).strict(),
-  z.object({ source: z.literal("playlist"), playlistId: z.string().regex(/^[A-Za-z0-9]{22}$/, "Invalid playlist id") }).strict()
+  z
+    .object({
+      source: z.literal("playlist"),
+      playlistId: z.string().regex(/^[A-Za-z0-9]{22}$/, "Invalid playlist id")
+    })
+    .strict()
 ]);
 
-export const playlistImportSchema = z.object({ playlistUrl: z.string().trim().min(1, "Enter a playlist link").max(500) }).strict();
-export const musicJobParamsSchema = z.object({ id: z.string().regex(/^[0-9a-f]{16}$/, "Invalid job id") });
+export const playlistImportSchema = z
+  .object({ playlistUrl: z.string().trim().min(1, "Enter a playlist link").max(500) })
+  .strict();
+export const musicJobParamsSchema = z.object({
+  id: z.string().regex(/^[0-9a-f]{16}$/, "Invalid job id")
+});
 
 /** YYYY-MM-DD; null or "" clears it. */
 const isoDate = z
@@ -309,9 +354,15 @@ export const mediaUpdateSchema = z
     watchedOn: isoDate,
     rewatchCount: z.number().int().min(0).max(999),
     progress: z
-      .object({ watched: z.number().int().min(0).max(100_000), total: z.number().int().min(1).max(100_000).nullable() })
+      .object({
+        watched: z.number().int().min(0).max(100_000),
+        total: z.number().int().min(1).max(100_000).nullable()
+      })
       .strict()
-      .refine((value) => value.total === null || value.watched <= value.total, "Watched episodes exceed the total")
+      .refine(
+        (value) => value.total === null || value.watched <= value.total,
+        "Watched episodes exceed the total"
+      )
       .nullable(),
     music: z
       .object({
@@ -353,17 +404,34 @@ export const mediaUpdateSchema = z
 
 /** Bulk actions: up to 500 distinct ids; an update needs at least one change. */
 function batchSchema<T extends z.ZodType>(patch: T) {
-  return z.discriminatedUnion("action", [
-    z.object({ action: z.literal("delete"), ids: z.array(uuid).min(1).max(500, "At most 500 at a time") }).strict(),
-    z.object({ action: z.literal("update"), ids: z.array(uuid).min(1).max(500, "At most 500 at a time"), patch }).strict()
-  ]).refine((value) => new Set(value.ids).size === value.ids.length, "Duplicate ids");
+  return z
+    .discriminatedUnion("action", [
+      z
+        .object({
+          action: z.literal("delete"),
+          ids: z.array(uuid).min(1).max(500, "At most 500 at a time")
+        })
+        .strict(),
+      z
+        .object({
+          action: z.literal("update"),
+          ids: z.array(uuid).min(1).max(500, "At most 500 at a time"),
+          patch
+        })
+        .strict()
+    ])
+    .refine((value) => new Set(value.ids).size === value.ids.length, "Duplicate ids");
 }
 
 const batchVisibility = { visibility: z.enum(["public", "private"]), featured: z.boolean() };
 
 export const mediaBatchSchema = batchSchema(
   z
-    .object({ ...batchVisibility, status: z.enum(["want", "watching", "done", "dropped"]), inPlayer: z.boolean() })
+    .object({
+      ...batchVisibility,
+      status: z.enum(["want", "watching", "done", "dropped"]),
+      inPlayer: z.boolean()
+    })
     .partial()
     .strict()
     .refine((value) => Object.keys(value).length > 0, "Nothing to change")
@@ -380,16 +448,26 @@ export const personBatchSchema = batchSchema(
 export const playlistIdSchema = projectIdSchema;
 
 export const playlistCreateSchema = z
-  .object({ name: requiredText(120, "Name is required in at least one language"), description: localizedText(1000).optional() })
+  .object({
+    name: requiredText(120, "Name is required in at least one language"),
+    description: localizedText(1000).optional()
+  })
   .strict();
 
 export const playlistUpdateSchema = z
-  .object({ name: requiredText(120, "Name is required in at least one language"), description: localizedText(1000), visibility: z.enum(["public", "private"]) })
+  .object({
+    name: requiredText(120, "Name is required in at least one language"),
+    description: localizedText(1000),
+    visibility: z.enum(["public", "private"])
+  })
   .partial()
   .strict();
 
 export const playlistTracksSchema = z
-  .object({ action: z.enum(["add", "remove"]), ids: z.array(uuid).min(1).max(1000, "At most 1000 at a time") })
+  .object({
+    action: z.enum(["add", "remove"]),
+    ids: z.array(uuid).min(1).max(1000, "At most 1000 at a time")
+  })
   .strict();
 
 export const playlistOrderSchema = z
@@ -418,7 +496,9 @@ export const collectionSettingsSchema = z
 
 export const personIdSchema = projectIdSchema;
 
-export const personSearchQuerySchema = z.object({ q: z.string().trim().min(1, "Enter a name to search").max(100) });
+export const personSearchQuerySchema = z.object({
+  q: z.string().trim().min(1, "Enter a name to search").max(100)
+});
 
 export const personCreateSchema = z
   .object({
@@ -428,7 +508,13 @@ export const personCreateSchema = z
   .strict();
 
 export const personImportSchema = z
-  .object({ source: z.literal("tmdb"), sourceId: z.string().trim().regex(/^\d{1,12}$/, "Invalid source id") })
+  .object({
+    source: z.literal("tmdb"),
+    sourceId: z
+      .string()
+      .trim()
+      .regex(/^\d{1,12}$/, "Invalid source id")
+  })
   .strict();
 
 /** An https link. */
@@ -473,13 +559,20 @@ export const relationCreateSchema = z
     const issue = (message: string) => ctx.addIssue({ code: "custom", message });
     if (value.type === "credit") {
       if (value.from.type !== "person") issue("Credits link a person to an entry");
-      if (!value.role || !(PERSON_ROLES as readonly string[]).includes(value.role)) issue("Credits need a person's role");
+      if (!value.role || !(PERSON_ROLES as readonly string[]).includes(value.role))
+        issue("Credits need a person's role");
       return;
     }
     if (value.from.type !== "media") issue("Only credits start at a person");
     if (value.from.id === value.toId) issue("An entry cannot link to itself");
-    if (value.type === "soundtrack" && value.role && !(SOUNDTRACK_ROLES as readonly string[]).includes(value.role)) issue("Invalid soundtrack role");
-    if (value.type !== "soundtrack" && value.role) issue("Only credits and soundtracks have a role");
+    if (
+      value.type === "soundtrack" &&
+      value.role &&
+      !(SOUNDTRACK_ROLES as readonly string[]).includes(value.role)
+    )
+      issue("Invalid soundtrack role");
+    if (value.type !== "soundtrack" && value.role)
+      issue("Only credits and soundtracks have a role");
   });
 
 export const relationUpdateSchema = z

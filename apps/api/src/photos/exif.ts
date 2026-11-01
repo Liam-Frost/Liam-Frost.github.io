@@ -30,17 +30,27 @@ export function readExif(raw: Buffer | undefined): ExifSuggestions {
 
   const make = clean(exif.Image?.Make);
   const model = clean(exif.Image?.Model);
-  const camera = model && make && !model.toLowerCase().startsWith(make.toLowerCase().split(" ")[0]) ? `${make} ${model}` : (model ?? make);
+  const camera =
+    model && make && !model.toLowerCase().startsWith(make.toLowerCase().split(" ")[0])
+      ? `${make} ${model}`
+      : (model ?? make);
 
   const photo = exif.Photo ?? {};
   const parts: string[] = [];
-  if (typeof photo.ExposureTime === "number" && photo.ExposureTime > 0) parts.push(formatExposure(photo.ExposureTime));
-  if (typeof photo.FNumber === "number" && photo.FNumber > 0) parts.push(`f/${Number(photo.FNumber.toFixed(1))}`);
-  const iso = Array.isArray(photo.ISOSpeedRatings) ? photo.ISOSpeedRatings[0] : photo.ISOSpeedRatings;
+  if (typeof photo.ExposureTime === "number" && photo.ExposureTime > 0)
+    parts.push(formatExposure(photo.ExposureTime));
+  if (typeof photo.FNumber === "number" && photo.FNumber > 0)
+    parts.push(`f/${Number(photo.FNumber.toFixed(1))}`);
+  const iso = Array.isArray(photo.ISOSpeedRatings)
+    ? photo.ISOSpeedRatings[0]
+    : photo.ISOSpeedRatings;
   if (typeof iso === "number" && iso > 0) parts.push(`ISO ${iso}`);
 
   const taken = photo.DateTimeOriginal;
-  const date = taken instanceof Date && !Number.isNaN(taken.getTime()) ? taken.toISOString().slice(0, 10) : undefined;
+  const date =
+    taken instanceof Date && !Number.isNaN(taken.getTime())
+      ? taken.toISOString().slice(0, 10)
+      : undefined;
 
   return {
     camera,

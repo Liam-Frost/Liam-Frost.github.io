@@ -5,7 +5,9 @@ import { ADMIN_PATH_META } from "@liam-frost/shared";
  * Without it (a guessed URL, or the page opened some other way) the app shows "not found" and never calls the API.
  */
 export function readAdminBase(doc: Pick<Document, "querySelector"> = document): string | undefined {
-  const value = doc.querySelector<HTMLMetaElement>(`meta[name="${ADMIN_PATH_META}"]`)?.content.trim();
+  const value = doc
+    .querySelector<HTMLMetaElement>(`meta[name="${ADMIN_PATH_META}"]`)
+    ?.content.trim();
   return value && /^\/[A-Za-z0-9_/-]+$/.test(value) ? value.replace(/\/+$/, "") : undefined;
 }
 

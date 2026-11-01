@@ -13,21 +13,38 @@ const callbackQuerySchema = z.object({ state: z.string().regex(/^[0-9a-f]{32}$/)
 const jobParamsSchema = z.object({ id: z.string().regex(/^[0-9a-f]{16}$/, "Invalid job id") });
 
 /** Connecting the admin's Steam account and syncing its library into the collection. */
-export function registerSteamRoutes(app: FastifyInstance, auth: AdminAuthService, account: SteamAccount, sync: SteamSync | null) {
+export function registerSteamRoutes(
+  app: FastifyInstance,
+  auth: AdminAuthService,
+  account: SteamAccount,
+  sync: SteamSync | null
+) {
   const admin = { preHandler: auth.requireAdmin };
   const requireSync = () => {
-    if (!sync) throw new HttpError(503, "DATABASE_NOT_CONFIGURED", "The Steam sync needs a database (set DATABASE_URL)");
+    if (!sync)
+      throw new HttpError(
+        503,
+        "DATABASE_NOT_CONFIGURED",
+        "The Steam sync needs a database (set DATABASE_URL)"
+      );
     return sync;
   };
 
-  app.get("/api/admin/steam/account", admin, async (): Promise<SteamAccountStatus> => account.status());
+  app.get("/api/admin/steam/account", admin, async (): Promise<SteamAccountStatus> =>
+    account.status()
+  );
 
   /** Starts "Sign in through Steam": the browser goes to Steam, back to the callback, then to `returnTo`. */
   app.post("/api/admin/steam/connect", admin, async (request): Promise<{ url: string }> => {
     requireSync();
     const { returnTo } = parseInput(spotifyConnectSchema, request.body);
     try {
-      return { url: account.signInUrl(returnTo, `${request.protocol}://${request.host}/api/admin/steam/callback`) };
+      return {
+        url: account.signInUrl(
+          returnTo,
+          `${request.protocol}://${request.host}/api/admin/steam/callback`
+        )
+      };
     } catch (error) {
       if (error instanceof SourceError) throw new HttpError(502, "SOURCE_ERROR", error.message);
       throw error;
@@ -44,7 +61,11 @@ export function registerSteamRoutes(app: FastifyInstance, auth: AdminAuthService
     }
     const back = new URL(entry.returnTo);
     try {
-      const params = Object.fromEntries(Object.entries(query.data).filter((pair): pair is [string, string] => typeof pair[1] === "string"));
+      const params = Object.fromEntries(
+        Object.entries(query.data).filter(
+          (pair): pair is [string, string] => typeof pair[1] === "string"
+        )
+      );
       await account.complete(params, entry.callbackUrl);
       back.searchParams.set("steam", "connected");
     } catch (error) {
@@ -61,11 +82,15 @@ export function registerSteamRoutes(app: FastifyInstance, auth: AdminAuthService
   });
 
   /** Starts a library sync in the background (or returns the one running). */
-  app.post("/api/admin/steam/sync", admin, async (_request, reply): Promise<{ job: SteamSyncJob }> => {
-    const job = requireSync().start();
-    reply.code(202);
-    return { job };
-  });
+  app.post(
+    "/api/admin/steam/sync",
+    admin,
+    async (_request, reply): Promise<{ job: SteamSyncJob }> => {
+      const job = requireSync().start();
+      reply.code(202);
+      return { job };
+    }
+  );
 
   app.get("/api/admin/steam/jobs/:id", admin, async (request): Promise<{ job: SteamSyncJob }> => {
     const job = requireSync().get(parseInput(jobParamsSchema, request.params).id);

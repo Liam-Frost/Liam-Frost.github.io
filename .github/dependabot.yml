@@ -1,0 +1,33 @@
+version: 2
+updates:
+  # Keep the default target (main): security updates need this configuration there.
+  # npm workspaces share the root lockfile; do not create duplicate directory entries.
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: Asia/Shanghai
+    open-pull-requests-limit: 5
+    groups:
+      prisma:
+        patterns: ["prisma", "@prisma/*"]
+      react:
+        patterns: ["react", "react-dom", "@types/react", "@types/react-dom", "react-router"]
+      npm-minor-patch:
+        patterns: ["*"]
+        update-types: [minor, patch]
+      npm-security:
+        applies-to: security-updates
+        patterns: ["*"]
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: Asia/Shanghai
+    groups:
+      actions:
+        patterns: ["*"]

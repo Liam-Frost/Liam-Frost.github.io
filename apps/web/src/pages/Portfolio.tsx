@@ -66,7 +66,9 @@ export default function PortfolioPage() {
           cat,
           getPhotoField(p.location, lang),
           getPhotoTags(p.tags, lang).join(" ")
-        ].join(" ").toLowerCase();
+        ]
+          .join(" ")
+          .toLowerCase();
         return haystack.includes(q);
       }),
       lang

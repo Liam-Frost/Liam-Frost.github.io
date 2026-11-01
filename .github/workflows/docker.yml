@@ -3,9 +3,9 @@ name: Docker smoke test
 # Builds the production image and runs the full stack (PostgreSQL + app + Caddy) end to end.
 on:
   push:
-    branches: [ "dev" ]
+    branches: ["dev"]
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
   workflow_dispatch:
 
 permissions:

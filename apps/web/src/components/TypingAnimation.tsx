@@ -92,7 +92,17 @@ export default function TypingAnimation({
         setPhase("typing");
       }
     }
-  }, [displayText, phase, currentWord, typeSpeed, deleteSpeed, pauseDelay, wordIndex, words.length, loop]);
+  }, [
+    displayText,
+    phase,
+    currentWord,
+    typeSpeed,
+    deleteSpeed,
+    pauseDelay,
+    wordIndex,
+    words.length,
+    loop
+  ]);
 
   const cursorChar = CURSOR_CHARS[cursorStyle];
 
@@ -111,10 +121,7 @@ export default function TypingAnimation({
     <span className={cn("typingAnimation", className)}>
       <span className="typingText">{renderText(displayText)}</span>
       {showCursor && (
-        <span
-          className={cn("typingCursor", blinkCursor && "typingCursorBlink")}
-          aria-hidden="true"
-        >
+        <span className={cn("typingCursor", blinkCursor && "typingCursorBlink")} aria-hidden="true">
           {cursorChar}
         </span>
       )}

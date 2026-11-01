@@ -1,5 +1,14 @@
 import type { AdminPhoto } from "@liam-frost/shared";
-import { ArrowDown, ArrowUp, EyeOff, GripVertical, Pencil, Star, Trash2, Upload } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowUp,
+  EyeOff,
+  GripVertical,
+  Pencil,
+  Star,
+  Trash2,
+  Upload
+} from "lucide-react";
 import { useRef, useState, type DragEvent } from "react";
 
 import { PageHeader } from "../components/layout/AdminLayout";
@@ -43,7 +52,15 @@ export function PhotosPage() {
 
   /** One at a time: image processing is CPU-heavy on the server. */
   const uploadFiles = async (files: File[]) => {
-    const items = files.map((file, i) => ({ file, item: { key: `${Date.now()}-${i}-${file.name}`, name: file.name, progress: 0, status: "uploading" as const } }));
+    const items = files.map((file, i) => ({
+      file,
+      item: {
+        key: `${Date.now()}-${i}-${file.name}`,
+        name: file.name,
+        progress: 0,
+        status: "uploading" as const
+      }
+    }));
     setUploads((list) => [...items.map((x) => x.item), ...list]);
     for (const { file, item } of items) {
       try {
@@ -53,7 +70,10 @@ export function PhotosPage() {
         setPhoto(photo, { prepend: true });
         patchUpload(item.key, { status: "done", progress: 1 });
       } catch (e) {
-        patchUpload(item.key, { status: "error", error: e instanceof Error ? e.message : "上传失败" });
+        patchUpload(item.key, {
+          status: "error",
+          error: e instanceof Error ? e.message : "上传失败"
+        });
       }
     }
   };
@@ -88,7 +108,11 @@ export function PhotosPage() {
   const ids = all.map((p) => p.id);
   const visible = filter === "all" ? all : all.filter((p) => p.visibility === filter);
   const canReorder = filter === "all" && !reorder.isPending;
-  const counts = { all: all.length, public: all.filter((p) => p.visibility === "public").length, private: all.filter((p) => p.visibility === "private").length };
+  const counts = {
+    all: all.length,
+    public: all.filter((p) => p.visibility === "public").length,
+    private: all.filter((p) => p.visibility === "private").length
+  };
 
   return (
     <div
@@ -105,7 +129,10 @@ export function PhotosPage() {
       className={`rounded-[var(--radius-feature)] transition-shadow ${dropActive ? "ring-2 ring-brand-secondary ring-offset-4 ring-offset-canvas" : ""}`}
     >
       <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
-        <PageHeader title="照片" description="上传后照片默认隐藏，编辑好信息再设为公开。可以把图片直接拖到页面上上传。" />
+        <PageHeader
+          title="照片"
+          description="上传后照片默认隐藏，编辑好信息再设为公开。可以把图片直接拖到页面上上传。"
+        />
         <button type="button" className="btn-primary" onClick={() => fileInput.current?.click()}>
           <Upload aria-hidden="true" className="size-4" /> 上传照片
         </button>
@@ -134,17 +161,23 @@ export function PhotosPage() {
             aria-selected={filter === value}
             onClick={() => setFilter(value)}
             className={`rounded-full px-3.5 py-1.5 text-[12.5px] transition-colors ${
-              filter === value ? "bg-brand text-white" : "bg-surface text-brand ring-1 ring-line hover:bg-brand-secondary/10"
+              filter === value
+                ? "bg-brand text-white"
+                : "bg-surface text-brand ring-1 ring-line hover:bg-brand-secondary/10"
             }`}
           >
             {label} <span className="opacity-70">{counts[value]}</span>
           </button>
         ))}
-        {filter !== "all" ? <span className="text-[12px] text-faint">在“全部”中可以调整顺序</span> : null}
+        {filter !== "all" ? (
+          <span className="text-[12px] text-faint">在“全部”中可以调整顺序</span>
+        ) : null}
       </div>
 
       {visible.length === 0 ? (
-        <div className="card p-10 text-center text-[13.5px] text-muted">{all.length ? "没有符合条件的照片" : "还没有照片，点击“上传照片”或把图片拖到这里"}</div>
+        <div className="card p-10 text-center text-[13.5px] text-muted">
+          {all.length ? "没有符合条件的照片" : "还没有照片，点击“上传照片”或把图片拖到这里"}
+        </div>
       ) : (
         <ul className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-4">
           {visible.map((photo) => {
@@ -171,14 +204,31 @@ export function PhotosPage() {
                 }}
                 className={`card group overflow-hidden ${dragId === photo.id ? "opacity-40" : ""}`}
               >
-                <button type="button" onClick={() => setEditing(photo)} className="block w-full" aria-label={`编辑 ${title}`}>
-                  <img src={photo.thumbnail} alt="" loading="lazy" className="aspect-[4/3] w-full bg-line-soft object-cover" />
+                <button
+                  type="button"
+                  onClick={() => setEditing(photo)}
+                  className="block w-full"
+                  aria-label={`编辑 ${title}`}
+                >
+                  <img
+                    src={photo.thumbnail}
+                    alt=""
+                    loading="lazy"
+                    className="aspect-[4/3] w-full bg-line-soft object-cover"
+                  />
                 </button>
                 <div className="p-3">
                   <div className="flex items-start gap-1.5">
-                    {canReorder ? <GripVertical aria-hidden="true" className="mt-0.5 size-4 shrink-0 cursor-grab text-faint" /> : null}
+                    {canReorder ? (
+                      <GripVertical
+                        aria-hidden="true"
+                        className="mt-0.5 size-4 shrink-0 cursor-grab text-faint"
+                      />
+                    ) : null}
                     <div className="min-w-0 flex-1">
-                      <h3 className="truncate text-[13.5px] font-semibold text-brand-dark">{title}</h3>
+                      <h3 className="truncate text-[13.5px] font-semibold text-brand-dark">
+                        {title}
+                      </h3>
                       <p className="truncate text-[12px] text-subtle">
                         {photo.date}
                         {pickText(photo.category) ? ` · ${pickText(photo.category)}` : ""}
@@ -199,10 +249,18 @@ export function PhotosPage() {
                     <span className="flex-1" />
                     {canReorder ? (
                       <>
-                        <IconButton label={`上移 ${title}`} disabled={index === 0} onClick={() => move(ids, index, index - 1)}>
+                        <IconButton
+                          label={`上移 ${title}`}
+                          disabled={index === 0}
+                          onClick={() => move(ids, index, index - 1)}
+                        >
                           <ArrowUp aria-hidden="true" className="size-3.5" />
                         </IconButton>
-                        <IconButton label={`下移 ${title}`} disabled={index === ids.length - 1} onClick={() => move(ids, index, index + 1)}>
+                        <IconButton
+                          label={`下移 ${title}`}
+                          disabled={index === ids.length - 1}
+                          onClick={() => move(ids, index, index + 1)}
+                        >
                           <ArrowDown aria-hidden="true" className="size-3.5" />
                         </IconButton>
                       </>
@@ -221,7 +279,9 @@ export function PhotosPage() {
         </ul>
       )}
 
-      {editing ? <PhotoEditor key={editing.id} photo={editing} onClose={() => setEditing(null)} /> : null}
+      {editing ? (
+        <PhotoEditor key={editing.id} photo={editing} onClose={() => setEditing(null)} />
+      ) : null}
 
       <Dialog
         open={Boolean(deleting)}

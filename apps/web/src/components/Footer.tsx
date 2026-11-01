@@ -17,7 +17,8 @@ export default function Footer() {
         className="btn btnGhost btnSmall"
         type="button"
         onClick={() => {
-          const prefersReduced = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches ?? false;
+          const prefersReduced =
+            window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches ?? false;
           window.scrollTo({ top: 0, left: 0, behavior: prefersReduced ? "auto" : "smooth" });
         }}
       >

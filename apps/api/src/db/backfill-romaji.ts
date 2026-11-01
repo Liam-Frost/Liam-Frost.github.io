@@ -8,8 +8,13 @@ import { PrismaMediaRepository } from "../media/prisma-repository";
 import { createMediaSources } from "../media/sources";
 import { createPrismaClient } from "./client";
 
-const setGlobalProxyFromEnv = (http as { setGlobalProxyFromEnv?: () => void }).setGlobalProxyFromEnv;
-if ((process.env.HTTPS_PROXY || process.env.https_proxy) && typeof setGlobalProxyFromEnv === "function") setGlobalProxyFromEnv();
+const setGlobalProxyFromEnv = (http as { setGlobalProxyFromEnv?: () => void })
+  .setGlobalProxyFromEnv;
+if (
+  (process.env.HTTPS_PROXY || process.env.https_proxy) &&
+  typeof setGlobalProxyFromEnv === "function"
+)
+  setGlobalProxyFromEnv();
 
 const databaseUrl = process.env.DATABASE_URL?.trim();
 if (!databaseUrl) throw new Error("DATABASE_URL is required (see apps/api/.env.example)");

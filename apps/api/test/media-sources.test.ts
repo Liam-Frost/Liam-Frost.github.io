@@ -5,13 +5,22 @@ import { createMediaSources } from "../src/media/sources";
 type Handler = (url: URL, init: RequestInit) => Response | Promise<Response>;
 
 function fakeFetch(handler: Handler) {
-  return vi.fn(async (input: string | URL | Request, init: RequestInit = {}) => handler(new URL(String(input)), init)) as unknown as typeof fetch & ReturnType<typeof vi.fn>;
+  return vi.fn(async (input: string | URL | Request, init: RequestInit = {}) =>
+    handler(new URL(String(input)), init)
+  ) as unknown as typeof fetch & ReturnType<typeof vi.fn>;
 }
 
-const GENRES: Record<string, string> = { "zh-CN": "动画", "zh-TW": "動畫", "en-US": "Animation", "fr-FR": "Animation", "ja-JP": "アニメーション" };
+const GENRES: Record<string, string> = {
+  "zh-CN": "动画",
+  "zh-TW": "動畫",
+  "en-US": "Animation",
+  "fr-FR": "Animation",
+  "ja-JP": "アニメーション"
+};
 
 const tmdbHandler: Handler = (url) => {
-  if (url.pathname.startsWith("/3/genre/")) return Response.json({ genres: [{ id: 16, name: GENRES[url.searchParams.get("language")!] }] });
+  if (url.pathname.startsWith("/3/genre/"))
+    return Response.json({ genres: [{ id: 16, name: GENRES[url.searchParams.get("language")!] }] });
   if (url.pathname === "/3/movie/129") {
     return Response.json({
       id: 129,
@@ -21,14 +30,27 @@ const tmdbHandler: Handler = (url) => {
       poster_path: "/p.jpg",
       overview: "中文简介",
       genres: [{ id: 16, name: "动画" }],
-      credits: { crew: [{ job: "Director", name: "宫崎骏" }, { job: "Producer", name: "铃木敏夫" }] },
+      credits: {
+        crew: [
+          { job: "Director", name: "宫崎骏" },
+          { job: "Producer", name: "铃木敏夫" }
+        ]
+      },
       translations: {
         translations: [
           { iso_639_1: "zh", iso_3166_1: "CN", data: { title: "千与千寻", overview: "中文简介" } },
           { iso_639_1: "zh", iso_3166_1: "HK", data: { title: "千與千尋", overview: "港版" } },
           { iso_639_1: "zh", iso_3166_1: "TW", data: { title: "神隱少女", overview: "台版簡介" } },
-          { iso_639_1: "en", iso_3166_1: "US", data: { title: "Spirited Away", overview: "English overview" } },
-          { iso_639_1: "fr", iso_3166_1: "FR", data: { title: "Le Voyage de Chihiro", overview: "" } },
+          {
+            iso_639_1: "en",
+            iso_3166_1: "US",
+            data: { title: "Spirited Away", overview: "English overview" }
+          },
+          {
+            iso_639_1: "fr",
+            iso_3166_1: "FR",
+            data: { title: "Le Voyage de Chihiro", overview: "" }
+          },
           { iso_639_1: "ja", iso_3166_1: "JP", data: { title: "", overview: "日本語" } }
         ]
       }
@@ -37,7 +59,14 @@ const tmdbHandler: Handler = (url) => {
   if (url.pathname === "/3/search/multi") {
     return Response.json({
       results: [
-        { id: 1, media_type: "tv", name: "进击的巨人", original_name: "進撃の巨人", first_air_date: "2013-04-07", poster_path: "/a.jpg" },
+        {
+          id: 1,
+          media_type: "tv",
+          name: "进击的巨人",
+          original_name: "進撃の巨人",
+          first_air_date: "2013-04-07",
+          poster_path: "/a.jpg"
+        },
         { id: 2, media_type: "person", name: "Someone" },
         { id: 3, media_type: "movie", title: "你的名字。", release_date: "2016-08-26" }
       ]
@@ -54,10 +83,17 @@ describe("TMDB", () => {
 
     expect(result).toMatchObject({
       sourceUrl: "https://www.themoviedb.org/movie/129",
-      title: { zh: "千与千寻", "zh-Hant": "神隱少女", en: "Spirited Away", fr: "Le Voyage de Chihiro" },
+      title: {
+        zh: "千与千寻",
+        "zh-Hant": "神隱少女",
+        en: "Spirited Away",
+        fr: "Le Voyage de Chihiro"
+      },
       originalTitle: "千と千尋の神隠し",
       year: 2001,
-      genres: [{ zh: "动画", "zh-Hant": "動畫", en: "Animation", fr: "Animation", ja: "アニメーション" }],
+      genres: [
+        { zh: "动画", "zh-Hant": "動畫", en: "Animation", fr: "Animation", ja: "アニメーション" }
+      ],
       credits: ["宫崎骏"],
       overview: { zh: "中文简介", "zh-Hant": "台版簡介", en: "English overview", ja: "日本語" },
       posterUrl: "https://image.tmdb.org/t/p/w780/p.jpg",
@@ -74,11 +110,17 @@ describe("TMDB", () => {
     const fetchImpl = fakeFetch((url) => {
       if (url.pathname.startsWith("/3/genre/")) {
         const lang = url.searchParams.get("language")!;
-        return Response.json({ genres: [{ id: 35, name: lang.startsWith("zh") ? "喜剧" : "Comedy" }] });
+        return Response.json({
+          genres: [{ id: 35, name: lang.startsWith("zh") ? "喜剧" : "Comedy" }]
+        });
       }
       return Response.json({ id: 1, name: "剧", genres: [{ id: 35, name: "喜剧" }] });
     });
-    const result = await createMediaSources({ tmdbKey: "abc123", fetchImpl }).details("tmdb", "tv", "tv:1");
+    const result = await createMediaSources({ tmdbKey: "abc123", fetchImpl }).details(
+      "tmdb",
+      "tv",
+      "tv:1"
+    );
     expect(result.genres).toEqual([{ zh: "喜剧", en: "Comedy", fr: "Comedy", ja: "Comedy" }]);
   });
 
@@ -89,7 +131,9 @@ describe("TMDB", () => {
     await sources.details("tmdb", "movie", "movie:129");
     const [url, init] = fetchImpl.mock.calls[0];
     expect(new URL(String(url)).searchParams.has("api_key")).toBe(false);
-    expect((init as RequestInit).headers).toMatchObject({ authorization: "Bearer eyJhbGciOi.token" });
+    expect((init as RequestInit).headers).toMatchObject({
+      authorization: "Bearer eyJhbGciOi.token"
+    });
     expect(fetchImpl.mock.calls.filter(([u]) => String(u).includes("/genre/")).length).toBe(5);
   });
 
@@ -111,10 +155,18 @@ describe("TMDB", () => {
         title: "简体名",
         release_date: "2020-01-01",
         genres: [{ id: 18, name: "剧情" }],
-        translations: { translations: [{ iso_639_1: "zh", iso_3166_1: "CN", data: { title: "简体名", overview: "简体简介" } }] }
+        translations: {
+          translations: [
+            { iso_639_1: "zh", iso_3166_1: "CN", data: { title: "简体名", overview: "简体简介" } }
+          ]
+        }
       });
     });
-    const result = await createMediaSources({ tmdbKey: "abc123", fetchImpl }).details("tmdb", "movie", "movie:7");
+    const result = await createMediaSources({ tmdbKey: "abc123", fetchImpl }).details(
+      "tmdb",
+      "movie",
+      "movie:7"
+    );
     expect(result.title).toEqual({ zh: "简体名" });
     expect(result.overview).toEqual({ zh: "简体简介" });
     expect(result.genres).toEqual([{ zh: "剧情" }]);
@@ -131,38 +183,72 @@ describe("TMDB", () => {
         translations: {
           translations: [
             { iso_639_1: "zh", iso_3166_1: "CN", data: { name: "绝命毒师" } },
-            { iso_639_1: "en", iso_3166_1: "US", data: { name: "", overview: "A chemistry teacher..." } }
+            {
+              iso_639_1: "en",
+              iso_3166_1: "US",
+              data: { name: "", overview: "A chemistry teacher..." }
+            }
           ]
         }
       });
     });
-    const result = await createMediaSources({ tmdbKey: "abc123", fetchImpl }).details("tmdb", "tv", "tv:1396");
+    const result = await createMediaSources({ tmdbKey: "abc123", fetchImpl }).details(
+      "tmdb",
+      "tv",
+      "tv:1396"
+    );
     expect(result.title).toEqual({ zh: "绝命毒师", en: "Breaking Bad" });
   });
 
   it("treats a response without results as no results", async () => {
-    const sources = createMediaSources({ tmdbKey: "abc123", fetchImpl: fakeFetch(() => Response.json({ status_message: "busy" })) });
+    const sources = createMediaSources({
+      tmdbKey: "abc123",
+      fetchImpl: fakeFetch(() => Response.json({ status_message: "busy" }))
+    });
     expect(await sources.search("tmdb", "movie", "x")).toEqual([]);
   });
 
   it("explains a missing or rejected key", async () => {
-    await expect(createMediaSources({}).search("tmdb", "movie", "x")).rejects.toThrow("未配置 TMDB_API_KEY");
-    const rejected = createMediaSources({ tmdbKey: "bad", fetchImpl: fakeFetch(() => new Response("", { status: 401 })) });
+    await expect(createMediaSources({}).search("tmdb", "movie", "x")).rejects.toThrow(
+      "未配置 TMDB_API_KEY"
+    );
+    const rejected = createMediaSources({
+      tmdbKey: "bad",
+      fetchImpl: fakeFetch(() => new Response("", { status: 401 }))
+    });
     await expect(rejected.search("tmdb", "movie", "x")).rejects.toThrow(/API key/);
-    expect(createMediaSources({}).available()).toEqual({ tmdb: false, bangumi: true, openlibrary: true, googlebooks: false, anilist: true, igdb: false });
+    expect(createMediaSources({}).available()).toEqual({
+      tmdb: false,
+      bangumi: true,
+      openlibrary: true,
+      googlebooks: false,
+      anilist: true,
+      igdb: false
+    });
   });
 });
 
 describe("AniList romaji", () => {
-  const anilist = (media: object | null) => fakeFetch(() => Response.json({ data: { Media: media } }));
+  const anilist = (media: object | null) =>
+    fakeFetch(() => Response.json({ data: { Media: media } }));
 
   it("returns the romaji title of the same work", async () => {
-    const sources = createMediaSources({ fetchImpl: anilist({ title: { romaji: "Bocchi the Rock!", native: "ぼっち・ざ・ろっく！" }, startDate: { year: 2022 } }) });
+    const sources = createMediaSources({
+      fetchImpl: anilist({
+        title: { romaji: "Bocchi the Rock!", native: "ぼっち・ざ・ろっく！" },
+        startDate: { year: 2022 }
+      })
+    });
     expect(await sources.romaji("ぼっち・ざ・ろっく!", null)).toBe("Bocchi the Rock!");
   });
 
   it("accepts a different spelling of the same year, and rejects other works", async () => {
-    const match = createMediaSources({ fetchImpl: anilist({ title: { romaji: "Sousou no Frieren", native: "葬送のフリーレン" }, startDate: { year: 2023 } }) });
+    const match = createMediaSources({
+      fetchImpl: anilist({
+        title: { romaji: "Sousou no Frieren", native: "葬送のフリーレン" },
+        startDate: { year: 2023 }
+      })
+    });
     expect(await match.romaji("葬送的芙莉莲", 2023)).toBe("Sousou no Frieren");
     expect(await match.romaji("別の作品", 2010)).toBeNull();
   });
@@ -177,16 +263,31 @@ describe("AniList romaji", () => {
             startDate: { year: 2022 },
             relations: {
               edges: [
-                { relationType: "SOURCE", node: { type: "MANGA", format: "MANGA", title: { native: "ぼっち・ざ・ろっく！" } } },
-                { relationType: "ADAPTATION", node: { type: "MANGA", format: "NOVEL", title: { romaji: "Some Novel" } } },
-                { relationType: "SEQUEL", node: { type: "ANIME", format: "TV", title: { native: "続編" } } }
+                {
+                  relationType: "SOURCE",
+                  node: {
+                    type: "MANGA",
+                    format: "MANGA",
+                    title: { native: "ぼっち・ざ・ろっく！" }
+                  }
+                },
+                {
+                  relationType: "ADAPTATION",
+                  node: { type: "MANGA", format: "NOVEL", title: { romaji: "Some Novel" } }
+                },
+                {
+                  relationType: "SEQUEL",
+                  node: { type: "ANIME", format: "TV", title: { native: "続編" } }
+                }
               ]
             }
           }
         }
       });
     });
-    expect(await createMediaSources({ fetchImpl }).relations("anime", "ぼっち・ざ・ろっく！", 2022)).toEqual([
+    expect(
+      await createMediaSources({ fetchImpl }).relations("anime", "ぼっち・ざ・ろっく！", 2022)
+    ).toEqual([
       { relationType: "SOURCE", kind: "comic", titles: ["ぼっち・ざ・ろっく！"] },
       { relationType: "ADAPTATION", kind: "book", titles: ["Some Novel"] },
       { relationType: "SEQUEL", kind: "anime", titles: ["続編"] }
@@ -194,7 +295,11 @@ describe("AniList romaji", () => {
   });
 
   it("gives up quietly when AniList fails", async () => {
-    expect(await createMediaSources({ fetchImpl: fakeFetch(() => new Response("", { status: 500 })) }).romaji("x", 2020)).toBeNull();
+    expect(
+      await createMediaSources({
+        fetchImpl: fakeFetch(() => new Response("", { status: 500 }))
+      }).romaji("x", 2020)
+    ).toBeNull();
     expect(await createMediaSources({ fetchImpl: anilist(null) }).romaji("x", 2020)).toBeNull();
   });
 });
@@ -203,8 +308,21 @@ describe("Bangumi", () => {
   it("searches anime with a user agent and maps subject details", async () => {
     const fetchImpl = fakeFetch((url, init) => {
       if (url.pathname === "/v0/search/subjects") {
-        expect(JSON.parse(String(init.body))).toEqual({ keyword: "孤独摇滚", filter: { type: [2] } });
-        return Response.json({ data: [{ id: 328609, name: "ぼっち・ざ・ろっく！", name_cn: "孤独摇滚！", date: "2022-10-08", images: { common: "https://lain.bgm.tv/c.jpg" } }] });
+        expect(JSON.parse(String(init.body))).toEqual({
+          keyword: "孤独摇滚",
+          filter: { type: [2] }
+        });
+        return Response.json({
+          data: [
+            {
+              id: 328609,
+              name: "ぼっち・ざ・ろっく！",
+              name_cn: "孤独摇滚！",
+              date: "2022-10-08",
+              images: { common: "https://lain.bgm.tv/c.jpg" }
+            }
+          ]
+        });
       }
       return Response.json({
         id: 328609,
@@ -232,8 +350,15 @@ describe("Bangumi", () => {
     const sources = createMediaSources({ fetchImpl });
 
     const hits = await sources.search("bangumi", "anime", "孤独摇滚");
-    expect(hits[0]).toMatchObject({ sourceId: "328609", title: "孤独摇滚！", originalTitle: "ぼっち・ざ・ろっく！", year: 2022 });
-    expect((fetchImpl.mock.calls[0][1] as RequestInit).headers).toMatchObject({ "user-agent": expect.stringContaining("liam-frost-site") });
+    expect(hits[0]).toMatchObject({
+      sourceId: "328609",
+      title: "孤独摇滚！",
+      originalTitle: "ぼっち・ざ・ろっく！",
+      year: 2022
+    });
+    expect((fetchImpl.mock.calls[0][1] as RequestInit).headers).toMatchObject({
+      "user-agent": expect.stringContaining("liam-frost-site")
+    });
 
     const result = await sources.details("bangumi", "anime", "328609");
     expect(result).toMatchObject({
@@ -249,8 +374,12 @@ describe("Bangumi", () => {
   it("rejects malformed ids and non-https poster URLs", async () => {
     const sources = createMediaSources({ fetchImpl: fakeFetch(() => Response.json({})) });
     await expect(sources.details("bangumi", "anime", "../1")).rejects.toThrow("无效");
-    await expect(sources.download("http://image.tmdb.org/t/p/w780/p.jpg")).rejects.toThrow("海报地址无效");
-    await expect(sources.download("https://internal.example/p.jpg")).rejects.toThrow("海报地址无效");
+    await expect(sources.download("http://image.tmdb.org/t/p/w780/p.jpg")).rejects.toThrow(
+      "海报地址无效"
+    );
+    await expect(sources.download("https://internal.example/p.jpg")).rejects.toThrow(
+      "海报地址无效"
+    );
     expect(await sources.search("bangumi", "anime", "x")).toEqual([]);
   });
 });
@@ -258,7 +387,10 @@ describe("Bangumi", () => {
 describe("Books and comics", () => {
   it("searches and imports Open Library works", async () => {
     const fetchImpl = fakeFetch((url) => {
-      if (url.pathname === "/search.json" && url.searchParams.get("q") === "key:/works/OL17267881W") {
+      if (
+        url.pathname === "/search.json" &&
+        url.searchParams.get("q") === "key:/works/OL17267881W"
+      ) {
         return Response.json({
           docs: [
             {
@@ -269,19 +401,35 @@ describe("Books and comics", () => {
               cover_i: 9157544,
               number_of_pages_median: 416,
               publisher: ["\u200e重庆出版社"],
-              subject: ["Science fiction", "award:hugo_award=2015", "Fiction, science fiction, general", "Liebesbeziehung", "Fiction", "science fiction"]
+              subject: [
+                "Science fiction",
+                "award:hugo_award=2015",
+                "Fiction, science fiction, general",
+                "Liebesbeziehung",
+                "Fiction",
+                "science fiction"
+              ]
             }
           ]
         });
       }
-      if (url.pathname === "/search.json") return Response.json({ docs: [{ key: "/works/OL17267881W", title: "三体", author_name: ["刘慈欣"], cover_i: 1 }] });
-      if (url.pathname === "/works/OL17267881W.json") return Response.json({ description: { value: "A novel.\n----------\nSee also: ..." } });
+      if (url.pathname === "/search.json")
+        return Response.json({
+          docs: [{ key: "/works/OL17267881W", title: "三体", author_name: ["刘慈欣"], cover_i: 1 }]
+        });
+      if (url.pathname === "/works/OL17267881W.json")
+        return Response.json({ description: { value: "A novel.\n----------\nSee also: ..." } });
       return new Response("", { status: 404 });
     });
     const sources = createMediaSources({ fetchImpl });
 
     const [hit] = await sources.search("openlibrary", "book", "三体");
-    expect(hit).toMatchObject({ source: "openlibrary", sourceId: "OL17267881W", creators: ["刘慈欣"], posterUrl: "https://covers.openlibrary.org/b/id/1-M.jpg" });
+    expect(hit).toMatchObject({
+      source: "openlibrary",
+      sourceId: "OL17267881W",
+      creators: ["刘慈欣"],
+      posterUrl: "https://covers.openlibrary.org/b/id/1-M.jpg"
+    });
 
     const details = await sources.details("openlibrary", "book", "OL17267881W");
     expect(details).toMatchObject({
@@ -310,11 +458,23 @@ describe("Books and comics", () => {
             status: "RELEASING",
             volumes: null,
             genres: ["Comedy", "Music"],
-            title: { romaji: "Bocchi the Rock!", native: "ぼっち・ざ・ろっく！", english: "Bocchi the Rock!" },
+            title: {
+              romaji: "Bocchi the Rock!",
+              native: "ぼっち・ざ・ろっく！",
+              english: "Bocchi the Rock!"
+            },
             startDate: { year: 2018 },
             coverImage: { extraLarge: "https://s4.anilist.co/x.jpg" },
             description: "Hitori wants friends.<br><br>\n(Source: Yen Press)",
-            staff: { edges: [{ role: "Story & Art", node: { name: { full: "Aki Hamaji", native: "はまじあき" } } }, { role: "Translator", node: { name: { full: "Someone" } } }] }
+            staff: {
+              edges: [
+                {
+                  role: "Story & Art",
+                  node: { name: { full: "Aki Hamaji", native: "はまじあき" } }
+                },
+                { role: "Translator", node: { name: { full: "Someone" } } }
+              ]
+            }
           }
         }
       })
@@ -323,12 +483,19 @@ describe("Books and comics", () => {
     expect(details).toMatchObject({
       title: { ja: "ぼっち・ざ・ろっく！", en: "Bocchi the Rock!", fr: "Bocchi the Rock!" },
       originalTitle: "ぼっち・ざ・ろっく！",
-      genres: [{ en: "Comedy", zh: "喜剧" }, { en: "Music", zh: "音乐" }],
+      genres: [
+        { en: "Comedy", zh: "喜剧" },
+        { en: "Music", zh: "音乐" }
+      ],
       credits: ["はまじあき"],
       overview: { en: "Hitori wants friends." },
       publication: { volumes: null, ongoing: true }
     });
-    const missing = createMediaSources({ fetchImpl: fakeFetch(() => Response.json({ data: { Media: null }, errors: [{ status: 404 }] })) });
+    const missing = createMediaSources({
+      fetchImpl: fakeFetch(() =>
+        Response.json({ data: { Media: null }, errors: [{ status: 404 }] })
+      )
+    });
     await expect(missing.details("anilist", "comic", "1")).rejects.toThrow("找不到");
   });
 
@@ -357,8 +524,12 @@ describe("Books and comics", () => {
       });
     });
     const sources = createMediaSources({ fetchImpl });
-    expect((await sources.search("bangumi", "comic", "x")).map((hit) => hit.sourceId)).toEqual(["1"]);
-    expect((await sources.search("bangumi", "book", "x")).map((hit) => hit.sourceId)).toEqual(["2"]);
+    expect((await sources.search("bangumi", "comic", "x")).map((hit) => hit.sourceId)).toEqual([
+      "1"
+    ]);
+    expect((await sources.search("bangumi", "book", "x")).map((hit) => hit.sourceId)).toEqual([
+      "2"
+    ]);
     expect(await sources.details("bangumi", "comic", "241088")).toMatchObject({
       credits: ["はまじあき"],
       episodes: 7,
@@ -369,16 +540,32 @@ describe("Books and comics", () => {
   it("follows cover redirects only through image hosts", async () => {
     const jpg = Buffer.from("jpg");
     const fetchImpl = fakeFetch((url) => {
-      if (url.hostname === "covers.openlibrary.org") return new Response(null, { status: 302, headers: { location: "https://archive.org/download/x.jpg" } });
-      if (url.hostname === "archive.org") return new Response(null, { status: 302, headers: { location: "https://ia800507.us.archive.org/x.jpg" } });
+      if (url.hostname === "covers.openlibrary.org")
+        return new Response(null, {
+          status: 302,
+          headers: { location: "https://archive.org/download/x.jpg" }
+        });
+      if (url.hostname === "archive.org")
+        return new Response(null, {
+          status: 302,
+          headers: { location: "https://ia800507.us.archive.org/x.jpg" }
+        });
       if (url.hostname === "ia800507.us.archive.org") return new Response(jpg);
-      if (url.hostname === "image.tmdb.org") return new Response(null, { status: 302, headers: { location: "https://internal.example/x.jpg" } });
+      if (url.hostname === "image.tmdb.org")
+        return new Response(null, {
+          status: 302,
+          headers: { location: "https://internal.example/x.jpg" }
+        });
       return new Response("", { status: 404 });
     });
     const sources = createMediaSources({ fetchImpl });
     expect(await sources.download("https://covers.openlibrary.org/b/id/1-L.jpg")).toEqual(jpg);
-    await expect(sources.download("https://image.tmdb.org/t/p/x.jpg")).rejects.toThrow("海报地址无效");
-    expect(fetchImpl.mock.calls.every(([, init]) => (init as RequestInit).redirect === "manual")).toBe(true);
+    await expect(sources.download("https://image.tmdb.org/t/p/x.jpg")).rejects.toThrow(
+      "海报地址无效"
+    );
+    expect(
+      fetchImpl.mock.calls.every(([, init]) => (init as RequestInit).redirect === "manual")
+    ).toBe(true);
   });
 });
 
@@ -394,7 +581,11 @@ describe("Google Books", () => {
       pageCount: 268,
       categories: ["Fiction / Literary", "Romance"],
       language: "ja",
-      imageLinks: { thumbnail: "http://books.google.com/books/content?id=27KePwAACAAJ&printsec=frontcover&img=1&zoom=1&edge=curl", large: "http://books.google.com/books/content?id=27KePwAACAAJ&zoom=3" },
+      imageLinks: {
+        thumbnail:
+          "http://books.google.com/books/content?id=27KePwAACAAJ&printsec=frontcover&img=1&zoom=1&edge=curl",
+        large: "http://books.google.com/books/content?id=27KePwAACAAJ&zoom=3"
+      },
       canonicalVolumeLink: "https://books.google.com/books/about/x.html?id=27KePwAACAAJ"
     }
   };
@@ -415,7 +606,8 @@ describe("Google Books", () => {
       sourceId: "27KePwAACAAJ",
       creators: ["村上春樹"],
       year: 1987,
-      posterUrl: "https://books.google.com/books/content?id=27KePwAACAAJ&printsec=frontcover&img=1&zoom=1"
+      posterUrl:
+        "https://books.google.com/books/content?id=27KePwAACAAJ&printsec=frontcover&img=1&zoom=1"
     });
 
     expect(await sources.details("googlebooks", "book", "27KePwAACAAJ")).toMatchObject({
@@ -431,8 +623,13 @@ describe("Google Books", () => {
   });
 
   it("is off without a key, and explains a rejected key without showing it", async () => {
-    await expect(createMediaSources({}).search("googlebooks", "book", "x")).rejects.toThrow("未配置 GOOGLE_BOOKS_API_KEY");
-    const rejected = createMediaSources({ googleBooksKey: "secret-key", fetchImpl: fakeFetch(() => new Response("", { status: 400 })) });
+    await expect(createMediaSources({}).search("googlebooks", "book", "x")).rejects.toThrow(
+      "未配置 GOOGLE_BOOKS_API_KEY"
+    );
+    const rejected = createMediaSources({
+      googleBooksKey: "secret-key",
+      fetchImpl: fakeFetch(() => new Response("", { status: 400 }))
+    });
     const error = await rejected.search("googlebooks", "book", "x").catch((e: Error) => e);
     expect(String(error)).toContain("GOOGLE_BOOKS_API_KEY");
     expect(String(error)).not.toContain("secret-key");
@@ -477,7 +674,13 @@ describe("IGDB", () => {
         return new Response("", { status: options.rejectFirst });
       }
       const body = String(init.body);
-      return Response.json(body.startsWith("search") ? [eldenRing] : body.includes("where id = 119133") ? [eldenRing] : []);
+      return Response.json(
+        body.startsWith("search")
+          ? [eldenRing]
+          : body.includes("where id = 119133")
+            ? [eldenRing]
+            : []
+      );
     });
     return { fetchImpl, tokens: () => tokens };
   }
@@ -488,7 +691,13 @@ describe("IGDB", () => {
     expect(sources.available().igdb).toBe(true);
 
     const [hit] = await sources.search("igdb", "game", 'Elden "Ring"');
-    expect(hit).toMatchObject({ source: "igdb", sourceId: "119133", creators: ["FromSoftware"], year: 2022, posterUrl: "https://images.igdb.com/igdb/image/upload/t_cover_small/co4jni.jpg" });
+    expect(hit).toMatchObject({
+      source: "igdb",
+      sourceId: "119133",
+      creators: ["FromSoftware"],
+      year: 2022,
+      posterUrl: "https://images.igdb.com/igdb/image/upload/t_cover_small/co4jni.jpg"
+    });
     // Quotes would end the Apicalypse string.
     expect(String(fetchImpl.mock.calls[1][1].body)).toContain('search "Elden  Ring";');
     expect(String(fetchImpl.mock.calls[1][1].body)).toContain("game_type != (3,5,12,13,14)");
@@ -496,11 +705,18 @@ describe("IGDB", () => {
     expect(await sources.details("igdb", "game", "119133")).toMatchObject({
       sourceUrl: "https://www.igdb.com/games/elden-ring",
       title: { zh: "艾尔登法环", "zh-Hant": "艾爾登法環", en: "Elden Ring", ja: "エルデンリング" },
-      genres: [{ en: "Role-playing (RPG)", zh: "角色扮演" }, { en: "Adventure", zh: "冒险" }],
+      genres: [
+        { en: "Role-playing (RPG)", zh: "角色扮演" },
+        { en: "Adventure", zh: "冒险" }
+      ],
       credits: ["FromSoftware"],
       overview: { en: "Rise, Tarnished." },
       posterUrl: "https://images.igdb.com/igdb/image/upload/t_cover_big_2x/co4jni.jpg",
-      game: { platforms: ["PC (Microsoft Windows)", "PlayStation 5"], publishers: ["Bandai Namco Entertainment"], playtimeHours: null }
+      game: {
+        platforms: ["PC (Microsoft Windows)", "PlayStation 5"],
+        publishers: ["Bandai Namco Entertainment"],
+        playtimeHours: null
+      }
     });
     // One app token for both requests.
     expect(tokens()).toBe(1);
@@ -510,14 +726,20 @@ describe("IGDB", () => {
 
   it("gets a new token once when IGDB rejects one, and explains missing credentials", async () => {
     const { fetchImpl, tokens } = igdbFetch({ rejectFirst: 401 });
-    expect(await createMediaSources({ twitch, fetchImpl }).search("igdb", "game", "x")).toHaveLength(1);
+    expect(
+      await createMediaSources({ twitch, fetchImpl }).search("igdb", "game", "x")
+    ).toHaveLength(1);
     expect(tokens()).toBe(2);
-    await expect(createMediaSources({}).search("igdb", "game", "x")).rejects.toThrow("TWITCH_CLIENT_ID");
+    await expect(createMediaSources({}).search("igdb", "game", "x")).rejects.toThrow(
+      "TWITCH_CLIENT_ID"
+    );
   });
 
   it("waits and tries once more when IGDB is rate limited", async () => {
     const { fetchImpl, tokens } = igdbFetch({ rejectFirst: 429 });
-    expect(await createMediaSources({ twitch, fetchImpl }).search("igdb", "game", "x")).toHaveLength(1);
+    expect(
+      await createMediaSources({ twitch, fetchImpl }).search("igdb", "game", "x")
+    ).toHaveLength(1);
     expect(tokens()).toBe(1);
   });
 });

@@ -3,7 +3,11 @@ import type { LocalizedText } from "@liam-frost/shared";
 import { Prisma, type Photo as PrismaPhoto, type PrismaClient } from "../generated/prisma/client";
 import type { NewPhoto, PhotoPatch, PhotoRepository, PhotoRow, StoredVariant } from "./types";
 
-const ORDER = [{ sortOrder: "asc" }, { date: "desc" }, { id: "asc" }] satisfies Prisma.PhotoOrderByWithRelationInput[];
+const ORDER = [
+  { sortOrder: "asc" },
+  { date: "desc" },
+  { id: "asc" }
+] satisfies Prisma.PhotoOrderByWithRelationInput[];
 
 function toRow(record: PrismaPhoto): PhotoRow {
   return {
@@ -37,7 +41,8 @@ function toData(patch: PhotoPatch): Prisma.PhotoUpdateInput {
   if (patch.description !== undefined) data.description = json(patch.description);
   if (patch.tags !== undefined) data.tags = patch.tags;
   if (patch.alt !== undefined) data.alt = patch.alt;
-  if (patch.visibility !== undefined) data.visibility = patch.visibility === "private" ? "PRIVATE" : "PUBLIC";
+  if (patch.visibility !== undefined)
+    data.visibility = patch.visibility === "private" ? "PRIVATE" : "PUBLIC";
   if (patch.featured !== undefined) data.featured = patch.featured;
   return data;
 }
@@ -59,7 +64,9 @@ export class PrismaPhotoRepository implements PhotoRepository {
   }
 
   async create(photo: NewPhoto) {
-    const sortOrder = photo.sortOrder ?? ((await this.prisma.photo.aggregate({ _min: { sortOrder: true } }))._min.sortOrder ?? 1) - 1;
+    const sortOrder =
+      photo.sortOrder ??
+      ((await this.prisma.photo.aggregate({ _min: { sortOrder: true } }))._min.sortOrder ?? 1) - 1;
     const record = await this.prisma.photo.create({
       data: {
         ...photo,
@@ -78,7 +85,8 @@ export class PrismaPhotoRepository implements PhotoRepository {
     try {
       return toRow(await this.prisma.photo.update({ where: { id }, data: toData(patch) }));
     } catch (error) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") return null;
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025")
+        return null;
       throw error;
     }
   }
@@ -87,12 +95,17 @@ export class PrismaPhotoRepository implements PhotoRepository {
     try {
       return toRow(await this.prisma.photo.delete({ where: { id } }));
     } catch (error) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") return null;
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025")
+        return null;
       throw error;
     }
   }
 
   async reorder(ids: string[]) {
-    await this.prisma.$transaction(ids.map((id, index) => this.prisma.photo.update({ where: { id }, data: { sortOrder: index } })));
+    await this.prisma.$transaction(
+      ids.map((id, index) =>
+        this.prisma.photo.update({ where: { id }, data: { sortOrder: index } })
+      )
+    );
   }
 }

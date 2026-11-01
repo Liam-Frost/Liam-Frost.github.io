@@ -14,7 +14,8 @@ export type PlaylistRow = {
   updatedAt: Date;
 };
 
-export type NewPlaylist = Pick<PlaylistRow, "id" | "name" | "source"> & Partial<Pick<PlaylistRow, "description" | "sourceId" | "sourceUrl" | "visibility">>;
+export type NewPlaylist = Pick<PlaylistRow, "id" | "name" | "source"> &
+  Partial<Pick<PlaylistRow, "description" | "sourceId" | "sourceUrl" | "visibility">>;
 export type PlaylistPatch = Partial<Pick<PlaylistRow, "name" | "description" | "visibility">>;
 
 export interface PlaylistRepository {

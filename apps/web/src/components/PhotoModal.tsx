@@ -20,7 +20,8 @@ type MediaLayout = {
 };
 
 function computeMediaLayout(naturalWidth: number, naturalHeight: number): MediaLayout {
-  if (!naturalWidth || !naturalHeight) return { aspect: 1, shouldCrop: false, orientation: "square" };
+  if (!naturalWidth || !naturalHeight)
+    return { aspect: 1, shouldCrop: false, orientation: "square" };
 
   const longEdge = Math.max(naturalWidth, naturalHeight);
   const shortEdge = Math.min(naturalWidth, naturalHeight);
@@ -92,7 +93,9 @@ export default function PhotoModal({
     return () => window.removeEventListener("resize", onResize);
   }, []);
 
-  const [layout, setLayout] = useState<MediaLayout>(() => computeMediaLayout(photo.width, photo.height));
+  const [layout, setLayout] = useState<MediaLayout>(() =>
+    computeMediaLayout(photo.width, photo.height)
+  );
 
   useEffect(() => {
     setLayout(computeMediaLayout(photo.width, photo.height));
@@ -224,7 +227,12 @@ export default function PhotoModal({
               {title}
             </h2>
 
-            <button ref={closeBtnRef} className="btn btnGhost btnSmall" type="button" onClick={onClose}>
+            <button
+              ref={closeBtnRef}
+              className="btn btnGhost btnSmall"
+              type="button"
+              onClick={onClose}
+            >
               {t("photo.close")}
             </button>
           </div>
@@ -253,10 +261,20 @@ export default function PhotoModal({
           ) : null}
 
           <div className="modalNav">
-            <button className={cx("btn", "btnSoft")} type="button" onClick={onPrev} disabled={!hasPrev}>
+            <button
+              className={cx("btn", "btnSoft")}
+              type="button"
+              onClick={onPrev}
+              disabled={!hasPrev}
+            >
               {t("photo.prev")}
             </button>
-            <button className={cx("btn", "btnSoft")} type="button" onClick={onNext} disabled={!hasNext}>
+            <button
+              className={cx("btn", "btnSoft")}
+              type="button"
+              onClick={onNext}
+              disabled={!hasNext}
+            >
               {t("photo.next")}
             </button>
           </div>

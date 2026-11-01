@@ -1,12 +1,36 @@
-import type { LocalizedText, MediaKind, MediaProgress, MediaSource, MediaStatus } from "@liam-frost/shared";
+import type {
+  LocalizedText,
+  MediaKind,
+  MediaProgress,
+  MediaSource,
+  MediaStatus
+} from "@liam-frost/shared";
 
 import { Prisma, type MediaItem, type PrismaClient } from "../generated/prisma/client";
 import type { StoredImage } from "../projects/types";
-import { DuplicateMediaError, type MediaPatch, type MediaRepository, type MediaRow, type NewMedia } from "./types";
+import {
+  DuplicateMediaError,
+  type MediaPatch,
+  type MediaRepository,
+  type MediaRow,
+  type NewMedia
+} from "./types";
 
-const ORDER = [{ watchedOn: { sort: "desc", nulls: "last" } }, { createdAt: "desc" }] satisfies Prisma.MediaItemOrderByWithRelationInput[];
+const ORDER = [
+  { watchedOn: { sort: "desc", nulls: "last" } },
+  { createdAt: "desc" }
+] satisfies Prisma.MediaItemOrderByWithRelationInput[];
 
-const KIND_TO_DB = { movie: "MOVIE", tv: "TV", anime: "ANIME", book: "BOOK", comic: "COMIC", game: "GAME", track: "TRACK", album: "ALBUM" } as const;
+const KIND_TO_DB = {
+  movie: "MOVIE",
+  tv: "TV",
+  anime: "ANIME",
+  book: "BOOK",
+  comic: "COMIC",
+  game: "GAME",
+  track: "TRACK",
+  album: "ALBUM"
+} as const;
 const KIND_FROM_DB: Record<MediaItem["kind"], MediaKind> = {
   MOVIE: "movie",
   TV: "tv",
@@ -17,8 +41,18 @@ const KIND_FROM_DB: Record<MediaItem["kind"], MediaKind> = {
   TRACK: "track",
   ALBUM: "album"
 };
-const STATUS_TO_DB = { want: "WANT", watching: "WATCHING", done: "DONE", dropped: "DROPPED" } as const;
-const STATUS_FROM_DB: Record<NonNullable<MediaItem["status"]>, MediaStatus> = { WANT: "want", WATCHING: "watching", DONE: "done", DROPPED: "dropped" };
+const STATUS_TO_DB = {
+  want: "WANT",
+  watching: "WATCHING",
+  done: "DONE",
+  dropped: "DROPPED"
+} as const;
+const STATUS_FROM_DB: Record<NonNullable<MediaItem["status"]>, MediaStatus> = {
+  WANT: "want",
+  WATCHING: "watching",
+  DONE: "done",
+  DROPPED: "dropped"
+};
 
 function toRow(record: MediaItem): MediaRow {
   return {
@@ -39,7 +73,8 @@ function toRow(record: MediaItem): MediaRow {
 }
 
 /** Nullable Json columns need Prisma.DbNull; a plain null is rejected. */
-const json = (value: unknown) => (value === null ? Prisma.DbNull : (value as Prisma.InputJsonValue));
+const json = (value: unknown) =>
+  value === null ? Prisma.DbNull : (value as Prisma.InputJsonValue);
 
 function toData(patch: MediaPatch): Prisma.MediaItemUpdateInput {
   const { poster, progress, status, visibility, extra, ...rest } = patch;
@@ -52,15 +87,23 @@ function toData(patch: MediaPatch): Prisma.MediaItemUpdateInput {
   return data;
 }
 
-const isUniqueConflict = (error: unknown) => error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002";
-const isMissing = (error: unknown) => error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025";
+const isUniqueConflict = (error: unknown) =>
+  error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002";
+const isMissing = (error: unknown) =>
+  error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025";
 
 export class PrismaMediaRepository implements MediaRepository {
   constructor(private readonly prisma: PrismaClient) {}
 
-  async list({ kind, includePrivate = false }: { kind?: MediaKind; includePrivate?: boolean } = {}) {
+  async list({
+    kind,
+    includePrivate = false
+  }: { kind?: MediaKind; includePrivate?: boolean } = {}) {
     const records = await this.prisma.mediaItem.findMany({
-      where: { ...(kind ? { kind: KIND_TO_DB[kind] } : {}), ...(includePrivate ? {} : { visibility: "PUBLIC" }) },
+      where: {
+        ...(kind ? { kind: KIND_TO_DB[kind] } : {}),
+        ...(includePrivate ? {} : { visibility: "PUBLIC" })
+      },
       orderBy: ORDER
     });
     return records.map(toRow);
@@ -73,12 +116,18 @@ export class PrismaMediaRepository implements MediaRepository {
 
   async findBySource(source: MediaSource, sourceIds: string[]) {
     if (!sourceIds.length) return new Map<string, string>();
-    const records = await this.prisma.mediaItem.findMany({ where: { source, sourceId: { in: sourceIds } }, select: { id: true, sourceId: true } });
+    const records = await this.prisma.mediaItem.findMany({
+      where: { source, sourceId: { in: sourceIds } },
+      select: { id: true, sourceId: true }
+    });
     return new Map(records.map((record) => [record.sourceId!, record.id]));
   }
 
   async imageAccess(id: string) {
-    const record = await this.prisma.mediaItem.findUnique({ where: { id }, select: { kind: true, status: true, visibility: true, poster: true } });
+    const record = await this.prisma.mediaItem.findUnique({
+      where: { id },
+      select: { kind: true, status: true, visibility: true, poster: true }
+    });
     if (!record) return null;
     return {
       kind: KIND_FROM_DB[record.kind],

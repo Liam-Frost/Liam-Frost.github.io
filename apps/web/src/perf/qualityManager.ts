@@ -202,7 +202,10 @@ function targetMsForTier(thresholds: QualityThresholds, tier: QualityTier) {
   return fps > 0 ? 1000 / fps : 1000 / 30;
 }
 
-function pickInitialTier(metrics: Pick<QualityMetrics, "avgFrameMs" | "badFrameRatio" | "longTaskRate">, thresholds: QualityThresholds): QualityTier {
+function pickInitialTier(
+  metrics: Pick<QualityMetrics, "avgFrameMs" | "badFrameRatio" | "longTaskRate">,
+  thresholds: QualityThresholds
+): QualityTier {
   const { avgFrameMs, badFrameRatio, longTaskRate } = metrics;
 
   // Conservatively pick the highest tier that looks stable in the first ~0.4s.
@@ -245,7 +248,11 @@ function mergeConfig(base: QualityConfig, overrides: QualityParamOverrides | nul
   merged.dprCap = clampNumber(merged.dprCap, 1, 3);
 
   merged.images.prefetchNeighborCount = clampInt(merged.images.prefetchNeighborCount, 0, 4);
-  merged.images.maxConcurrentImagePrefetch = clampInt(merged.images.maxConcurrentImagePrefetch, 0, 6);
+  merged.images.maxConcurrentImagePrefetch = clampInt(
+    merged.images.maxConcurrentImagePrefetch,
+    0,
+    6
+  );
 
   return merged;
 }
@@ -502,7 +509,10 @@ class QualityManager {
     // Safari compatibility: addListener/removeListener.
     if (typeof mql.addEventListener === "function") {
       mql.addEventListener("change", onChange);
-    } else if (typeof (mql as unknown as { addListener?: (fn: () => void) => void }).addListener === "function") {
+    } else if (
+      typeof (mql as unknown as { addListener?: (fn: () => void) => void }).addListener ===
+      "function"
+    ) {
       (mql as unknown as { addListener: (fn: () => void) => void }).addListener(onChange);
     }
   }
@@ -512,7 +522,9 @@ class QualityManager {
     if (typeof PerformanceObserver === "undefined") return;
 
     // Guard: some browsers expose PerformanceObserver but not longtask.
-    const supported = (PerformanceObserver as typeof PerformanceObserver & { supportedEntryTypes?: string[] }).supportedEntryTypes;
+    const supported = (
+      PerformanceObserver as typeof PerformanceObserver & { supportedEntryTypes?: string[] }
+    ).supportedEntryTypes;
     if (Array.isArray(supported) && !supported.includes("longtask")) return;
 
     try {
@@ -528,7 +540,10 @@ class QualityManager {
       });
 
       // Type is a string in lib.dom; "longtask" is supported in Chromium.
-      this.longTaskObserver.observe({ type: "longtask", buffered: true } as PerformanceObserverInit);
+      this.longTaskObserver.observe({
+        type: "longtask",
+        buffered: true
+      } as PerformanceObserverInit);
     } catch {
       this.longTaskObserver = null;
     }
@@ -603,13 +618,17 @@ class QualityManager {
 
     this.trimLongTasks(now);
     this.metrics.longTaskCount10s = this.longTaskTimestamps.length;
-    this.metrics.longTaskRate = this.longTaskTimestamps.length / (this.thresholds.longTaskWindowMs / 1000);
+    this.metrics.longTaskRate =
+      this.longTaskTimestamps.length / (this.thresholds.longTaskWindowMs / 1000);
   }
 
   private trimLongTasks(now: number) {
     const cutoff = now - this.thresholds.longTaskWindowMs;
     let keepFrom = 0;
-    while (keepFrom < this.longTaskTimestamps.length && this.longTaskTimestamps[keepFrom] < cutoff) {
+    while (
+      keepFrom < this.longTaskTimestamps.length &&
+      this.longTaskTimestamps[keepFrom] < cutoff
+    ) {
       keepFrom++;
     }
     if (keepFrom > 0) this.longTaskTimestamps.splice(0, keepFrom);

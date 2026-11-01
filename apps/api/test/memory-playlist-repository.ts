@@ -1,4 +1,9 @@
-import type { NewPlaylist, PlaylistPatch, PlaylistRepository, PlaylistRow } from "../src/playlists/types";
+import type {
+  NewPlaylist,
+  PlaylistPatch,
+  PlaylistRepository,
+  PlaylistRow
+} from "../src/playlists/types";
 import type { MemoryMediaRepository } from "./memory-media-repository";
 
 /**
@@ -11,7 +16,10 @@ export class MemoryPlaylistRepository implements PlaylistRepository {
   constructor(private readonly media: MemoryMediaRepository) {}
 
   private live(row: PlaylistRow): PlaylistRow {
-    return structuredClone({ ...row, trackIds: row.trackIds.filter((id) => this.media.rows.has(id)) });
+    return structuredClone({
+      ...row,
+      trackIds: row.trackIds.filter((id) => this.media.rows.has(id))
+    });
   }
 
   async list({ includePrivate = false }: { includePrivate?: boolean } = {}) {
@@ -27,13 +35,24 @@ export class MemoryPlaylistRepository implements PlaylistRepository {
   }
 
   async findBySource(source: PlaylistRow["source"], sourceId: string) {
-    const row = [...this.rows.values()].find((candidate) => candidate.source === source && candidate.sourceId === sourceId);
+    const row = [...this.rows.values()].find(
+      (candidate) => candidate.source === source && candidate.sourceId === sourceId
+    );
     return row ? this.live(row) : null;
   }
 
   async create(playlist: NewPlaylist) {
     const now = new Date();
-    const row: PlaylistRow = { description: {}, sourceId: null, sourceUrl: null, visibility: "public", ...playlist, trackIds: [], createdAt: now, updatedAt: now };
+    const row: PlaylistRow = {
+      description: {},
+      sourceId: null,
+      sourceUrl: null,
+      visibility: "public",
+      ...playlist,
+      trackIds: [],
+      createdAt: now,
+      updatedAt: now
+    };
     this.rows.set(row.id, row);
     return this.live(row);
   }

@@ -2,12 +2,12 @@
 
 There are two ways to run the site locally:
 
-| | `npm run dev` | Docker Compose |
-| --- | --- | --- |
-| For | Day-to-day development | Checking the production setup before deploying |
-| Runs | Vite dev servers (hot reload) + API via `tsx watch` | One production image behind Caddy, plus PostgreSQL |
-| Addresses | Site `http://localhost:5173`, admin `http://localhost:5174/admin`, API `http://localhost:8787` | Everything at `http://localhost:8080` |
-| Settings | `apps/api/.env` | `.env` next to `compose.yaml` |
+|           | `npm run dev`                                                                                  | Docker Compose                                     |
+| --------- | ---------------------------------------------------------------------------------------------- | -------------------------------------------------- |
+| For       | Day-to-day development                                                                         | Checking the production setup before deploying     |
+| Runs      | Vite dev servers (hot reload) + API via `tsx watch`                                            | One production image behind Caddy, plus PostgreSQL |
+| Addresses | Site `http://localhost:5173`, admin `http://localhost:5174/admin`, API `http://localhost:8787` | Everything at `http://localhost:8080`              |
+| Settings  | `apps/api/.env`                                                                                | `.env` next to `compose.yaml`                      |
 
 ## Development (`npm run dev`)
 

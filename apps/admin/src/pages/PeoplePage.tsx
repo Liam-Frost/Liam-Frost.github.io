@@ -1,4 +1,9 @@
-import type { AdminBatchRequest, AdminPerson, AdminPersonUpdate, PersonSearchResult } from "@liam-frost/shared";
+import type {
+  AdminBatchRequest,
+  AdminPerson,
+  AdminPersonUpdate,
+  PersonSearchResult
+} from "@liam-frost/shared";
 import { useQueryClient } from "@tanstack/react-query";
 import { EyeOff, Plus, Search, Star, Trash2, UserRound } from "lucide-react";
 import { useMemo, useState, type FormEvent } from "react";
@@ -24,7 +29,13 @@ export function PeoplePage() {
   const [filter, setFilter] = useState("");
 
   const needle = filter.trim().toLowerCase();
-  const visible = (people ?? []).filter((person) => !needle || [...Object.values(person.name), person.originalName ?? ""].some((text) => text?.toLowerCase().includes(needle)));
+  const visible = (people ?? []).filter(
+    (person) =>
+      !needle ||
+      [...Object.values(person.name), person.originalName ?? ""].some((text) =>
+        text?.toLowerCase().includes(needle)
+      )
+  );
   const order = useMemo(() => visible.map((person) => person.id), [visible]);
   const selection = useSelection(order);
 
@@ -47,8 +58,17 @@ export function PeoplePage() {
         <>
           <div className="mb-5 flex flex-wrap items-center gap-2">
             <div className="relative w-full sm:w-72">
-              <Search aria-hidden="true" className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-faint" />
-              <input className="field pl-9" placeholder="筛选名字" aria-label="筛选名字" value={filter} onChange={(e) => setFilter(e.target.value)} />
+              <Search
+                aria-hidden="true"
+                className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-faint"
+              />
+              <input
+                className="field pl-9"
+                placeholder="筛选名字"
+                aria-label="筛选名字"
+                value={filter}
+                onChange={(e) => setFilter(e.target.value)}
+              />
             </div>
             {visible.length && !selection.active ? (
               <button type="button" className="btn-secondary" onClick={selection.start}>
@@ -65,7 +85,11 @@ export function PeoplePage() {
               ))}
             </ul>
           ) : (
-            <div className="card p-10 text-center text-[13.5px] text-muted">{people.length ? "没有符合条件的人物" : "还没有人物，点击“添加人物”，或者在条目的“关联”里查找建议"}</div>
+            <div className="card p-10 text-center text-[13.5px] text-muted">
+              {people.length
+                ? "没有符合条件的人物"
+                : "还没有人物，点击“添加人物”，或者在条目的“关联”里查找建议"}
+            </div>
           )}
           <BatchBar selection={selection} total={visible.length}>
             <PeopleBatchActions selection={selection} />
@@ -73,7 +97,12 @@ export function PeoplePage() {
         </>
       ) : null}
 
-      {adding ? <AddPersonDialog tmdbReady={settings?.sources.tmdb ?? false} onClose={() => setAdding(false)} /> : null}
+      {adding ? (
+        <AddPersonDialog
+          tmdbReady={settings?.sources.tmdb ?? false}
+          onClose={() => setAdding(false)}
+        />
+      ) : null}
     </>
   );
 }
@@ -91,7 +120,12 @@ function PersonCard({ person, selection }: { person: AdminPerson; selection: Sel
           </span>
         ) : null}
         {person.photo ? (
-          <img src={person.photo.variants[0].url} alt="" loading="lazy" className="size-full object-cover" />
+          <img
+            src={person.photo.variants[0].url}
+            alt=""
+            loading="lazy"
+            className="size-full object-cover"
+          />
         ) : (
           <span className="flex size-full items-center justify-center text-faint">
             <UserRound aria-hidden="true" className="size-8" />
@@ -111,7 +145,10 @@ function PersonCard({ person, selection }: { person: AdminPerson; selection: Sel
         </div>
       </div>
       <div className="space-y-0.5 p-3">
-        <p className="truncate text-[13.5px] font-semibold text-brand-dark group-hover:text-brand" title={name}>
+        <p
+          className="truncate text-[13.5px] font-semibold text-brand-dark group-hover:text-brand"
+          title={name}
+        >
           {name}
         </p>
         <p className="text-[12px] text-subtle">{person.works} 部作品</p>
@@ -119,7 +156,13 @@ function PersonCard({ person, selection }: { person: AdminPerson; selection: Sel
     </>
   );
   return selection.active ? (
-    <button type="button" aria-pressed={selected} aria-label={`选择 ${name}`} className={className} onClick={(e) => selection.toggle(person.id, e.shiftKey)}>
+    <button
+      type="button"
+      aria-pressed={selected}
+      aria-label={`选择 ${name}`}
+      className={className}
+      onClick={(e) => selection.toggle(person.id, e.shiftKey)}
+    >
       {body}
     </button>
   ) : (
@@ -137,7 +180,10 @@ function PeopleBatchActions({ selection }: { selection: Selection }) {
   const [confirming, setConfirming] = useState(false);
   const ids = selection.selected;
 
-  const run = async (request: AdminBatchRequest<Pick<AdminPersonUpdate, "visibility" | "featured">>, verb: string) => {
+  const run = async (
+    request: AdminBatchRequest<Pick<AdminPersonUpdate, "visibility" | "featured">>,
+    verb: string
+  ) => {
     setBusy(true);
     try {
       const result = await api.batchPeople(request);
@@ -160,19 +206,46 @@ function PeopleBatchActions({ selection }: { selection: Selection }) {
 
   return (
     <>
-      <button type="button" className="btn-secondary" disabled={disabled} onClick={() => void run({ action: "update", ids, patch: { visibility: "public" } }, "公开")}>
+      <button
+        type="button"
+        className="btn-secondary"
+        disabled={disabled}
+        onClick={() => void run({ action: "update", ids, patch: { visibility: "public" } }, "公开")}
+      >
         公开
       </button>
-      <button type="button" className="btn-secondary" disabled={disabled} onClick={() => void run({ action: "update", ids, patch: { visibility: "private" } }, "隐藏")}>
+      <button
+        type="button"
+        className="btn-secondary"
+        disabled={disabled}
+        onClick={() =>
+          void run({ action: "update", ids, patch: { visibility: "private" } }, "隐藏")
+        }
+      >
         隐藏
       </button>
-      <button type="button" className="btn-secondary" disabled={disabled} onClick={() => void run({ action: "update", ids, patch: { featured: true } }, "设为精选")}>
+      <button
+        type="button"
+        className="btn-secondary"
+        disabled={disabled}
+        onClick={() => void run({ action: "update", ids, patch: { featured: true } }, "设为精选")}
+      >
         精选
       </button>
-      <button type="button" className="btn-secondary" disabled={disabled} onClick={() => void run({ action: "update", ids, patch: { featured: false } }, "取消精选")}>
+      <button
+        type="button"
+        className="btn-secondary"
+        disabled={disabled}
+        onClick={() => void run({ action: "update", ids, patch: { featured: false } }, "取消精选")}
+      >
         取消精选
       </button>
-      <button type="button" className="btn-danger" disabled={disabled} onClick={() => setConfirming(true)}>
+      <button
+        type="button"
+        className="btn-danger"
+        disabled={disabled}
+        onClick={() => setConfirming(true)}
+      >
         <Trash2 aria-hidden="true" className="size-4" /> 删除
       </button>
       <Dialog
@@ -199,7 +272,10 @@ function PeopleBatchActions({ selection }: { selection: Selection }) {
           </>
         }
       >
-        <p className="text-[13.5px] leading-relaxed text-muted">确定删除选中的 {ids.length} 个人物吗？照片和他们与作品的关联都会删除，作品本身不受影响。此操作无法撤销。</p>
+        <p className="text-[13.5px] leading-relaxed text-muted">
+          确定删除选中的 {ids.length}{" "}
+          个人物吗？照片和他们与作品的关联都会删除，作品本身不受影响。此操作无法撤销。
+        </p>
       </Dialog>
     </>
   );
@@ -237,7 +313,13 @@ function AddPersonDialog({ tmdbReady, onClose }: { tmdbReady: boolean; onClose: 
       setPerson(person);
       navigate(`/people/${person.id}`);
     } catch (e) {
-      setError(e instanceof ApiError && e.code === "PERSON_EXISTS" ? "这个人物已在人物中" : e instanceof Error ? e.message : "添加失败");
+      setError(
+        e instanceof ApiError && e.code === "PERSON_EXISTS"
+          ? "这个人物已在人物中"
+          : e instanceof Error
+            ? e.message
+            : "添加失败"
+      );
     } finally {
       setImporting(null);
     }
@@ -260,15 +342,34 @@ function AddPersonDialog({ tmdbReady, onClose }: { tmdbReady: boolean; onClose: 
     <Dialog open title="添加人物" onClose={onClose}>
       <form onSubmit={search} className="flex flex-wrap items-end gap-2">
         <Field label="在 TMDB 搜索" htmlFor="person-query" className="min-w-0 flex-1">
-          <input id="person-query" className="field" value={query} maxLength={100} placeholder="名字，英文或原名都可以" disabled={!tmdbReady} onChange={(e) => setQuery(e.target.value)} data-autofocus />
+          <input
+            id="person-query"
+            className="field"
+            value={query}
+            maxLength={100}
+            placeholder="名字，英文或原名都可以"
+            disabled={!tmdbReady}
+            onChange={(e) => setQuery(e.target.value)}
+            data-autofocus
+          />
         </Field>
-        <button type="submit" className="btn-primary" disabled={searching || !query.trim() || !tmdbReady}>
+        <button
+          type="submit"
+          className="btn-primary"
+          disabled={searching || !query.trim() || !tmdbReady}
+        >
           <Search aria-hidden="true" className="size-4" />
           {searching ? "搜索中…" : "搜索"}
         </button>
       </form>
-      {!tmdbReady ? <p className="mt-3 text-[12.5px] text-status-warn">未配置 TMDB_API_KEY，暂时只能手动添加。</p> : null}
-      <p className="mt-2 text-[11.5px] text-faint">TMDB 主要收录影视人物；歌手、作家、漫画家可以手动添加。</p>
+      {!tmdbReady ? (
+        <p className="mt-3 text-[12.5px] text-status-warn">
+          未配置 TMDB_API_KEY，暂时只能手动添加。
+        </p>
+      ) : null}
+      <p className="mt-2 text-[11.5px] text-faint">
+        TMDB 主要收录影视人物；歌手、作家、漫画家可以手动添加。
+      </p>
       {error ? (
         <p role="alert" className="mt-3 text-[12.5px] text-status-error">
           {error}
@@ -281,7 +382,13 @@ function AddPersonDialog({ tmdbReady, onClose }: { tmdbReady: boolean; onClose: 
             {results.map((result) => (
               <li key={result.sourceId} className="flex items-center gap-3 p-3">
                 {result.photoUrl ? (
-                  <img src={result.photoUrl} alt="" loading="lazy" referrerPolicy="no-referrer" className="size-14 shrink-0 rounded-full bg-line-soft object-cover" />
+                  <img
+                    src={result.photoUrl}
+                    alt=""
+                    loading="lazy"
+                    referrerPolicy="no-referrer"
+                    className="size-14 shrink-0 rounded-full bg-line-soft object-cover"
+                  />
                 ) : (
                   <span className="flex size-14 shrink-0 items-center justify-center rounded-full bg-line-soft text-faint">
                     <UserRound aria-hidden="true" className="size-5" />
@@ -289,14 +396,21 @@ function AddPersonDialog({ tmdbReady, onClose }: { tmdbReady: boolean; onClose: 
                 )}
                 <div className="min-w-0 flex-1">
                   <p className="text-[13.5px] font-semibold text-brand-dark">{result.name}</p>
-                  <p className="truncate text-[12px] text-subtle">{[result.department, result.knownFor.join("、")].filter(Boolean).join(" · ")}</p>
+                  <p className="truncate text-[12px] text-subtle">
+                    {[result.department, result.knownFor.join("、")].filter(Boolean).join(" · ")}
+                  </p>
                 </div>
                 {result.existingId ? (
                   <Link to={`/people/${result.existingId}`} className="btn-secondary shrink-0">
                     已添加，打开
                   </Link>
                 ) : (
-                  <button type="button" className="btn-primary shrink-0" disabled={importing !== null} onClick={() => void add(result)}>
+                  <button
+                    type="button"
+                    className="btn-primary shrink-0"
+                    disabled={importing !== null}
+                    onClick={() => void add(result)}
+                  >
                     {importing === result.sourceId ? "添加中…" : "添加"}
                   </button>
                 )}
@@ -304,13 +418,30 @@ function AddPersonDialog({ tmdbReady, onClose }: { tmdbReady: boolean; onClose: 
             ))}
           </ul>
         ) : (
-          <p className="mt-4 text-[13px] text-muted">没有找到，换个写法试试，或者在下面手动添加。</p>
+          <p className="mt-4 text-[13px] text-muted">
+            没有找到，换个写法试试，或者在下面手动添加。
+          </p>
         )
       ) : null}
 
-      <form onSubmit={(e) => void addManually(e)} className="mt-5 flex flex-wrap items-end gap-2 border-t border-line-soft pt-4">
-        <Field label="手动添加" htmlFor="person-manual-name" hint="之后在人物页补充其它语言的名字、照片和简介" className="min-w-0 flex-1">
-          <input id="person-manual-name" className="field" value={manualName} maxLength={120} placeholder="名字" onChange={(e) => setManualName(e.target.value)} />
+      <form
+        onSubmit={(e) => void addManually(e)}
+        className="mt-5 flex flex-wrap items-end gap-2 border-t border-line-soft pt-4"
+      >
+        <Field
+          label="手动添加"
+          htmlFor="person-manual-name"
+          hint="之后在人物页补充其它语言的名字、照片和简介"
+          className="min-w-0 flex-1"
+        >
+          <input
+            id="person-manual-name"
+            className="field"
+            value={manualName}
+            maxLength={120}
+            placeholder="名字"
+            onChange={(e) => setManualName(e.target.value)}
+          />
         </Field>
         <button type="submit" className="btn-secondary" disabled={!manualName.trim()}>
           手动添加

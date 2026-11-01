@@ -43,7 +43,10 @@ describe("loadConfig", () => {
   it("parses TRUST_PROXY as a flag or a list of proxies", () => {
     expect(loadConfig({ TRUST_PROXY: "false" }).trustProxy).toBe(false);
     expect(loadConfig({ TRUST_PROXY: "true" }).trustProxy).toBe(true);
-    expect(loadConfig({ TRUST_PROXY: "127.0.0.1, 172.18.0.0/16" }).trustProxy).toEqual(["127.0.0.1", "172.18.0.0/16"]);
+    expect(loadConfig({ TRUST_PROXY: "127.0.0.1, 172.18.0.0/16" }).trustProxy).toEqual([
+      "127.0.0.1",
+      "172.18.0.0/16"
+    ]);
   });
 
   it("enables admin auth when hash and secret are both set", () => {
@@ -58,8 +61,12 @@ describe("loadConfig", () => {
   });
 
   it("rejects a short session secret and a malformed hash", () => {
-    expect(issuesFor({ ADMIN_PASSWORD_HASH: hash, ADMIN_SESSION_SECRET: "short" })).toMatch(/at least 32/);
-    expect(issuesFor({ ADMIN_PASSWORD_HASH: "plaintext", ADMIN_SESSION_SECRET: secret })).toMatch(/auth:hash/);
+    expect(issuesFor({ ADMIN_PASSWORD_HASH: hash, ADMIN_SESSION_SECRET: "short" })).toMatch(
+      /at least 32/
+    );
+    expect(issuesFor({ ADMIN_PASSWORD_HASH: "plaintext", ADMIN_SESSION_SECRET: secret })).toMatch(
+      /auth:hash/
+    );
   });
 
   it("rejects invalid numbers, flags, admin paths and IP entries", () => {
@@ -86,6 +93,13 @@ describe("normalizeAdminPath", () => {
     expect(() => normalizeAdminPath("/a b")).toThrow(/may only contain/);
     expect(() => normalizeAdminPath("/a/../b")).toThrow(/may only contain/);
     expect(() => normalizeAdminPath('/x"><script>')).toThrow(/may only contain/);
+  });
+
+  it("handles long slash runs without regex backtracking", () => {
+    const slashes = "/".repeat(100_000);
+    expect(normalizeAdminPath(`${slashes}studio${slashes}`)).toBe("/studio");
+    expect(() => normalizeAdminPath(`${slashes}!`)).toThrow(/may only contain/);
+    expect(() => normalizeAdminPath(slashes)).toThrow(/root/);
   });
 
   it("matches the admin path and everything below it only", () => {

@@ -25,6 +25,5 @@ export const skills: Skill[] = [
   { id: "photoshop", name: "Photoshop", group: "creative", level: "strong" },
   { id: "premiere", name: "Premiere", group: "creative", level: "working" },
   { id: "ae", name: "After Effects", group: "creative", level: "working" },
-  { id: "davinci", name: "DaVinci Resolve", group: "creative", level: "working" },
-
+  { id: "davinci", name: "DaVinci Resolve", group: "creative", level: "working" }
 ];

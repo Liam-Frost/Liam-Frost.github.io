@@ -1,0 +1,10 @@
+node_modules/
+.claude/
+.codex/
+.agents/
+**/dist/
+apps/api/src/generated/
+**/uploads/
+package-lock.json
+# Preserve historical review records verbatim.
+docs/reviews/

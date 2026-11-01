@@ -1,4 +1,9 @@
-import type { AdminMediaItem, AdminMediaUpdate, LocalizedText, MediaStatus } from "@liam-frost/shared";
+import type {
+  AdminMediaItem,
+  AdminMediaUpdate,
+  LocalizedText,
+  MediaStatus
+} from "@liam-frost/shared";
 import { ArrowLeft, Clapperboard, ExternalLink, ImagePlus, Trash2, X } from "lucide-react";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router";
@@ -10,7 +15,12 @@ import { Field, Switch } from "../components/ui/Field";
 import { Panel } from "../components/ui/Panel";
 import { StarRating } from "../components/ui/StarRating";
 import { useToast } from "../components/ui/Toast";
-import { useDeleteMedia, useMediaItem, useUpdateMedia, useUploadMediaPoster } from "../hooks/useMedia";
+import {
+  useDeleteMedia,
+  useMediaItem,
+  useUpdateMedia,
+  useUploadMediaPoster
+} from "../hooks/useMedia";
 import { ApiError } from "../lib/api";
 import {
   COLLECTION_KIND_LABELS,
@@ -75,10 +85,14 @@ function toDraft(item: AdminMediaItem): Draft {
     publisher: item.publication?.publisher ?? "",
     pages: item.publication?.pages ? String(item.publication.pages) : "",
     volumes: item.publication?.volumes ? String(item.publication.volumes) : "",
-    ongoing: item.publication?.ongoing === true ? "yes" : item.publication?.ongoing === false ? "no" : "",
+    ongoing:
+      item.publication?.ongoing === true ? "yes" : item.publication?.ongoing === false ? "no" : "",
     platforms: item.game?.platforms ?? [],
     publishers: item.game?.publishers ?? [],
-    playtime: item.game?.playtimeHours === null || item.game?.playtimeHours === undefined ? "" : String(item.game.playtimeHours),
+    playtime:
+      item.game?.playtimeHours === null || item.game?.playtimeHours === undefined
+        ? ""
+        : String(item.game.playtimeHours),
     purchasedOn: item.game?.purchasedOn ?? "",
     inPlayer: item.inPlayer,
     featured: item.featured,
@@ -97,7 +111,9 @@ export function MediaEditPage() {
     return (
       <div className="card p-6 text-[13.5px]">
         <p role="alert" className="mb-3 text-status-error">
-          {error instanceof ApiError && error.status === 404 ? "条目不存在" : (error?.message ?? "无法加载条目")}
+          {error instanceof ApiError && error.status === 404
+            ? "条目不存在"
+            : (error?.message ?? "无法加载条目")}
         </p>
         <Link to="/collection" className="btn-secondary">
           返回收藏
@@ -143,44 +159,57 @@ function MediaEditor({ item }: { item: AdminMediaItem }) {
     return () => window.removeEventListener("beforeunload", onBeforeUnload);
   }, [dirty]);
 
-  const set = <K extends keyof Draft>(key: K, value: Draft[K]) => setDraft((d) => ({ ...d, [key]: value }));
-  const setText = (field: "title" | "overview" | "review", value: string) => setDraft((d) => ({ ...d, [field]: { ...d[field], [lang]: value } }));
+  const set = <K extends keyof Draft>(key: K, value: Draft[K]) =>
+    setDraft((d) => ({ ...d, [key]: value }));
+  const setText = (field: "title" | "overview" | "review", value: string) =>
+    setDraft((d) => ({ ...d, [field]: { ...d[field], [lang]: value } }));
 
   const addGenre = () => {
     const value = genreInput.trim();
-    if (value && draft.genres.length < 20 && !draft.genres.some((g) => pickText(g) === value)) set("genres", [...draft.genres, { [lang]: value }]);
+    if (value && draft.genres.length < 20 && !draft.genres.some((g) => pickText(g) === value))
+      set("genres", [...draft.genres, { [lang]: value }]);
     setGenreInput("");
   };
   const addChip = (field: "platforms" | "publishers", input: string, clear: () => void) => {
     const value = input.trim();
-    if (value && draft[field].length < 20 && !draft[field].includes(value)) set(field, [...draft[field], value]);
+    if (value && draft[field].length < 20 && !draft[field].includes(value))
+      set(field, [...draft[field], value]);
     clear();
   };
   const addCredit = () => {
     const value = creditInput.trim();
-    if (value && draft.credits.length < 20 && !draft.credits.includes(value)) set("credits", [...draft.credits, value]);
+    if (value && draft.credits.length < 20 && !draft.credits.includes(value))
+      set("credits", [...draft.credits, value]);
     setCreditInput("");
   };
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
-    if (!Object.values(draft.title).some((t) => t?.trim())) return setError("请至少用一种语言填写标题");
+    if (!Object.values(draft.title).some((t) => t?.trim()))
+      return setError("请至少用一种语言填写标题");
     const year = draft.year.trim() ? Number(draft.year) : null;
-    if (year !== null && !(Number.isInteger(year) && year >= 1870 && year <= 2100)) return setError("年份无效");
+    if (year !== null && !(Number.isInteger(year) && year >= 1870 && year <= 2100))
+      return setError("年份无效");
     const rewatchCount = Number(draft.rewatchCount || 0);
     if (!Number.isInteger(rewatchCount) || rewatchCount < 0) return setError(`重${verb}次数无效`);
     const watched = draft.watched.trim() ? Number(draft.watched) : null;
     const total = draft.total.trim() ? Number(draft.total) : null;
-    if ((watched !== null && !(Number.isInteger(watched) && watched >= 0)) || (total !== null && !(Number.isInteger(total) && total >= 1))) {
+    if (
+      (watched !== null && !(Number.isInteger(watched) && watched >= 0)) ||
+      (total !== null && !(Number.isInteger(total) && total >= 1))
+    ) {
       return setError(`${unit}数进度无效`);
     }
-    if (watched !== null && total !== null && watched > total) return setError(`进度超过总${unit}数`);
+    if (watched !== null && total !== null && watched > total)
+      return setError(`进度超过总${unit}数`);
     const optionalCount = (text: string) => (text.trim() ? Number(text) : null);
     const pages = optionalCount(draft.pages);
     const volumes = optionalCount(draft.volumes);
-    if ([pages, volumes].some((n) => n !== null && !(Number.isInteger(n) && n >= 1))) return setError("页数和卷数需要是正整数");
+    if ([pages, volumes].some((n) => n !== null && !(Number.isInteger(n) && n >= 1)))
+      return setError("页数和卷数需要是正整数");
     const playtimeHours = draft.playtime.trim() ? Number(draft.playtime) : null;
-    if (playtimeHours !== null && !(Number.isInteger(playtimeHours) && playtimeHours >= 0)) return setError("游玩时长需要是整数小时");
+    if (playtimeHours !== null && !(Number.isInteger(playtimeHours) && playtimeHours >= 0))
+      return setError("游玩时长需要是整数小时");
     setError("");
 
     const shared: AdminMediaUpdate = {
@@ -203,11 +232,30 @@ function MediaEditor({ item }: { item: AdminMediaItem }) {
           status: draft.status,
           watchedOn: draft.watchedOn || null,
           rewatchCount,
-          progress: hasEpisodes && (watched !== null || total !== null) ? { watched: watched ?? 0, total } : null,
+          progress:
+            hasEpisodes && (watched !== null || total !== null)
+              ? { watched: watched ?? 0, total }
+              : null,
           ...(isRead
-            ? { publication: { publisher: draft.publisher, pages, volumes, ongoing: draft.ongoing === "" ? null : draft.ongoing === "yes" } }
+            ? {
+                publication: {
+                  publisher: draft.publisher,
+                  pages,
+                  volumes,
+                  ongoing: draft.ongoing === "" ? null : draft.ongoing === "yes"
+                }
+              }
             : {}),
-          ...(isGame ? { game: { platforms: draft.platforms, publishers: draft.publishers, playtimeHours, purchasedOn: draft.purchasedOn || null } } : {})
+          ...(isGame
+            ? {
+                game: {
+                  platforms: draft.platforms,
+                  publishers: draft.publishers,
+                  playtimeHours,
+                  purchasedOn: draft.purchasedOn || null
+                }
+              }
+            : {})
         };
     update.mutate(body, {
       onSuccess: ({ item: next }) => {
@@ -250,7 +298,10 @@ function MediaEditor({ item }: { item: AdminMediaItem }) {
       </div>
 
       {error ? (
-        <p role="alert" className="mb-4 rounded-xl border border-status-error/30 bg-status-error/8 px-4 py-2.5 text-[12.5px] text-status-error">
+        <p
+          role="alert"
+          className="mb-4 rounded-xl border border-status-error/30 bg-status-error/8 px-4 py-2.5 text-[12.5px] text-status-error"
+        >
           {error}
         </p>
       ) : null}
@@ -270,7 +321,8 @@ function MediaEditor({ item }: { item: AdminMediaItem }) {
                     id="media-in-player"
                     checked={draft.inPlayer}
                     onChange={(on) => {
-                      if (on && !item.music?.previewUrl) return setError("这首歌还没有试听，先在右侧“试听”里选一个");
+                      if (on && !item.music?.previewUrl)
+                        return setError("这首歌还没有试听，先在右侧“试听”里选一个");
                       set("inPlayer", on);
                     }}
                     label="加入网站播放器"
@@ -279,57 +331,122 @@ function MediaEditor({ item }: { item: AdminMediaItem }) {
               </div>
             </Panel>
           ) : (
-          <Panel title="我的记录">
-            <div className="grid gap-3.5 sm:grid-cols-2">
-              <Field label="状态" htmlFor="media-status">
-                <select id="media-status" className="field" value={draft.status} onChange={(e) => set("status", e.target.value as MediaStatus)}>
-                  {(Object.keys(MEDIA_STATUS_LABELS) as MediaStatus[]).map((status) => (
-                    <option key={status} value={status}>
-                      {statusLabels(kind)[status]}
-                    </option>
-                  ))}
-                </select>
-              </Field>
-              <div>
-                <p className="mb-1.5 text-[12.5px] font-medium text-brand-dark">评分</p>
-                <StarRating value={draft.rating} onChange={(value) => set("rating", value)} />
-              </div>
-              <Field label={isGame ? "玩完的日期" : `${verb}完的日期`} htmlFor="media-watched-on">
-                <div className="flex gap-2">
-                  <input id="media-watched-on" type="date" className="field" value={draft.watchedOn} max={today()} onChange={(e) => set("watchedOn", e.target.value)} />
-                  <button type="button" className="btn-secondary shrink-0" onClick={() => set("watchedOn", today())}>
-                    今天
-                  </button>
+            <Panel title="我的记录">
+              <div className="grid gap-3.5 sm:grid-cols-2">
+                <Field label="状态" htmlFor="media-status">
+                  <select
+                    id="media-status"
+                    className="field"
+                    value={draft.status}
+                    onChange={(e) => set("status", e.target.value as MediaStatus)}
+                  >
+                    {(Object.keys(MEDIA_STATUS_LABELS) as MediaStatus[]).map((status) => (
+                      <option key={status} value={status}>
+                        {statusLabels(kind)[status]}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+                <div>
+                  <p className="mb-1.5 text-[12.5px] font-medium text-brand-dark">评分</p>
+                  <StarRating value={draft.rating} onChange={(value) => set("rating", value)} />
                 </div>
-              </Field>
-              <Field label={`重${verb}次数`} htmlFor="media-rewatch">
-                <input id="media-rewatch" type="number" min={0} max={999} className="field w-28" value={draft.rewatchCount} onChange={(e) => set("rewatchCount", e.target.value)} />
-              </Field>
-              {hasEpisodes ? (
-                <Field label={`${unit}数进度`} htmlFor="media-watched" hint={`${isRead ? "已读" : "已看"} / 总${unit}数，总${unit}数未知可留空`}>
-                  <div className="flex items-center gap-2">
-                    <input id="media-watched" type="number" min={0} className="field w-24" aria-label={`${isRead ? "已读" : "已看"}${unit}数`} value={draft.watched} onChange={(e) => set("watched", e.target.value)} />
-                    <span className="text-subtle">/</span>
-                    <input type="number" min={1} className="field w-24" aria-label={`总${unit}数`} value={draft.total} onChange={(e) => set("total", e.target.value)} />
+                <Field label={isGame ? "玩完的日期" : `${verb}完的日期`} htmlFor="media-watched-on">
+                  <div className="flex gap-2">
+                    <input
+                      id="media-watched-on"
+                      type="date"
+                      className="field"
+                      value={draft.watchedOn}
+                      max={today()}
+                      onChange={(e) => set("watchedOn", e.target.value)}
+                    />
+                    <button
+                      type="button"
+                      className="btn-secondary shrink-0"
+                      onClick={() => set("watchedOn", today())}
+                    >
+                      今天
+                    </button>
                   </div>
                 </Field>
-              ) : null}
-              {isGame ? (
-                <>
+                <Field label={`重${verb}次数`} htmlFor="media-rewatch">
+                  <input
+                    id="media-rewatch"
+                    type="number"
+                    min={0}
+                    max={999}
+                    className="field w-28"
+                    value={draft.rewatchCount}
+                    onChange={(e) => set("rewatchCount", e.target.value)}
+                  />
+                </Field>
+                {hasEpisodes ? (
                   <Field
-                    label="游玩时长（小时）"
-                    htmlFor="media-playtime"
-                    hint={item.game?.steamAppId ? `Steam 同步时会更新${item.game.lastPlayedOn ? `；最后游玩 ${item.game.lastPlayedOn}` : ""}` : "可选"}
+                    label={`${unit}数进度`}
+                    htmlFor="media-watched"
+                    hint={`${isRead ? "已读" : "已看"} / 总${unit}数，总${unit}数未知可留空`}
                   >
-                    <input id="media-playtime" type="number" min={0} className="field w-28" value={draft.playtime} onChange={(e) => set("playtime", e.target.value)} />
+                    <div className="flex items-center gap-2">
+                      <input
+                        id="media-watched"
+                        type="number"
+                        min={0}
+                        className="field w-24"
+                        aria-label={`${isRead ? "已读" : "已看"}${unit}数`}
+                        value={draft.watched}
+                        onChange={(e) => set("watched", e.target.value)}
+                      />
+                      <span className="text-subtle">/</span>
+                      <input
+                        type="number"
+                        min={1}
+                        className="field w-24"
+                        aria-label={`总${unit}数`}
+                        value={draft.total}
+                        onChange={(e) => set("total", e.target.value)}
+                      />
+                    </div>
                   </Field>
-                  <Field label="购入日期" htmlFor="media-purchased" hint="可选；Steam 不提供购买时间">
-                    <input id="media-purchased" type="date" className="field" value={draft.purchasedOn} max={today()} onChange={(e) => set("purchasedOn", e.target.value)} />
-                  </Field>
-                </>
-              ) : null}
-            </div>
-          </Panel>
+                ) : null}
+                {isGame ? (
+                  <>
+                    <Field
+                      label="游玩时长（小时）"
+                      htmlFor="media-playtime"
+                      hint={
+                        item.game?.steamAppId
+                          ? `Steam 同步时会更新${item.game.lastPlayedOn ? `；最后游玩 ${item.game.lastPlayedOn}` : ""}`
+                          : "可选"
+                      }
+                    >
+                      <input
+                        id="media-playtime"
+                        type="number"
+                        min={0}
+                        className="field w-28"
+                        value={draft.playtime}
+                        onChange={(e) => set("playtime", e.target.value)}
+                      />
+                    </Field>
+                    <Field
+                      label="购入日期"
+                      htmlFor="media-purchased"
+                      hint="可选；Steam 不提供购买时间"
+                    >
+                      <input
+                        id="media-purchased"
+                        type="date"
+                        className="field"
+                        value={draft.purchasedOn}
+                        max={today()}
+                        onChange={(e) => set("purchasedOn", e.target.value)}
+                      />
+                    </Field>
+                  </>
+                ) : null}
+              </div>
+            </Panel>
           )}
 
           <section className="card min-w-0 p-5" aria-label="文字">
@@ -348,17 +465,47 @@ function MediaEditor({ item }: { item: AdminMediaItem }) {
                 </button>
               ))}
             </div>
-            <p className="mb-4 text-[11.5px] text-faint">没填写的语言会在网站上回退到其它语言。标签后带 ✓ 表示该语言已写短评。</p>
+            <p className="mb-4 text-[11.5px] text-faint">
+              没填写的语言会在网站上回退到其它语言。标签后带 ✓ 表示该语言已写短评。
+            </p>
             <div className="space-y-3.5">
               <Field label="标题" htmlFor="media-title">
-                <input id="media-title" className="field" value={draft.title[lang] ?? ""} maxLength={200} onChange={(e) => setText("title", e.target.value)} />
+                <input
+                  id="media-title"
+                  className="field"
+                  value={draft.title[lang] ?? ""}
+                  maxLength={200}
+                  onChange={(e) => setText("title", e.target.value)}
+                />
               </Field>
               <Field label="短评" htmlFor="media-review" hint="你自己的感受，会显示在网站上">
-                <textarea id="media-review" rows={5} className="field resize-y leading-relaxed" value={draft.review[lang] ?? ""} maxLength={5000} onChange={(e) => setText("review", e.target.value)} />
+                <textarea
+                  id="media-review"
+                  rows={5}
+                  className="field resize-y leading-relaxed"
+                  value={draft.review[lang] ?? ""}
+                  maxLength={5000}
+                  onChange={(e) => setText("review", e.target.value)}
+                />
               </Field>
               {isMusic ? null : (
-                <Field label="简介" htmlFor="media-overview" hint={item.source !== "manual" ? `导入自 ${SOURCE_LABELS[item.source]}，可以修改` : undefined}>
-                  <textarea id="media-overview" rows={5} className="field resize-y leading-relaxed" value={draft.overview[lang] ?? ""} maxLength={5000} onChange={(e) => setText("overview", e.target.value)} />
+                <Field
+                  label="简介"
+                  htmlFor="media-overview"
+                  hint={
+                    item.source !== "manual"
+                      ? `导入自 ${SOURCE_LABELS[item.source]}，可以修改`
+                      : undefined
+                  }
+                >
+                  <textarea
+                    id="media-overview"
+                    rows={5}
+                    className="field resize-y leading-relaxed"
+                    value={draft.overview[lang] ?? ""}
+                    maxLength={5000}
+                    onChange={(e) => setText("overview", e.target.value)}
+                  />
                 </Field>
               )}
             </div>
@@ -376,24 +523,42 @@ function MediaEditor({ item }: { item: AdminMediaItem }) {
                 <div className="flex items-center gap-3">
                   <PreviewButton url={item.music.previewUrl} preview={preview} />
                   <span className="truncate text-[12.5px] text-subtle">
-                    {new URL(item.music.previewUrl).hostname.includes("itunes") ? "来自 iTunes" : "来自 Spotify"}
-                    {item.music.durationMs ? ` · 全曲 ${formatDuration(item.music.durationMs)}` : ""}
+                    {new URL(item.music.previewUrl).hostname.includes("itunes")
+                      ? "来自 iTunes"
+                      : "来自 Spotify"}
+                    {item.music.durationMs
+                      ? ` · 全曲 ${formatDuration(item.music.durationMs)}`
+                      : ""}
                   </span>
                 </div>
               ) : (
                 <p className="text-[12.5px] text-status-warn">没有试听，不能加入播放器。</p>
               )}
-              <button type="button" className="btn-secondary w-full" onClick={() => setFixingPreview(true)}>
+              <button
+                type="button"
+                className="btn-secondary w-full"
+                onClick={() => setFixingPreview(true)}
+              >
                 {item.music?.previewUrl ? "换一个试听" : "找试听"}
               </button>
               <div className="flex flex-wrap gap-3 text-[12.5px]">
                 {item.music?.spotifyUrl ? (
-                  <a href={item.music.spotifyUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-brand hover:underline">
+                  <a
+                    href={item.music.spotifyUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1 text-brand hover:underline"
+                  >
                     Spotify <ExternalLink aria-hidden="true" className="size-3.5" />
                   </a>
                 ) : null}
                 {item.music?.appleUrl ? (
-                  <a href={item.music.appleUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-brand hover:underline">
+                  <a
+                    href={item.music.appleUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1 text-brand hover:underline"
+                  >
                     Apple Music <ExternalLink aria-hidden="true" className="size-3.5" />
                   </a>
                 ) : null}
@@ -403,40 +568,89 @@ function MediaEditor({ item }: { item: AdminMediaItem }) {
 
           <Panel title="发布">
             <div className="flex flex-col items-start gap-2.5">
-              <Switch id="media-public" checked={draft.visibility === "public"} onChange={(on) => set("visibility", on ? "public" : "private")} label="公开显示" />
-              <Switch id="media-featured" checked={draft.featured} onChange={(on) => set("featured", on)} label="首页精选" />
+              <Switch
+                id="media-public"
+                checked={draft.visibility === "public"}
+                onChange={(on) => set("visibility", on ? "public" : "private")}
+                label="公开显示"
+              />
+              <Switch
+                id="media-featured"
+                checked={draft.featured}
+                onChange={(on) => set("featured", on)}
+                label="首页精选"
+              />
             </div>
             {draft.status === "want" ? (
-              <p className="text-[11.5px] leading-relaxed text-faint">“{statusLabels(kind).want}”的条目还受“显示设置”里的总开关控制。</p>
+              <p className="text-[11.5px] leading-relaxed text-faint">
+                “{statusLabels(kind).want}”的条目还受“显示设置”里的总开关控制。
+              </p>
             ) : null}
           </Panel>
 
           <Panel title="资料">
             {isMusic ? (
               <Field label="专辑" htmlFor="media-album">
-                <input id="media-album" className="field" value={draft.album} maxLength={200} onChange={(e) => set("album", e.target.value)} />
+                <input
+                  id="media-album"
+                  className="field"
+                  value={draft.album}
+                  maxLength={200}
+                  onChange={(e) => set("album", e.target.value)}
+                />
               </Field>
             ) : (
               <Field label="原名" htmlFor="media-original">
-                <input id="media-original" className="field" value={draft.originalTitle} maxLength={200} onChange={(e) => set("originalTitle", e.target.value)} />
+                <input
+                  id="media-original"
+                  className="field"
+                  value={draft.originalTitle}
+                  maxLength={200}
+                  onChange={(e) => set("originalTitle", e.target.value)}
+                />
               </Field>
             )}
             {isRead ? (
               <>
                 <Field label="出版社" htmlFor="media-publisher">
-                  <input id="media-publisher" className="field" value={draft.publisher} maxLength={200} onChange={(e) => set("publisher", e.target.value)} />
+                  <input
+                    id="media-publisher"
+                    className="field"
+                    value={draft.publisher}
+                    maxLength={200}
+                    onChange={(e) => set("publisher", e.target.value)}
+                  />
                 </Field>
                 {kind === "book" ? (
                   <Field label="页数" htmlFor="media-pages">
-                    <input id="media-pages" type="number" min={1} className="field w-28" value={draft.pages} onChange={(e) => set("pages", e.target.value)} />
+                    <input
+                      id="media-pages"
+                      type="number"
+                      min={1}
+                      className="field w-28"
+                      value={draft.pages}
+                      onChange={(e) => set("pages", e.target.value)}
+                    />
                   </Field>
                 ) : (
                   <div className="grid grid-cols-2 gap-3">
                     <Field label="卷数" htmlFor="media-volumes">
-                      <input id="media-volumes" type="number" min={1} className="field" value={draft.volumes} onChange={(e) => set("volumes", e.target.value)} />
+                      <input
+                        id="media-volumes"
+                        type="number"
+                        min={1}
+                        className="field"
+                        value={draft.volumes}
+                        onChange={(e) => set("volumes", e.target.value)}
+                      />
                     </Field>
                     <Field label="连载" htmlFor="media-ongoing">
-                      <select id="media-ongoing" className="field" value={draft.ongoing} onChange={(e) => set("ongoing", e.target.value as Draft["ongoing"])}>
+                      <select
+                        id="media-ongoing"
+                        className="field"
+                        value={draft.ongoing}
+                        onChange={(e) => set("ongoing", e.target.value as Draft["ongoing"])}
+                      >
                         <option value="">不注明</option>
                         <option value="yes">连载中</option>
                         <option value="no">已完结</option>
@@ -447,7 +661,15 @@ function MediaEditor({ item }: { item: AdminMediaItem }) {
               </>
             ) : null}
             <Field label="年份" htmlFor="media-year">
-              <input id="media-year" type="number" min={1870} max={2100} className="field w-28" value={draft.year} onChange={(e) => set("year", e.target.value)} />
+              <input
+                id="media-year"
+                type="number"
+                min={1870}
+                max={2100}
+                className="field w-28"
+                value={draft.year}
+                onChange={(e) => set("year", e.target.value)}
+              />
             </Field>
             <ChipsField
               id="media-genres"
@@ -457,17 +679,37 @@ function MediaEditor({ item }: { item: AdminMediaItem }) {
               input={genreInput}
               onInput={setGenreInput}
               onAdd={addGenre}
-              onRemove={(index) => set("genres", draft.genres.filter((_, i) => i !== index))}
+              onRemove={(index) =>
+                set(
+                  "genres",
+                  draft.genres.filter((_, i) => i !== index)
+                )
+              }
             />
             <ChipsField
               id="media-credits"
-              label={isMusic ? "歌手" : isRead ? "作者" : isGame ? "开发商" : kind === "anime" ? "导演 / 制作" : "导演 / 主创"}
+              label={
+                isMusic
+                  ? "歌手"
+                  : isRead
+                    ? "作者"
+                    : isGame
+                      ? "开发商"
+                      : kind === "anime"
+                        ? "导演 / 制作"
+                        : "导演 / 主创"
+              }
               hint="回车添加"
               values={draft.credits}
               input={creditInput}
               onInput={setCreditInput}
               onAdd={addCredit}
-              onRemove={(index) => set("credits", draft.credits.filter((_, i) => i !== index))}
+              onRemove={(index) =>
+                set(
+                  "credits",
+                  draft.credits.filter((_, i) => i !== index)
+                )
+              }
             />
             {isGame ? (
               <>
@@ -479,7 +721,12 @@ function MediaEditor({ item }: { item: AdminMediaItem }) {
                   input={platformInput}
                   onInput={setPlatformInput}
                   onAdd={() => addChip("platforms", platformInput, () => setPlatformInput(""))}
-                  onRemove={(index) => set("platforms", draft.platforms.filter((_, i) => i !== index))}
+                  onRemove={(index) =>
+                    set(
+                      "platforms",
+                      draft.platforms.filter((_, i) => i !== index)
+                    )
+                  }
                 />
                 <ChipsField
                   id="media-publishers"
@@ -489,18 +736,34 @@ function MediaEditor({ item }: { item: AdminMediaItem }) {
                   input={publisherInput}
                   onInput={setPublisherInput}
                   onAdd={() => addChip("publishers", publisherInput, () => setPublisherInput(""))}
-                  onRemove={(index) => set("publishers", draft.publishers.filter((_, i) => i !== index))}
+                  onRemove={(index) =>
+                    set(
+                      "publishers",
+                      draft.publishers.filter((_, i) => i !== index)
+                    )
+                  }
                 />
               </>
             ) : null}
             {item.game?.steamAppId && item.source !== "steam" ? (
-              <a href={`https://store.steampowered.com/app/${item.game.steamAppId}/`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[12.5px] text-brand hover:underline">
+              <a
+                href={`https://store.steampowered.com/app/${item.game.steamAppId}/`}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1 text-[12.5px] text-brand hover:underline"
+              >
                 在 Steam 查看 <ExternalLink aria-hidden="true" className="size-3.5" />
               </a>
             ) : null}
             {item.sourceUrl && !isMusic ? (
-              <a href={item.sourceUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[12.5px] text-brand hover:underline">
-                在 {SOURCE_LABELS[item.source]} 查看 <ExternalLink aria-hidden="true" className="size-3.5" />
+              <a
+                href={item.sourceUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1 text-[12.5px] text-brand hover:underline"
+              >
+                在 {SOURCE_LABELS[item.source]} 查看{" "}
+                <ExternalLink aria-hidden="true" className="size-3.5" />
               </a>
             ) : null}
           </Panel>
@@ -511,7 +774,9 @@ function MediaEditor({ item }: { item: AdminMediaItem }) {
         </div>
       </div>
 
-      {fixingPreview ? <FixPreviewDialog item={item} onClose={() => setFixingPreview(false)} /> : null}
+      {fixingPreview ? (
+        <FixPreviewDialog item={item} onClose={() => setFixingPreview(false)} />
+      ) : null}
 
       <Dialog
         open={deleting}
@@ -542,7 +807,9 @@ function MediaEditor({ item }: { item: AdminMediaItem }) {
           </>
         }
       >
-        <p className="text-[13.5px] leading-relaxed text-muted">确定删除“{title}”吗？海报和你的记录、短评都会删除，此操作无法撤销。</p>
+        <p className="text-[13.5px] leading-relaxed text-muted">
+          确定删除“{title}”吗？海报和你的记录、短评都会删除，此操作无法撤销。
+        </p>
       </Dialog>
     </form>
   );
@@ -565,7 +832,12 @@ function ChipsField(props: {
           {props.values.map((value, index) => (
             <span key={`${value}-${index}`} className="chip inline-flex items-center gap-1">
               {value}
-              <button type="button" aria-label={`删除 ${value}`} onClick={() => props.onRemove(index)} className="rounded-full hover:text-status-error">
+              <button
+                type="button"
+                aria-label={`删除 ${value}`}
+                onClick={() => props.onRemove(index)}
+                className="rounded-full hover:text-status-error"
+              >
                 <X aria-hidden="true" className="size-3" />
               </button>
             </span>
@@ -602,13 +874,25 @@ function PosterPanel({ item }: { item: AdminMediaItem }) {
   return (
     <Panel title={noun}>
       {item.poster ? (
-        <img src={item.poster.variants[item.poster.variants.length - 1].url} alt="" className="mx-auto w-full max-w-[220px] rounded-xl border border-line object-cover" style={{ aspectRatio: square ? "1 / 1" : "2 / 3" }} />
+        <img
+          src={item.poster.variants[item.poster.variants.length - 1].url}
+          alt=""
+          className="mx-auto w-full max-w-[220px] rounded-xl border border-line object-cover"
+          style={{ aspectRatio: square ? "1 / 1" : "2 / 3" }}
+        />
       ) : (
-        <span className={`mx-auto flex ${square ? "aspect-square" : "aspect-[2/3]"} w-full max-w-[220px] items-center justify-center rounded-xl bg-line-soft text-faint`}>
+        <span
+          className={`mx-auto flex ${square ? "aspect-square" : "aspect-[2/3]"} w-full max-w-[220px] items-center justify-center rounded-xl bg-line-soft text-faint`}
+        >
           <Clapperboard aria-hidden="true" className="size-8" />
         </span>
       )}
-      <button type="button" className="btn-secondary w-full" disabled={upload.isPending} onClick={() => input.current?.click()}>
+      <button
+        type="button"
+        className="btn-secondary w-full"
+        disabled={upload.isPending}
+        onClick={() => input.current?.click()}
+      >
         <ImagePlus aria-hidden="true" className="size-4" />
         {upload.isPending ? "上传中…" : item.poster ? `更换${noun}` : `上传${noun}`}
       </button>
@@ -620,7 +904,11 @@ function PosterPanel({ item }: { item: AdminMediaItem }) {
         onChange={(e) => {
           const file = e.target.files?.[0];
           e.target.value = "";
-          if (file) upload.mutate(file, { onSuccess: () => toast(`${noun}已更新`), onError: (err) => toast(err.message, "error") });
+          if (file)
+            upload.mutate(file, {
+              onSuccess: () => toast(`${noun}已更新`),
+              onError: (err) => toast(err.message, "error")
+            });
         }}
       />
     </Panel>

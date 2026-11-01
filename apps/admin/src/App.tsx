@@ -30,7 +30,8 @@ const queryClient: QueryClient = new QueryClient({
   defaultOptions: {
     // Retry once for network and server errors; a 4xx will not change on retry.
     queries: {
-      retry: (count, error) => count < 1 && !(error instanceof ApiError && error.status >= 400 && error.status < 500),
+      retry: (count, error) =>
+        count < 1 && !(error instanceof ApiError && error.status >= 400 && error.status < 500),
       refetchOnWindowFocus: false
     }
   }
