@@ -132,6 +132,7 @@ API: `GET/POST /api/admin/people`, `GET /api/admin/people/search?q`, `POST /api/
 Songs are collection entries (收藏 → 音乐; kind `track`). The player in the site's bottom-right corner has two types, chosen on the 播放器 page:
 
 - **网站自己的播放器** plays the songs that are public, marked 加入播放器 and have a 30-second preview, in the order they were added (or shuffled). Without such songs it plays the fallback tracks in `apps/web/src/data/site.ts`.
+- **On the collection page** songs have a play button (on the cover in the grid, list and detail panel). With the site's own player it plays the song's preview at once, also when the song is not in the player: it joins the list after the current song. With Spotify's player it loads the song's Spotify page into the player, and the visitor presses play there (a page cannot start Spotify's player); songs without a Spotify link show no button then. The music tab can be shown as a cover wall (封面) or a list.
 - **Spotify 嵌入播放器** shows Spotify's own player for a playlist, album, song or artist link. Visitors signed in to Spotify in the same browser hear full songs; others hear previews. The site's CSP allows frames from `open.spotify.com` only.
 
 - **添加歌曲**: searches the iTunes store chosen in the dialog (Japanese songs are easiest to find in the Japan store); adding fetches the song's 600 px cover, album, length, preview and Apple Music link. Songs with a preview go into the player.

@@ -2,6 +2,7 @@ import { useCollectionItem } from "../data/useCollection";
 import { pickLocalized, useI18n } from "../lib/i18n";
 import { CollectionLinks, type CollectionLinkTo } from "./CollectionLinks";
 import DetailDrawer from "./DetailDrawer";
+import PlayButton from "./PlayButton";
 import { isReadKind, mediaTitle, Stars, statusKey } from "./MediaCard";
 import { imageSrcSet } from "./ProjectCard";
 
@@ -44,6 +45,7 @@ export default function MediaDetail({ id, onClose, linkTo }: { id: string; onClo
                   {title.slice(0, 1)}
                 </span>
               )}
+              {isMusic ? <PlayButton item={item} className="onPoster" /> : null}
             </div>
             <div className="mediaDrawerInfo">
               <h2 className="mediaDrawerTitle" id="media-detail-title">

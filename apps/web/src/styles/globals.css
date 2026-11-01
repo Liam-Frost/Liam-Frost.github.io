@@ -2650,6 +2650,100 @@ html[data-theme="light"] .aboutSection {
   line-height: 1.6;
 }
 
+/* Songs: square covers in the grid, and a play button over the cover */
+.mediaPoster.isSquare {
+  aspect-ratio: 1;
+}
+
+.mediaCardSub {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mediaPlayable {
+  position: relative;
+}
+
+.mediaPlayable > .mediaCard {
+  height: 100%;
+}
+
+.playButton {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  color: #fff;
+  background: rgba(8, 14, 11, 0.72);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  cursor: pointer;
+  transition: background 160ms var(--ease), color 160ms var(--ease), transform 160ms var(--ease);
+}
+
+.playButton svg {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
+}
+
+.playButton:hover,
+.playButton.isPlaying {
+  background: #1db954;
+  color: #0b1410;
+}
+
+.playButton:hover {
+  transform: scale(1.06);
+}
+
+.playButton:focus-visible {
+  outline: 3px solid rgba(148, 180, 193, 0.7);
+  outline-offset: 2px;
+}
+
+.playButton.onCard {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+}
+
+/* Centered on the 56px cover of a list row (48px on phones). */
+.playButton.onRow {
+  position: absolute;
+  top: 50%;
+  left: 18px;
+  transform: translateY(-50%);
+}
+
+.playButton.onRow:hover {
+  transform: translateY(-50%) scale(1.06);
+}
+
+.playButton.onPoster {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  width: 48px;
+  height: 48px;
+}
+
+.mediaDrawerPoster {
+  position: relative;
+}
+
+@media (max-width: 520px) {
+  .playButton.onRow {
+    left: 14px;
+  }
+}
+
 /* People tab */
 .personGrid {
   margin-top: 18px;
@@ -2943,6 +3037,7 @@ html[data-theme="light"] .aboutSection {
   .mediaRow,
   .personCard,
   .linkRow,
+  .playButton,
   .mediaDrawer {
     transition: none;
     animation: none;
