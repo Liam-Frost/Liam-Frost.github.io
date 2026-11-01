@@ -42,7 +42,10 @@ export function gameOf(row: Pick<MediaRow, "kind" | "extra">): MediaGame | null 
   return {
     platforms: names(game.platforms),
     publishers: names(game.publishers),
-    playtimeHours: typeof game.playtimeHours === "number" && Number.isInteger(game.playtimeHours) && game.playtimeHours >= 0 ? game.playtimeHours : null
+    playtimeHours: typeof game.playtimeHours === "number" && Number.isInteger(game.playtimeHours) && game.playtimeHours >= 0 ? game.playtimeHours : null,
+    steamAppId: typeof game.steamAppId === "number" && Number.isInteger(game.steamAppId) ? game.steamAppId : null,
+    lastPlayedOn: text(game.lastPlayedOn),
+    purchasedOn: text(game.purchasedOn)
   };
 }
 

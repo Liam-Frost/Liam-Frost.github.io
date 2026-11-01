@@ -195,7 +195,7 @@ export type MediaKind = "movie" | "tv" | "anime" | "book" | "comic" | "game" | "
 /** Status: watched for films, series and anime, read for books and comics, played for games. */
 export type MediaStatus = "want" | "watching" | "done" | "dropped";
 /** Where an entry's details came from. */
-export type MediaSource = "tmdb" | "bangumi" | "openlibrary" | "googlebooks" | "anilist" | "igdb" | "spotify" | "itunes" | "manual";
+export type MediaSource = "tmdb" | "bangumi" | "openlibrary" | "googlebooks" | "anilist" | "igdb" | "steam" | "spotify" | "itunes" | "manual";
 /** Sources the admin can search for films, series, anime, books and comics. */
 export type MediaSearchSource = "tmdb" | "bangumi" | "openlibrary" | "googlebooks" | "anilist" | "igdb";
 
@@ -214,8 +214,39 @@ export type MediaPublication = {
 export type MediaGame = {
   platforms: string[];
   publishers: string[];
-  /** Hours played; null when not recorded. */
+  /** Hours played; null when not recorded. Synced from Steam for Steam games. */
   playtimeHours: number | null;
+  /** The game on Steam, when it came from (or was matched by) a Steam library sync. */
+  steamAppId: number | null;
+  /** YYYY-MM-DD, from Steam. */
+  lastPlayedOn: string | null;
+  /** YYYY-MM-DD, entered by hand (Steam does not tell). */
+  purchasedOn: string | null;
+};
+
+/** The admin's Steam account, for syncing the game library. */
+export type SteamAccountStatus = {
+  /** STEAM_WEB_API_KEY is set. */
+  configured: boolean;
+  account: { steamId: string; name: string; avatar: string | null; profileUrl: string; connectedAt: string; lastSyncedAt: string | null } | null;
+};
+
+/** Progress of a Steam library sync running on the server. */
+export type SteamSyncJob = {
+  id: string;
+  state: "running" | "done" | "failed";
+  /** Games in the library. */
+  total: number;
+  processed: number;
+  /** New entries, with IGDB's details or (not on IGDB) the Steam store's. */
+  added: number;
+  fromStore: number;
+  /** Entries already in the collection whose playtime and last played date were updated. */
+  updated: number;
+  /** Games that could not be added; the first reasons are in `errors`. */
+  failed: number;
+  errors: string[];
+  error: string | null;
 };
 
 /** Song details (kind "track"). */
@@ -291,8 +322,8 @@ export type AdminMediaUpdate = Partial<{
   music: { album?: string | null; previewUrl?: string | null; appleUrl?: string | null };
   /** Books and comics. */
   publication: Partial<MediaPublication>;
-  /** Games. */
-  game: Partial<MediaGame>;
+  /** Games: platforms, publishers, playtime and purchase date (the rest comes from Steam). */
+  game: Partial<Pick<MediaGame, "platforms" | "publishers" | "playtimeHours" | "purchasedOn">>;
   inPlayer: boolean;
   featured: boolean;
   visibility: PhotoVisibility;
