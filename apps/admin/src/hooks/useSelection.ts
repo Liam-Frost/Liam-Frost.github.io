@@ -14,13 +14,15 @@ export function useSelection(order: string[]) {
 
   const toggle = useCallback(
     (id: string, range = false) => {
+      // Read the anchor now: React runs the updater later, after the anchor has moved to `id`.
+      const from = range && anchor.current ? order.indexOf(anchor.current) : -1;
+      const anchorId = anchor.current;
       setPicked((current) => {
         const next = new Set(current);
-        const from = anchor.current ? order.indexOf(anchor.current) : -1;
         const to = order.indexOf(id);
-        if (range && from >= 0 && to >= 0) {
+        if (from >= 0 && to >= 0) {
           // A range takes the anchor's state: selecting extends, deselecting clears.
-          const select = current.has(anchor.current!);
+          const select = current.has(anchorId!);
           for (const each of order.slice(Math.min(from, to), Math.max(from, to) + 1)) {
             if (select) next.add(each);
             else next.delete(each);
