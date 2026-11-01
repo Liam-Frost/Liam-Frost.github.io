@@ -339,10 +339,27 @@ Status: implementation complete; Claude Code review complete and fixes applied.
 - Verified with a temporary database: importing City Pop Best again created its playlist (100 songs in order); four iTunes songs of one album formed an album; the site's views and 播放全部 worked; in the admin a song was moved, the playlist renamed, a new playlist created and filled from a filtered selection.
 - Ran Claude Code review for Stage 17a / 17b (`docs/reviews/2026-11-05-claude-code-stage-17ab.md`).
 
+### Stage 17c: Steam Library Sync
+
+Status: implementation complete; Claude Code review complete and fixes applied. Not yet tried with the user's own Steam account (the sign-in is theirs to do).
+
+- `STEAM_WEB_API_KEY` in `apps/api/.env`. "Sign in through Steam" (OpenID 2.0) proves the SteamID; the callback is authorized by a one-time state, checks the return address and asks Steam to confirm the answer (`check_authentication`). Only the SteamID, name and avatar are stored (`Setting` key `steam.account`).
+- Sync job with progress: games already in the collection (by Steam id, or by the IGDB game Steam's id maps to) get playtime and last played date only; new games are imported from IGDB, or from the Steam store (Chinese name, 600 × 900 cover) when IGDB does not know them, hidden, with 在玩 / 玩过 / 想玩 from the playtime. IGDB requests that hit its rate limit wait and retry once.
+- Admin: Steam 游戏库 dialog on the game tab (connect, sync, disconnect); the editor shows last played and has a 购入日期 field (Steam does not give purchase dates). Site: last played and purchase date in the game panel.
+- Tests: 156 passed (forged and replayed sign-ins, sync updating and importing from IGDB and the store, private library).
+- Verified with a temporary database: the dialog, the sign-in address (Steam's OpenID page, callback on the admin's origin); the sync was tested with faked Steam answers.
+
+### Stage 17d: Year in Review
+
+Status: implementation complete.
+
+- Site collection page 回顾 tab: per year, how many films, series, anime, books, comics and games were finished, monthly bars, rating distribution and average, top genres, five-star works. Counts entries marked done with a finished date in that year.
+- Verified in the browser with the sample collection (desktop and 375 px wide).
+
 ### Upcoming
 
 - `npm run db:deploy` applies the playlist migration.
-- Stage 17c: Steam sync (needs `STEAM_WEB_API_KEY` in `apps/api/.env`); 17d yearly review.
+- Connect Steam in the admin (收藏 → 游戏 → Steam 游戏库) and run a first sync.
 - Stage 10: VPS deployment and CI/CD (needs the VPS and domain details).
 - Stage 10: VPS deployment and CI/CD (needs the VPS provider/OS/specs, DNS manager and domain from the user).
 - Stage 5: back-end foundation and admin auth refinement (`ADMIN_PATH`, IP allowlist, CSRF, Zod, tests). See `docs/plan-admin-projects-deploy.md`.
