@@ -1,5 +1,6 @@
 import type { AdminUser } from "@liam-frost/shared";
-import { Clapperboard, FolderKanban, Images, LayoutDashboard, LogOut, Music } from "lucide-react";
+import { Clapperboard, FolderKanban, Images, LayoutDashboard, LogOut, Music, UsersRound } from "lucide-react";
+import type { ReactNode } from "react";
 import { NavLink, Outlet } from "react-router";
 
 import { useLogout } from "../../hooks/useSession";
@@ -10,6 +11,7 @@ const NAV = [
   { to: "/photos", label: "照片", icon: Images, end: false },
   { to: "/projects", label: "项目", icon: FolderKanban, end: false },
   { to: "/collection", label: "收藏", icon: Clapperboard, end: false },
+  { to: "/people", label: "人物", icon: UsersRound, end: false },
   { to: "/music", label: "播放器", icon: Music, end: false }
 ];
 
@@ -70,11 +72,14 @@ export function AdminLayout({ user }: { user: AdminUser }) {
   );
 }
 
-export function PageHeader({ title, description }: { title: string; description?: string }) {
+export function PageHeader({ title, description, actions }: { title: string; description?: string; actions?: ReactNode }) {
   return (
-    <header className="mb-6">
-      <h1 className="text-[22px] font-semibold text-brand-dark">{title}</h1>
-      {description ? <p className="mt-1 text-[13.5px] leading-relaxed text-muted">{description}</p> : null}
+    <header className="mb-6 flex flex-wrap items-start gap-3">
+      <div className="min-w-0 flex-1">
+        <h1 className="text-[22px] font-semibold text-brand-dark">{title}</h1>
+        {description ? <p className="mt-1 text-[13.5px] leading-relaxed text-muted">{description}</p> : null}
+      </div>
+      {actions ? <div className="flex flex-wrap gap-2">{actions}</div> : null}
     </header>
   );
 }

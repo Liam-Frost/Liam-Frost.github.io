@@ -1,4 +1,4 @@
-import { LANGS, type Lang, type LocalizedText } from "@liam-frost/shared";
+import { LANGS, type Lang, type LocalizedText, type PersonRole, type RelationType, type SoundtrackRole } from "@liam-frost/shared";
 
 export { LANGS, type Lang };
 
@@ -57,6 +57,46 @@ export const MEDIA_STATUS_LABELS = {
   done: "看过",
   dropped: "弃了"
 } as const;
+
+export const PERSON_ROLE_LABELS: Record<PersonRole, string> = {
+  director: "导演",
+  screenwriter: "编剧",
+  creator: "主创",
+  producer: "制作人",
+  actor: "演员",
+  voice: "配音",
+  singer: "歌手",
+  composer: "作曲",
+  lyricist: "作词",
+  author: "作者",
+  illustrator: "画师",
+  studio: "制作公司",
+  other: "其他"
+};
+
+export const SOUNDTRACK_ROLE_LABELS: Record<SoundtrackRole, string> = {
+  opening: "片头曲",
+  ending: "片尾曲",
+  insert: "插曲",
+  theme: "主题曲",
+  score: "配乐"
+};
+
+/** How a relation reads from the entry or person being edited ("from": it starts there). */
+export const RELATION_LABELS: Record<RelationType, { from: string; to: string }> = {
+  credit: { from: "参与作品", to: "参与者" },
+  soundtrack: { from: "出自作品", to: "原声歌曲" },
+  adaptation: { from: "改编自", to: "被改编为" },
+  sequel: { from: "前作", to: "续作" },
+  related: { from: "相关", to: "相关" }
+};
+
+/** The language a name is probably written in: kana → Japanese, other CJK → Chinese, otherwise English. */
+export function guessLang(text: string): Lang {
+  if (/[\u3040-\u30ff]/.test(text)) return "ja";
+  if (/[\u3400-\u9fff]/.test(text)) return "zh";
+  return "en";
+}
 
 export const SOURCE_LABELS = { tmdb: "TMDB", bangumi: "Bangumi", spotify: "Spotify", itunes: "Apple Music", manual: "手动添加" } as const;
 

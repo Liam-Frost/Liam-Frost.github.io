@@ -16,6 +16,7 @@ import { registerAdminApp } from "./routes/admin-app";
 import { registerAdminPhotoRoutes } from "./routes/admin-photos";
 import { registerAdminMediaRoutes } from "./routes/admin-media";
 import { registerAdminMusicRoutes } from "./routes/admin-music";
+import { registerAdminPeopleRoutes } from "./routes/admin-people";
 import { registerAdminProjectRoutes } from "./routes/admin-projects";
 import { registerCollectionRoutes } from "./routes/collection";
 import { registerPhotoRoutes } from "./routes/photos";
@@ -30,6 +31,8 @@ import { SpotifyAccount } from "./spotify/account";
 import { PrismaMediaRepository } from "./media/prisma-repository";
 import { createMediaSources, type MediaSources } from "./media/sources";
 import type { MediaRepository } from "./media/types";
+import { PrismaPersonRepository, PrismaRelationRepository } from "./people/prisma-repository";
+import type { PersonRepository, RelationRepository } from "./people/types";
 import { PrismaPhotoRepository } from "./photos/prisma-repository";
 import type { PhotoRepository } from "./photos/types";
 import { PrismaProjectRepository } from "./projects/prisma-repository";
@@ -65,6 +68,18 @@ function defaultMediaRepository(): MediaRepository | null {
   return client ? new PrismaMediaRepository(client) : null;
 }
 
+/** Prisma-backed people when DATABASE_URL is set, otherwise none. */
+function defaultPersonRepository(): PersonRepository | null {
+  const client = getPrismaClient();
+  return client ? new PrismaPersonRepository(client) : null;
+}
+
+/** Prisma-backed links between entries and people when DATABASE_URL is set, otherwise none. */
+function defaultRelationRepository(): RelationRepository | null {
+  const client = getPrismaClient();
+  return client ? new PrismaRelationRepository(client) : null;
+}
+
 /** Prisma-backed settings when DATABASE_URL is set, otherwise none (defaults, kept in memory). */
 function defaultSettingsRepository(): SettingsRepository | null {
   const client = getPrismaClient();
@@ -84,6 +99,10 @@ export type BuildServerOptions = {
   projects?: ProjectRepository | null;
   /** Collection storage; defaults to Prisma when DATABASE_URL is set. Pass null for none. */
   media?: MediaRepository | null;
+  /** People; defaults to Prisma when DATABASE_URL is set. Pass null for none. */
+  people?: PersonRepository | null;
+  /** Links between entries and people; defaults to Prisma when DATABASE_URL is set. Pass null for none. */
+  relations?: RelationRepository | null;
   /** TMDB / Bangumi access; defaults to the real services. */
   mediaSources?: MediaSources;
   /** Settings storage; defaults to Prisma when DATABASE_URL is set. Pass null for none. */
@@ -106,6 +125,8 @@ export function buildServer({
   photos = defaultPhotoRepository(),
   projects = defaultProjectRepository(),
   media = defaultMediaRepository(),
+  people = defaultPersonRepository(),
+  relations = defaultRelationRepository(),
   mediaSources = createMediaSources({ tmdbKey: config.tmdbApiKey }),
   settings = defaultSettingsRepository(),
   fetchPlaylist = createPlaylistFetcher(),
@@ -184,8 +205,9 @@ export function buildServer({
   registerProjectRoutes(app, projects, store);
   registerAdminMediaRoutes(app, auth, { media, collection, sources: mediaSources, store, maxUploadBytes: config.uploads.maxBytes });
   registerAdminMusicRoutes(app, auth, { media, sources: mediaSources, music: musicSource, store, imports: musicImports });
-  registerCollectionRoutes(app, { media, collection, store });
-  registerUploadRoutes(app, store, { photos, projects, media, collection }, auth);
+  registerAdminPeopleRoutes(app, auth, { media, people, relations, sources: mediaSources, store, maxUploadBytes: config.uploads.maxBytes });
+  registerCollectionRoutes(app, { media, people, relations, collection, store });
+  registerUploadRoutes(app, store, { photos, projects, media, people, collection }, auth);
   registerSpotifyRoutes(app, auth, spotify, account, settings !== null);
   registerWebApp(app, webDistDir);
 
