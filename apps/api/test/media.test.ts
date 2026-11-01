@@ -34,7 +34,7 @@ const details = (overrides: Partial<SourceDetails> = {}): SourceDetails => ({
 function fakeSources(overrides: Partial<MediaSources> = {}): MediaSources {
   return {
     ...offlineMediaSources,
-    available: () => ({ tmdb: true, bangumi: true, openlibrary: true, anilist: true }),
+    available: () => ({ tmdb: true, bangumi: true, openlibrary: true, googlebooks: true, anilist: true }),
     search: async (source) => [
       { source, sourceId: "movie:129", mediaType: "movie", creators: [], title: "千与千寻", originalTitle: null, year: 2001, posterUrl: null, overview: "" },
       { source, sourceId: "movie:4935", mediaType: "movie", creators: [], title: "哈尔的移动城堡", originalTitle: null, year: 2004, posterUrl: null, overview: "" }
@@ -220,7 +220,7 @@ describe("admin collection", () => {
   it("saves collection settings and reports configured sources", async () => {
     const { app, cookie, headers } = await setup();
     const initial = (await app.inject({ url: "/api/admin/collection/settings", headers: { cookie } })).json();
-    expect(initial).toEqual({ settings: { show: { movie: true, tv: true, anime: true, book: true, comic: true, music: true, people: true }, showWant: true }, sources: { tmdb: true, bangumi: true, openlibrary: true, anilist: true } });
+    expect(initial).toEqual({ settings: { show: { movie: true, tv: true, anime: true, book: true, comic: true, music: true, people: true }, showWant: true }, sources: { tmdb: true, bangumi: true, openlibrary: true, googlebooks: true, anilist: true } });
 
     const next = { show: { movie: true, tv: false, anime: true, music: true, people: false }, showWant: false };
     const saved = await app.inject({ method: "PUT", url: "/api/admin/collection/settings", headers, payload: next });

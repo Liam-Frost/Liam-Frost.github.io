@@ -43,7 +43,7 @@ export const KIND_SOURCES: Record<WatchKind, readonly MediaSearchSource[]> = {
   movie: ["tmdb"],
   tv: ["tmdb"],
   anime: ["bangumi", "tmdb"],
-  book: ["openlibrary", "bangumi"],
+  book: ["openlibrary", "googlebooks", "bangumi"],
   comic: ["anilist", "bangumi"]
 };
 
@@ -134,6 +134,7 @@ export const SOURCE_LABELS: Record<MediaSource, string> = {
   tmdb: "TMDB",
   bangumi: "Bangumi",
   openlibrary: "Open Library",
+  googlebooks: "Google Books",
   anilist: "AniList",
   spotify: "Spotify",
   itunes: "Apple Music",

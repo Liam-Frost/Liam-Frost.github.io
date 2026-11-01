@@ -193,9 +193,9 @@ export type MediaKind = "movie" | "tv" | "anime" | "book" | "comic" | "track" | 
 /** Status for films, series and anime (want to watch, ...) and books and comics (want to read, ...). */
 export type MediaStatus = "want" | "watching" | "done" | "dropped";
 /** Where an entry's details came from. */
-export type MediaSource = "tmdb" | "bangumi" | "openlibrary" | "anilist" | "spotify" | "itunes" | "manual";
+export type MediaSource = "tmdb" | "bangumi" | "openlibrary" | "googlebooks" | "anilist" | "spotify" | "itunes" | "manual";
 /** Sources the admin can search for films, series, anime, books and comics. */
-export type MediaSearchSource = "tmdb" | "bangumi" | "openlibrary" | "anilist";
+export type MediaSearchSource = "tmdb" | "bangumi" | "openlibrary" | "googlebooks" | "anilist";
 
 /** Book and comic details (kinds "book" and "comic"). */
 export type MediaPublication = {
@@ -361,8 +361,8 @@ export type AdminMediaResponse = { item: AdminMediaItem };
 export type AdminMediaSearchResponse = { results: MediaSearchResult[] };
 export type AdminCollectionSettingsResponse = {
   settings: CollectionSettings;
-  /** Sources that can be searched (TMDB needs TMDB_API_KEY). */
-  sources: { tmdb: boolean; bangumi: boolean; openlibrary: boolean; anilist: boolean };
+  /** Sources that can be searched (TMDB needs TMDB_API_KEY, Google Books GOOGLE_BOOKS_API_KEY). */
+  sources: Record<MediaSearchSource, boolean>;
 };
 
 /** A collection entry in the public list (no synopsis or review). */

@@ -63,7 +63,7 @@ if (!databaseUrl) throw new Error("DATABASE_URL is required (see apps/api/.env.e
 
 const prisma = createPrismaClient(databaseUrl);
 const media = new PrismaMediaRepository(prisma);
-const sources = createMediaSources({ tmdbKey: process.env.TMDB_API_KEY });
+const sources = createMediaSources({ tmdbKey: process.env.TMDB_API_KEY, googleBooksKey: process.env.GOOGLE_BOOKS_API_KEY });
 const store = new LocalImageStore(process.env.UPLOAD_DIR?.trim() || fileURLToPath(new URL("../../uploads", import.meta.url)));
 
 let added = 0;

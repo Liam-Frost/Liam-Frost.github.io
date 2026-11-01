@@ -118,6 +118,7 @@
 - The model ran Claude Code review for Stage 15 and fixed the findings listed in its review record.
 - The user filled in the Twitch app credentials (checked: token and an IGDB search work), asked whether Google Books' API is free, and asked to play collection songs in the player and for a cover wall for music; both were added to the Stage 15 PR.
 - Spotify's embedded player cannot be started from the page without loading Spotify's iFrame API script; the site only switches what it shows, and the visitor presses play.
+- The user created a Google Books key; it was added to `.env` / `.env.example` with comments and wired in as a book source. Google's cover links are 128 px; `zoom=0` turned out to return the same 575 × 750 "no image" placeholder for different books, so covers use `fife=w800`.
 
 ## Notes
 

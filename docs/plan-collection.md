@@ -174,7 +174,7 @@ Spotify 官方接口不再给新应用提供试听地址，所以导入的歌曲
 
 | 类型 | 来源 | 说明 |
 | --- | --- | --- |
-| 图书 | Open Library（主）、Bangumi 书籍（中日文小说、轻小说） | 都不需要 key。Google Books 不带 key 时配额为 0，暂不接入；需要时可以申请 key 再加 |
+| 图书 | Open Library、Google Books、Bangumi 书籍（中日文小说、轻小说） | Google Books 需要 `GOOGLE_BOOKS_API_KEY`（免费；不带 key 时配额为 0），中文书最全 |
 | 漫画 | AniList（主）、Bangumi（补充） | 和动漫同源，有罗马音；改编关系可以直接给 Stage 14 的建议用 |
 
 - 作者在添加时可以建成人物并关联（`credit`，身份 `author` / `illustrator`）。

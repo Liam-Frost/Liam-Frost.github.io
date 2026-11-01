@@ -98,6 +98,9 @@ const ANILIST_GENRES: Record<string, Omit<LocalizedText, "en">> = {
 /** AniList staff roles that make someone an author of a comic. */
 const ANILIST_AUTHOR_ROLES = /^(Story & Art|Story|Art|Original Creator|Original Story)\b/;
 const OPENLIBRARY = "https://openlibrary.org";
+const GOOGLE_BOOKS = "https://www.googleapis.com/books/v1";
+/** Google Books languages ("zh-CN", "ja", ...) as site languages. */
+const GOOGLE_LANGS: Record<string, SiteLang> = { zh: "zh", "zh-CN": "zh", "zh-TW": "zh-Hant", "zh-HK": "zh-Hant", ja: "ja", en: "en", fr: "fr" };
 /**
  * Open Library subjects mix genres with places, people, awards and other languages' headings; only these
  * genres are kept, by their lowercase subject name.
@@ -150,6 +153,8 @@ const POSTER_HOSTS = [
   /^image-cdn-[a-z]+\.spotifycdn\.com$/,
   /^s\d+\.anilist\.co$/,
   /^covers\.openlibrary\.org$/,
+  /^books\.google\.com$/,
+  /^books\.googleusercontent\.com$/,
   /^archive\.org$/,
   /^ia\d+\.us\.archive\.org$/
 ];
@@ -246,6 +251,24 @@ type AniListManga = {
   staff?: { edges?: { role?: string; node?: { name?: { full?: string; native?: string } } }[] };
 };
 
+type GoogleVolume = {
+  id: string;
+  volumeInfo?: {
+    title?: string;
+    subtitle?: string;
+    authors?: string[];
+    publisher?: string;
+    publishedDate?: string;
+    description?: string;
+    pageCount?: number;
+    printedPageCount?: number;
+    categories?: string[];
+    language?: string;
+    imageLinks?: Record<string, string>;
+    canonicalVolumeLink?: string;
+  };
+};
+
 type OpenLibraryDoc = {
   key: string;
   title?: string;
@@ -276,9 +299,10 @@ type BangumiSubject = {
 const BANGUMI_CREDIT_KEYS = ["导演", "监督", "动画制作", "原作"];
 const BANGUMI_BOOK_CREDIT_KEYS = ["作者", "原作", "作画", "插图"];
 
-export function createMediaSources(options: { tmdbKey?: string; fetchImpl?: typeof fetch }): MediaSources {
+export function createMediaSources(options: { tmdbKey?: string; googleBooksKey?: string; fetchImpl?: typeof fetch }): MediaSources {
   const fetchImpl = options.fetchImpl ?? fetch;
   const tmdbKey = options.tmdbKey?.trim() ?? "";
+  const googleBooksKey = options.googleBooksKey?.trim() ?? "";
   // A v4 read access token is a JWT; a v3 API key is a short hex string.
   const tmdbBearer = tmdbKey.startsWith("eyJ");
 
@@ -370,11 +394,49 @@ export function createMediaSources(options: { tmdbKey?: string; fetchImpl?: type
     return body.data;
   };
 
+  const googleBooks = async <T>(path: string, params: Record<string, string> = {}): Promise<T> => {
+    if (!googleBooksKey) throw new SourceError("未配置 GOOGLE_BOOKS_API_KEY");
+    const url = new URL(GOOGLE_BOOKS + path);
+    for (const [key, value] of Object.entries(params)) url.searchParams.set(key, value);
+    url.searchParams.set("key", googleBooksKey);
+    try {
+      return (await request(url.toString(), { headers: { accept: "application/json" } }, "Google Books")).json() as Promise<T>;
+    } catch (error) {
+      // Google answers a bad key with 400 and an exhausted quota with 429; the key must never reach a message.
+      if (error instanceof SourceError && /HTTP 4(00|03|29)/.test(error.message)) throw new SourceError("Google Books 拒绝了请求，请检查 GOOGLE_BOOKS_API_KEY 或当日配额");
+      throw error;
+    }
+  };
+
   const openLibrary = async <T>(path: string, params: Record<string, string> = {}): Promise<T> => {
     const url = new URL(OPENLIBRARY + path);
     for (const [key, value] of Object.entries(params)) url.searchParams.set(key, value);
     return (await request(url.toString(), { headers: { "user-agent": USER_AGENT, accept: "application/json" } }, "Open Library")).json() as Promise<T>;
   };
+
+  /**
+   * A Google Books cover over https, without the page-curl effect. `fife=w800` asks for up to 800 px wide
+   * (the API's own links are about 128 px); zoom=0 is not used, since it answers a placeholder for many books.
+   */
+  const googleCover = (links: Record<string, string> | undefined, sizes: string[], width?: number) => {
+    const link = sizes.map((size) => links?.[size]).find(Boolean);
+    if (!link) return null;
+    const url = new URL(link.replace(/^http:/, "https:"));
+    url.searchParams.delete("edge");
+    if (width) url.searchParams.set("fife", `w${width}`);
+    return url.toString();
+  };
+
+  /** Open Library's genre list, matched against a subject or each part of "Fiction / Science Fiction / General". */
+  const knownGenres = (subjects: string[]) => [
+    ...new Map(
+      subjects
+        .flatMap((subject) => [subject, ...subject.split(/\s*\/\s*/)])
+        .map((subject) => OPENLIBRARY_GENRES[subject.trim().toLowerCase()])
+        .filter((genre): genre is LocalizedText => Boolean(genre))
+        .map((genre) => [genre.en, genre])
+    ).values()
+  ];
 
   const anilistAuthors = (manga: AniListManga) =>
     [
@@ -406,7 +468,7 @@ export function createMediaSources(options: { tmdbKey?: string; fetchImpl?: type
   const bangumiPoster = (subject: BangumiSubject) => subject.images?.large || subject.images?.common || null;
 
   return {
-    available: () => ({ tmdb: Boolean(tmdbKey), bangumi: true, openlibrary: true, anilist: true }),
+    available: () => ({ tmdb: Boolean(tmdbKey), bangumi: true, openlibrary: true, googlebooks: Boolean(googleBooksKey), anilist: true }),
 
     async search(source, kind, query) {
       if (source === "openlibrary") {
@@ -422,6 +484,24 @@ export function createMediaSources(options: { tmdbKey?: string; fetchImpl?: type
           posterUrl: doc.cover_i ? `https://covers.openlibrary.org/b/id/${doc.cover_i}-M.jpg` : null,
           overview: ""
         }));
+      }
+
+      if (source === "googlebooks") {
+        const { items } = await googleBooks<{ items?: GoogleVolume[] }>("/volumes", { q: query, maxResults: "20", printType: "books" });
+        return (items ?? []).map((volume) => {
+          const info = volume.volumeInfo ?? {};
+          return {
+            source: "googlebooks" as const,
+            sourceId: volume.id,
+            mediaType: null,
+            creators: (info.authors ?? []).slice(0, 2),
+            title: [clean(info.title), clean(info.subtitle)].filter(Boolean).join("：") || clean(info.title),
+            originalTitle: null,
+            year: yearOf(info.publishedDate),
+            posterUrl: googleCover(info.imageLinks, ["thumbnail", "smallThumbnail"]),
+            overview: plainText(info.description)
+          };
+        });
       }
 
       if (source === "anilist") {
@@ -545,14 +625,7 @@ export function createMediaSources(options: { tmdbKey?: string; fetchImpl?: type
           title: compact({ [scriptLang(title)]: title }),
           originalTitle: title || null,
           year: doc.first_publish_year ?? null,
-          genres: [
-            ...new Map(
-              (doc.subject ?? [])
-                .map((subject) => OPENLIBRARY_GENRES[subject.trim().toLowerCase()])
-                .filter((genre): genre is LocalizedText => Boolean(genre))
-                .map((genre) => [genre.en, genre])
-            ).values()
-          ].slice(0, 5),
+          genres: knownGenres(doc.subject ?? []).slice(0, 5),
           // Later names are often translators and illustrators of editions.
           credits: (doc.author_name ?? []).slice(0, 1),
           // Descriptions often end with a "----------" block of links.
@@ -560,6 +633,27 @@ export function createMediaSources(options: { tmdbKey?: string; fetchImpl?: type
           posterUrl: doc.cover_i ? `https://covers.openlibrary.org/b/id/${doc.cover_i}-L.jpg` : null,
           episodes: null,
           publication: { publisher: clean(doc.publisher?.[0]) || null, pages: doc.number_of_pages_median ?? null, volumes: null, ongoing: null }
+        };
+      }
+
+      if (source === "googlebooks") {
+        if (!/^[A-Za-z0-9_-]{12}$/.test(sourceId)) throw new SourceError("无效的 Google Books 条目");
+        const volume = await googleBooks<GoogleVolume>(`/volumes/${sourceId}`);
+        const info = volume.volumeInfo ?? {};
+        const title = clean(info.title);
+        const lang = GOOGLE_LANGS[info.language ?? ""] ?? scriptLang(title);
+        return {
+          sourceId,
+          sourceUrl: info.canonicalVolumeLink ?? `https://books.google.com/books?id=${sourceId}`,
+          title: compact({ [lang]: title }),
+          originalTitle: title || null,
+          year: yearOf(info.publishedDate),
+          genres: knownGenres(info.categories ?? []).slice(0, 5),
+          credits: (info.authors ?? []).map(clean).filter(Boolean).slice(0, 3),
+          overview: compact({ [lang]: plainText(info.description) }),
+          posterUrl: googleCover(info.imageLinks, ["extraLarge", "large", "medium", "small", "thumbnail"], 800),
+          episodes: null,
+          publication: { publisher: clean(info.publisher) || null, pages: info.pageCount || info.printedPageCount || null, volumes: null, ongoing: null }
         };
       }
 

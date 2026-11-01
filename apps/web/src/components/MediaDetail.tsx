@@ -6,7 +6,7 @@ import PlayButton from "./PlayButton";
 import { isReadKind, mediaTitle, Stars, statusKey } from "./MediaCard";
 import { imageSrcSet } from "./ProjectCard";
 
-const SOURCE_NAMES: Record<string, string> = { tmdb: "TMDB", bangumi: "Bangumi", openlibrary: "Open Library", anilist: "AniList" };
+const SOURCE_NAMES: Record<string, string> = { tmdb: "TMDB", bangumi: "Bangumi", openlibrary: "Open Library", googlebooks: "Google Books", anilist: "AniList" };
 
 /** Side panel with one entry's details and links; Esc, the backdrop and the close button call onClose. */
 export default function MediaDetail({ id, onClose, linkTo }: { id: string; onClose: () => void; linkTo: CollectionLinkTo }) {

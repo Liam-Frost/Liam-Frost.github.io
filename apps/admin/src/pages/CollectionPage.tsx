@@ -126,7 +126,7 @@ export function CollectionPage() {
       )}
 
       {adding && kind === "track" ? <MusicSearchDialog mode="add" onClose={() => setAdding(false)} /> : null}
-      {adding && kind !== "track" ? <AddMediaDialog kind={kind} tmdbReady={settings?.sources.tmdb ?? false} onClose={() => setAdding(false)} /> : null}
+      {adding && kind !== "track" ? <AddMediaDialog kind={kind} available={settings?.sources} onClose={() => setAdding(false)} /> : null}
       {importing ? <PlaylistImportDialog onClose={() => setImporting(false)} /> : null}
       {spotifyOpen ? <SpotifyAccountDialog onClose={() => setSpotifyOpen(false)} /> : null}
       {editingSettings && settings ? <SettingsDialog settings={settings.settings} onClose={() => setEditingSettings(false)} /> : null}
@@ -220,8 +220,10 @@ function MediaCard({ item }: { item: AdminMediaItem }) {
   );
 }
 
-function AddMediaDialog({ kind, tmdbReady, onClose }: { kind: WatchKind; tmdbReady: boolean; onClose: () => void }) {
-  const sources = KIND_SOURCES[kind];
+function AddMediaDialog({ kind, available, onClose }: { kind: WatchKind; available?: Record<MediaSearchSource, boolean>; onClose: () => void }) {
+  // Sources that need a key (TMDB, Google Books) are left out until it is set.
+  const configured = KIND_SOURCES[kind].filter((s) => available?.[s] ?? true);
+  const sources = configured.length ? configured : KIND_SOURCES[kind];
   const [source, setSource] = useState<MediaSearchSource>(sources[0]);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<MediaSearchResult[] | null>(null);
@@ -231,7 +233,7 @@ function AddMediaDialog({ kind, tmdbReady, onClose }: { kind: WatchKind; tmdbRea
   const importMedia = useImportMedia();
   const createMedia = useCreateMedia();
   const navigate = useNavigate();
-  const sourceReady = source !== "tmdb" || tmdbReady;
+  const sourceReady = available?.[source] ?? true;
 
   const search = async (event: FormEvent) => {
     event.preventDefault();
@@ -302,7 +304,7 @@ function AddMediaDialog({ kind, tmdbReady, onClose }: { kind: WatchKind; tmdbRea
         </button>
       </form>
 
-      {!sourceReady ? <p className="mt-3 text-[12.5px] text-status-warn">未配置 TMDB_API_KEY，暂时只能手动添加。</p> : null}
+      {!sourceReady ? <p className="mt-3 text-[12.5px] text-status-warn">未配置 {source === "tmdb" ? "TMDB_API_KEY" : "GOOGLE_BOOKS_API_KEY"}，暂时只能手动添加。</p> : null}
       {error ? (
         <p role="alert" className="mt-3 text-[12.5px] text-status-error">
           {error}
@@ -365,6 +367,7 @@ const SEARCH_HINTS: Record<MediaSearchSource, string> = {
   tmdb: "片名，中文、英文或原名都可以",
   bangumi: "中文名或日文原名",
   openlibrary: "书名或作者，英文和原文书名最容易找到",
+  googlebooks: "书名、作者或 ISBN，中文书也很全",
   anilist: "日文原名、罗马音或英文名"
 };
 

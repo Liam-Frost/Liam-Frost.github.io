@@ -54,9 +54,9 @@ React and related dependencies should be upgraded to the latest versions. This u
 
 ### 2026-11-03: Book and Comic Sources Without Keys
 
-Books come from Open Library and Bangumi, comics from AniList and Bangumi; Google Books is not used.
+Books come from Open Library and Bangumi, comics from AniList and Bangumi; Google Books is used when `GOOGLE_BOOKS_API_KEY` is set (added the same day, once the user had a key).
 
-Reason: Google Books answered every keyless request with a daily quota of zero, so it would need a Google Cloud key; Open Library covers most books and Bangumi covers Chinese and Japanese novels and comics with Chinese names, both without keys. Google Books can be added later with a key.
+Reason: Google Books answered every keyless request with a daily quota of zero, so it needs a Google Cloud key; Open Library covers most books and Bangumi covers Chinese and Japanese novels and comics with Chinese names, both without keys. Google Books covers are requested with `fife=w800`: its own links are about 128 px, and `zoom=0` returns a "no image" placeholder for many books.
 
 ### 2026-11-03: AniList Relation Types Version 2
 

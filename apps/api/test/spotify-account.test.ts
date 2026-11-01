@@ -137,7 +137,7 @@ describe("Spotify routes", () => {
     const account = new SpotifyAccount(APP, settings, SESSION_SECRET, spotifyApi());
     const mediaSources: MediaSources = {
       ...offlineMediaSources,
-      available: () => ({ tmdb: false, bangumi: true, openlibrary: true, anilist: true }),
+      available: () => ({ tmdb: false, bangumi: true, openlibrary: true, googlebooks: true, anilist: true }),
       search: async () => [],
       details: async () => {
         throw new Error("unused");
