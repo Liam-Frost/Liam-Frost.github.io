@@ -350,6 +350,32 @@ export const mediaUpdateSchema = z
   .partial()
   .strict();
 
+/** Bulk actions: up to 500 distinct ids; an update needs at least one change. */
+function batchSchema<T extends z.ZodType>(patch: T) {
+  return z.discriminatedUnion("action", [
+    z.object({ action: z.literal("delete"), ids: z.array(uuid).min(1).max(500, "At most 500 at a time") }).strict(),
+    z.object({ action: z.literal("update"), ids: z.array(uuid).min(1).max(500, "At most 500 at a time"), patch }).strict()
+  ]).refine((value) => new Set(value.ids).size === value.ids.length, "Duplicate ids");
+}
+
+const batchVisibility = { visibility: z.enum(["public", "private"]), featured: z.boolean() };
+
+export const mediaBatchSchema = batchSchema(
+  z
+    .object({ ...batchVisibility, status: z.enum(["want", "watching", "done", "dropped"]), inPlayer: z.boolean() })
+    .partial()
+    .strict()
+    .refine((value) => Object.keys(value).length > 0, "Nothing to change")
+);
+
+export const personBatchSchema = batchSchema(
+  z
+    .object(batchVisibility)
+    .partial()
+    .strict()
+    .refine((value) => Object.keys(value).length > 0, "Nothing to change")
+);
+
 export const collectionSettingsSchema = z
   .object({
     // Settings saved before a kind existed have no switch for it; it is shown.

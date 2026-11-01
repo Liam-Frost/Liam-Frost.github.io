@@ -1,14 +1,18 @@
-import type { AdminPerson, PersonSearchResult } from "@liam-frost/shared";
-import { EyeOff, Plus, Search, Star, UserRound } from "lucide-react";
-import { useState, type FormEvent } from "react";
+import type { AdminBatchRequest, AdminPerson, AdminPersonUpdate, PersonSearchResult } from "@liam-frost/shared";
+import { useQueryClient } from "@tanstack/react-query";
+import { EyeOff, Plus, Search, Star, Trash2, UserRound } from "lucide-react";
+import { useMemo, useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router";
 
 import { PageHeader } from "../components/layout/AdminLayout";
+import { BatchBar, describeBatch, SelectMark } from "../components/ui/BatchBar";
 import { DatabaseNotice } from "../components/ui/DatabaseNotice";
 import { Dialog } from "../components/ui/Dialog";
 import { Field } from "../components/ui/Field";
+import { useToast } from "../components/ui/Toast";
 import { useCollectionSettings } from "../hooks/useMedia";
-import { usePeople, useSetPerson } from "../hooks/usePeople";
+import { peopleKey, personKey, usePeople, useSetPerson } from "../hooks/usePeople";
+import { useSelection, type Selection } from "../hooks/useSelection";
 import { api, ApiError } from "../lib/api";
 import { guessLang, pickText } from "../lib/i18n";
 
@@ -21,6 +25,8 @@ export function PeoplePage() {
 
   const needle = filter.trim().toLowerCase();
   const visible = (people ?? []).filter((person) => !needle || [...Object.values(person.name), person.originalName ?? ""].some((text) => text?.toLowerCase().includes(needle)));
+  const order = useMemo(() => visible.map((person) => person.id), [visible]);
+  const selection = useSelection(order);
 
   return (
     <>
@@ -39,21 +45,31 @@ export function PeoplePage() {
 
       {people ? (
         <>
-          <div className="relative mb-5 w-full sm:w-72">
-            <Search aria-hidden="true" className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-faint" />
-            <input className="field pl-9" placeholder="筛选名字" aria-label="筛选名字" value={filter} onChange={(e) => setFilter(e.target.value)} />
+          <div className="mb-5 flex flex-wrap items-center gap-2">
+            <div className="relative w-full sm:w-72">
+              <Search aria-hidden="true" className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-faint" />
+              <input className="field pl-9" placeholder="筛选名字" aria-label="筛选名字" value={filter} onChange={(e) => setFilter(e.target.value)} />
+            </div>
+            {visible.length && !selection.active ? (
+              <button type="button" className="btn-secondary" onClick={selection.start}>
+                选择
+              </button>
+            ) : null}
           </div>
           {visible.length ? (
             <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
               {visible.map((person) => (
                 <li key={person.id}>
-                  <PersonCard person={person} />
+                  <PersonCard person={person} selection={selection} />
                 </li>
               ))}
             </ul>
           ) : (
             <div className="card p-10 text-center text-[13.5px] text-muted">{people.length ? "没有符合条件的人物" : "还没有人物，点击“添加人物”，或者在条目的“关联”里查找建议"}</div>
           )}
+          <BatchBar selection={selection} total={visible.length}>
+            <PeopleBatchActions selection={selection} />
+          </BatchBar>
         </>
       ) : null}
 
@@ -62,11 +78,18 @@ export function PeoplePage() {
   );
 }
 
-function PersonCard({ person }: { person: AdminPerson }) {
+function PersonCard({ person, selection }: { person: AdminPerson; selection: Selection }) {
   const name = pickText(person.name, "未命名");
-  return (
-    <Link to={`/people/${person.id}`} className="card group block overflow-hidden transition-shadow hover:shadow-card-hover">
+  const selected = selection.isSelected(person.id);
+  const className = `card group block w-full overflow-hidden text-left transition-shadow hover:shadow-card-hover ${selected ? "ring-2 ring-brand" : ""}`;
+  const body = (
+    <>
       <div className="relative aspect-square bg-line-soft">
+        {selection.active ? (
+          <span className="absolute top-2 right-2 z-10">
+            <SelectMark checked={selected} />
+          </span>
+        ) : null}
         {person.photo ? (
           <img src={person.photo.variants[0].url} alt="" loading="lazy" className="size-full object-cover" />
         ) : (
@@ -93,7 +116,92 @@ function PersonCard({ person }: { person: AdminPerson }) {
         </p>
         <p className="text-[12px] text-subtle">{person.works} 部作品</p>
       </div>
+    </>
+  );
+  return selection.active ? (
+    <button type="button" aria-pressed={selected} aria-label={`选择 ${name}`} className={className} onClick={(e) => selection.toggle(person.id, e.shiftKey)}>
+      {body}
+    </button>
+  ) : (
+    <Link to={`/people/${person.id}`} className={className}>
+      {body}
     </Link>
+  );
+}
+
+/** Bulk visibility, featured and delete for people. */
+function PeopleBatchActions({ selection }: { selection: Selection }) {
+  const qc = useQueryClient();
+  const toast = useToast();
+  const [busy, setBusy] = useState(false);
+  const [confirming, setConfirming] = useState(false);
+  const ids = selection.selected;
+
+  const run = async (request: AdminBatchRequest<Pick<AdminPersonUpdate, "visibility" | "featured">>, verb: string) => {
+    setBusy(true);
+    try {
+      const result = await api.batchPeople(request);
+      const { text, ok } = describeBatch(result, verb);
+      toast(text, ok ? "success" : "error");
+      if (request.action === "delete") {
+        for (const id of result.done) qc.removeQueries({ queryKey: personKey(id) });
+        selection.clear();
+        // Entries listed these people among their links.
+        void qc.invalidateQueries({ queryKey: ["admin", "relations"] });
+      }
+      await qc.invalidateQueries({ queryKey: peopleKey });
+    } catch (e) {
+      toast(e instanceof Error ? e.message : "操作失败", "error");
+    } finally {
+      setBusy(false);
+    }
+  };
+  const disabled = busy || ids.length === 0;
+
+  return (
+    <>
+      <button type="button" className="btn-secondary" disabled={disabled} onClick={() => void run({ action: "update", ids, patch: { visibility: "public" } }, "公开")}>
+        公开
+      </button>
+      <button type="button" className="btn-secondary" disabled={disabled} onClick={() => void run({ action: "update", ids, patch: { visibility: "private" } }, "隐藏")}>
+        隐藏
+      </button>
+      <button type="button" className="btn-secondary" disabled={disabled} onClick={() => void run({ action: "update", ids, patch: { featured: true } }, "设为精选")}>
+        精选
+      </button>
+      <button type="button" className="btn-secondary" disabled={disabled} onClick={() => void run({ action: "update", ids, patch: { featured: false } }, "取消精选")}>
+        取消精选
+      </button>
+      <button type="button" className="btn-danger" disabled={disabled} onClick={() => setConfirming(true)}>
+        <Trash2 aria-hidden="true" className="size-4" /> 删除
+      </button>
+      <Dialog
+        open={confirming}
+        size="sm"
+        title="批量删除人物"
+        onClose={() => setConfirming(false)}
+        footer={
+          <>
+            <button type="button" className="btn-secondary" onClick={() => setConfirming(false)}>
+              取消
+            </button>
+            <button
+              type="button"
+              className="btn-danger"
+              disabled={busy}
+              onClick={() => {
+                setConfirming(false);
+                void run({ action: "delete", ids }, "删除");
+              }}
+            >
+              删除 {ids.length} 人
+            </button>
+          </>
+        }
+      >
+        <p className="text-[13.5px] leading-relaxed text-muted">确定删除选中的 {ids.length} 个人物吗？照片和他们与作品的关联都会删除，作品本身不受影响。此操作无法撤销。</p>
+      </Dialog>
+    </>
   );
 }
 
