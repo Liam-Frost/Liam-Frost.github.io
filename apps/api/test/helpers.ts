@@ -8,6 +8,7 @@ import { loadConfig } from "../src/config/env";
 import type { MusicSource } from "../src/media/itunes";
 import { SourceError, type MediaSources } from "../src/media/sources";
 import type { MediaRepository } from "../src/media/types";
+import type { PersonRepository, RelationRepository } from "../src/people/types";
 import type { PhotoRepository } from "../src/photos/types";
 import type { ProjectRepository } from "../src/projects/types";
 import { buildServer } from "../src/server";
@@ -27,12 +28,16 @@ export function passwordHash() {
 }
 
 const offline = () => Promise.reject(new SourceError("no network in tests"));
-const offlineMediaSources: MediaSources = {
+export const offlineMediaSources: MediaSources = {
   available: () => ({ tmdb: false, bangumi: false }),
   search: offline,
   details: offline,
   download: offline,
-  romaji: async () => null
+  romaji: async () => null,
+  searchPeople: offline,
+  person: offline,
+  credits: offline,
+  animeRelations: async () => []
 };
 
 export type TestServerOptions = {
@@ -44,6 +49,10 @@ export type TestServerOptions = {
   projects?: ProjectRepository | null;
   /** Defaults to none. */
   media?: MediaRepository | null;
+  /** Defaults to none. */
+  people?: PersonRepository | null;
+  /** Defaults to none. */
+  relations?: RelationRepository | null;
   /** Defaults to sources that fail, so tests never reach TMDB or Bangumi. */
   mediaSources?: MediaSources;
   /** Defaults to none (in-memory defaults). */
@@ -78,6 +87,8 @@ export async function buildTestServer(env: Record<string, string | undefined> = 
     photos: options.photos ?? null,
     projects: options.projects ?? null,
     media: options.media ?? null,
+    people: options.people ?? null,
+    relations: options.relations ?? null,
     mediaSources: options.mediaSources ?? offlineMediaSources,
     settings: options.settings ?? null,
     fetchPlaylist: options.fetchPlaylist ?? (() => Promise.reject(new Error("no network in tests"))),

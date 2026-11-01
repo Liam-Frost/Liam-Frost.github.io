@@ -5,7 +5,7 @@ import type { MediaSources } from "../src/media/sources";
 import { MemorySettingsRepository } from "../src/settings/types";
 import { SpotifyAccount, type ApiTrack } from "../src/spotify/account";
 import { spotifyLink } from "../src/spotify/playlist";
-import { buildTestServer, csrf, login, SESSION_SECRET } from "./helpers";
+import { buildTestServer, csrf, login, offlineMediaSources, SESSION_SECRET } from "./helpers";
 import { MemoryMediaRepository } from "./memory-media-repository";
 
 const APP = { clientId: "client", clientSecret: "secret", redirectUri: "http://127.0.0.1:8787/api/admin/spotify/callback" };
@@ -136,6 +136,7 @@ describe("Spotify routes", () => {
     const media = new MemoryMediaRepository();
     const account = new SpotifyAccount(APP, settings, SESSION_SECRET, spotifyApi());
     const mediaSources: MediaSources = {
+      ...offlineMediaSources,
       available: () => ({ tmdb: false, bangumi: true }),
       search: async () => [],
       details: async () => {

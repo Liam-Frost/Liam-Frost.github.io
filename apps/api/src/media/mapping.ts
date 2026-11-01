@@ -70,6 +70,7 @@ export function toPublicMediaSummary(row: MediaRow, store: LocalImageStore): Pub
   };
 }
 
-export function toPublicMedia(row: MediaRow, store: LocalImageStore): PublicMedia {
+/** An entry's details; the collection route adds its links. */
+export function toPublicMedia(row: MediaRow, store: LocalImageStore): Omit<PublicMedia, "links"> {
   return { ...toPublicMediaSummary(row, store), overview: row.overview, review: row.review, source: row.source, sourceUrl: row.sourceUrl };
 }
