@@ -51,7 +51,8 @@ function EmbedDock({ player, src }: { player: PublicSpotifyPlayer; src: string }
   useEffect(
     () =>
       onPlayerCommand((command) => {
-        const chosen = command.type === "play" && command.track.spotifyUrl ? embedSrc(command.track.spotifyUrl) : null;
+        const link = command.type === "play" ? command.track.spotifyUrl : command.type === "queue" ? (command.spotifyUrl ?? command.tracks[0]?.spotifyUrl ?? null) : null;
+        const chosen = link ? embedSrc(link) : null;
         if (!chosen) return;
         setShown(chosen);
         setIsExpanded(true);
@@ -160,14 +161,32 @@ function Dock({ player }: { player: PublicSpotifyPlayer }) {
     setIsExpanded(true);
   };
 
+  /** Replaces the list with the given songs and plays them in order from the first. */
+  const queueRequested = (requested: PlayRequest[]) => {
+    const playable = requested.filter((track) => track.previewUrl);
+    if (!playable.length) return;
+    setTracks(playable);
+    setOrder(playable.map((_, index) => index));
+    setPosition(0);
+    const audio = ensureAudio();
+    failuresRef.current = 0;
+    audio.src = playable[0].previewUrl;
+    audio.play().catch((error: unknown) => {
+      if (error instanceof DOMException && error.name === "NotAllowedError") setIsPlaying(false);
+    });
+    setIsPlaying(true);
+    setIsExpanded(true);
+  };
+
   // Audio event handlers outlive renders; route them through a ref to the latest callbacks.
-  const handlers = useRef({ next, previous, playRequested });
-  handlers.current = { next, previous, playRequested };
+  const handlers = useRef({ next, previous, playRequested, queueRequested });
+  handlers.current = { next, previous, playRequested, queueRequested };
 
   useEffect(
     () =>
       onPlayerCommand((command) => {
         if (command.type === "play") handlers.current.playRequested(command.track);
+        else if (command.type === "queue") handlers.current.queueRequested(command.tracks);
         else audioRef.current?.pause();
       }),
     []
