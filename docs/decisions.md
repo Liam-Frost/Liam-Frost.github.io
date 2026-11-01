@@ -52,6 +52,18 @@ React and related dependencies should be upgraded to the latest versions. This u
 
 ## Model Decisions
 
+### 2026-11-02: Suggestions Never Link by Themselves
+
+Suggested links (TMDB cast and crew, a song's singers, AniList relations) are listed for the admin to add one by one; nothing is linked automatically. AniList relations only match anime in the collection to anime, because a manga usually shares the anime's title.
+
+Reason: same-name people and title matches are common enough that automatic links would quietly add wrong ones; the plan asked for candidates only.
+
+### 2026-11-02: Admin Dialogs Render Into the Page Body
+
+Admin dialogs are rendered with a portal into `<body>`, and submit events stop at the dialog.
+
+Reason: dialogs open from inside editors' `<form>`s; a form inside a dialog was nested in the editor's form, so pressing Enter reloaded the page (and React bubbled the submit to the editor). This affected the existing 找试听 dialog too.
+
 ### 2026-11-01: The Player Plays the Collection's Songs
 
 Songs are collection entries; the player plays the public ones marked "in player" that have a preview. A Spotify playlist is imported once (background job) instead of being synced at runtime, and iTunes provides search, covers and previews for single songs and for songs without a Spotify preview.

@@ -276,10 +276,22 @@ Status: implementation complete; Claude Code review complete and fixes applied. 
 - Tests: 120 passed. Verified the embedded player in the browser against a mock API (Spotify's player loaded; collapsing kept the iframe).
 - Ran Claude Code review for Stage 13b (`docs/reviews/2026-11-01-claude-code-stage-13b.md`) and fixed four findings.
 
+### Stage 14: Links Between Entries, and People
+
+Status: implementation complete; Claude Code review complete and fixes applied.
+
+- `Person` and `MediaRelation` tables (migration `20261102090000_people_relations`; schema diff against a fresh database: empty). Relation types: credit (person → work, with role), soundtrack (song → work, with song role), adaptation, sequel, related; one relation per start, end, type and role; cascading deletes.
+- Admin: 人物 list and editor (TMDB search and import with photo, manual people, names and biographies per language, links), links panel on entries and people (add / edit / remove, create a person while linking), suggestions from TMDB credits, song singers and AniList relations.
+- Site: 人物 tab on /collection, person panel (photo, roles, biography, works, links), grouped links in an entry's panel; panels open from each other and Back returns. People switch in 显示设置 (settings saved before it show people).
+- Tests: 131 passed.
+- Verified with a temporary PostgreSQL and the real TMDB / Bangumi / AniList / iTunes services: imported Hayao Miyazaki and Rumi Hiiragi from Spirited Away's suggestions, linked Attack on Titan Season 2 as the sequel from AniList's suggestion, linked an iTunes song as the opening and its singer, added a related work by hand; checked the people tab, person and entry panels on desktop and phone width.
+- Ran Claude Code review for Stage 14 (`docs/reviews/2026-11-02-claude-code-stage-14.md`); browser testing found three bugs, fixed with tests where possible.
+
 ### Upcoming
 
 - PR #13 was merged. The user tests the Spotify connection (`npm run db:deploy` first).
-- Confirmed plan (`docs/plan-collection.md`): Stage 14 links between entries and people, Stage 15 books and comics, Stage 16 games (needs IGDB credentials); the yearly review moves to Stage 17.
+- Stage 14 PR: `npm run db:deploy` applies the people migration.
+- Next: Stage 15 books and comics, Stage 16 games (needs IGDB credentials); the yearly review moves to Stage 17.
 - Stage 10: VPS deployment and CI/CD (needs the VPS provider/OS/specs, DNS manager and domain from the user).
 - Stage 5: back-end foundation and admin auth refinement (`ADMIN_PATH`, IP allowlist, CSRF, Zod, tests). See `docs/plan-admin-projects-deploy.md`.
 
