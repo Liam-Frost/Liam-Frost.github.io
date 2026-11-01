@@ -188,12 +188,25 @@ export type AdminSpotifyResponse = {
   playerTracks: number;
 };
 
-/** Collection entries: films, series and anime now; music (track/album) in a later stage. */
-export type MediaKind = "movie" | "tv" | "anime" | "track" | "album";
-/** Watch status for films, series and anime. */
+/** Collection entries: films, series, anime, books, comics and music (track; album is reserved). */
+export type MediaKind = "movie" | "tv" | "anime" | "book" | "comic" | "track" | "album";
+/** Status for films, series and anime (want to watch, ...) and books and comics (want to read, ...). */
 export type MediaStatus = "want" | "watching" | "done" | "dropped";
 /** Where an entry's details came from. */
-export type MediaSource = "tmdb" | "bangumi" | "spotify" | "itunes" | "manual";
+export type MediaSource = "tmdb" | "bangumi" | "openlibrary" | "googlebooks" | "anilist" | "spotify" | "itunes" | "manual";
+/** Sources the admin can search for films, series, anime, books and comics. */
+export type MediaSearchSource = "tmdb" | "bangumi" | "openlibrary" | "googlebooks" | "anilist";
+
+/** Book and comic details (kinds "book" and "comic"). */
+export type MediaPublication = {
+  publisher: string | null;
+  /** Books. */
+  pages: number | null;
+  /** Comics (and book series). */
+  volumes: number | null;
+  /** Comics: still being published; null when unknown. */
+  ongoing: boolean | null;
+};
 
 /** Song details (kind "track"). */
 export type MediaMusic = {
@@ -233,6 +246,8 @@ export type AdminMediaItem = {
   progress: MediaProgress | null;
   /** Songs only. */
   music: MediaMusic | null;
+  /** Books and comics only. */
+  publication: MediaPublication | null;
   /** Songs: plays in the site's player. */
   inPlayer: boolean;
   featured: boolean;
@@ -244,7 +259,7 @@ export type AdminMediaItem = {
 /** Manual entry without a source. */
 export type AdminMediaCreate = { kind: MediaKind; title: LocalizedText };
 /** Import from a source search result. */
-export type AdminMediaImport = { kind: MediaKind; source: "tmdb" | "bangumi"; sourceId: string };
+export type AdminMediaImport = { kind: MediaKind; source: MediaSearchSource; sourceId: string };
 
 /** Editable fields; `null` clears an optional field. */
 export type AdminMediaUpdate = Partial<{
@@ -262,16 +277,20 @@ export type AdminMediaUpdate = Partial<{
   progress: MediaProgress | null;
   /** Songs: album, and a preview chosen from an iTunes search result. */
   music: { album?: string | null; previewUrl?: string | null; appleUrl?: string | null };
+  /** Books and comics. */
+  publication: Partial<MediaPublication>;
   inPlayer: boolean;
   featured: boolean;
   visibility: PhotoVisibility;
 }>;
 
 export type MediaSearchResult = {
-  source: "tmdb" | "bangumi";
+  source: MediaSearchSource;
   sourceId: string;
-  /** Movie or series, for TMDB anime searches. */
-  mediaType: "movie" | "tv";
+  /** Movie or series, for TMDB anime searches; null for books and comics. */
+  mediaType: "movie" | "tv" | null;
+  /** Authors of books and comics. */
+  creators: string[];
   title: string;
   originalTitle: string | null;
   year: number | null;
@@ -284,7 +303,7 @@ export type MediaSearchResult = {
 
 export type CollectionSettings = {
   /** Which kinds the site shows (people: the people tab and people in entries' links). */
-  show: { movie: boolean; tv: boolean; anime: boolean; music: boolean; people: boolean };
+  show: { movie: boolean; tv: boolean; anime: boolean; book: boolean; comic: boolean; music: boolean; people: boolean };
   /** Off: "want" entries never appear on the site, whatever their own visibility. */
   showWant: boolean;
 };
@@ -342,8 +361,8 @@ export type AdminMediaResponse = { item: AdminMediaItem };
 export type AdminMediaSearchResponse = { results: MediaSearchResult[] };
 export type AdminCollectionSettingsResponse = {
   settings: CollectionSettings;
-  /** Sources that can be searched (TMDB needs TMDB_API_KEY). */
-  sources: { tmdb: boolean; bangumi: boolean };
+  /** Sources that can be searched (TMDB needs TMDB_API_KEY, Google Books GOOGLE_BOOKS_API_KEY). */
+  sources: Record<MediaSearchSource, boolean>;
 };
 
 /** A collection entry in the public list (no synopsis or review). */
@@ -362,6 +381,7 @@ export type PublicMediaSummary = {
   rewatchCount: number;
   progress: MediaProgress | null;
   music: MediaMusic | null;
+  publication: MediaPublication | null;
   featured: boolean;
   /** Whether a short review exists in any language. */
   hasReview: boolean;
@@ -502,8 +522,8 @@ export type AdminRelationResponse = { relation: AdminRelation };
 export type RelationSuggestion =
   /** A cast or crew member on TMDB; importing the person comes first when they are not in the collection. */
   | { kind: "tmdb-person"; sourceId: string; name: string; role: PersonRole; character: string | null; photoUrl: string | null; personId: string | null }
-  /** A song's singer by name; a person is created when none matches. */
-  | { kind: "artist"; name: string; personId: string | null }
+  /** A song's singer or a book's author by name; a person is created when none matches. */
+  | { kind: "name"; name: string; role: PersonRole; personId: string | null }
   /** Another entry in the collection that AniList links to this one. */
   | { kind: "media"; relation: AdminRelationCreate; other: Extract<AdminRelationEnd, { type: "media" }> };
 

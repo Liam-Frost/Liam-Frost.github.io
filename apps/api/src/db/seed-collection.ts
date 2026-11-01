@@ -47,7 +47,11 @@ const SAMPLES: Sample[] = [
   },
   { kind: "anime", source: "bangumi", sourceId: "400602", patch: { status: "watching", rating: 4, progress: { watched: 10, total: 28 } } },
   { kind: "anime", source: "tmdb", sourceId: "movie:372058", patch: { rating: 4, watchedOn: "2026-06-12" } },
-  { kind: "anime", source: "bangumi", query: "进击的巨人", patch: { status: "want" } }
+  { kind: "anime", source: "bangumi", query: "进击的巨人", patch: { status: "want" } },
+  { kind: "book", source: "openlibrary", sourceId: "OL17267881W", patch: { rating: 5, watchedOn: "2026-03-14", review: { zh: "黑暗森林那一段读得背后发凉。" } } },
+  { kind: "book", source: "bangumi", query: "涼宮ハルヒの憂鬱", patch: { status: "watching", progress: { watched: 120, total: null } } },
+  { kind: "comic", source: "anilist", sourceId: "111258", patch: { status: "watching", rating: 5, progress: { watched: 5, total: null } } },
+  { kind: "comic", source: "bangumi", query: "葬送のフリーレン", patch: { rating: 4, watchedOn: "2026-09-30" } }
 ];
 
 // Like the server: honour HTTPS_PROXY for TMDB / Bangumi when set.
@@ -59,7 +63,7 @@ if (!databaseUrl) throw new Error("DATABASE_URL is required (see apps/api/.env.e
 
 const prisma = createPrismaClient(databaseUrl);
 const media = new PrismaMediaRepository(prisma);
-const sources = createMediaSources({ tmdbKey: process.env.TMDB_API_KEY });
+const sources = createMediaSources({ tmdbKey: process.env.TMDB_API_KEY, googleBooksKey: process.env.GOOGLE_BOOKS_API_KEY });
 const store = new LocalImageStore(process.env.UPLOAD_DIR?.trim() || fileURLToPath(new URL("../../uploads", import.meta.url)));
 
 let added = 0;

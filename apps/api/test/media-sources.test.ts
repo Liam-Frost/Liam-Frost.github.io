@@ -149,7 +149,7 @@ describe("TMDB", () => {
     await expect(createMediaSources({}).search("tmdb", "movie", "x")).rejects.toThrow("未配置 TMDB_API_KEY");
     const rejected = createMediaSources({ tmdbKey: "bad", fetchImpl: fakeFetch(() => new Response("", { status: 401 })) });
     await expect(rejected.search("tmdb", "movie", "x")).rejects.toThrow(/API key/);
-    expect(createMediaSources({}).available()).toEqual({ tmdb: false, bangumi: true });
+    expect(createMediaSources({}).available()).toEqual({ tmdb: false, bangumi: true, openlibrary: true, googlebooks: false, anilist: true });
   });
 });
 
@@ -165,6 +165,32 @@ describe("AniList romaji", () => {
     const match = createMediaSources({ fetchImpl: anilist({ title: { romaji: "Sousou no Frieren", native: "葬送のフリーレン" }, startDate: { year: 2023 } }) });
     expect(await match.romaji("葬送的芙莉莲", 2023)).toBe("Sousou no Frieren");
     expect(await match.romaji("別の作品", 2010)).toBeNull();
+  });
+
+  it("reads relations with their direction and the other work's kind", async () => {
+    const fetchImpl = fakeFetch((_url, init) => {
+      expect(String(init.body)).toContain("relationType(version: 2)");
+      return Response.json({
+        data: {
+          Media: {
+            title: { romaji: "Bocchi the Rock!", native: "ぼっち・ざ・ろっく！" },
+            startDate: { year: 2022 },
+            relations: {
+              edges: [
+                { relationType: "SOURCE", node: { type: "MANGA", format: "MANGA", title: { native: "ぼっち・ざ・ろっく！" } } },
+                { relationType: "ADAPTATION", node: { type: "MANGA", format: "NOVEL", title: { romaji: "Some Novel" } } },
+                { relationType: "SEQUEL", node: { type: "ANIME", format: "TV", title: { native: "続編" } } }
+              ]
+            }
+          }
+        }
+      });
+    });
+    expect(await createMediaSources({ fetchImpl }).relations("anime", "ぼっち・ざ・ろっく！", 2022)).toEqual([
+      { relationType: "SOURCE", kind: "comic", titles: ["ぼっち・ざ・ろっく！"] },
+      { relationType: "ADAPTATION", kind: "book", titles: ["Some Novel"] },
+      { relationType: "SEQUEL", kind: "anime", titles: ["続編"] }
+    ]);
   });
 
   it("gives up quietly when AniList fails", async () => {
@@ -226,5 +252,189 @@ describe("Bangumi", () => {
     await expect(sources.download("http://image.tmdb.org/t/p/w780/p.jpg")).rejects.toThrow("海报地址无效");
     await expect(sources.download("https://internal.example/p.jpg")).rejects.toThrow("海报地址无效");
     expect(await sources.search("bangumi", "anime", "x")).toEqual([]);
+  });
+});
+
+describe("Books and comics", () => {
+  it("searches and imports Open Library works", async () => {
+    const fetchImpl = fakeFetch((url) => {
+      if (url.pathname === "/search.json" && url.searchParams.get("q") === "key:/works/OL17267881W") {
+        return Response.json({
+          docs: [
+            {
+              key: "/works/OL17267881W",
+              title: "三体",
+              author_name: ["刘慈欣", "Ken Liu"],
+              first_publish_year: 2008,
+              cover_i: 9157544,
+              number_of_pages_median: 416,
+              publisher: ["\u200e重庆出版社"],
+              subject: ["Science fiction", "award:hugo_award=2015", "Fiction, science fiction, general", "Liebesbeziehung", "Fiction", "science fiction"]
+            }
+          ]
+        });
+      }
+      if (url.pathname === "/search.json") return Response.json({ docs: [{ key: "/works/OL17267881W", title: "三体", author_name: ["刘慈欣"], cover_i: 1 }] });
+      if (url.pathname === "/works/OL17267881W.json") return Response.json({ description: { value: "A novel.\n----------\nSee also: ..." } });
+      return new Response("", { status: 404 });
+    });
+    const sources = createMediaSources({ fetchImpl });
+
+    const [hit] = await sources.search("openlibrary", "book", "三体");
+    expect(hit).toMatchObject({ source: "openlibrary", sourceId: "OL17267881W", creators: ["刘慈欣"], posterUrl: "https://covers.openlibrary.org/b/id/1-M.jpg" });
+
+    const details = await sources.details("openlibrary", "book", "OL17267881W");
+    expect(details).toMatchObject({
+      sourceUrl: "https://openlibrary.org/works/OL17267881W",
+      title: { zh: "三体" },
+      year: 2008,
+      genres: [
+        { zh: "科幻", "zh-Hant": "科幻", en: "Science fiction", fr: "Science-fiction", ja: "SF" },
+        { zh: "小说", "zh-Hant": "小說", en: "Fiction", fr: "Fiction", ja: "小説" }
+      ],
+      credits: ["刘慈欣"],
+      overview: { en: "A novel." },
+      posterUrl: "https://covers.openlibrary.org/b/id/9157544-L.jpg",
+      publication: { publisher: "重庆出版社", pages: 416, volumes: null, ongoing: null }
+    });
+    await expect(sources.details("openlibrary", "book", "OL1A")).rejects.toThrow("无效");
+  });
+
+  it("imports AniList manga with authors, translated genres and status", async () => {
+    const fetchImpl = fakeFetch(() =>
+      Response.json({
+        data: {
+          Media: {
+            id: 111258,
+            siteUrl: "https://anilist.co/manga/111258",
+            status: "RELEASING",
+            volumes: null,
+            genres: ["Comedy", "Music"],
+            title: { romaji: "Bocchi the Rock!", native: "ぼっち・ざ・ろっく！", english: "Bocchi the Rock!" },
+            startDate: { year: 2018 },
+            coverImage: { extraLarge: "https://s4.anilist.co/x.jpg" },
+            description: "Hitori wants friends.<br><br>\n(Source: Yen Press)",
+            staff: { edges: [{ role: "Story & Art", node: { name: { full: "Aki Hamaji", native: "はまじあき" } } }, { role: "Translator", node: { name: { full: "Someone" } } }] }
+          }
+        }
+      })
+    );
+    const details = await createMediaSources({ fetchImpl }).details("anilist", "comic", "111258");
+    expect(details).toMatchObject({
+      title: { ja: "ぼっち・ざ・ろっく！", en: "Bocchi the Rock!", fr: "Bocchi the Rock!" },
+      originalTitle: "ぼっち・ざ・ろっく！",
+      genres: [{ en: "Comedy", zh: "喜剧" }, { en: "Music", zh: "音乐" }],
+      credits: ["はまじあき"],
+      overview: { en: "Hitori wants friends." },
+      publication: { volumes: null, ongoing: true }
+    });
+    const missing = createMediaSources({ fetchImpl: fakeFetch(() => Response.json({ data: { Media: null }, errors: [{ status: 404 }] })) });
+    await expect(missing.details("anilist", "comic", "1")).rejects.toThrow("找不到");
+  });
+
+  it("splits Bangumi books into comics and the rest, and reads publication details", async () => {
+    const fetchImpl = fakeFetch((url, init) => {
+      if (url.pathname === "/v0/search/subjects") {
+        expect(JSON.parse(String(init.body)).filter).toEqual({ type: [1] });
+        return Response.json({
+          data: [
+            { id: 1, name: "ぼっち・ざ・ろっく！", platform: "漫画" },
+            { id: 2, name: "三体", name_cn: "三体", platform: "小说" }
+          ]
+        });
+      }
+      return Response.json({
+        id: 241088,
+        name: "ぼっち・ざ・ろっく！",
+        name_cn: "孤独摇滚！",
+        platform: "漫画",
+        volumes: 7,
+        infobox: [
+          { key: "作者", value: "はまじあき" },
+          { key: "出版社", value: "芳文社、东立" },
+          { key: "开始", value: "2018-03-19" }
+        ]
+      });
+    });
+    const sources = createMediaSources({ fetchImpl });
+    expect((await sources.search("bangumi", "comic", "x")).map((hit) => hit.sourceId)).toEqual(["1"]);
+    expect((await sources.search("bangumi", "book", "x")).map((hit) => hit.sourceId)).toEqual(["2"]);
+    expect(await sources.details("bangumi", "comic", "241088")).toMatchObject({
+      credits: ["はまじあき"],
+      episodes: 7,
+      publication: { publisher: "芳文社", pages: null, volumes: 7, ongoing: true }
+    });
+  });
+
+  it("follows cover redirects only through image hosts", async () => {
+    const jpg = Buffer.from("jpg");
+    const fetchImpl = fakeFetch((url) => {
+      if (url.hostname === "covers.openlibrary.org") return new Response(null, { status: 302, headers: { location: "https://archive.org/download/x.jpg" } });
+      if (url.hostname === "archive.org") return new Response(null, { status: 302, headers: { location: "https://ia800507.us.archive.org/x.jpg" } });
+      if (url.hostname === "ia800507.us.archive.org") return new Response(jpg);
+      if (url.hostname === "image.tmdb.org") return new Response(null, { status: 302, headers: { location: "https://internal.example/x.jpg" } });
+      return new Response("", { status: 404 });
+    });
+    const sources = createMediaSources({ fetchImpl });
+    expect(await sources.download("https://covers.openlibrary.org/b/id/1-L.jpg")).toEqual(jpg);
+    await expect(sources.download("https://image.tmdb.org/t/p/x.jpg")).rejects.toThrow("海报地址无效");
+    expect(fetchImpl.mock.calls.every(([, init]) => (init as RequestInit).redirect === "manual")).toBe(true);
+  });
+});
+
+describe("Google Books", () => {
+  const volume = {
+    id: "27KePwAACAAJ",
+    volumeInfo: {
+      title: "ノルウェイの森",
+      authors: ["村上春樹"],
+      publisher: "講談社",
+      publishedDate: "1987-09-04",
+      description: "<p>僕は三十七歳で…</p>",
+      pageCount: 268,
+      categories: ["Fiction / Literary", "Romance"],
+      language: "ja",
+      imageLinks: { thumbnail: "http://books.google.com/books/content?id=27KePwAACAAJ&printsec=frontcover&img=1&zoom=1&edge=curl", large: "http://books.google.com/books/content?id=27KePwAACAAJ&zoom=3" },
+      canonicalVolumeLink: "https://books.google.com/books/about/x.html?id=27KePwAACAAJ"
+    }
+  };
+
+  it("searches and imports volumes with the key", async () => {
+    const fetchImpl = fakeFetch((url) => {
+      expect(url.searchParams.get("key")).toBe("gkey");
+      if (url.pathname === "/books/v1/volumes") return Response.json({ items: [volume] });
+      if (url.pathname === "/books/v1/volumes/27KePwAACAAJ") return Response.json(volume);
+      return new Response("", { status: 404 });
+    });
+    const sources = createMediaSources({ googleBooksKey: "gkey", fetchImpl });
+    expect(sources.available().googlebooks).toBe(true);
+
+    const [hit] = await sources.search("googlebooks", "book", "ノルウェイの森");
+    expect(hit).toMatchObject({
+      source: "googlebooks",
+      sourceId: "27KePwAACAAJ",
+      creators: ["村上春樹"],
+      year: 1987,
+      posterUrl: "https://books.google.com/books/content?id=27KePwAACAAJ&printsec=frontcover&img=1&zoom=1"
+    });
+
+    expect(await sources.details("googlebooks", "book", "27KePwAACAAJ")).toMatchObject({
+      title: { ja: "ノルウェイの森" },
+      originalTitle: "ノルウェイの森",
+      genres: [{ en: "Fiction" }, { en: "Romance" }],
+      credits: ["村上春樹"],
+      overview: { ja: "僕は三十七歳で…" },
+      posterUrl: "https://books.google.com/books/content?id=27KePwAACAAJ&zoom=3&fife=w800",
+      publication: { publisher: "講談社", pages: 268, volumes: null, ongoing: null }
+    });
+    await expect(sources.details("googlebooks", "book", "../x")).rejects.toThrow("无效");
+  });
+
+  it("is off without a key, and explains a rejected key without showing it", async () => {
+    await expect(createMediaSources({}).search("googlebooks", "book", "x")).rejects.toThrow("未配置 GOOGLE_BOOKS_API_KEY");
+    const rejected = createMediaSources({ googleBooksKey: "secret-key", fetchImpl: fakeFetch(() => new Response("", { status: 400 })) });
+    const error = await rejected.search("googlebooks", "book", "x").catch((e: Error) => e);
+    expect(String(error)).toContain("GOOGLE_BOOKS_API_KEY");
+    expect(String(error)).not.toContain("secret-key");
   });
 });

@@ -27,16 +27,17 @@ const details = (overrides: Partial<SourceDetails> = {}): SourceDetails => ({
   overview: { zh: "简介", en: "Overview" },
   posterUrl: "https://image.tmdb.org/t/p/w780/poster.jpg",
   episodes: null,
+  publication: null,
   ...overrides
 });
 
 function fakeSources(overrides: Partial<MediaSources> = {}): MediaSources {
   return {
     ...offlineMediaSources,
-    available: () => ({ tmdb: true, bangumi: true }),
+    available: () => ({ tmdb: true, bangumi: true, openlibrary: true, googlebooks: true, anilist: true }),
     search: async (source) => [
-      { source, sourceId: "movie:129", mediaType: "movie", title: "千与千寻", originalTitle: null, year: 2001, posterUrl: null, overview: "" },
-      { source, sourceId: "movie:4935", mediaType: "movie", title: "哈尔的移动城堡", originalTitle: null, year: 2004, posterUrl: null, overview: "" }
+      { source, sourceId: "movie:129", mediaType: "movie", creators: [], title: "千与千寻", originalTitle: null, year: 2001, posterUrl: null, overview: "" },
+      { source, sourceId: "movie:4935", mediaType: "movie", creators: [], title: "哈尔的移动城堡", originalTitle: null, year: 2004, posterUrl: null, overview: "" }
     ],
     details: async (_source, _kind, sourceId) => details({ sourceId }),
     download: async () => png,
@@ -59,7 +60,7 @@ async function setup(sources: MediaSources = fakeSources()) {
 }
 
 describe("collection visibility rules", () => {
-  const settings = { show: { movie: true, tv: false, anime: true, music: true, people: true }, showWant: false };
+  const settings = { show: { movie: true, tv: false, anime: true, book: true, comic: false, music: true, people: true }, showWant: false };
   it("combines the entry, its kind and the want switch", () => {
     expect(isMediaPublic({ kind: "movie", status: "done", visibility: "public" }, settings)).toBe(true);
     expect(isMediaPublic({ kind: "movie", status: "done", visibility: "private" }, settings)).toBe(false);
@@ -219,11 +220,11 @@ describe("admin collection", () => {
   it("saves collection settings and reports configured sources", async () => {
     const { app, cookie, headers } = await setup();
     const initial = (await app.inject({ url: "/api/admin/collection/settings", headers: { cookie } })).json();
-    expect(initial).toEqual({ settings: { show: { movie: true, tv: true, anime: true, music: true, people: true }, showWant: true }, sources: { tmdb: true, bangumi: true } });
+    expect(initial).toEqual({ settings: { show: { movie: true, tv: true, anime: true, book: true, comic: true, music: true, people: true }, showWant: true }, sources: { tmdb: true, bangumi: true, openlibrary: true, googlebooks: true, anilist: true } });
 
     const next = { show: { movie: true, tv: false, anime: true, music: true, people: false }, showWant: false };
     const saved = await app.inject({ method: "PUT", url: "/api/admin/collection/settings", headers, payload: next });
-    expect(saved.json().settings).toEqual(next);
+    // Settings from before people, books and comics existed show them.
     // Settings from before people existed show people.
     const legacy = { show: { movie: true, tv: true, anime: true, music: true }, showWant: true };
     const upgraded = await app.inject({ method: "PUT", url: "/api/admin/collection/settings", headers, payload: legacy });
@@ -270,7 +271,7 @@ describe("public collection", () => {
     await app.inject({ method: "PUT", url: "/api/admin/collection/settings", headers, payload: { show: { movie: true, tv: false, anime: true, music: true }, showWant: false } });
 
     const body = (await app.inject("/api/collection")).json();
-    expect(body.kinds).toEqual(["movie", "anime", "track"]);
+    expect(body.kinds).toEqual(["movie", "anime", "book", "comic", "track"]);
     expect(body.items.map((item: { id: string }) => item.id)).toEqual([shown.id]);
     expect(body.items[0]).toMatchObject({ rating: 5, hasReview: true });
     expect(body.items[0]).not.toHaveProperty("review");
@@ -298,5 +299,55 @@ describe("public collection", () => {
     };
     expect((await app.inject("/api/collection")).json()).toEqual({ kinds: [], items: [], people: [] });
     expect((await app.inject(`/api/collection/${item.id}`)).statusCode).toBe(503);
+  });
+});
+
+describe("books and comics", () => {
+  it("imports a comic with its volumes and publication details, and edits them", async () => {
+    const romaji = vi.fn(async () => "Bocchi the Rock!");
+    const comic = details({
+      sourceId: "241088",
+      sourceUrl: "https://bgm.tv/subject/241088",
+      title: { zh: "孤独摇滚！", ja: "ぼっち・ざ・ろっく！" },
+      originalTitle: "ぼっち・ざ・ろっく！",
+      year: 2019,
+      credits: ["はまじあき"],
+      episodes: 7,
+      publication: { publisher: "芳文社", pages: null, volumes: 7, ongoing: true }
+    });
+    const { app, headers, patch } = await setup(fakeSources({ details: async () => comic, romaji }));
+    const post = (payload: object) => app.inject({ method: "POST", url: "/api/admin/media/import", headers, payload });
+
+    expect((await post({ kind: "comic", source: "tmdb", sourceId: "movie:1" })).statusCode).toBe(400);
+    expect((await post({ kind: "book", source: "anilist", sourceId: "1" })).statusCode).toBe(400);
+    expect((await post({ kind: "book", source: "openlibrary", sourceId: "OL1A" })).statusCode).toBe(400);
+    const imported = await post({ kind: "comic", source: "bangumi", sourceId: "241088" });
+    expect(imported.statusCode).toBe(201);
+    const { item } = imported.json();
+    expect(item).toMatchObject({
+      kind: "comic",
+      title: { zh: "孤独摇滚！", en: "Bocchi the Rock!", fr: "Bocchi the Rock!" },
+      progress: { watched: 0, total: 7 },
+      publication: { publisher: "芳文社", pages: null, volumes: 7, ongoing: true },
+      music: null
+    });
+    expect(romaji).toHaveBeenCalledWith("ぼっち・ざ・ろっく！", 2019, "comic");
+
+    const edited = await patch(item.id, { publication: { volumes: 8, ongoing: false }, status: "watching" });
+    expect(edited.json().item.publication).toEqual({ publisher: "芳文社", pages: null, volumes: 8, ongoing: false });
+    expect((await patch(item.id, { publication: { pages: 0 } })).statusCode).toBe(400);
+
+    const film = (await app.inject({ method: "POST", url: "/api/admin/media/import", headers, payload: { kind: "movie", source: "tmdb", sourceId: "movie:129" } })).json().item;
+    expect((await patch(film.id, { publication: { pages: 100 } })).statusCode).toBe(400);
+    expect(film.publication).toBeNull();
+  });
+
+  it("searches only the sources a kind has", async () => {
+    const { app, cookie } = await setup();
+    const search = (query: string) => app.inject({ url: `/api/admin/media/search?${query}`, headers: { cookie } });
+    expect((await search("kind=book&source=openlibrary&q=x")).statusCode).toBe(200);
+    expect((await search("kind=book&source=tmdb&q=x")).statusCode).toBe(400);
+    expect((await search("kind=comic&source=anilist&q=x")).statusCode).toBe(200);
+    expect((await search("kind=movie&source=anilist&q=x")).statusCode).toBe(400);
   });
 });

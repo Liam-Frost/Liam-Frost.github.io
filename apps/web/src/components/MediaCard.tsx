@@ -2,6 +2,7 @@ import type { PublicMediaSummary } from "@liam-frost/shared";
 import { Link, type To } from "react-router";
 
 import { pickLocalized, useI18n, type Key } from "../lib/i18n";
+import PlayButton from "./PlayButton";
 import { imageSrcSet } from "./ProjectCard";
 
 /** Five stars, filled up to the rating; announced as "4 / 5". */
@@ -23,7 +24,11 @@ export function mediaTitle(item: Pick<PublicMediaSummary, "title" | "originalTit
   return pickLocalized(item.title, lang) || item.originalTitle || "";
 }
 
-export const statusKey = (status: NonNullable<PublicMediaSummary["status"]>) => `collection.status.${status}` as Key;
+/** Books and comics are read; the rest are watched. */
+export const isReadKind = (kind: PublicMediaSummary["kind"]) => kind === "book" || kind === "comic";
+
+export const statusKey = (status: NonNullable<PublicMediaSummary["status"]>, kind: PublicMediaSummary["kind"]) =>
+  (isReadKind(kind) ? `collection.read.${status}` : `collection.status.${status}`) as Key;
 
 function Poster({ item, sizes, priority }: { item: PublicMediaSummary; sizes: string; priority?: boolean }) {
   const { lang } = useI18n();
@@ -46,24 +51,34 @@ function Poster({ item, sizes, priority }: { item: PublicMediaSummary; sizes: st
   );
 }
 
-/** Poster card for the grid and the home page. */
+/** Poster card for the grid and the home page; songs get a square cover and a play button on it. */
 export default function MediaCard({ item, to, state, priority }: { item: PublicMediaSummary; to: To; state?: unknown; priority?: boolean }) {
   const { lang, t } = useI18n();
   const title = mediaTitle(item, lang);
-  return (
+  const isMusic = item.kind === "track";
+  const card = (
     <Link className="mediaCard" to={to} state={state} aria-label={t("collection.open", { title })}>
-      <div className="mediaPoster">
+      <div className={isMusic ? "mediaPoster isSquare" : "mediaPoster"}>
         <Poster item={item} sizes="(max-width: 520px) 45vw, 200px" priority={priority} />
-        {item.status && item.status !== "done" ? <span className={`mediaBadge mediaBadge-${item.status}`}>{t(statusKey(item.status))}</span> : null}
+        {item.status && item.status !== "done" ? <span className={`mediaBadge mediaBadge-${item.status}`}>{t(statusKey(item.status, item.kind))}</span> : null}
       </div>
       <div className="mediaCardBody">
         <h3 className="mediaCardTitle">{title}</h3>
         <div className="mediaCardMeta">
-          <span>{item.year ?? ""}</span>
+          <span className="mediaCardSub">{isMusic ? item.credits.join(", ") : (item.year ?? "")}</span>
           {item.rating ? <Stars rating={item.rating} /> : null}
         </div>
       </div>
     </Link>
+  );
+  // The play button sits next to the link (a button inside a link is not allowed), over the cover.
+  return isMusic ? (
+    <div className="mediaPlayable">
+      {card}
+      <PlayButton item={item} className="onCard" />
+    </div>
+  ) : (
+    card
   );
 }
 
@@ -78,7 +93,7 @@ export function MediaRow({ item, to, state }: { item: PublicMediaSummary; to: To
     .filter(Boolean);
   // Songs: artists and album; films, series and anime: year, genres and the first credit.
   const meta = isMusic ? [item.credits.join(", "), item.music?.album, item.year] : [item.year, ...genres, item.credits[0]];
-  return (
+  const row = (
     <Link className="mediaRow" to={to} state={state} aria-label={t("collection.open", { title })}>
       <div className={isMusic ? "mediaRowPoster isSquare" : "mediaRowPoster"}>
         <Poster item={item} sizes="64px" />
@@ -89,10 +104,18 @@ export function MediaRow({ item, to, state }: { item: PublicMediaSummary; to: To
         <p className="mediaRowMeta">{meta.filter(Boolean).join(" · ")}</p>
       </div>
       <div className="mediaRowSide">
-        {item.status ? <span className={`mediaBadge mediaBadge-${item.status}`}>{t(statusKey(item.status))}</span> : null}
+        {item.status ? <span className={`mediaBadge mediaBadge-${item.status}`}>{t(statusKey(item.status, item.kind))}</span> : null}
         <Stars rating={item.rating} />
         {item.watchedOn ? <span className="mediaRowDate">{item.watchedOn}</span> : null}
       </div>
     </Link>
+  );
+  return isMusic ? (
+    <div className="mediaPlayable">
+      {row}
+      <PlayButton item={item} className="onRow" />
+    </div>
+  ) : (
+    row
   );
 }
