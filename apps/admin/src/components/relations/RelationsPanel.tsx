@@ -307,7 +307,13 @@ function AddRelationDialog({ subject, onDone, onClose }: { subject: Subject; onD
 
 /** Songs are usually sung, books and comics written; other works usually start with their director. */
 const defaultRole = (subject: Subject) =>
-  subject.type === "media" && subject.kind === "track" ? "singer" : subject.type === "media" && isReadKind(subject.kind) ? "author" : "director";
+  subject.type === "media" && subject.kind === "track"
+    ? "singer"
+    : subject.type === "media" && isReadKind(subject.kind)
+      ? "author"
+      : subject.type === "media" && subject.kind === "game"
+        ? "studio"
+        : "director";
 
 function PickedChip({ picked, onClear }: { picked: Picked; onClear: () => void }) {
   return (
@@ -539,7 +545,7 @@ function SuggestionsDialog({ mediaId, onDone, onClose }: { mediaId: string; onDo
   return (
     <Dialog open title="关联建议" onClose={onClose}>
       <p className="mb-3 text-[12px] leading-relaxed text-faint">
-        来自 TMDB 的演职员、歌曲的歌手、图书和漫画的作者，以及 AniList 上和这部作品有关、并且已在收藏里的作品（动漫、漫画、轻小说）。只有你点“添加”才会建立关联；从 TMDB 添加的人物会一起导入资料和照片。
+        来自 TMDB 的演职员、歌曲的歌手、图书和漫画的作者、游戏的开发商，以及 AniList 上和这部作品有关、并且已在收藏里的作品（动漫、漫画、轻小说）。只有你点“添加”才会建立关联；从 TMDB 添加的人物会一起导入资料和照片。
       </p>
       {isPending ? <p className="text-[13px] text-subtle">查找中…</p> : null}
       {error ? <p className="text-[13px] text-status-error">{error.message}</p> : null}

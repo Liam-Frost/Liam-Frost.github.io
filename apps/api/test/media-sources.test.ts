@@ -149,7 +149,7 @@ describe("TMDB", () => {
     await expect(createMediaSources({}).search("tmdb", "movie", "x")).rejects.toThrow("未配置 TMDB_API_KEY");
     const rejected = createMediaSources({ tmdbKey: "bad", fetchImpl: fakeFetch(() => new Response("", { status: 401 })) });
     await expect(rejected.search("tmdb", "movie", "x")).rejects.toThrow(/API key/);
-    expect(createMediaSources({}).available()).toEqual({ tmdb: false, bangumi: true, openlibrary: true, googlebooks: false, anilist: true });
+    expect(createMediaSources({}).available()).toEqual({ tmdb: false, bangumi: true, openlibrary: true, googlebooks: false, anilist: true, igdb: false });
   });
 });
 
@@ -436,5 +436,82 @@ describe("Google Books", () => {
     const error = await rejected.search("googlebooks", "book", "x").catch((e: Error) => e);
     expect(String(error)).toContain("GOOGLE_BOOKS_API_KEY");
     expect(String(error)).not.toContain("secret-key");
+  });
+});
+
+describe("IGDB", () => {
+  const twitch = { clientId: "cid", clientSecret: "csecret" };
+  const eldenRing = {
+    id: 119133,
+    name: "Elden Ring",
+    summary: "Rise, Tarnished.",
+    url: "https://www.igdb.com/games/elden-ring",
+    first_release_date: 1645747200,
+    cover: { image_id: "co4jni" },
+    genres: [{ name: "Role-playing (RPG)" }, { name: "Adventure" }],
+    platforms: [{ name: "PC (Microsoft Windows)" }, { name: "PlayStation 5" }],
+    involved_companies: [
+      { developer: true, publisher: false, company: { name: "FromSoftware" } },
+      { developer: false, publisher: true, company: { name: "Bandai Namco Entertainment" } }
+    ],
+    alternative_names: [
+      { name: "艾尔登法环", comment: "Chinese title - simplified" },
+      { name: "艾爾登法環", comment: "Chinese title - traditional" },
+      { name: "엘든 링", comment: "Korean title - translated" }
+    ],
+    game_localizations: [{ name: "エルデンリング", region: { identifier: "ja-JP" } }]
+  };
+
+  function igdbFetch(options: { rejectFirstToken?: boolean } = {}) {
+    let tokens = 0;
+    let rejected = false;
+    const fetchImpl = fakeFetch(async (url, init) => {
+      if (url.hostname === "id.twitch.tv") {
+        tokens += 1;
+        expect(String(init.body)).toContain("grant_type=client_credentials");
+        return Response.json({ access_token: `token${tokens}`, expires_in: 5_000_000 });
+      }
+      expect((init.headers as Record<string, string>)["Client-ID"]).toBe("cid");
+      if (options.rejectFirstToken && !rejected) {
+        rejected = true;
+        return new Response("", { status: 401 });
+      }
+      const body = String(init.body);
+      return Response.json(body.startsWith("search") ? [eldenRing] : body.includes("where id = 119133") ? [eldenRing] : []);
+    });
+    return { fetchImpl, tokens: () => tokens };
+  }
+
+  it("searches and imports games with local names, translated genres and companies", async () => {
+    const { fetchImpl, tokens } = igdbFetch();
+    const sources = createMediaSources({ twitch, fetchImpl });
+    expect(sources.available().igdb).toBe(true);
+
+    const [hit] = await sources.search("igdb", "game", 'Elden "Ring"');
+    expect(hit).toMatchObject({ source: "igdb", sourceId: "119133", creators: ["FromSoftware"], year: 2022, posterUrl: "https://images.igdb.com/igdb/image/upload/t_cover_small/co4jni.jpg" });
+    // Quotes would end the Apicalypse string.
+    expect(String(fetchImpl.mock.calls[1][1].body)).toContain('search "Elden  Ring";');
+    expect(String(fetchImpl.mock.calls[1][1].body)).toContain("game_type != (3,5,12,13,14)");
+
+    expect(await sources.details("igdb", "game", "119133")).toMatchObject({
+      sourceUrl: "https://www.igdb.com/games/elden-ring",
+      title: { zh: "艾尔登法环", "zh-Hant": "艾爾登法環", en: "Elden Ring", ja: "エルデンリング" },
+      genres: [{ en: "Role-playing (RPG)", zh: "角色扮演" }, { en: "Adventure", zh: "冒险" }],
+      credits: ["FromSoftware"],
+      overview: { en: "Rise, Tarnished." },
+      posterUrl: "https://images.igdb.com/igdb/image/upload/t_cover_big_2x/co4jni.jpg",
+      game: { platforms: ["PC (Microsoft Windows)", "PlayStation 5"], publishers: ["Bandai Namco Entertainment"], playtimeHours: null }
+    });
+    // One app token for both requests.
+    expect(tokens()).toBe(1);
+    await expect(sources.details("igdb", "game", "1")).rejects.toThrow("找不到");
+    await expect(sources.details("igdb", "game", "x")).rejects.toThrow("无效");
+  });
+
+  it("gets a new token once when IGDB rejects one, and explains missing credentials", async () => {
+    const { fetchImpl, tokens } = igdbFetch({ rejectFirstToken: true });
+    expect(await createMediaSources({ twitch, fetchImpl }).search("igdb", "game", "x")).toHaveLength(1);
+    expect(tokens()).toBe(2);
+    await expect(createMediaSources({}).search("igdb", "game", "x")).rejects.toThrow("TWITCH_CLIENT_ID");
   });
 });

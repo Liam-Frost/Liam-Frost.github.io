@@ -317,8 +317,9 @@ export function registerAdminPeopleRoutes(
       }
     }
 
-    // Songs' singers and books' and comics' authors, by name.
-    const nameRole = item.kind === "track" ? ("singer" as const) : item.kind === "book" || item.kind === "comic" ? ("author" as const) : null;
+    // Songs' singers, books' and comics' authors and games' developers, by name.
+    const nameRole =
+      item.kind === "track" ? ("singer" as const) : item.kind === "book" || item.kind === "comic" ? ("author" as const) : item.kind === "game" ? ("studio" as const) : null;
     if (nameRole && item.credits.length) {
       const everyone = await people.list({ includePrivate: true });
       for (const name of item.credits) {

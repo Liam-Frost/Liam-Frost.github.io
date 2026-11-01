@@ -308,10 +308,23 @@ Status: implementation complete; Claude Code review complete and fixes applied.
 - The user's Twitch app was checked: an app token and an IGDB search worked.
 - Google Books added as a third book source with the user's key (`GOOGLE_BOOKS_API_KEY`): search, details (title and description in the book's language, authors, publisher, pages, genres from its categories) and covers up to 800 px. Verified with the real key and a temporary database: searches in English and Chinese, imports of Norwegian Wood (cover 128 → 300 px, the largest it has) and 三体 (早川書房, 800 × 1185 cover). Tests: 141 passed.
 
+### Stage 16: Games
+
+Status: implementation complete; Claude Code review complete and fixes applied.
+
+- `game` kind (migration `20261104090000_games`) with platforms, publishers and playtime in `extra.game`; display switch (saved settings show games).
+- IGDB source with the user's Twitch app: app token cached until shortly before it expires and renewed once when IGDB rejects it; search without mods, updates, bundles, packs and forks; details with local names from IGDB localizations and labelled alternative names, translated genres, developers, publishers, platforms and 528 px covers. Search text cannot break the Apicalypse query.
+- Admin: 游戏 tab (IGDB), 想玩 / 在玩 / 玩过, playtime, platforms and publishers; developers suggested as people (studio). Site: 游戏 tab, play statuses, playtime, platforms and publishers; the home section stays films, series and anime.
+- `npm run db:seed:collection` adds two games; samples skip sources without credentials.
+- Tests: 144 passed.
+- Verified with a temporary PostgreSQL and the real IGDB: seeded Elden Ring (简 / 繁 / 日 / 英 names, 6 platforms) and Hollow Knight, checked the site's game tab and panel and the admin editor (playtime saved).
+- Ran Claude Code review for Stage 16 (`docs/reviews/2026-11-04-claude-code-stage-16.md`) and fixed the findings.
+
 ### Upcoming
 
-- Stage 15 PR: `npm run db:deploy` applies the book and comic migration (and the people migration if not applied yet).
-- Stage 16: games (IGDB, needs a Twitch developer app's Client ID and Secret in `apps/api/.env`); the yearly review is Stage 17.
+- Stage 16 PR: `npm run db:deploy` applies the game migration.
+- Stage 17 (optional): yearly review.
+- Stage 10: VPS deployment and CI/CD (needs the VPS and domain details).
 - Stage 10: VPS deployment and CI/CD (needs the VPS provider/OS/specs, DNS manager and domain from the user).
 - Stage 5: back-end foundation and admin auth refinement (`ADMIN_PATH`, IP allowlist, CSRF, Zod, tests). See `docs/plan-admin-projects-deploy.md`.
 

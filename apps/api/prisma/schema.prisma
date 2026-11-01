@@ -104,6 +104,7 @@ enum MediaKind {
   ALBUM @map("album")
   BOOK  @map("book")
   COMIC @map("comic")
+  GAME  @map("game")
 }
 
 enum MediaStatus {
@@ -132,7 +133,7 @@ model MediaItem {
   overview      Json
   /// Local poster: { id, key, width, height, variants }, like project covers.
   poster        Json?
-  /// Films, series, anime, books and comics; null for music.
+  /// Films, series, anime, books, comics and games; null for music.
   status        MediaStatus?
   /// 1-5
   rating        Int?
@@ -143,7 +144,8 @@ model MediaItem {
   /// { watched, total }: episodes, a comic's volumes or a book's pages.
   progress      Json?
   /// Kind-specific data; music: { album, durationMs, previewUrl, spotifyUrl, appleUrl };
-  /// books and comics: publication: { publisher, pages, volumes, ongoing }.
+  /// books and comics: publication: { publisher, pages, volumes, ongoing };
+  /// games: game: { platforms, publishers, playtimeHours }.
   extra         Json
   /// Music: plays in the site's player.
   inPlayer      Boolean      @default(false)

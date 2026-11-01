@@ -188,14 +188,14 @@ export type AdminSpotifyResponse = {
   playerTracks: number;
 };
 
-/** Collection entries: films, series, anime, books, comics and music (track; album is reserved). */
-export type MediaKind = "movie" | "tv" | "anime" | "book" | "comic" | "track" | "album";
-/** Status for films, series and anime (want to watch, ...) and books and comics (want to read, ...). */
+/** Collection entries: films, series, anime, books, comics, games and music (track; album is reserved). */
+export type MediaKind = "movie" | "tv" | "anime" | "book" | "comic" | "game" | "track" | "album";
+/** Status: watched for films, series and anime, read for books and comics, played for games. */
 export type MediaStatus = "want" | "watching" | "done" | "dropped";
 /** Where an entry's details came from. */
-export type MediaSource = "tmdb" | "bangumi" | "openlibrary" | "googlebooks" | "anilist" | "spotify" | "itunes" | "manual";
+export type MediaSource = "tmdb" | "bangumi" | "openlibrary" | "googlebooks" | "anilist" | "igdb" | "spotify" | "itunes" | "manual";
 /** Sources the admin can search for films, series, anime, books and comics. */
-export type MediaSearchSource = "tmdb" | "bangumi" | "openlibrary" | "googlebooks" | "anilist";
+export type MediaSearchSource = "tmdb" | "bangumi" | "openlibrary" | "googlebooks" | "anilist" | "igdb";
 
 /** Book and comic details (kinds "book" and "comic"). */
 export type MediaPublication = {
@@ -206,6 +206,14 @@ export type MediaPublication = {
   volumes: number | null;
   /** Comics: still being published; null when unknown. */
   ongoing: boolean | null;
+};
+
+/** Game details (kind "game"). */
+export type MediaGame = {
+  platforms: string[];
+  publishers: string[];
+  /** Hours played; null when not recorded. */
+  playtimeHours: number | null;
 };
 
 /** Song details (kind "track"). */
@@ -248,6 +256,8 @@ export type AdminMediaItem = {
   music: MediaMusic | null;
   /** Books and comics only. */
   publication: MediaPublication | null;
+  /** Games only. */
+  game: MediaGame | null;
   /** Songs: plays in the site's player. */
   inPlayer: boolean;
   featured: boolean;
@@ -279,6 +289,8 @@ export type AdminMediaUpdate = Partial<{
   music: { album?: string | null; previewUrl?: string | null; appleUrl?: string | null };
   /** Books and comics. */
   publication: Partial<MediaPublication>;
+  /** Games. */
+  game: Partial<MediaGame>;
   inPlayer: boolean;
   featured: boolean;
   visibility: PhotoVisibility;
@@ -303,7 +315,7 @@ export type MediaSearchResult = {
 
 export type CollectionSettings = {
   /** Which kinds the site shows (people: the people tab and people in entries' links). */
-  show: { movie: boolean; tv: boolean; anime: boolean; book: boolean; comic: boolean; music: boolean; people: boolean };
+  show: { movie: boolean; tv: boolean; anime: boolean; book: boolean; comic: boolean; game: boolean; music: boolean; people: boolean };
   /** Off: "want" entries never appear on the site, whatever their own visibility. */
   showWant: boolean;
 };
@@ -361,7 +373,7 @@ export type AdminMediaResponse = { item: AdminMediaItem };
 export type AdminMediaSearchResponse = { results: MediaSearchResult[] };
 export type AdminCollectionSettingsResponse = {
   settings: CollectionSettings;
-  /** Sources that can be searched (TMDB needs TMDB_API_KEY, Google Books GOOGLE_BOOKS_API_KEY). */
+  /** Sources that can be searched (TMDB needs TMDB_API_KEY, Google Books GOOGLE_BOOKS_API_KEY, IGDB the Twitch app). */
   sources: Record<MediaSearchSource, boolean>;
 };
 
@@ -382,6 +394,7 @@ export type PublicMediaSummary = {
   progress: MediaProgress | null;
   music: MediaMusic | null;
   publication: MediaPublication | null;
+  game: MediaGame | null;
   featured: boolean;
   /** Whether a short review exists in any language. */
   hasReview: boolean;

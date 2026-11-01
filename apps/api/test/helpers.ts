@@ -29,7 +29,7 @@ export function passwordHash() {
 
 const offline = () => Promise.reject(new SourceError("no network in tests"));
 export const offlineMediaSources: MediaSources = {
-  available: () => ({ tmdb: false, bangumi: false, openlibrary: false, googlebooks: false, anilist: false }),
+  available: () => ({ tmdb: false, bangumi: false, openlibrary: false, googlebooks: false, anilist: false, igdb: false }),
   search: offline,
   details: offline,
   download: offline,
