@@ -2,7 +2,7 @@ import type { MediaKind, MediaStatus, PublicMediaSummary } from "@liam-frost/sha
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router";
 
-import MediaCard, { MediaRow } from "../components/MediaCard";
+import MediaCard, { MediaRow, statusKey } from "../components/MediaCard";
 import type { CollectionLinkTo } from "../components/CollectionLinks";
 import MediaDetail from "../components/MediaDetail";
 import PersonCard from "../components/PersonCard";
@@ -173,7 +173,7 @@ export default function CollectionPage() {
                   className={cx("btn", "btnSmall", status === s ? "btnSoft" : "btnGhost")}
                   onClick={() => select({ status: s })}
                 >
-                  {s ? t(`collection.status.${s}` as Key) : t("collection.filter.all")}
+                  {s && kind ? t(statusKey(s, kind)) : t("collection.filter.all")}
                 </button>
               ))}
 

@@ -21,6 +21,7 @@ import { api, ApiError } from "../../lib/api";
 import {
   COLLECTION_KIND_LABELS,
   guessLang,
+  isReadKind,
   LANG_LABELS,
   LANGS,
   PERSON_ROLE_LABELS,
@@ -206,7 +207,7 @@ function choicesFor(subject: Subject): Choice[] {
     ];
   }
   return [
-    { id: "person", label: "参与者（导演、演员等）", pick: "person", type: "credit", pickedIsFrom: true },
+    { id: "person", label: "参与者（导演、演员、作者等）", pick: "person", type: "credit", pickedIsFrom: true },
     { id: "song", label: "原声歌曲", pick: "song", type: "soundtrack", pickedIsFrom: true },
     { id: "source", label: "改编自（原作）", pick: "work", type: "adaptation", pickedIsFrom: false },
     { id: "adaptation", label: "被改编为", pick: "work", type: "adaptation", pickedIsFrom: true },
@@ -304,8 +305,9 @@ function AddRelationDialog({ subject, onDone, onClose }: { subject: Subject; onD
   );
 }
 
-/** Songs are usually sung; works usually start with their director. */
-const defaultRole = (subject: Subject) => (subject.type === "media" && subject.kind === "track" ? "singer" : "director");
+/** Songs are usually sung, books and comics written; other works usually start with their director. */
+const defaultRole = (subject: Subject) =>
+  subject.type === "media" && subject.kind === "track" ? "singer" : subject.type === "media" && isReadKind(subject.kind) ? "author" : "director";
 
 function PickedChip({ picked, onClear }: { picked: Picked; onClear: () => void }) {
   return (
@@ -347,7 +349,9 @@ function MediaPicker({ pick, excludeId, picked, onPick }: { pick: "song" | "work
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-[13px] font-semibold text-brand-dark">{name}</span>
                   <span className="block truncate text-[12px] text-subtle">
-                    {[COLLECTION_KIND_LABELS[item.kind as CollectionKind] ?? item.kind, item.year, item.kind === "track" ? item.credits.join("、") : ""].filter(Boolean).join(" · ")}
+                    {[COLLECTION_KIND_LABELS[item.kind as CollectionKind] ?? item.kind, item.year, item.kind === "track" || isReadKind(item.kind) ? item.credits.join("、") : ""]
+                      .filter(Boolean)
+                      .join(" · ")}
                   </span>
                 </span>
               </button>
@@ -476,7 +480,7 @@ function EditRelationDialog({ relation, onDone, onClose }: { relation: AdminRela
 }
 
 const suggestionKey = (s: RelationSuggestion) =>
-  s.kind === "tmdb-person" ? `tmdb:${s.sourceId}:${s.role}` : s.kind === "artist" ? `artist:${s.name}` : `media:${s.relation.from.id}:${s.relation.toId}:${s.relation.type}`;
+  s.kind === "tmdb-person" ? `tmdb:${s.sourceId}:${s.role}` : s.kind === "name" ? `name:${s.name}:${s.role}` : `media:${s.relation.from.id}:${s.relation.toId}:${s.relation.type}`;
 
 /** Suggested links from the entry's source data; each is added on its own, nothing automatically. */
 function SuggestionsDialog({ mediaId, onDone, onClose }: { mediaId: string; onDone: () => void; onClose: () => void }) {
@@ -510,7 +514,7 @@ function SuggestionsDialog({ mediaId, onDone, onClose }: { mediaId: string; onDo
           from: { type: "person", id: personId },
           toId: mediaId,
           type: "credit",
-          role: suggestion.kind === "tmdb-person" ? suggestion.role : "singer",
+          role: suggestion.role,
           note
         });
       }
@@ -535,7 +539,7 @@ function SuggestionsDialog({ mediaId, onDone, onClose }: { mediaId: string; onDo
   return (
     <Dialog open title="关联建议" onClose={onClose}>
       <p className="mb-3 text-[12px] leading-relaxed text-faint">
-        来自 TMDB 的演职员、歌曲的歌手，以及 AniList 上和这部作品有关、并且已在收藏里的作品。只有你点“添加”才会建立关联；从 TMDB 添加的人物会一起导入资料和照片。
+        来自 TMDB 的演职员、歌曲的歌手、图书和漫画的作者，以及 AniList 上和这部作品有关、并且已在收藏里的作品（动漫、漫画、轻小说）。只有你点“添加”才会建立关联；从 TMDB 添加的人物会一起导入资料和照片。
       </p>
       {isPending ? <p className="text-[13px] text-subtle">查找中…</p> : null}
       {error ? <p className="text-[13px] text-status-error">{error.message}</p> : null}
@@ -552,8 +556,8 @@ function SuggestionsDialog({ mediaId, onDone, onClose }: { mediaId: string; onDo
                     thumb: suggestion.photoUrl,
                     person: true
                   }
-                : suggestion.kind === "artist"
-                  ? { name: suggestion.name, detail: ["歌手", suggestion.personId ? "已在人物中" : "将新建人物"].join(" · "), thumb: null, person: true }
+                : suggestion.kind === "name"
+                  ? { name: suggestion.name, detail: [PERSON_ROLE_LABELS[suggestion.role], suggestion.personId ? "已在人物中" : "将新建人物"].join(" · "), thumb: null, person: true }
                   : {
                       name: pickText(suggestion.other.title, "未命名"),
                       detail: RELATION_LABELS[suggestion.relation.type][suggestion.relation.from.id === mediaId ? "from" : "to"],

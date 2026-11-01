@@ -1,9 +1,9 @@
-import type { LocalizedText, MediaKind, MediaSearchResult, PersonRole, PersonSearchResult } from "@liam-frost/shared";
+import type { LocalizedText, MediaKind, MediaPublication, MediaSearchResult, MediaSearchSource, PersonRole, PersonSearchResult } from "@liam-frost/shared";
 
 /** Errors worth showing in the admin as they are. */
 export class SourceError extends Error {}
 
-export type SearchSource = "tmdb" | "bangumi";
+export type SearchSource = MediaSearchSource;
 export type SourceHit = Omit<MediaSearchResult, "existingId">;
 
 /** Normalized details of one source entry, ready to become a collection entry. */
@@ -17,7 +17,10 @@ export type SourceDetails = {
   credits: string[];
   overview: LocalizedText;
   posterUrl: string | null;
+  /** Episodes of a series, or volumes of a comic: the progress total. */
   episodes: number | null;
+  /** Books and comics. */
+  publication: MediaPublication | null;
 };
 
 export type PersonHit = Omit<PersonSearchResult, "existingId">;
@@ -36,25 +39,25 @@ export type PersonDetails = {
 /** A cast or crew member of a TMDB film or series. */
 export type CreditHit = { sourceId: string; name: string; role: PersonRole; character: string | null; photoUrl: string | null };
 
-/** An AniList relation of an anime: how the other work relates to it, what it is, and its titles. */
-export type AniListRelation = { relationType: string; mediaType: "ANIME" | "MANGA"; titles: string[] };
+/** An AniList relation: how the other work relates to this one, which kind it is, and its titles. */
+export type AniListRelation = { relationType: string; kind: "anime" | "comic" | "book"; titles: string[] };
 
 export interface MediaSources {
-  available(): { tmdb: boolean; bangumi: boolean };
+  available(): Record<SearchSource, boolean>;
   search(source: SearchSource, kind: MediaKind, query: string): Promise<SourceHit[]>;
   details(source: SearchSource, kind: MediaKind, sourceId: string): Promise<SourceDetails>;
   /** Downloads a poster for the image pipeline. */
   download(url: string): Promise<Buffer>;
-  /** Romaji title of an anime from AniList, matched by its Japanese title; null when not found or unreachable. */
-  romaji(nativeTitle: string, year: number | null): Promise<string | null>;
+  /** Romaji title of an anime or comic from AniList, matched by its Japanese title; null when not found or unreachable. */
+  romaji(nativeTitle: string, year: number | null, kind?: "anime" | "comic"): Promise<string | null>;
   /** TMDB people search. */
   searchPeople(query: string): Promise<PersonHit[]>;
   /** One TMDB person. */
   person(sourceId: string): Promise<PersonDetails>;
   /** Directors / creators, writers and the main cast of a TMDB film or series ("movie:123"). */
   credits(sourceId: string, kind: MediaKind): Promise<CreditHit[]>;
-  /** AniList relations of an anime matched by its Japanese title; empty when not found or unreachable. */
-  animeRelations(nativeTitle: string, year: number | null): Promise<AniListRelation[]>;
+  /** AniList relations of an anime, comic or (light) novel matched by its Japanese title; empty when not found or unreachable. */
+  relations(kind: "anime" | "comic" | "book", nativeTitle: string, year: number | null): Promise<AniListRelation[]>;
 }
 
 const TIMEOUT_MS = 10_000;
@@ -63,16 +66,58 @@ const USER_AGENT = "liam-frost-site/0.1 (https://github.com/Liam-Frost/Liam-Fros
 
 const TMDB_API = "https://api.themoviedb.org/3";
 const ANILIST_API = "https://graphql.anilist.co";
-const ANILIST_QUERY = "query ($search: String) { Media(search: $search, type: ANIME) { title { romaji native } startDate { year } } }";
+const ANILIST_QUERY = "query ($search: String, $type: MediaType) { Media(search: $search, type: $type) { title { romaji native } startDate { year } } }";
 const ANILIST_RELATIONS_QUERY =
-  "query ($search: String) { Media(search: $search, type: ANIME) { title { romaji native } startDate { year } relations { edges { relationType node { type title { romaji native english } } } } } }";
+  "query ($search: String, $type: MediaType) { Media(search: $search, type: $type) { title { romaji native } startDate { year } relations { edges { relationType node { type format title { romaji native english } } } } } }";
+const ANILIST_MANGA_FIELDS =
+  "id siteUrl format status volumes genres title { romaji native english } startDate { year } coverImage { extraLarge large } description(asHtml: false) staff(perPage: 8) { edges { role node { name { full native } } } }";
+const ANILIST_MANGA_SEARCH = `query ($search: String) { Page(perPage: 20) { media(search: $search, type: MANGA, format_not: NOVEL) { ${ANILIST_MANGA_FIELDS} } } }`;
+const ANILIST_MANGA = `query ($id: Int) { Media(id: $id, type: MANGA) { ${ANILIST_MANGA_FIELDS} } }`;
+/** AniList's fixed genre list in the site's other languages (English is AniList's own). */
+const ANILIST_GENRES: Record<string, Omit<LocalizedText, "en">> = {
+  Action: { zh: "动作", "zh-Hant": "動作", ja: "アクション", fr: "Action" },
+  Adventure: { zh: "冒险", "zh-Hant": "冒險", ja: "冒険", fr: "Aventure" },
+  Comedy: { zh: "喜剧", "zh-Hant": "喜劇", ja: "コメディ", fr: "Comédie" },
+  Drama: { zh: "剧情", "zh-Hant": "劇情", ja: "ドラマ", fr: "Drame" },
+  Ecchi: { zh: "卖肉", "zh-Hant": "賣肉", ja: "エッチ", fr: "Ecchi" },
+  Fantasy: { zh: "奇幻", "zh-Hant": "奇幻", ja: "ファンタジー", fr: "Fantasy" },
+  Horror: { zh: "恐怖", "zh-Hant": "恐怖", ja: "ホラー", fr: "Horreur" },
+  "Mahou Shoujo": { zh: "魔法少女", "zh-Hant": "魔法少女", ja: "魔法少女", fr: "Magical girl" },
+  Mecha: { zh: "机甲", "zh-Hant": "機甲", ja: "メカ", fr: "Mecha" },
+  Music: { zh: "音乐", "zh-Hant": "音樂", ja: "音楽", fr: "Musique" },
+  Mystery: { zh: "悬疑", "zh-Hant": "懸疑", ja: "ミステリー", fr: "Mystère" },
+  Psychological: { zh: "心理", "zh-Hant": "心理", ja: "サイコ", fr: "Psychologique" },
+  Romance: { zh: "爱情", "zh-Hant": "愛情", ja: "恋愛", fr: "Romance" },
+  "Sci-Fi": { zh: "科幻", "zh-Hant": "科幻", ja: "SF", fr: "Science-fiction" },
+  "Slice of Life": { zh: "日常", "zh-Hant": "日常", ja: "日常", fr: "Tranche de vie" },
+  Sports: { zh: "运动", "zh-Hant": "運動", ja: "スポーツ", fr: "Sport" },
+  Supernatural: { zh: "超自然", "zh-Hant": "超自然", ja: "超常", fr: "Surnaturel" },
+  Thriller: { zh: "惊悚", "zh-Hant": "驚悚", ja: "スリラー", fr: "Thriller" }
+};
+/** AniList staff roles that make someone an author of a comic. */
+const ANILIST_AUTHOR_ROLES = /^(Story & Art|Story|Art|Original Creator|Original Story)\b/;
+const OPENLIBRARY = "https://openlibrary.org";
+const OPENLIBRARY_FIELDS = "key,title,author_name,first_publish_year,cover_i,number_of_pages_median,subject,publisher";
+/** Redirect hops a poster download may follow (Open Library covers go through archive.org). */
+const MAX_REDIRECTS = 3;
 /** Main cast members suggested for a film or series. */
 const CAST_LIMIT = 8;
 
 /** Compares titles ignoring width, spacing and punctuation ("ぼっち・ざ・ろっく！" = "ぼっちざろっく!"). */
 export const titleKey = (title: string) => title.normalize("NFKC").toLowerCase().replace(/[\s\p{P}\p{S}]/gu, "");
-/** Image hosts of TMDB, Bangumi, iTunes and Spotify; posters and covers are only downloaded from these. */
-const POSTER_HOSTS = [/^image\.tmdb\.org$/, /^lain\.bgm\.tv$/, /^is\d-ssl\.mzstatic\.com$/, /^i\.scdn\.co$/, /^mosaic\.scdn\.co$/, /^image-cdn-[a-z]+\.spotifycdn\.com$/];
+/** Image hosts of TMDB, Bangumi, iTunes, Spotify, AniList and Open Library; posters and covers are only downloaded from these. */
+const POSTER_HOSTS = [
+  /^image\.tmdb\.org$/,
+  /^lain\.bgm\.tv$/,
+  /^is\d-ssl\.mzstatic\.com$/,
+  /^i\.scdn\.co$/,
+  /^mosaic\.scdn\.co$/,
+  /^image-cdn-[a-z]+\.spotifycdn\.com$/,
+  /^s\d+\.anilist\.co$/,
+  /^covers\.openlibrary\.org$/,
+  /^archive\.org$/,
+  /^ia\d+\.us\.archive\.org$/
+];
 export const isPosterHost = (hostname: string) => POSTER_HOSTS.some((host) => host.test(hostname));
 const TMDB_IMAGE = "https://image.tmdb.org/t/p";
 /** Site languages and the TMDB locale for each. */
@@ -84,6 +129,17 @@ const yearOf = (date: string | null | undefined) => {
   return Number.isInteger(year) && year > 1800 ? year : null;
 };
 const clean = (value: string | null | undefined) => value?.trim() || "";
+/** AniList descriptions carry some HTML and a "(Source: ...)" credit line. */
+const plainText = (value: string | null | undefined) =>
+  clean(
+    value
+      ?.replace(/<br\s*\/?>/gi, "\n")
+      .replace(/<[^>]+>/g, "")
+      .replace(/\n*\(Source:[^)]*\)\s*$/i, "")
+      .replace(/\n{3,}/g, "\n\n")
+  );
+/** The language a title is probably written in: kana → Japanese, other CJK → Chinese, otherwise English. */
+const scriptLang = (text: string): SiteLang => (/[\u3040-\u30ff]/.test(text) ? "ja" : /[\u3400-\u9fff]/.test(text) ? "zh" : "en");
 const compact = (text: Partial<Record<SiteLang, string>>): LocalizedText =>
   Object.fromEntries(Object.entries(text).filter(([, value]) => value?.trim())) as LocalizedText;
 
@@ -137,11 +193,38 @@ type TmdbCredits = {
 type AniListMedia = {
   title?: { romaji?: string; native?: string };
   startDate?: { year?: number };
-  relations?: { edges?: { relationType?: string; node?: { type?: string; title?: { romaji?: string; native?: string; english?: string } } }[] };
+  relations?: { edges?: { relationType?: string; node?: { type?: string; format?: string; title?: { romaji?: string; native?: string; english?: string } } }[] };
+};
+
+type AniListManga = {
+  id: number;
+  siteUrl?: string;
+  format?: string;
+  status?: string;
+  volumes?: number | null;
+  genres?: string[];
+  title?: { romaji?: string; native?: string; english?: string };
+  startDate?: { year?: number };
+  coverImage?: { extraLarge?: string; large?: string };
+  description?: string;
+  staff?: { edges?: { role?: string; node?: { name?: { full?: string; native?: string } } }[] };
+};
+
+type OpenLibraryDoc = {
+  key: string;
+  title?: string;
+  author_name?: string[];
+  first_publish_year?: number;
+  cover_i?: number;
+  number_of_pages_median?: number;
+  subject?: string[];
+  publisher?: string[];
 };
 
 type BangumiSubject = {
   id: number;
+  platform?: string;
+  volumes?: number;
   name?: string;
   name_cn?: string;
   date?: string | null;
@@ -153,8 +236,9 @@ type BangumiSubject = {
   infobox?: { key: string; value: string | { v: string }[] }[];
 };
 
-/** Credits worth showing from Bangumi's infobox, in this order. */
+/** Credits worth showing from Bangumi's infobox, in this order: anime, then books and comics. */
 const BANGUMI_CREDIT_KEYS = ["导演", "监督", "动画制作", "原作"];
+const BANGUMI_BOOK_CREDIT_KEYS = ["作者", "原作", "作画", "插图"];
 
 export function createMediaSources(options: { tmdbKey?: string; fetchImpl?: typeof fetch }): MediaSources {
   const fetchImpl = options.fetchImpl ?? fetch;
@@ -169,7 +253,9 @@ export function createMediaSources(options: { tmdbKey?: string; fetchImpl?: type
     } catch {
       throw new SourceError(`无法连接 ${what}。如果访问它需要代理，请在 apps/api/.env 中设置 HTTPS_PROXY 后重启 API`);
     }
-    if (!response.ok) {
+    // With redirect: "manual" the caller follows 3xx responses itself.
+    const redirect = init.redirect === "manual" && response.status >= 300 && response.status < 400;
+    if (!response.ok && !redirect) {
       await response.body?.cancel();
       if (response.status === 401) throw new SourceError(`${what} 拒绝了请求，请检查 API key`);
       if (response.status === 404) throw new SourceError(`${what} 上找不到这个条目`);
@@ -208,13 +294,13 @@ export function createMediaSources(options: { tmdbKey?: string; fetchImpl?: type
     return list;
   };
 
-  /** One AniList anime matched by its Japanese title (same title, or a year within one); null otherwise. */
-  const anilist = async (query: string, nativeTitle: string, year: number | null): Promise<AniListMedia | null> => {
+  /** One AniList anime or manga matched by its Japanese title (same title, or a year within one); null otherwise. */
+  const anilist = async (query: string, type: "ANIME" | "MANGA", nativeTitle: string, year: number | null): Promise<AniListMedia | null> => {
     try {
       const response = await fetchImpl(ANILIST_API, {
         method: "POST",
         headers: { "content-type": "application/json", accept: "application/json", "user-agent": USER_AGENT },
-        body: JSON.stringify({ query, variables: { search: nativeTitle } }),
+        body: JSON.stringify({ query, variables: { search: nativeTitle, type } }),
         signal: AbortSignal.timeout(TIMEOUT_MS)
       });
       if (!response.ok) {
@@ -232,6 +318,38 @@ export function createMediaSources(options: { tmdbKey?: string; fetchImpl?: type
     }
   };
 
+  /** An AniList query whose errors are shown in the admin (searches and imports). */
+  const anilistQuery = async <T>(query: string, variables: Record<string, unknown>): Promise<T> => {
+    const response = await request(
+      ANILIST_API,
+      {
+        method: "POST",
+        headers: { "content-type": "application/json", accept: "application/json", "user-agent": USER_AGENT },
+        body: JSON.stringify({ query, variables })
+      },
+      "AniList"
+    );
+    const body = (await response.json()) as { data?: T; errors?: { message?: string; status?: number }[] };
+    if (!body.data) throw new SourceError(body.errors?.[0]?.status === 404 ? "AniList 上找不到这个条目" : "AniList 返回错误");
+    return body.data;
+  };
+
+  const openLibrary = async <T>(path: string, params: Record<string, string> = {}): Promise<T> => {
+    const url = new URL(OPENLIBRARY + path);
+    for (const [key, value] of Object.entries(params)) url.searchParams.set(key, value);
+    return (await request(url.toString(), { headers: { "user-agent": USER_AGENT, accept: "application/json" } }, "Open Library")).json() as Promise<T>;
+  };
+
+  const anilistAuthors = (manga: AniListManga) =>
+    [
+      ...new Set(
+        (manga.staff?.edges ?? [])
+          .filter((edge) => ANILIST_AUTHOR_ROLES.test(edge.role ?? ""))
+          .map((edge) => clean(edge.node?.name?.native) || clean(edge.node?.name?.full))
+          .filter(Boolean)
+      )
+    ].slice(0, 4);
+
   const bangumi = async <T>(path: string, init: RequestInit = {}): Promise<T> => {
     const headers = { "user-agent": USER_AGENT, accept: "application/json", ...(init.body ? { "content-type": "application/json" } : {}) };
     return (await request(`https://api.bgm.tv${path}`, { ...init, headers }, "Bangumi")).json() as Promise<T>;
@@ -241,6 +359,7 @@ export function createMediaSources(options: { tmdbKey?: string; fetchImpl?: type
     source: "tmdb",
     sourceId: `${type}:${hit.id}`,
     mediaType: type,
+    creators: [],
     title: clean(hit.title ?? hit.name) || clean(hit.original_title ?? hit.original_name),
     originalTitle: clean(hit.original_title ?? hit.original_name) || null,
     year: yearOf(hit.release_date ?? hit.first_air_date),
@@ -251,9 +370,39 @@ export function createMediaSources(options: { tmdbKey?: string; fetchImpl?: type
   const bangumiPoster = (subject: BangumiSubject) => subject.images?.large || subject.images?.common || null;
 
   return {
-    available: () => ({ tmdb: Boolean(tmdbKey), bangumi: true }),
+    available: () => ({ tmdb: Boolean(tmdbKey), bangumi: true, openlibrary: true, anilist: true }),
 
     async search(source, kind, query) {
+      if (source === "openlibrary") {
+        const { docs } = await openLibrary<{ docs?: OpenLibraryDoc[] }>("/search.json", { q: query, limit: "20", fields: OPENLIBRARY_FIELDS });
+        return (docs ?? []).map((doc) => ({
+          source: "openlibrary" as const,
+          sourceId: doc.key.replace(/^\/works\//, ""),
+          mediaType: null,
+          creators: (doc.author_name ?? []).slice(0, 2),
+          title: clean(doc.title),
+          originalTitle: null,
+          year: doc.first_publish_year ?? null,
+          posterUrl: doc.cover_i ? `https://covers.openlibrary.org/b/id/${doc.cover_i}-M.jpg` : null,
+          overview: ""
+        }));
+      }
+
+      if (source === "anilist") {
+        const { Page } = await anilistQuery<{ Page?: { media?: AniListManga[] } }>(ANILIST_MANGA_SEARCH, { search: query });
+        return (Page?.media ?? []).map((manga) => ({
+          source: "anilist" as const,
+          sourceId: String(manga.id),
+          mediaType: null,
+          creators: anilistAuthors(manga),
+          title: clean(manga.title?.english) || clean(manga.title?.romaji) || clean(manga.title?.native),
+          originalTitle: clean(manga.title?.native) || null,
+          year: manga.startDate?.year ?? null,
+          posterUrl: manga.coverImage?.large ?? null,
+          overview: plainText(manga.description)
+        }));
+      }
+
       if (source === "tmdb") {
         const params = { query, language: "zh-CN", include_adult: "false" };
         if (kind === "movie" || kind === "tv") {
@@ -268,15 +417,19 @@ export function createMediaSources(options: { tmdbKey?: string; fetchImpl?: type
           .map((hit) => tmdbHit(hit, hit.media_type as TmdbType));
       }
 
-      // Bangumi subject type 2 is anime.
+      // Bangumi subject type 2 is anime; type 1 is books, split by platform into comics (漫画) and the rest.
+      const isPrint = kind === "book" || kind === "comic";
       const { data } = await bangumi<{ data?: BangumiSubject[] }>("/v0/search/subjects?limit=20", {
         method: "POST",
-        body: JSON.stringify({ keyword: query, filter: { type: [2] } })
+        body: JSON.stringify({ keyword: query, filter: { type: [isPrint ? 1 : 2] } })
       });
-      return (data ?? []).map((subject) => ({
+      return (data ?? [])
+        .filter((subject) => !isPrint || (kind === "comic") === (subject.platform === "漫画"))
+        .map((subject) => ({
         source: "bangumi" as const,
         sourceId: String(subject.id),
-        mediaType: "tv" as const,
+        mediaType: isPrint ? null : ("tv" as const),
+        creators: [],
         title: clean(subject.name_cn) || clean(subject.name),
         originalTitle: clean(subject.name) || null,
         year: yearOf(subject.date),
@@ -285,7 +438,7 @@ export function createMediaSources(options: { tmdbKey?: string; fetchImpl?: type
       }));
     },
 
-    async details(source, _kind, sourceId) {
+    async details(source, kind, sourceId) {
       if (source === "tmdb") {
         const match = /^(movie|tv):(\d+)$/.exec(sourceId);
         if (!match) throw new SourceError("无效的 TMDB 条目");
@@ -335,7 +488,65 @@ export function createMediaSources(options: { tmdbKey?: string; fetchImpl?: type
             ja: translated("ja", ["JP"], "overview")
           }),
           posterUrl: details.poster_path ? `${TMDB_IMAGE}/w780${details.poster_path}` : null,
-          episodes: type === "tv" ? (details.number_of_episodes ?? null) : null
+          episodes: type === "tv" ? (details.number_of_episodes ?? null) : null,
+          publication: null
+        };
+      }
+
+      if (source === "openlibrary") {
+        if (!/^OL\d+W$/.test(sourceId)) throw new SourceError("无效的 Open Library 条目");
+        const [{ docs }, work] = await Promise.all([
+          openLibrary<{ docs?: OpenLibraryDoc[] }>("/search.json", { q: `key:/works/${sourceId}`, limit: "1", fields: OPENLIBRARY_FIELDS }),
+          openLibrary<{ description?: string | { value?: string } }>(`/works/${sourceId}.json`)
+        ]);
+        const doc = docs?.[0];
+        if (!doc) throw new SourceError("Open Library 上找不到这个条目");
+        const title = clean(doc.title);
+        const description = typeof work.description === "string" ? work.description : work.description?.value;
+        return {
+          sourceId,
+          sourceUrl: `${OPENLIBRARY}/works/${sourceId}`,
+          title: compact({ [scriptLang(title)]: title }),
+          originalTitle: title || null,
+          year: doc.first_publish_year ?? null,
+          // Subjects mix genres with awards, lists and other languages' headings; keep a few plain ones.
+          genres: (doc.subject ?? [])
+            .filter((subject) => !/[:/,(]/.test(subject) && subject.length <= 24)
+            .slice(0, 5)
+            .map((subject) => ({ en: subject })),
+          // Later names are often translators and illustrators of editions.
+          credits: (doc.author_name ?? []).slice(0, 1),
+          // Descriptions often end with a "----------" block of links.
+          overview: compact({ en: clean(description?.split(/\n-{5,}/)[0]) }),
+          posterUrl: doc.cover_i ? `https://covers.openlibrary.org/b/id/${doc.cover_i}-L.jpg` : null,
+          episodes: null,
+          publication: { publisher: clean(doc.publisher?.[0]) || null, pages: doc.number_of_pages_median ?? null, volumes: null, ongoing: null }
+        };
+      }
+
+      if (source === "anilist") {
+        if (!/^\d{1,9}$/.test(sourceId)) throw new SourceError("无效的 AniList 条目");
+        const { Media: manga } = await anilistQuery<{ Media?: AniListManga }>(ANILIST_MANGA, { id: Number(sourceId) });
+        if (!manga) throw new SourceError("AniList 上找不到这个条目");
+        const romaji = clean(manga.title?.romaji);
+        return {
+          sourceId,
+          sourceUrl: manga.siteUrl ?? `https://anilist.co/manga/${sourceId}`,
+          // AniList has no Chinese titles; English and French get the English (or romaji) title.
+          title: compact({ ja: clean(manga.title?.native), en: clean(manga.title?.english) || romaji, fr: romaji }),
+          originalTitle: clean(manga.title?.native) || null,
+          year: manga.startDate?.year ?? null,
+          genres: (manga.genres ?? []).filter((genre) => genre !== "Hentai").map((genre) => compact({ en: genre, ...ANILIST_GENRES[genre] })),
+          credits: anilistAuthors(manga),
+          overview: compact({ en: plainText(manga.description) }),
+          posterUrl: manga.coverImage?.extraLarge ?? manga.coverImage?.large ?? null,
+          episodes: manga.volumes ?? null,
+          publication: {
+            publisher: null,
+            pages: null,
+            volumes: manga.volumes ?? null,
+            ongoing: manga.status === "RELEASING" || manga.status === "HIATUS" ? true : manga.status === "FINISHED" ? false : null
+          }
         };
       }
 
@@ -343,7 +554,12 @@ export function createMediaSources(options: { tmdbKey?: string; fetchImpl?: type
       const subject = await bangumi<BangumiSubject>(`/v0/subjects/${sourceId}`);
       const infobox = subject.infobox ?? [];
       const infoboxText = (value: string | { v: string }[]) => (typeof value === "string" ? value : value.map((item) => item.v).join(" "));
-      const credits = BANGUMI_CREDIT_KEYS.flatMap((key) => {
+      const isPrint = kind === "book" || kind === "comic";
+      const field = (key: string) => {
+        const value = infobox.find((entry) => entry.key === key)?.value;
+        return value === undefined ? "" : clean(infoboxText(value));
+      };
+      const credits = (isPrint ? BANGUMI_BOOK_CREDIT_KEYS : BANGUMI_CREDIT_KEYS).flatMap((key) => {
         const value = infobox.find((entry) => entry.key === key)?.value;
         const names = typeof value === "string" ? value.split(/[、,，/]/) : (value ?? []).map((item) => item.v);
         // Drop notes such as "（芳文社「まんがタイムきららMAX」連載中）".
@@ -367,22 +583,33 @@ export function createMediaSources(options: { tmdbKey?: string; fetchImpl?: type
         credits: [...new Set(credits)].slice(0, 6),
         overview: compact({ zh: clean(subject.summary) }),
         posterUrl: bangumiPoster(subject),
-        // eps counts main episodes; total_episodes also counts specials, openings and endings.
-        episodes: subject.eps || subject.total_episodes || null
+        // Anime: eps counts main episodes; total_episodes also counts specials, openings and endings.
+        // Comics: volumes.
+        episodes: isPrint ? subject.volumes || null : subject.eps || subject.total_episodes || null,
+        publication: isPrint
+          ? {
+              publisher: field("出版社").split(/[、,，/]/)[0]?.trim() || null,
+              pages: Number(field("页数")) || null,
+              volumes: subject.volumes || null,
+              // Serialized comics list a start and, once finished, an end.
+              ongoing: field("结束") ? false : field("开始") ? true : null
+            }
+          : null
       };
     },
 
-    async romaji(nativeTitle, year) {
-      return (await anilist(ANILIST_QUERY, nativeTitle, year))?.title?.romaji?.trim() || null;
+    async romaji(nativeTitle, year, kind = "anime") {
+      return (await anilist(ANILIST_QUERY, kind === "comic" ? "MANGA" : "ANIME", nativeTitle, year))?.title?.romaji?.trim() || null;
     },
 
-    async animeRelations(nativeTitle, year) {
-      const media = await anilist(ANILIST_RELATIONS_QUERY, nativeTitle, year);
-      return (media?.relations?.edges ?? []).flatMap((edge) => {
+    async relations(kind, nativeTitle, year) {
+      const media = await anilist(ANILIST_RELATIONS_QUERY, kind === "anime" ? "ANIME" : "MANGA", nativeTitle, year);
+      return (media?.relations?.edges ?? []).flatMap((edge): AniListRelation[] => {
         const titles = [edge.node?.title?.native, edge.node?.title?.romaji, edge.node?.title?.english].map(clean).filter(Boolean);
-        const mediaType = edge.node?.type;
-        if (!edge.relationType || !titles.length || (mediaType !== "ANIME" && mediaType !== "MANGA")) return [];
-        return [{ relationType: edge.relationType, mediaType, titles }];
+        const type = edge.node?.type;
+        if (!edge.relationType || !titles.length || (type !== "ANIME" && type !== "MANGA")) return [];
+        const other = type === "ANIME" ? "anime" : edge.node?.format === "NOVEL" ? "book" : "comic";
+        return [{ relationType: edge.relationType, kind: other, titles }];
       });
     },
 
@@ -476,10 +703,23 @@ export function createMediaSources(options: { tmdbKey?: string; fetchImpl?: type
     },
 
     async download(url) {
-      // Poster URLs come from the sources' responses; only fetch from their image hosts, without redirects.
-      const parsed = new URL(url);
-      if (parsed.protocol !== "https:" || !isPosterHost(parsed.hostname)) throw new SourceError("海报地址无效");
-      const response = await request(url, { headers: { "user-agent": USER_AGENT }, redirect: "error" }, "海报服务器");
+      // Poster URLs come from the sources' responses; only fetch from their image hosts. Redirects are
+      // followed by hand so every hop is checked (Open Library covers go through archive.org).
+      let next = url;
+      let response: Response | null = null;
+      for (let hop = 0; hop <= MAX_REDIRECTS && !response; hop++) {
+        const parsed = new URL(next);
+        if (parsed.protocol !== "https:" || !isPosterHost(parsed.hostname)) throw new SourceError("海报地址无效");
+        const answer = await request(next, { headers: { "user-agent": USER_AGENT }, redirect: "manual" }, "海报服务器");
+        const location = answer.status >= 300 && answer.status < 400 ? answer.headers.get("location") : null;
+        if (!location) {
+          response = answer;
+        } else {
+          await answer.body?.cancel();
+          next = new URL(location, next).toString();
+        }
+      }
+      if (!response) throw new SourceError("海报地址跳转次数过多");
       const length = Number(response.headers.get("content-length"));
       if (length > MAX_IMAGE_BYTES) {
         await response.body?.cancel();

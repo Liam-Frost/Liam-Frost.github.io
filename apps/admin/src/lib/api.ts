@@ -31,6 +31,7 @@ import {
   type ApiErrorBody,
   type CollectionSettings,
   type MediaKind,
+  type MediaSearchSource,
   type MusicImportJob,
   type MusicImportRequest,
   type SpotifyAccountStatus,
@@ -165,7 +166,7 @@ export const api = {
 
   media: () => request<AdminMediaListResponse>("/api/admin/media"),
   mediaItem: (id: string) => request<AdminMediaResponse>(mediaPath(id)),
-  searchMedia: (kind: MediaKind, source: "tmdb" | "bangumi", q: string) =>
+  searchMedia: (kind: MediaKind, source: MediaSearchSource, q: string) =>
     request<AdminMediaSearchResponse>(`/api/admin/media/search?${new URLSearchParams({ kind, source, q })}`),
   importMedia: (body: AdminMediaImport) => request<AdminMediaResponse>("/api/admin/media/import", { method: "POST", json: body }),
   createMedia: (body: AdminMediaCreate) => request<AdminMediaResponse>("/api/admin/media", { method: "POST", json: body }),

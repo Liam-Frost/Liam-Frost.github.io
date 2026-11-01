@@ -1,4 +1,4 @@
-import type { AdminMediaItem, CollectionSettings, MediaSearchResult, MediaStatus } from "@liam-frost/shared";
+import type { AdminMediaItem, CollectionSettings, MediaSearchResult, MediaSearchSource, MediaStatus } from "@liam-frost/shared";
 import { Clapperboard, EyeOff, Plus, Search, Settings2, Star } from "lucide-react";
 import { useEffect, useState, type FormEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
@@ -12,7 +12,19 @@ import { StarRating } from "../components/ui/StarRating";
 import { useToast } from "../components/ui/Toast";
 import { useCollectionSettings, useCreateMedia, useImportMedia, useMediaList, useUpdateCollectionSettings } from "../hooks/useMedia";
 import { api, ApiError } from "../lib/api";
-import { COLLECTION_KIND_LABELS, COLLECTION_KINDS, KIND_LABELS, MEDIA_STATUS_LABELS, pickText, WATCH_KINDS, type CollectionKind, type WatchKind } from "../lib/i18n";
+import {
+  COLLECTION_KIND_LABELS,
+  COLLECTION_KINDS,
+  KIND_LABELS,
+  KIND_SOURCES,
+  MEDIA_STATUS_LABELS,
+  pickText,
+  SOURCE_LABELS,
+  statusLabels,
+  WATCH_KINDS,
+  type CollectionKind,
+  type WatchKind
+} from "../lib/i18n";
 
 const STATUSES = Object.keys(MEDIA_STATUS_LABELS) as MediaStatus[];
 
@@ -65,7 +77,7 @@ export function CollectionPage() {
   return (
     <>
       <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
-        <PageHeader title="收藏" description="看过、在看和想看的电影、剧集与动漫，以及喜欢的歌。搜索添加时会自动填好资料和海报。" />
+        <PageHeader title="收藏" description="看过、在看和想看的电影、剧集、动漫，读过的书和漫画，以及喜欢的歌。搜索添加时会自动填好资料和海报。" />
         <div className="flex flex-wrap gap-2">
           <button type="button" className="btn-secondary" onClick={() => setEditingSettings(true)} disabled={!settings}>
             <Settings2 aria-hidden="true" className="size-4" /> 显示设置
@@ -86,7 +98,7 @@ export function CollectionPage() {
         </div>
       </div>
 
-      {settings && !settings.sources.tmdb && kind !== "track" ? (
+      {settings && !settings.sources.tmdb && (kind === "movie" || kind === "tv") ? (
         <p className="mb-4 rounded-xl border border-status-warn/30 bg-status-warn/8 px-4 py-2.5 text-[12.5px] leading-relaxed text-status-warn">
           未配置 TMDB：电影和剧集暂时只能手动添加。在 <code className="chip">apps/api/.env</code> 中设置 <code className="chip">TMDB_API_KEY</code> 后重启 API。
         </p>
@@ -143,7 +155,7 @@ function WatchList({ kind, items: ofKind, status, onStatus }: { kind: WatchKind;
             onClick={() => onStatus(s)}
             className={`chip ${status === s ? "border-brand bg-brand/10 text-brand" : ""}`}
           >
-            {s ? MEDIA_STATUS_LABELS[s] : "全部"} {s ? ofKind.filter((item) => item.status === s).length : ofKind.length}
+            {s ? statusLabels(kind)[s] : "全部"} {s ? ofKind.filter((item) => item.status === s).length : ofKind.length}
           </button>
         ))}
         <div className="relative ml-auto w-full sm:w-60">
@@ -182,7 +194,7 @@ function MediaCard({ item }: { item: AdminMediaItem }) {
           </span>
         )}
         <div className="absolute top-2 left-2 flex flex-wrap gap-1">
-          {item.status ? <span className="chip bg-surface/90">{MEDIA_STATUS_LABELS[item.status]}</span> : null}
+          {item.status ? <span className="chip bg-surface/90">{statusLabels(item.kind)[item.status]}</span> : null}
           {item.visibility === "private" ? (
             <span className="chip inline-flex items-center gap-1 bg-surface/90">
               <EyeOff aria-hidden="true" className="size-3" /> 隐藏
@@ -209,7 +221,8 @@ function MediaCard({ item }: { item: AdminMediaItem }) {
 }
 
 function AddMediaDialog({ kind, tmdbReady, onClose }: { kind: WatchKind; tmdbReady: boolean; onClose: () => void }) {
-  const [source, setSource] = useState<"tmdb" | "bangumi">(kind === "anime" ? "bangumi" : "tmdb");
+  const sources = KIND_SOURCES[kind];
+  const [source, setSource] = useState<MediaSearchSource>(sources[0]);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<MediaSearchResult[] | null>(null);
   const [searching, setSearching] = useState(false);
@@ -218,7 +231,7 @@ function AddMediaDialog({ kind, tmdbReady, onClose }: { kind: WatchKind; tmdbRea
   const importMedia = useImportMedia();
   const createMedia = useCreateMedia();
   const navigate = useNavigate();
-  const sourceReady = source === "bangumi" || tmdbReady;
+  const sourceReady = source !== "tmdb" || tmdbReady;
 
   const search = async (event: FormEvent) => {
     event.preventDefault();
@@ -252,29 +265,32 @@ function AddMediaDialog({ kind, tmdbReady, onClose }: { kind: WatchKind; tmdbRea
   return (
     <Dialog open title={`添加${KIND_LABELS[kind]}`} onClose={onClose}>
       <form onSubmit={search} className="flex flex-wrap items-end gap-2">
-        {kind === "anime" ? (
+        {sources.length > 1 ? (
           <Field label="资料来源" htmlFor="media-source">
             <select
               id="media-source"
               className="field"
               value={source}
               onChange={(e) => {
-                setSource(e.target.value as "tmdb" | "bangumi");
+                setSource(e.target.value as MediaSearchSource);
                 setResults(null);
               }}
             >
-              <option value="bangumi">Bangumi</option>
-              <option value="tmdb">TMDB</option>
+              {sources.map((s) => (
+                <option key={s} value={s}>
+                  {SOURCE_LABELS[s]}
+                </option>
+              ))}
             </select>
           </Field>
         ) : null}
-        <Field label={`在 ${source === "tmdb" ? "TMDB" : "Bangumi"} 搜索`} htmlFor="media-query" className="min-w-0 flex-1">
+        <Field label={`在 ${SOURCE_LABELS[source]} 搜索`} htmlFor="media-query" className="min-w-0 flex-1">
           <input
             id="media-query"
             className="field"
             value={query}
             maxLength={100}
-            placeholder="片名，中文、英文或原名都可以"
+            placeholder={SEARCH_HINTS[source]}
             disabled={!sourceReady}
             onChange={(e) => setQuery(e.target.value)}
             data-autofocus
@@ -312,6 +328,7 @@ function AddMediaDialog({ kind, tmdbReady, onClose }: { kind: WatchKind; tmdbRea
                     {kind === "anime" && result.source === "tmdb" ? <span className="chip ml-1.5">{result.mediaType === "movie" ? "剧场版" : "TV"}</span> : null}
                   </p>
                   {result.originalTitle && result.originalTitle !== result.title ? <p className="truncate text-[12px] text-subtle">{result.originalTitle}</p> : null}
+                  {result.creators.length ? <p className="truncate text-[12px] text-subtle">{result.creators.join("、")}</p> : null}
                   {result.overview ? <p className="mt-1 line-clamp-2 text-[12px] leading-relaxed text-muted">{result.overview}</p> : null}
                 </div>
                 {result.existingId ? (
@@ -342,6 +359,14 @@ function AddMediaDialog({ kind, tmdbReady, onClose }: { kind: WatchKind; tmdbRea
     </Dialog>
   );
 }
+
+/** What each source finds best. */
+const SEARCH_HINTS: Record<MediaSearchSource, string> = {
+  tmdb: "片名，中文、英文或原名都可以",
+  bangumi: "中文名或日文原名",
+  openlibrary: "书名或作者，英文和原文书名最容易找到",
+  anilist: "日文原名、罗马音或英文名"
+};
 
 function SettingsDialog({ settings, onClose }: { settings: CollectionSettings; onClose: () => void }) {
   const [draft, setDraft] = useState(settings);

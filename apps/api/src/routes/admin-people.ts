@@ -317,25 +317,30 @@ export function registerAdminPeopleRoutes(
       }
     }
 
-    if (item.kind === "track" && item.credits.length) {
+    // Songs' singers and books' and comics' authors, by name.
+    const nameRole = item.kind === "track" ? ("singer" as const) : item.kind === "book" || item.kind === "comic" ? ("author" as const) : null;
+    if (nameRole && item.credits.length) {
       const everyone = await people.list({ includePrivate: true });
       for (const name of item.credits) {
         const match = everyone.find((person) => personKeys(person).includes(titleKey(name)));
-        if (match && existing.has(relationKey({ fromMediaId: null, fromPersonId: match.id, toMediaId: item.id, type: "credit", role: "singer" }))) continue;
-        suggestions.push({ kind: "artist", name, personId: match?.id ?? null });
+        if (match && existing.has(relationKey({ fromMediaId: null, fromPersonId: match.id, toMediaId: item.id, type: "credit", role: nameRole }))) continue;
+        suggestions.push({ kind: "name", name, role: nameRole, personId: match?.id ?? null });
       }
     }
 
-    if (item.kind === "anime" && item.originalTitle) {
-      const linked = await sources.animeRelations(item.originalTitle, item.year);
+    if ((item.kind === "anime" || item.kind === "comic" || item.kind === "book") && item.originalTitle) {
+      const linked = await sources.relations(item.kind, item.originalTitle, item.year);
       if (linked.length) {
-        // Manga and anime often share a title, so only same-type works match (manga once comics exist).
-        const candidates = (await media.list({ includePrivate: true })).filter((row) => row.id !== item.id && row.kind === "anime");
+        const candidates = (await media.list({ includePrivate: true })).filter((row) => row.id !== item.id);
         for (const link of linked) {
           const mapping = ANILIST_RELATIONS[link.relationType];
-          if (!mapping || link.mediaType !== "ANIME") continue;
+          if (!mapping) continue;
           const keys = new Set(link.titles.map(titleKey));
-          for (const other of candidates.filter((row) => [row.originalTitle, ...Object.values(row.title)].some((title) => title && keys.has(titleKey(title))))) {
+          // A manga often has its anime's title, so only entries of the related work's kind match.
+          const matches = candidates.filter(
+            (row) => row.kind === link.kind && [row.originalTitle, ...Object.values(row.title)].some((title) => title && keys.has(titleKey(title)))
+          );
+          for (const other of matches) {
             const [from, to] = mapping.reverse ? [other, item] : [item, other];
             const relation: AdminRelationCreate = { from: { type: "media", id: from.id }, toId: to.id, type: mapping.type };
             const key = relationKey({ fromMediaId: from.id, fromPersonId: null, toMediaId: to.id, type: mapping.type, role: null });

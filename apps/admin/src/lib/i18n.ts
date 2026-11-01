@@ -1,4 +1,14 @@
-import { LANGS, type Lang, type LocalizedText, type PersonRole, type RelationType, type SoundtrackRole } from "@liam-frost/shared";
+import {
+  LANGS,
+  type Lang,
+  type LocalizedText,
+  type MediaSearchSource,
+  type MediaSource,
+  type MediaStatus,
+  type PersonRole,
+  type RelationType,
+  type SoundtrackRole
+} from "@liam-frost/shared";
 
 export { LANGS, type Lang };
 
@@ -22,11 +32,23 @@ export const STATUS_LABELS = {
   archived: "已归档"
 } as const;
 
-/** Kinds managed in the collection so far (music comes later). */
-export const WATCH_KINDS = ["movie", "tv", "anime"] as const;
+/** Kinds added by searching a source (songs have their own tools). */
+export const WATCH_KINDS = ["movie", "tv", "anime", "book", "comic"] as const;
 export type WatchKind = (typeof WATCH_KINDS)[number];
 
-export const KIND_LABELS: Record<WatchKind, string> = { movie: "电影", tv: "剧集", anime: "动漫" };
+export const KIND_LABELS: Record<WatchKind, string> = { movie: "电影", tv: "剧集", anime: "动漫", book: "图书", comic: "漫画" };
+
+/** Sources each kind is searched on, the default first. */
+export const KIND_SOURCES: Record<WatchKind, readonly MediaSearchSource[]> = {
+  movie: ["tmdb"],
+  tv: ["tmdb"],
+  anime: ["bangumi", "tmdb"],
+  book: ["openlibrary", "bangumi"],
+  comic: ["anilist", "bangumi"]
+};
+
+/** Books and comics are read: 想读 / 在读 / 读过. */
+export const isReadKind = (kind: string) => kind === "book" || kind === "comic";
 
 /** Tabs of the collection page: films, series, anime and songs. */
 export const COLLECTION_KINDS = [...WATCH_KINDS, "track"] as const;
@@ -57,6 +79,16 @@ export const MEDIA_STATUS_LABELS = {
   done: "看过",
   dropped: "弃了"
 } as const;
+
+export const READ_STATUS_LABELS: Record<MediaStatus, string> = {
+  want: "想读",
+  watching: "在读",
+  done: "读过",
+  dropped: "弃了"
+};
+
+/** Status names for a kind: watched for films, series and anime, read for books and comics. */
+export const statusLabels = (kind: string): Record<MediaStatus, string> => (isReadKind(kind) ? READ_STATUS_LABELS : MEDIA_STATUS_LABELS);
 
 export const PERSON_ROLE_LABELS: Record<PersonRole, string> = {
   director: "导演",
@@ -98,7 +130,15 @@ export function guessLang(text: string): Lang {
   return "en";
 }
 
-export const SOURCE_LABELS = { tmdb: "TMDB", bangumi: "Bangumi", spotify: "Spotify", itunes: "Apple Music", manual: "手动添加" } as const;
+export const SOURCE_LABELS: Record<MediaSource, string> = {
+  tmdb: "TMDB",
+  bangumi: "Bangumi",
+  openlibrary: "Open Library",
+  anilist: "AniList",
+  spotify: "Spotify",
+  itunes: "Apple Music",
+  manual: "手动添加"
+};
 
 /** URL-friendly slug suggestion from a title: ASCII letters and digits only. */
 export function suggestSlug(text: string) {
