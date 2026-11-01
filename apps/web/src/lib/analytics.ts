@@ -171,7 +171,9 @@ function observeVitals() {
   observe(
     "event",
     (entries) => {
-      for (const entry of entries) vitals.inp = Math.max(vitals.inp ?? 0, entry.duration);
+      // Only real interactions (clicks, taps, key presses) have an interactionId; hovers do not.
+      for (const entry of entries as (PerformanceEntry & { interactionId?: number })[])
+        if (entry.interactionId) vitals.inp = Math.max(vitals.inp ?? 0, entry.duration);
     },
     { durationThreshold: 40 }
   );

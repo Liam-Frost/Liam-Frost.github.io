@@ -156,6 +156,8 @@
 - The first password used for the temporary admin was from an older test environment; the login silently failed and the Steam button was not found.
 - The user had already set this repository's git identity to Liam-Frost <frostnova986@gmail.com>; the Stage 18 plan commit already used it. Commits here use that identity, not the company one.
 - Stage 18a: the temporary API's launcher could not import `dotenv` from the scratch folder; it now resolves it from `apps/api`. The browser pane's sample player could not load audio offline, so play counting was checked through the player bus; visits after signing in to the admin (same host, shared cookie) were correctly not counted. `prisma dev` reported its stream server on 127.0.0.1:8787, the API's default port.
+- The user asked to fix CI on PR 26 and finish Stage 18 there. CI's only failure was CodeQL's "insecure randomness" for the `Math.random()` fallback in event ids.
+- Stage 18b/18c: the Write tool turned a `\uFEFF` escape into a literal byte-order mark in the CSV code; ESLint caught it and the escape was restored. The demo songs first had non-UUID ids, which the admin's editor rejects, so the editor check used a movie. The browser pane reported no LCP entries (pages loaded off screen), only CLS.
 
 ## Notes
 

@@ -88,6 +88,8 @@ export interface AnalyticsStore {
   /** The salt for a day, created on first use; every other day's salt is deleted. */
   saltFor(day: string, create: () => string): Promise<string>;
   getSessions(ids: string[]): Promise<StoredSession[]>;
+  /** Sessions that opened or played a piece of content on the given days. */
+  contentSessionIds(type: string, id: string, days: string[]): Promise<string[]>;
   contentNames(): Promise<ContentName[]>;
   /** Adds or replaces names. */
   writeContentNames(names: ContentName[], at: Date): Promise<void>;

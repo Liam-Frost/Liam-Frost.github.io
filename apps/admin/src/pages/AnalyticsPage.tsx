@@ -178,10 +178,20 @@ function ExportMenu({ query }: { query: string }) {
             >
               <span>{label}</span>
               <span className="flex gap-2 text-[12px]">
-                <a className="text-brand hover:underline" href={href(dataset, "csv")} download>
+                <a
+                  onClick={() => setOpen(false)}
+                  className="text-brand hover:underline"
+                  href={href(dataset, "csv")}
+                  download
+                >
                   CSV
                 </a>
-                <a className="text-brand hover:underline" href={href(dataset, "json")} download>
+                <a
+                  onClick={() => setOpen(false)}
+                  className="text-brand hover:underline"
+                  href={href(dataset, "json")}
+                  download
+                >
                   JSON
                 </a>
               </span>

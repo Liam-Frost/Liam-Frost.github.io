@@ -96,6 +96,12 @@ React and related dependencies should be upgraded to the latest versions. This u
 
 ## Model Decisions
 
+### 2026-11-02: Analytics Details for Stages 18b and 18c
+
+The model chose: a cached content catalog (five minutes, reloaded at most every 30 seconds on a miss) to reject content that does not exist or is not public, and hourly name snapshots instead of storing names on every event; small groups folded into 其他 for sources, countries and UTM values, and hidden heatmap cells, using `ANALYTICS_MIN_GROUP_SIZE`; a country ranking with flags rather than a map; Web Vitals measured only on the landing page of half of the visits, as fixed histogram buckets that include Google's limits so ratings are exact; public API timings kept in memory and written once a minute; the job and source log written through callbacks on the existing import and sync jobs and a wrapper around the media sources, with repeated successes noted at most every ten minutes; demo data allowed only in a database whose name or schema contains "demo".
+
+Reason: the admin should see what matters without the site sending more, without single visitors standing out, and without a second scheduler.
+
 ### 2026-11-02: Analytics Details for Stage 18a
 
 The model chose: page views by route template rather than full address; content views read from the address (projects, `?photo=`, `?item=`, `?person=`, playlists), so no page component needs its own tracking call; referrer, UTM, country, device and browser stored once per session rather than per event; beacons sent as `text/plain` (no CORS preflight); the signed-in admin excluded on the server by the session cookie rather than a browser flag; content ids validated by format only until Stage 18b adds name snapshots; a Spotify-player play counted when the song is loaded, since the iframe hides playback. Countries use the `maxmind` package for GeoLite2 files.

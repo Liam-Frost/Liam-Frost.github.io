@@ -110,6 +110,16 @@ export class PrismaAnalyticsStore implements AnalyticsStore {
     return this.prisma.analyticsSession.findMany({ where: { id: { in: ids } } });
   }
 
+  async contentSessionIds(type: string, id: string, days: string[]) {
+    if (!days.length) return [];
+    const rows = await this.prisma.analyticsEvent.findMany({
+      where: { contentType: type, contentId: id, day: { in: days } },
+      distinct: ["sessionId"],
+      select: { sessionId: true }
+    });
+    return rows.map((row) => row.sessionId);
+  }
+
   async contentNames() {
     return this.prisma.analyticsContentName.findMany({
       select: { key: true, type: true, contentId: true, name: true, kind: true }

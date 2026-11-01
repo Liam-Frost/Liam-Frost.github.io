@@ -79,10 +79,11 @@ export function ContentDetailView({ type, id }: { type: AnalyticsContentType; id
 
       <ColumnChart
         title={(metric) => `按天的${metric}`}
+        // Songs are played rather than opened: start with plays.
         metrics={[
+          ...(isSong ? [{ key: "plays", label: "播放" }] : []),
           { key: "views", label: "浏览" },
-          { key: "visitors", label: "访客" },
-          ...(isSong ? [{ key: "plays", label: "播放" }] : [])
+          { key: "visitors", label: "访客" }
         ]}
         points={data.trend.map((point) => ({ ...point, label: point.key.slice(5) }))}
       />

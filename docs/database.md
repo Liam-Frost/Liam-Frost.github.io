@@ -126,6 +126,13 @@ Visitor analytics (migration `20261106090000_analytics`); no IP addresses are st
 - `AnalyticsDaily`: daily totals (`day`, `metric`, `key`, `value`), kept for good; `AnalyticsRollupDay` marks days written.
 - `AnalyticsSalt`: today's salt for visitor hashes; other days' salts are deleted.
 
+Reports (migration `20261107090000_analytics_reports`):
+
+- `AnalyticsContentName`: the name (and collection kind) each piece of content had when last seen, so statistics can name it after it is hidden or deleted.
+- `AnalyticsRequestDaily`: public API requests per day and route (counts, 5xx, 4xx, total time, a response-time histogram), kept for good.
+- `AnalyticsSystemEvent`: import and sync job results and external source successes and failures; deleted after the retention period.
+- `AnalyticsFlag`: small flags, e.g. `demo` when the database holds generated demo data.
+
 ## Setting Model
 
 `Setting` stores site-wide settings as one validated JSON document per key (migration `20261031120000_settings`):

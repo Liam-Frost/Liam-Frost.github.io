@@ -403,14 +403,9 @@ export class AnalyticsService {
     });
 
     // Where its visits came from: raw events still within the retention period.
-    const oldest = await this.store.oldestRawDay();
-    const sessionIds = new Set<string>();
-    for (const day of days.filter((d) => oldest !== null && d >= oldest)) {
-      for (const event of await this.store.eventsOn(day))
-        if (event.contentType === type && event.contentId === id) sessionIds.add(event.sessionId);
-    }
+    const sessionIds = await this.store.contentSessionIds(type, id, days);
     const referrers = new Map<string, number>();
-    for (const session of await this.store.getSessions([...sessionIds]))
+    for (const session of await this.store.getSessions(sessionIds))
       referrers.set(session.referrer ?? "", (referrers.get(session.referrer ?? "") ?? 0) + 1);
 
     return {

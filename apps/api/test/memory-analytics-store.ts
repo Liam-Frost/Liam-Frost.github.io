@@ -93,6 +93,13 @@ export class MemoryAnalyticsStore implements AnalyticsStore {
     return ids.map((id) => this.sessions.get(id)).filter((s): s is StoredSession => Boolean(s));
   }
 
+  async contentSessionIds(type: string, id: string, days: string[]) {
+    const ids = [...this.events.values()]
+      .filter((e) => e.contentType === type && e.contentId === id && days.includes(e.day))
+      .map((e) => e.sessionId);
+    return [...new Set(ids)];
+  }
+
   async contentNames() {
     return [...this.names.values()];
   }
