@@ -7,6 +7,7 @@ import { LANG_LABELS, LANGS, type Lang } from "../../lib/i18n";
 import { Dialog } from "../ui/Dialog";
 import { Field, Switch } from "../ui/Field";
 import { useToast } from "../ui/Toast";
+import { RecentStats } from "../analytics/RecentStats";
 
 type Draft = {
   title: LocalizedText;
@@ -115,6 +116,7 @@ export function PhotoEditor({ photo, onClose }: { photo: AdminPhoto; onClose: ()
         className="grid gap-5 md:grid-cols-[220px_1fr]"
       >
         <div className="space-y-3">
+          <RecentStats type="photo" id={photo.id} />
           <img
             src={photo.thumbnail}
             alt=""

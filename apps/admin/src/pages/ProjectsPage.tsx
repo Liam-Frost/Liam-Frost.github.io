@@ -17,9 +17,11 @@ import {
 } from "../hooks/useProjects";
 import { ApiError } from "../lib/api";
 import { pickText, STATUS_LABELS, suggestSlug } from "../lib/i18n";
+import { useRecentCounts } from "../components/analytics/RecentStats";
 
 export function ProjectsPage() {
   const { data: projects, isPending, error } = useProjects();
+  const { data: views } = useRecentCounts("project");
   const [creating, setCreating] = useState(false);
   const [deleting, setDeleting] = useState<AdminProject | null>(null);
   const reorder = useReorderProjects();
@@ -92,7 +94,10 @@ export function ProjectsPage() {
                   >
                     {title}
                   </Link>
-                  <p className="truncate text-[12px] text-subtle">/projects/{project.slug}</p>
+                  <p className="truncate text-[12px] text-subtle">
+                    /projects/{project.slug}
+                    {views ? ` · 近 30 天 ${views[project.slug]?.views ?? 0} 次浏览` : ""}
+                  </p>
                   <div className="mt-1.5 flex flex-wrap gap-1.5">
                     <span className="chip">{STATUS_LABELS[project.status]}</span>
                     {project.visibility === "private" ? (

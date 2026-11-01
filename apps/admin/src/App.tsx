@@ -83,7 +83,11 @@ function SessionGate() {
         <Route path="people" element={<PeoplePage />} />
         <Route path="people/:id" element={<PersonEditPage />} />
         <Route path="music" element={<MusicPage />} />
-        <Route path="analytics" element={<AnalyticsPage />} />
+        <Route path="analytics" element={<AnalyticsPage view="overview" />} />
+        <Route path="analytics/content" element={<AnalyticsPage view="content" />} />
+        <Route path="analytics/content/:type/:id" element={<AnalyticsPage view="detail" />} />
+        <Route path="analytics/audience" element={<AnalyticsPage view="audience" />} />
+        <Route path="analytics/health" element={<AnalyticsPage view="health" />} />
         <Route path="*" element={<SectionNotFound />} />
       </Route>
     </Routes>

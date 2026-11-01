@@ -11,7 +11,9 @@ export class AnalyticsClock {
       year: "numeric",
       month: "2-digit",
       day: "2-digit",
-      hour: "2-digit"
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit"
     });
   }
 
@@ -23,7 +25,9 @@ export class AnalyticsClock {
       year: Number(parts.year),
       month: Number(parts.month),
       day: Number(parts.day),
-      hour: Number(parts.hour)
+      hour: Number(parts.hour),
+      minute: Number(parts.minute),
+      second: Number(parts.second)
     };
   }
 
@@ -34,6 +38,23 @@ export class AnalyticsClock {
       day: `${p.year}-${String(p.month).padStart(2, "0")}-${String(p.day).padStart(2, "0")}`,
       hour: p.hour
     };
+  }
+
+  /** Minutes the zone is ahead of UTC at an instant. */
+  private offsetMinutes(date: Date) {
+    const p = this.parts(date);
+    const asUtc = Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute, p.second);
+    return Math.round((asUtc - Math.floor(date.getTime() / 1000) * 1000) / 60_000);
+  }
+
+  /** The instant a local day starts. */
+  start(day: string) {
+    const [year, month, date] = day.split("-").map(Number);
+    const midnightUtc = Date.UTC(year!, month! - 1, date!);
+    // Twice, in case the offset at midnight differs from the guess (daylight saving changes).
+    let guess = midnightUtc - this.offsetMinutes(new Date(midnightUtc)) * 60_000;
+    guess = midnightUtc - this.offsetMinutes(new Date(guess)) * 60_000;
+    return new Date(guess);
   }
 }
 

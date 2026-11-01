@@ -259,8 +259,10 @@ describe("analytics", () => {
     });
   });
 
-  it("finds local days and hours in the time zone", () => {
+  it("finds local days and their start across daylight saving changes", () => {
     const clock = new AnalyticsClock("America/New_York");
+    expect(clock.start("2026-03-08").toISOString()).toBe("2026-03-08T05:00:00.000Z");
+    expect(clock.start("2026-03-09").toISOString()).toBe("2026-03-09T04:00:00.000Z");
     expect(clock.local(new Date("2026-03-09T03:59:00Z"))).toEqual({ day: "2026-03-08", hour: 23 });
   });
 

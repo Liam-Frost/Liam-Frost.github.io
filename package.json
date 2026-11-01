@@ -26,6 +26,7 @@
     "db:push": "npm run db:push -w apps/api",
     "db:seed": "npm run db:seed -w apps/api",
     "db:seed:collection": "npm run db:seed:collection -w apps/api",
+    "db:seed:analytics-demo": "npm run db:seed:analytics-demo -w apps/api",
     "db:backfill:romaji": "npm run db:backfill:romaji -w apps/api",
     "db:studio": "npm run db:studio -w apps/api",
     "preview": "npm run preview -w apps/web",

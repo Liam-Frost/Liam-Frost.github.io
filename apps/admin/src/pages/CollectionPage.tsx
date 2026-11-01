@@ -46,6 +46,7 @@ import {
   type CollectionKind,
   type WatchKind
 } from "../lib/i18n";
+import { useRecentCounts } from "../components/analytics/RecentStats";
 
 const STATUSES = Object.keys(MEDIA_STATUS_LABELS) as MediaStatus[];
 
@@ -284,6 +285,8 @@ function WatchList({
 function MediaCard({ item, selection }: { item: AdminMediaItem; selection: Selection }) {
   const title = pickText(item.title, "未命名");
   const selected = selection.isSelected(item.id);
+  const { data: counts } = useRecentCounts("media");
+  const views = counts?.[item.id]?.views;
   const className = `card group block w-full overflow-hidden text-left transition-shadow hover:shadow-card-hover ${selected ? "ring-2 ring-brand" : ""}`;
   const body = (
     <>
@@ -329,7 +332,14 @@ function MediaCard({ item, selection }: { item: AdminMediaItem; selection: Selec
           {title}
         </p>
         <div className="flex items-center justify-between gap-2 text-[12px] text-subtle">
-          <span>{item.year ?? "—"}</span>
+          <span>
+            {item.year ?? "—"}
+            {views ? (
+              <span className="ml-1.5 text-faint" title="近 30 天浏览">
+                · {views} 次浏览
+              </span>
+            ) : null}
+          </span>
           <StarRating value={item.rating} size="sm" />
         </div>
       </div>

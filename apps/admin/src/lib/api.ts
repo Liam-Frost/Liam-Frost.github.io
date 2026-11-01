@@ -1,5 +1,12 @@
 import {
   ADMIN_REQUEST_HEADER,
+  type AnalyticsAudience,
+  type AnalyticsClearScope,
+  type AnalyticsContentCounts,
+  type AnalyticsContentDetail,
+  type AnalyticsContentReport,
+  type AnalyticsContentType,
+  type AnalyticsHealth,
   type AnalyticsMeta,
   type AnalyticsOverview,
   type AnalyticsRange,
@@ -65,6 +72,9 @@ export class ApiError extends Error {
 }
 
 type RequestOptions = Omit<RequestInit, "body"> & { json?: unknown; body?: BodyInit };
+
+const rangeQuery = (range: AnalyticsRange, from?: string, to?: string) =>
+  new URLSearchParams({ range, ...(range === "custom" && from && to ? { from, to } : {}) });
 
 export async function request<T>(
   path: string,
@@ -285,12 +295,27 @@ export const api = {
     request<AdminPlaylistResponse>(`${playlistPath(id)}/order`, { method: "PUT", json: { ids } }),
   analyticsMeta: () => request<AnalyticsMeta>("/api/admin/analytics/meta"),
   analyticsOverview: (range: AnalyticsRange, from?: string, to?: string) =>
-    request<AnalyticsOverview>(
-      `/api/admin/analytics/overview?${new URLSearchParams({
-        range,
-        ...(range === "custom" && from && to ? { from, to } : {})
-      })}`
+    request<AnalyticsOverview>(`/api/admin/analytics/overview?${rangeQuery(range, from, to)}`),
+  analyticsContent: (range: AnalyticsRange, from?: string, to?: string) =>
+    request<AnalyticsContentReport>(`/api/admin/analytics/content?${rangeQuery(range, from, to)}`),
+  analyticsContentDetail: (
+    type: AnalyticsContentType,
+    id: string,
+    range: AnalyticsRange,
+    from?: string,
+    to?: string
+  ) =>
+    request<AnalyticsContentDetail>(
+      `/api/admin/analytics/content/${type}/${encodeURIComponent(id)}?${rangeQuery(range, from, to)}`
     ),
+  analyticsCounts: (type: AnalyticsContentType) =>
+    request<AnalyticsContentCounts>(`/api/admin/analytics/counts?type=${type}`),
+  analyticsAudience: (range: AnalyticsRange, from?: string, to?: string) =>
+    request<AnalyticsAudience>(`/api/admin/analytics/audience?${rangeQuery(range, from, to)}`),
+  analyticsHealth: (range: AnalyticsRange, from?: string, to?: string) =>
+    request<AnalyticsHealth>(`/api/admin/analytics/health?${rangeQuery(range, from, to)}`),
+  clearAnalytics: (scope: AnalyticsClearScope) =>
+    request<void>(`/api/admin/analytics/data?scope=${scope}`, { method: "DELETE" }),
   steamAccount: () => request<SteamAccountStatus>("/api/admin/steam/account"),
   connectSteam: (returnTo: string) =>
     request<{ url: string }>("/api/admin/steam/connect", { method: "POST", json: { returnTo } }),

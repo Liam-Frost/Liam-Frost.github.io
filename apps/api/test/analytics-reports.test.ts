@@ -8,6 +8,7 @@ import type {
 } from "@liam-frost/shared";
 import { afterEach, describe, expect, it } from "vitest";
 
+import { isDemoDatabase } from "../src/analytics/demo";
 import { fold, referrerGroup, toCsv } from "../src/analytics/reports";
 import { SystemLog, withSourceLog } from "../src/analytics/system";
 import { SourceError } from "../src/media/sources";
@@ -402,6 +403,13 @@ describe("analytics reports", () => {
     expect((await get<{ demo: boolean }>("/api/admin/analytics/meta")).demo).toBe(false);
     store.flags.set("demo", "2026-11-02");
     expect((await get<{ demo: boolean }>("/api/admin/analytics/meta")).demo).toBe(true);
+  });
+
+  it("writes demo data only to demo databases", () => {
+    expect(isDemoDatabase("postgres://u:p@localhost:5432/site_demo")).toBe(true);
+    expect(isDemoDatabase("postgres://u:p@localhost:5432/site?schema=analytics_demo")).toBe(true);
+    expect(isDemoDatabase("postgres://u:p@localhost:5432/site")).toBe(false);
+    expect(isDemoDatabase("")).toBe(false);
   });
 
   it("folds, groups referrers and escapes CSV", () => {

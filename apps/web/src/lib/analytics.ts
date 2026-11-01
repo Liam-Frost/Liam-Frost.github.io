@@ -135,12 +135,92 @@ function reportEngagement() {
   if (seconds >= 1) track("engagement", { value: seconds });
 }
 
+/**
+ * Core Web Vitals of the page the visit landed on, for half of the visits: the largest paint, the
+ * slowest interaction (close to INP for the few interactions of a visit) and layout shift (the worst
+ * burst of shifts, x 1000). Reported once, when the tab is first hidden or closed.
+ */
+const vitals: { path: AnalyticsPath | null; lcp: number | null; inp: number | null; cls: number } =
+  {
+    path: null,
+    lcp: null,
+    inp: null,
+    cls: 0
+  };
+let vitalsSent = false;
+
+function observeVitals() {
+  if (typeof PerformanceObserver === "undefined") return;
+  const supported = PerformanceObserver.supportedEntryTypes ?? [];
+  const observe = (type: string, onEntries: (entries: PerformanceEntry[]) => void, extra = {}) => {
+    if (!supported.includes(type)) return;
+    try {
+      new PerformanceObserver((list) => onEntries(list.getEntries())).observe({
+        type,
+        buffered: true,
+        ...extra
+      });
+    } catch {
+      // An older browser without this entry type.
+    }
+  };
+  observe("largest-contentful-paint", (entries) => {
+    const last = entries[entries.length - 1];
+    if (last) vitals.lcp = last.startTime;
+  });
+  observe(
+    "event",
+    (entries) => {
+      for (const entry of entries) vitals.inp = Math.max(vitals.inp ?? 0, entry.duration);
+    },
+    { durationThreshold: 40 }
+  );
+  // Layout shifts in bursts (under 1 s apart, at most 5 s long); the worst burst counts.
+  let burst = 0;
+  let first = 0;
+  let previous = 0;
+  observe("layout-shift", (entries) => {
+    for (const entry of entries as (PerformanceEntry & {
+      value: number;
+      hadRecentInput: boolean;
+    })[]) {
+      if (entry.hadRecentInput) continue;
+      if (burst && entry.startTime - previous < 1000 && entry.startTime - first < 5000) {
+        burst += entry.value;
+      } else {
+        burst = entry.value;
+        first = entry.startTime;
+      }
+      previous = entry.startTime;
+      vitals.cls = Math.max(vitals.cls, burst);
+    }
+  });
+}
+
+function reportVitals() {
+  if (vitalsSent || !vitals.path) return;
+  vitalsSent = true;
+  const path = vitals.path;
+  if (vitals.lcp !== null) track("web_vital", { path, target: "lcp", value: vitals.lcp });
+  if (vitals.inp !== null) track("web_vital", { path, target: "inp", value: vitals.inp });
+  track("web_vital", { path, target: "cls", value: vitals.cls * 1000 });
+}
+
 /** Called on every route change: reports the time on the previous page, then counts the new one. */
 export function trackPage(path: AnalyticsPath, lang: string) {
   if (!analyticsEnabled) return;
   reportEngagement();
   currentPath = path;
   track("page_view", { lang });
+  // Vitals belong to the page the visit landed on; half of the page loads measure them.
+  if (vitals.path === null && !vitalsSent) {
+    if (crypto.getRandomValues(new Uint8Array(1))[0]! < 128) {
+      vitals.path = path;
+      observeVitals();
+    } else {
+      vitalsSent = true;
+    }
+  }
 }
 
 if (analyticsEnabled) {
@@ -148,6 +228,7 @@ if (analyticsEnabled) {
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "hidden") {
       reportEngagement();
+      reportVitals();
       flush(true);
     } else {
       visibleSince = Date.now();
@@ -155,6 +236,7 @@ if (analyticsEnabled) {
   });
   window.addEventListener("pagehide", () => {
     reportEngagement();
+    reportVitals();
     flush(true);
   });
 

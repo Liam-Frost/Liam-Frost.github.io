@@ -16,6 +16,7 @@ import {
 } from "../hooks/usePeople";
 import { ApiError } from "../lib/api";
 import { LANG_LABELS, LANGS, pickText, type Lang } from "../lib/i18n";
+import { RecentStats } from "../components/analytics/RecentStats";
 
 const ACCEPT = "image/jpeg,image/png,image/webp,image/avif,image/tiff";
 
@@ -138,6 +139,7 @@ function PersonEditor({ person }: { person: AdminPerson }) {
         <h1 className="min-w-0 flex-1 truncate text-[22px] font-semibold text-brand-dark">
           {name}
         </h1>
+        <RecentStats type="person" id={person.id} />
         {dirty ? (
           <span className="text-[12.5px] text-status-warn" role="status">
             有未保存的修改

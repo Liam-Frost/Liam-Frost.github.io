@@ -35,6 +35,7 @@ import {
   type CollectionKind,
   type Lang
 } from "../lib/i18n";
+import { RecentStats } from "../components/analytics/RecentStats";
 
 const ACCEPT = "image/jpeg,image/png,image/webp,image/avif,image/tiff";
 
@@ -287,6 +288,7 @@ function MediaEditor({ item }: { item: AdminMediaItem }) {
           {title}
           <span className="chip ml-2 align-middle">{COLLECTION_KIND_LABELS[kind]}</span>
         </h1>
+        <RecentStats type="media" id={item.id} plays={kind === "track"} />
         {dirty ? (
           <span className="text-[12.5px] text-status-warn" role="status">
             有未保存的修改
