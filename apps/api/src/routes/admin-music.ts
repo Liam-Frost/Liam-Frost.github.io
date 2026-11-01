@@ -3,10 +3,10 @@ import type { FastifyInstance } from "fastify";
 
 import type { AdminAuthService } from "../auth/service";
 import { HttpError, notFound } from "../lib/errors";
-import { musicImportSchema, musicJobParamsSchema, musicSearchQuerySchema, parseInput, playlistImportSchema } from "../lib/validation";
+import { musicAccountImportSchema, musicImportSchema, musicJobParamsSchema, musicSearchQuerySchema, parseInput, playlistImportSchema } from "../lib/validation";
 import type { MusicSource } from "../media/itunes";
 import { toAdminMedia } from "../media/mapping";
-import { ImportBusyError, importItunesSong, type PlaylistImports } from "../media/music-import";
+import { ImportBusyError, importItunesSong, type MusicImports } from "../media/music-import";
 import { SourceError, type MediaSources } from "../media/sources";
 import { DuplicateMediaError, type MediaRepository } from "../media/types";
 import { PlaylistError } from "../spotify/playlist";
@@ -16,7 +16,7 @@ import type { LocalImageStore } from "../storage/local";
 export function registerAdminMusicRoutes(
   app: FastifyInstance,
   auth: AdminAuthService,
-  deps: { media: MediaRepository | null; sources: MediaSources; music: MusicSource; store: LocalImageStore; imports: PlaylistImports | null }
+  deps: { media: MediaRepository | null; sources: MediaSources; music: MusicSource; store: LocalImageStore; imports: MusicImports | null }
 ) {
   const admin = { preHandler: auth.requireAdmin };
   const repo = () => {
@@ -49,19 +49,30 @@ export function registerAdminMusicRoutes(
     }
   });
 
-  /** Starts importing a public Spotify playlist (or returns the import already running). */
-  app.post("/api/admin/music/playlist-import", admin, async (request, reply): Promise<{ job: MusicImportJob }> => {
-    const { playlistUrl } = parseInput(playlistImportSchema, request.body);
-    let job: MusicImportJob;
+  const startJob = (start: () => MusicImportJob) => {
     try {
-      job = repo().imports.start(playlistUrl);
+      return { job: start() };
     } catch (error) {
       if (error instanceof PlaylistError) throw new HttpError(400, "VALIDATION", error.message);
       if (error instanceof ImportBusyError) throw new HttpError(409, "IMPORT_BUSY", error.message);
       throw error;
     }
+  };
+
+  /** Starts importing a public Spotify playlist from its link (or returns that import if it is running). */
+  app.post("/api/admin/music/playlist-import", admin, async (request, reply): Promise<{ job: MusicImportJob }> => {
+    const { playlistUrl } = parseInput(playlistImportSchema, request.body);
+    const result = startJob(() => repo().imports.startPlaylistLink(playlistUrl));
     reply.code(202);
-    return { job };
+    return result;
+  });
+
+  /** Starts importing the connected account's Liked Songs or one of its playlists. */
+  app.post("/api/admin/music/spotify-import", admin, async (request, reply): Promise<{ job: MusicImportJob }> => {
+    const body = parseInput(musicAccountImportSchema, request.body);
+    const result = startJob(() => repo().imports.startAccount(body));
+    reply.code(202);
+    return result;
   });
 
   app.get("/api/admin/music/jobs/:id", admin, async (request): Promise<{ job: MusicImportJob }> => {

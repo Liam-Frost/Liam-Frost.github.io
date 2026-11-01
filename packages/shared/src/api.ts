@@ -151,9 +151,16 @@ export type AdminProjectsResponse = { projects: AdminProject[] };
 export type AdminProjectResponse = { project: AdminProject };
 
 /** Spotify player settings, edited in the admin. */
-/** Settings of the site's music player; its songs are the collection's songs marked "in player". */
+/**
+ * Settings of the site's music player. "custom": the site's own card playing the collection's songs marked
+ * "in player" (30-second previews). "embed": Spotify's embedded player for `embedUrl` (full songs for
+ * visitors signed in to Spotify in that browser, previews otherwise).
+ */
 export type SpotifySettings = {
   enabled: boolean;
+  mode: "custom" | "embed";
+  /** https://open.spotify.com/{playlist|album|track|artist}/<id>, for the embed mode. */
+  embedUrl: string;
   shuffle: boolean;
   /** Initial preview volume, 0-100. */
   volume: number;
@@ -300,9 +307,24 @@ export type MusicSearchResult = {
 export type AdminMusicSearchResponse = { results: MusicSearchResult[] };
 export type AdminMusicImport = { itunesId: string; country: string };
 
-/** Progress of a playlist import running on the server. */
+/** The admin's Spotify account, for importing Liked Songs and own playlists. */
+export type SpotifyAccountStatus = {
+  /** SPOTIFY_CLIENT_ID / SPOTIFY_CLIENT_SECRET are set. */
+  configured: boolean;
+  /** The redirect URI to register in the Spotify app. */
+  redirectUri: string | null;
+  account: { id: string; displayName: string; connectedAt: string } | null;
+};
+
+export type SpotifyOwnPlaylist = { id: string; name: string; tracks: number; image: string | null; owner: string };
+
+/** What a music import reads: a public playlist link, the admin's Liked Songs, or one of their playlists. */
+export type MusicImportRequest = { source: "liked" } | { source: "playlist"; playlistId: string };
+
+/** Progress of a music import running on the server. */
 export type MusicImportJob = {
   id: string;
+  source: "playlist-link" | "liked" | "playlist";
   state: "running" | "done" | "failed";
   playlistName: string | null;
   total: number;

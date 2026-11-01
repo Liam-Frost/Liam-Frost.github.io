@@ -61,7 +61,10 @@ const envSchema = z.object({
 
   UPLOAD_DIR: optionalString,
   UPLOAD_MAX_MB: optionalNumber.pipe(z.number().int().min(1).max(200).default(40)),
-  TMDB_API_KEY: optionalString
+  TMDB_API_KEY: optionalString,
+  SPOTIFY_CLIENT_ID: optionalString,
+  SPOTIFY_CLIENT_SECRET: optionalString,
+  SPOTIFY_REDIRECT_URI: optionalString
 });
 
 export type AdminConfig = {
@@ -92,6 +95,8 @@ export type AppConfig = {
   };
   /** TMDB API key (v3) or read access token (v4) for collection searches; empty disables TMDB. */
   tmdbApiKey: string;
+  /** Spotify developer app for importing the admin's Liked Songs and playlists; null when not set up. */
+  spotify: { clientId: string; clientSecret: string; redirectUri: string } | null;
 };
 
 export class ConfigError extends Error {
@@ -116,6 +121,20 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
   const sessionSecret = values.ADMIN_SESSION_SECRET ?? "";
   if (Boolean(passwordHash) !== Boolean(sessionSecret)) {
     issues.push("ADMIN_PASSWORD_HASH and ADMIN_SESSION_SECRET must be set together");
+  }
+
+  const spotifyId = values.SPOTIFY_CLIENT_ID ?? "";
+  const spotifySecret = values.SPOTIFY_CLIENT_SECRET ?? "";
+  if (Boolean(spotifyId) !== Boolean(spotifySecret)) {
+    issues.push("SPOTIFY_CLIENT_ID and SPOTIFY_CLIENT_SECRET must be set together");
+  }
+  // Spotify only allows plain HTTP redirects to loopback IPs; the default matches a local API.
+  const spotifyRedirect = values.SPOTIFY_REDIRECT_URI ?? `http://127.0.0.1:${values.PORT}/api/admin/spotify/callback`;
+  try {
+    const url = new URL(spotifyRedirect);
+    if (!["http:", "https:"].includes(url.protocol)) throw new Error("not http(s)");
+  } catch {
+    issues.push("SPOTIFY_REDIRECT_URI must be an http(s) URL");
   }
 
   let adminPath = "";
@@ -171,6 +190,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
       dir: values.UPLOAD_DIR,
       maxBytes: values.UPLOAD_MAX_MB * 1024 * 1024
     },
-    tmdbApiKey: values.TMDB_API_KEY ?? ""
+    tmdbApiKey: values.TMDB_API_KEY ?? "",
+    spotify: spotifyId && spotifySecret ? { clientId: spotifyId, clientSecret: spotifySecret, redirectUri: spotifyRedirect } : null
   };
 }

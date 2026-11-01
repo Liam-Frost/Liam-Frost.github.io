@@ -8,11 +8,14 @@ import { isMediaPublic, type MediaRepository, type MediaRow } from "../media/typ
 import type { SettingsRepository } from "../settings/types";
 import type { LocalImageStore } from "../storage/local";
 import { variantFileName } from "../photos/mapping";
+import { spotifyLink } from "./playlist";
 
 const SETTINGS_KEY = "spotify";
 
 export const DEFAULT_SPOTIFY_SETTINGS: SpotifySettings = {
   enabled: true,
+  mode: "custom",
+  embedUrl: "https://open.spotify.com/playlist/37i9dQZF1DX9AUX5YVf3hc",
   shuffle: true,
   volume: 30,
   autoCollapseSeconds: 3
@@ -20,13 +23,25 @@ export const DEFAULT_SPOTIFY_SETTINGS: SpotifySettings = {
 
 const settingsShape = {
   enabled: z.boolean(),
+  mode: z.enum(["custom", "embed"]),
+  embedUrl: z.string().trim().max(500),
   shuffle: z.boolean(),
   volume: z.number().int().min(0).max(100),
   autoCollapseSeconds: z.number().int().min(0).max(120)
 };
 
-/** Input from the admin: every field, nothing else. */
-export const spotifySettingsSchema = z.object(settingsShape).strict();
+/** Input from the admin: every field, nothing else. The embed link is normalized (and required for "embed"). */
+export const spotifySettingsSchema = z
+  .object(settingsShape)
+  .strict()
+  .transform((value, ctx) => {
+    const link = value.embedUrl ? spotifyLink(value.embedUrl) : null;
+    if ((value.embedUrl && !link) || (value.mode === "embed" && !link)) {
+      ctx.addIssue({ code: "custom", message: "请填写 Spotify 歌单、专辑、歌曲或艺人的链接" });
+      return z.NEVER;
+    }
+    return { ...value, embedUrl: link ?? "" };
+  });
 /** Stored settings may carry fields of older versions (e.g. playlistUrl); they are dropped. */
 const storedSettingsSchema = z.object(settingsShape);
 
@@ -79,7 +94,8 @@ export class SpotifyService {
 
   async player(): Promise<PublicSpotifyPlayer> {
     const settings = await this.settings();
-    if (!settings.enabled) return { ...settings, tracks: [] };
+    // The embedded player plays Spotify's own list; the site's card plays the collection's songs.
+    if (!settings.enabled || settings.mode === "embed") return { ...settings, tracks: [] };
     return { ...settings, tracks: await this.tracks() };
   }
 }

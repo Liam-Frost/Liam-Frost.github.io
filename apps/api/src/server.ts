@@ -25,7 +25,8 @@ import { registerUploadRoutes } from "./routes/uploads";
 import { registerWebApp } from "./routes/web-app";
 import { CollectionSettingsStore } from "./media/collection-settings";
 import { createMusicSource, type MusicSource } from "./media/itunes";
-import { PlaylistImports } from "./media/music-import";
+import { MusicImports } from "./media/music-import";
+import { SpotifyAccount } from "./spotify/account";
 import { PrismaMediaRepository } from "./media/prisma-repository";
 import { createMediaSources, type MediaSources } from "./media/sources";
 import type { MediaRepository } from "./media/types";
@@ -35,7 +36,7 @@ import { PrismaProjectRepository } from "./projects/prisma-repository";
 import type { ProjectRepository } from "./projects/types";
 import { PrismaSettingsRepository } from "./settings/prisma-repository";
 import { MemorySettingsRepository, type SettingsRepository } from "./settings/types";
-import { createPlaylistFetcher, type PlaylistFetcher } from "./spotify/playlist";
+import { createPlaylistFetcher, fetchTrackPreview, type PlaylistFetcher } from "./spotify/playlist";
 import { SpotifyService } from "./spotify/service";
 import { LocalImageStore } from "./storage/local";
 
@@ -87,6 +88,10 @@ export type BuildServerOptions = {
   mediaSources?: MediaSources;
   /** Settings storage; defaults to Prisma when DATABASE_URL is set. Pass null for none. */
   settings?: SettingsRepository | null;
+  /** Spotify Web API access; defaults to one built from the config. */
+  spotifyAccount?: SpotifyAccount;
+  /** One track's Spotify preview; defaults to its embed page. */
+  trackPreview?: (trackId: string) => Promise<string | null>;
   /** iTunes song search; defaults to the real service. */
   musicSource?: MusicSource;
   /** Loads Spotify playlists for imports; defaults to Spotify's embed page. */
@@ -104,7 +109,9 @@ export function buildServer({
   mediaSources = createMediaSources({ tmdbKey: config.tmdbApiKey }),
   settings = defaultSettingsRepository(),
   fetchPlaylist = createPlaylistFetcher(),
-  musicSource = createMusicSource()
+  musicSource = createMusicSource(),
+  spotifyAccount,
+  trackPreview = (trackId: string) => fetchTrackPreview(trackId)
 }: BuildServerOptions = {}) {
   const app = Fastify({
     logger: logger && {
@@ -119,8 +126,11 @@ export function buildServer({
   const store = new LocalImageStore(config.uploads.dir ?? DEFAULT_UPLOAD_DIR);
   const collection = settings ? new CollectionSettingsStore(settings) : null;
   const spotify = new SpotifyService(settings ?? new MemorySettingsRepository(), media, collection, store);
-  const playlistImports = media
-    ? new PlaylistImports({ media, sources: mediaSources, store }, fetchPlaylist, (error) => app.log.warn({ err: error }, "Playlist import failed"))
+  const account = spotifyAccount ?? new SpotifyAccount(config.spotify, settings, config.admin.sessionSecret);
+  const musicImports = media
+    ? new MusicImports({ media, sources: mediaSources, store, music: musicSource, account, fetchPlaylist, trackPreview }, (error) =>
+        app.log.warn({ err: error }, "Music import failed")
+      )
     : null;
 
   app.register(cors, { credentials: true, origin: config.corsOrigins });
@@ -173,10 +183,10 @@ export function buildServer({
   registerPhotoRoutes(app, photos, store);
   registerProjectRoutes(app, projects, store);
   registerAdminMediaRoutes(app, auth, { media, collection, sources: mediaSources, store, maxUploadBytes: config.uploads.maxBytes });
-  registerAdminMusicRoutes(app, auth, { media, sources: mediaSources, music: musicSource, store, imports: playlistImports });
+  registerAdminMusicRoutes(app, auth, { media, sources: mediaSources, music: musicSource, store, imports: musicImports });
   registerCollectionRoutes(app, { media, collection, store });
   registerUploadRoutes(app, store, { photos, projects, media, collection }, auth);
-  registerSpotifyRoutes(app, auth, spotify, settings !== null);
+  registerSpotifyRoutes(app, auth, spotify, account, settings !== null);
   registerWebApp(app, webDistDir);
 
   return app;
