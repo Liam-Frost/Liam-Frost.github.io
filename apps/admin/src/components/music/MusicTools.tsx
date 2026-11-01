@@ -1,12 +1,15 @@
 import type { AdminMediaItem, MusicImportJob, MusicImportRequest, MusicSearchResult } from "@liam-frost/shared";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Music, Pause, Play, Search } from "lucide-react";
-import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { Link } from "react-router";
 
 import { mediaKey, useSetMediaItem, useUpdateMedia } from "../../hooks/useMedia";
+import { useSelection, type Selection } from "../../hooks/useSelection";
 import { api, ApiError } from "../../lib/api";
 import { formatDuration, MUSIC_STORES, pickText } from "../../lib/i18n";
+import { MediaBatchActions } from "../collection/MediaBatchActions";
+import { BatchBar, SelectMark } from "../ui/BatchBar";
 import { Dialog } from "../ui/Dialog";
 import { Field, Switch } from "../ui/Field";
 import { useToast } from "../ui/Toast";
@@ -414,6 +417,8 @@ export function MusicList({ items }: { items: AdminMediaItem[] }) {
       (!q || [pickText(item.title), ...item.credits, item.music?.album ?? ""].some((text) => text.toLowerCase().includes(q)))
   );
   const labels: Record<MusicFilter, string> = { all: "全部", player: "在播放器中", notPlayer: "不在播放器中", noPreview: "没有试听" };
+  const order = useMemo(() => visible.map((item) => item.id), [visible]);
+  const selection = useSelection(order);
 
   return (
     <>
@@ -423,9 +428,16 @@ export function MusicList({ items }: { items: AdminMediaItem[] }) {
             {labels[f]} {counts[f]}
           </button>
         ))}
-        <div className="relative ml-auto w-full sm:w-60">
-          <Search aria-hidden="true" className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-faint" />
-          <input className="field pl-9" placeholder="筛选歌名、歌手、专辑" aria-label="筛选歌曲" value={needle} onChange={(e) => setNeedle(e.target.value)} />
+        <div className="ml-auto flex w-full items-center gap-2 sm:w-auto">
+          <div className="relative flex-1 sm:w-60">
+            <Search aria-hidden="true" className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-faint" />
+            <input className="field pl-9" placeholder="筛选歌名、歌手、专辑" aria-label="筛选歌曲" value={needle} onChange={(e) => setNeedle(e.target.value)} />
+          </div>
+          {visible.length && !selection.active ? (
+            <button type="button" className="btn-secondary shrink-0" onClick={selection.start}>
+              选择
+            </button>
+          ) : null}
         </div>
       </div>
 
@@ -434,24 +446,34 @@ export function MusicList({ items }: { items: AdminMediaItem[] }) {
       ) : (
         <ul className="card divide-y divide-line-soft">
           {visible.map((item) => (
-            <MusicRow key={item.id} item={item} preview={preview} onFix={() => setFixing(item)} />
+            <MusicRow key={item.id} item={item} preview={preview} onFix={() => setFixing(item)} selection={selection} />
           ))}
         </ul>
       )}
+
+      <BatchBar selection={selection} total={visible.length}>
+        <MediaBatchActions kind="track" selection={selection} />
+      </BatchBar>
 
       {fixing ? <FixPreviewDialog item={fixing} onClose={() => setFixing(null)} /> : null}
     </>
   );
 }
 
-function MusicRow({ item, preview, onFix }: { item: AdminMediaItem; preview: ReturnType<typeof usePreview>; onFix: () => void }) {
+function MusicRow({ item, preview, onFix, selection }: { item: AdminMediaItem; preview: ReturnType<typeof usePreview>; onFix: () => void; selection: Selection }) {
   const update = useUpdateMedia(item.id);
   const toast = useToast();
   const title = pickText(item.title, "未命名");
   const previewUrl = item.music?.previewUrl ?? null;
+  const selected = selection.isSelected(item.id);
 
   return (
-    <li className="flex items-center gap-3 px-3 py-2.5">
+    <li className={`flex items-center gap-3 px-3 py-2.5 ${selected ? "bg-brand/6" : ""}`}>
+      {selection.active ? (
+        <button type="button" aria-pressed={selected} aria-label={`选择 ${title}`} className="rounded-md p-0.5" onClick={(e) => selection.toggle(item.id, e.shiftKey)}>
+          <SelectMark checked={selected} />
+        </button>
+      ) : null}
       <Cover src={item.poster?.variants[0].url} />
       <div className="min-w-0 flex-1">
         <Link to={`/collection/${item.id}`} className="block truncate text-[13.5px] font-semibold text-brand-dark hover:text-brand">

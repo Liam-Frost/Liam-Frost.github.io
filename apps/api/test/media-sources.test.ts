@@ -462,7 +462,7 @@ describe("IGDB", () => {
     game_localizations: [{ name: "エルデンリング", region: { identifier: "ja-JP" } }]
   };
 
-  function igdbFetch(options: { rejectFirstToken?: boolean } = {}) {
+  function igdbFetch(options: { rejectFirst?: 401 | 429 } = {}) {
     let tokens = 0;
     let rejected = false;
     const fetchImpl = fakeFetch(async (url, init) => {
@@ -472,9 +472,9 @@ describe("IGDB", () => {
         return Response.json({ access_token: `token${tokens}`, expires_in: 5_000_000 });
       }
       expect((init.headers as Record<string, string>)["Client-ID"]).toBe("cid");
-      if (options.rejectFirstToken && !rejected) {
+      if (options.rejectFirst && !rejected) {
         rejected = true;
-        return new Response("", { status: 401 });
+        return new Response("", { status: options.rejectFirst });
       }
       const body = String(init.body);
       return Response.json(body.startsWith("search") ? [eldenRing] : body.includes("where id = 119133") ? [eldenRing] : []);
@@ -509,9 +509,15 @@ describe("IGDB", () => {
   });
 
   it("gets a new token once when IGDB rejects one, and explains missing credentials", async () => {
-    const { fetchImpl, tokens } = igdbFetch({ rejectFirstToken: true });
+    const { fetchImpl, tokens } = igdbFetch({ rejectFirst: 401 });
     expect(await createMediaSources({ twitch, fetchImpl }).search("igdb", "game", "x")).toHaveLength(1);
     expect(tokens()).toBe(2);
     await expect(createMediaSources({}).search("igdb", "game", "x")).rejects.toThrow("TWITCH_CLIENT_ID");
+  });
+
+  it("waits and tries once more when IGDB is rate limited", async () => {
+    const { fetchImpl, tokens } = igdbFetch({ rejectFirst: 429 });
+    expect(await createMediaSources({ twitch, fetchImpl }).search("igdb", "game", "x")).toHaveLength(1);
+    expect(tokens()).toBe(1);
   });
 });

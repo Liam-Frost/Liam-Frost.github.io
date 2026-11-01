@@ -1,6 +1,6 @@
 import type { PublicMediaSummary } from "@liam-frost/shared";
 
-import { sendPlayerCommand, useNowPlaying } from "../data/playerBus";
+import { sendPlayerCommand, useNowPlaying, type PlayRequest } from "../data/playerBus";
 import { useSpotifyPlayer } from "../data/useSpotifyPlayer";
 import { pickLocalized, useI18n } from "../lib/i18n";
 
@@ -8,6 +8,38 @@ import { pickLocalized, useI18n } from "../lib/i18n";
  * Plays a song in the corner player: its preview in the site's own player, or its Spotify page in
  * Spotify's player. Nothing is shown when the player is off or the song has nothing it could play.
  */
+/** A song as the player wants it; the title in the visitor's language. */
+export function playRequest(item: PublicMediaSummary, title: string): PlayRequest | null {
+  const music = item.music;
+  if (!music) return null;
+  return {
+    id: item.id,
+    title,
+    artist: item.credits.join(", "),
+    image: item.poster?.variants[0].url ?? "",
+    link: music.spotifyUrl ?? music.appleUrl ?? "",
+    previewUrl: music.previewUrl ?? "",
+    spotifyUrl: music.spotifyUrl
+  };
+}
+
+/** Plays a list of songs (an album, an artist, a playlist) from the first; hidden when nothing could play. */
+export function PlayAllButton({ items, spotifyUrl = null }: { items: PublicMediaSummary[]; spotifyUrl?: string | null }) {
+  const { lang, t } = useI18n();
+  const player = useSpotifyPlayer();
+  if (!player) return null;
+  const tracks = items
+    .map((item) => playRequest(item, pickLocalized(item.title, lang) || item.originalTitle || ""))
+    .filter((track): track is PlayRequest => track !== null);
+  const playable = player.mode === "embed" ? spotifyUrl || tracks.some((track) => track.spotifyUrl) : tracks.some((track) => track.previewUrl);
+  if (!playable) return null;
+  return (
+    <button type="button" className="btn btnPrimary btnSmall" onClick={() => sendPlayerCommand({ type: "queue", tracks, spotifyUrl })}>
+      {t("collection.playAll")}
+    </button>
+  );
+}
+
 export default function PlayButton({ item, className = "" }: { item: PublicMediaSummary; className?: string }) {
   const { lang, t } = useI18n();
   const player = useSpotifyPlayer();
@@ -24,18 +56,7 @@ export default function PlayButton({ item, className = "" }: { item: PublicMedia
       sendPlayerCommand({ type: "pause" });
       return;
     }
-    sendPlayerCommand({
-      type: "play",
-      track: {
-        id: item.id,
-        title,
-        artist: item.credits.join(", "),
-        image: item.poster?.variants[0].url ?? "",
-        link: music.spotifyUrl ?? music.appleUrl ?? "",
-        previewUrl: music.previewUrl ?? "",
-        spotifyUrl: music.spotifyUrl
-      }
-    });
+    sendPlayerCommand({ type: "play", track: playRequest(item, title)! });
   };
 
   return (

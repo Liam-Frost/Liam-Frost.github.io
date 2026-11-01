@@ -158,12 +158,13 @@ describe("music player", () => {
     await add(1);
     const current = (await app.inject({ url: "/api/admin/spotify", headers: { cookie } })).json();
     expect(current).toEqual({
-      settings: { enabled: true, mode: "custom", embedUrl: "https://open.spotify.com/playlist/37i9dQZF1DX9AUX5YVf3hc", shuffle: false, volume: 40, autoCollapseSeconds: 5 },
+      settings: { enabled: true, mode: "custom", embedUrl: "https://open.spotify.com/playlist/37i9dQZF1DX9AUX5YVf3hc", shuffle: false, volume: 40, autoCollapseSeconds: 5, playlistId: null },
       playerTracks: 1
     });
 
     const payload = { enabled: true, mode: "custom", embedUrl: "", shuffle: true, volume: 55, autoCollapseSeconds: 0 };
-    expect((await app.inject({ method: "PUT", url: "/api/admin/spotify", headers, payload })).json().settings).toEqual(payload);
+    // Settings saved by an older admin have no playlist: the player plays every song marked "in player".
+    expect((await app.inject({ method: "PUT", url: "/api/admin/spotify", headers, payload })).json().settings).toEqual({ ...payload, playlistId: null });
     for (const bad of [{ ...payload, volume: 101 }, { ...payload, autoCollapseSeconds: -1 }, { ...payload, playlistUrl: "x" }]) {
       expect((await app.inject({ method: "PUT", url: "/api/admin/spotify", headers, payload: bad })).statusCode).toBe(400);
     }

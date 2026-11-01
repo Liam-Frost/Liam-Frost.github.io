@@ -9,6 +9,7 @@ import type { MusicSource } from "../src/media/itunes";
 import { SourceError, type MediaSources } from "../src/media/sources";
 import type { MediaRepository } from "../src/media/types";
 import type { PersonRepository, RelationRepository } from "../src/people/types";
+import type { PlaylistRepository } from "../src/playlists/types";
 import type { PhotoRepository } from "../src/photos/types";
 import type { ProjectRepository } from "../src/projects/types";
 import { buildServer } from "../src/server";
@@ -37,7 +38,8 @@ export const offlineMediaSources: MediaSources = {
   searchPeople: offline,
   person: offline,
   credits: offline,
-  relations: async () => []
+  relations: async () => [],
+  steamGames: offline
 };
 
 export type TestServerOptions = {
@@ -53,6 +55,8 @@ export type TestServerOptions = {
   people?: PersonRepository | null;
   /** Defaults to none. */
   relations?: RelationRepository | null;
+  /** Defaults to none. */
+  playlists?: PlaylistRepository | null;
   /** Defaults to sources that fail, so tests never reach TMDB or Bangumi. */
   mediaSources?: MediaSources;
   /** Defaults to none (in-memory defaults). */
@@ -63,6 +67,8 @@ export type TestServerOptions = {
   musicSource?: MusicSource;
   /** Defaults to an account without a Spotify app. */
   spotifyAccount?: SpotifyAccount;
+  /** Defaults to one that fails, so tests never reach Steam. */
+  steamFetch?: typeof fetch;
   /** Defaults to no preview, so tests never reach Spotify. */
   trackPreview?: (trackId: string) => Promise<string | null>;
 };
@@ -89,12 +95,14 @@ export async function buildTestServer(env: Record<string, string | undefined> = 
     media: options.media ?? null,
     people: options.people ?? null,
     relations: options.relations ?? null,
+    playlists: options.playlists ?? null,
     mediaSources: options.mediaSources ?? offlineMediaSources,
     settings: options.settings ?? null,
     fetchPlaylist: options.fetchPlaylist ?? (() => Promise.reject(new Error("no network in tests"))),
     musicSource: options.musicSource ?? { search: offline, lookup: offline, findPreview: async () => null },
     spotifyAccount: options.spotifyAccount,
-    trackPreview: options.trackPreview ?? (async () => null)
+    trackPreview: options.trackPreview ?? (async () => null),
+    steamFetch: options.steamFetch ?? (() => Promise.reject(new Error("no network in tests")))
   });
 }
 

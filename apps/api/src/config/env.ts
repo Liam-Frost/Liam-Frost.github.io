@@ -63,6 +63,7 @@ const envSchema = z.object({
   UPLOAD_MAX_MB: optionalNumber.pipe(z.number().int().min(1).max(200).default(40)),
   TMDB_API_KEY: optionalString,
   GOOGLE_BOOKS_API_KEY: optionalString,
+  STEAM_WEB_API_KEY: optionalString,
   TWITCH_CLIENT_ID: optionalString,
   TWITCH_CLIENT_SECRET: optionalString,
   SPOTIFY_CLIENT_ID: optionalString,
@@ -100,6 +101,8 @@ export type AppConfig = {
   tmdbApiKey: string;
   /** Google Books API key; empty disables Google Books as a book source. */
   googleBooksApiKey: string;
+  /** Steam Web API key for syncing the game library; empty disables it. */
+  steamApiKey: string;
   /** Twitch app for IGDB game searches; null when not configured. */
   twitch: { clientId: string; clientSecret: string } | null;
   /** Spotify developer app for importing the admin's Liked Songs and playlists; null when not set up. */
@@ -202,6 +205,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     },
     tmdbApiKey: values.TMDB_API_KEY ?? "",
     googleBooksApiKey: values.GOOGLE_BOOKS_API_KEY ?? "",
+    steamApiKey: values.STEAM_WEB_API_KEY ?? "",
     twitch: values.TWITCH_CLIENT_ID && values.TWITCH_CLIENT_SECRET ? { clientId: values.TWITCH_CLIENT_ID, clientSecret: values.TWITCH_CLIENT_SECRET } : null,
     spotify: spotifyId && spotifySecret ? { clientId: spotifyId, clientSecret: spotifySecret, redirectUri: spotifyRedirect } : null
   };

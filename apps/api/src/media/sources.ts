@@ -22,7 +22,7 @@ export type SourceDetails = {
   /** Books and comics. */
   publication: MediaPublication | null;
   /** Games. */
-  game?: MediaGame | null;
+  game?: Partial<MediaGame> | null;
 };
 
 export type PersonHit = Omit<PersonSearchResult, "existingId">;
@@ -58,6 +58,8 @@ export interface MediaSources {
   person(sourceId: string): Promise<PersonDetails>;
   /** Directors / creators, writers and the main cast of a TMDB film or series ("movie:123"). */
   credits(sourceId: string, kind: MediaKind): Promise<CreditHit[]>;
+  /** IGDB games for Steam app ids (Steam's id as text → IGDB's id); missing ones are not on IGDB. */
+  steamGames(appIds: string[]): Promise<Map<string, string>>;
   /** AniList relations of an anime, comic or (light) novel matched by its Japanese title; empty when not found or unreachable. */
   relations(kind: "anime" | "comic" | "book", nativeTitle: string, year: number | null): Promise<AniListRelation[]>;
 }
@@ -191,6 +193,8 @@ const POSTER_HOSTS = [
   /^books\.google\.com$/,
   /^books\.googleusercontent\.com$/,
   /^images\.igdb\.com$/,
+  /^cdn\.(cloudflare|akamai)\.steamstatic\.com$/,
+  /^shared\.(cloudflare\.|akamai\.)?steamstatic\.com$/,
   /^archive\.org$/,
   /^ia\d+\.us\.archive\.org$/
 ];
@@ -498,6 +502,12 @@ export function createMediaSources(options: {
       // A revoked or expired token: get a new one once.
       await response.body?.cancel();
       igdbToken = null;
+      return igdb<T>(endpoint, query, false);
+    }
+    if (response.status === 429 && retry) {
+      // IGDB allows four requests a second; a Steam sync imports one game after another.
+      await response.body?.cancel();
+      await new Promise((resolve) => setTimeout(resolve, 1100));
       return igdb<T>(endpoint, query, false);
     }
     if (!response.ok) {
@@ -886,6 +896,18 @@ export function createMediaSources(options: {
             }
           : null
       };
+    },
+
+    async steamGames(appIds) {
+      const found = new Map<string, string>();
+      // External ids of source 1 are Steam's; up to 500 per query.
+      for (let at = 0; at < appIds.length; at += 500) {
+        const ids = appIds.slice(at, at + 500).filter((id) => /^\d{1,10}$/.test(id));
+        if (!ids.length) continue;
+        const rows = await igdb<{ game?: number; uid?: string }[]>("external_games", `fields game,uid; where external_game_source = 1 & uid = (${ids.map((id) => `"${id}"`).join(",")}); limit 500;`);
+        for (const row of rows) if (row.game && row.uid && !found.has(row.uid)) found.set(row.uid, String(row.game));
+      }
+      return found;
     },
 
     async romaji(nativeTitle, year, kind = "anime") {

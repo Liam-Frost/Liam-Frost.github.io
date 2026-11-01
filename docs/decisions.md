@@ -2,6 +2,10 @@
 
 ## User Decisions
 
+### 2026-11-04: Stage 17 Scope
+
+Before the yearly review, Stage 17 adds bulk actions in the admin, music views by album / artist / playlist with real playlists, and a Steam library sync (playtime, last played; purchase dates are not available from Steam's public API and are entered by hand). Plan: `docs/plan-collection.md` (Stage 17a-d).
+
 ### 2026-11-01: More Collection Kinds and Links
 
 The collection should also cover books, comics, games and people (actors, directors, singers, writers and so on), and entries should link to each other: songs as soundtracks of works, adaptations of comics and books, and people's roles in works. Books, comics and games are new `MediaItem` kinds; people get their own table; links live in one relation table, stored once and shown on both sides. Plan: `docs/plan-collection.md` (Stages 14-16).
@@ -51,6 +55,12 @@ The admin login address should be configurable like `internal-developer-tools-po
 React and related dependencies should be upgraded to the latest versions. This upgrade is exempt from the "Preserve Existing UI" decision.
 
 ## Model Decisions
+
+### 2026-11-01: Steam Through "Sign in Through Steam" and the Site's Web API Key
+
+The model chose Steam's OpenID sign-in to prove the admin's SteamID and the site's Web API key to read the library, storing only the SteamID, name and avatar.
+
+Reason: Steam has no OAuth for other sites. The callback is checked with Steam (`check_authentication`) so a forged answer cannot connect another account. Purchase dates are not in any public Steam API, so they are entered by hand.
 
 ### 2026-11-04: IGDB Searches Skip Mods and Updates
 

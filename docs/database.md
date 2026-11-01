@@ -99,7 +99,7 @@ npm run db:studio
 
 ## MediaItem Model
 
-Collection entries (migration `20261031150000_media`; `book` and `comic` added by `20261103090000_books_comics`, `game` by `20261104090000_games`): `kind` (movie, tv, anime, book, comic, game, track, album), `source` and `sourceId` (unique together; TMDB ids are prefixed `movie:` / `tv:`), localized `title`, `overview`, `review` and `genres` as JSON, `credits`, local `poster` (same shape as project covers), `status`, `rating` (1-5), `watchedOn`, `rewatchCount`, `progress` (`{ watched, total }`: episodes, a comic's volumes or a book's pages), `extra` (kind-specific JSON: `music` for songs, `publication` `{ publisher, pages, volumes, ongoing }` for books and comics, `game` `{ platforms, publishers, playtimeHours }` for games), `featured`, `visibility`. The `collection` key in `Setting` holds the display switches.
+Collection entries (migration `20261031150000_media`; `book` and `comic` added by `20261103090000_books_comics`, `game` by `20261104090000_games`): `kind` (movie, tv, anime, book, comic, game, track, album), `source` and `sourceId` (unique together; TMDB ids are prefixed `movie:` / `tv:`), localized `title`, `overview`, `review` and `genres` as JSON, `credits`, local `poster` (same shape as project covers), `status`, `rating` (1-5), `watchedOn`, `rewatchCount`, `progress` (`{ watched, total }`: episodes, a comic's volumes or a book's pages), `extra` (kind-specific JSON: `music` for songs, `publication` `{ publisher, pages, volumes, ongoing }` for books and comics, `game` `{ platforms, publishers, playtimeHours, steamAppId, lastPlayedOn, purchasedOn }` for games; games added from the Steam store have source `steam`), `featured`, `visibility`. The `collection` key in `Setting` holds the display switches.
 
 ## Person and MediaRelation Models
 
@@ -109,6 +109,13 @@ People linked to collection entries (migration `20261102090000_people_relations`
 - `MediaRelation`: starts at an entry (`fromMediaId`) or a person (`fromPersonId`), never both (a database `CHECK`), and ends at an entry (`toMediaId`). `type` is `soundtrack`, `adaptation`, `sequel`, `related` or `credit`; `role` is a person's role for credits and the song's use (opening, ending, ...) for soundtracks; `note` is localized. `key` is unique: one relation per start, end, type and role, with the two ends of `related` sorted so A–B and B–A are the same. Deleting an entry or a person deletes its relations (`ON DELETE CASCADE`).
 
 Reading direction: `soundtrack` song → work, `adaptation` adaptation → source, `sequel` sequel → prequel, `credit` person → work. A relation is stored once and listed from both ends.
+
+## Playlist Models
+
+Playlists of songs (migration `20261105090000_playlists`):
+
+- `Playlist`: localized `name` and `description`, `source` (`manual` or `spotify`) and `sourceId` (the Spotify playlist id, or `liked`; unique together, so an import finds its playlist again), `sourceUrl`, `visibility`.
+- `PlaylistTrack`: a song (`mediaId`) at a `position` in a playlist; one row per playlist and song. Deleting a playlist or a song deletes its rows.
 
 ## Setting Model
 

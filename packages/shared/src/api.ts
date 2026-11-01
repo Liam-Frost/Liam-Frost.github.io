@@ -166,6 +166,8 @@ export type SpotifySettings = {
   volume: number;
   /** Seconds before the player collapses after the page loads; 0 keeps it open. */
   autoCollapseSeconds: number;
+  /** The site's own player: a playlist to play instead of every song marked "in player". */
+  playlistId: string | null;
 };
 
 /** A song in the site's player, with its 30-second preview. */
@@ -193,7 +195,7 @@ export type MediaKind = "movie" | "tv" | "anime" | "book" | "comic" | "game" | "
 /** Status: watched for films, series and anime, read for books and comics, played for games. */
 export type MediaStatus = "want" | "watching" | "done" | "dropped";
 /** Where an entry's details came from. */
-export type MediaSource = "tmdb" | "bangumi" | "openlibrary" | "googlebooks" | "anilist" | "igdb" | "spotify" | "itunes" | "manual";
+export type MediaSource = "tmdb" | "bangumi" | "openlibrary" | "googlebooks" | "anilist" | "igdb" | "steam" | "spotify" | "itunes" | "manual";
 /** Sources the admin can search for films, series, anime, books and comics. */
 export type MediaSearchSource = "tmdb" | "bangumi" | "openlibrary" | "googlebooks" | "anilist" | "igdb";
 
@@ -212,8 +214,39 @@ export type MediaPublication = {
 export type MediaGame = {
   platforms: string[];
   publishers: string[];
-  /** Hours played; null when not recorded. */
+  /** Hours played; null when not recorded. Synced from Steam for Steam games. */
   playtimeHours: number | null;
+  /** The game on Steam, when it came from (or was matched by) a Steam library sync. */
+  steamAppId: number | null;
+  /** YYYY-MM-DD, from Steam. */
+  lastPlayedOn: string | null;
+  /** YYYY-MM-DD, entered by hand (Steam does not tell). */
+  purchasedOn: string | null;
+};
+
+/** The admin's Steam account, for syncing the game library. */
+export type SteamAccountStatus = {
+  /** STEAM_WEB_API_KEY is set. */
+  configured: boolean;
+  account: { steamId: string; name: string; avatar: string | null; profileUrl: string; connectedAt: string; lastSyncedAt: string | null } | null;
+};
+
+/** Progress of a Steam library sync running on the server. */
+export type SteamSyncJob = {
+  id: string;
+  state: "running" | "done" | "failed";
+  /** Games in the library. */
+  total: number;
+  processed: number;
+  /** New entries, with IGDB's details or (not on IGDB) the Steam store's. */
+  added: number;
+  fromStore: number;
+  /** Entries already in the collection whose playtime and last played date were updated. */
+  updated: number;
+  /** Games that could not be added; the first reasons are in `errors`. */
+  failed: number;
+  errors: string[];
+  error: string | null;
 };
 
 /** Song details (kind "track"). */
@@ -289,12 +322,21 @@ export type AdminMediaUpdate = Partial<{
   music: { album?: string | null; previewUrl?: string | null; appleUrl?: string | null };
   /** Books and comics. */
   publication: Partial<MediaPublication>;
-  /** Games. */
-  game: Partial<MediaGame>;
+  /** Games: platforms, publishers, playtime and purchase date (the rest comes from Steam). */
+  game: Partial<Pick<MediaGame, "platforms" | "publishers" | "playtimeHours" | "purchasedOn">>;
   inPlayer: boolean;
   featured: boolean;
   visibility: PhotoVisibility;
 }>;
+
+/** Changes a bulk action may make to every selected entry. */
+export type AdminMediaBatchPatch = Partial<{ visibility: PhotoVisibility; featured: boolean; status: MediaStatus; inPlayer: boolean }>;
+
+/** A bulk action on up to 500 entries (or people, which take visibility and featured only). */
+export type AdminBatchRequest<Patch> = { ids: string[] } & ({ action: "delete" } | { action: "update"; patch: Patch });
+
+/** Which entries a bulk action changed, and why the others were refused. */
+export type AdminBatchResult = { done: string[]; failed: { id: string; message: string }[] };
 
 export type MediaSearchResult = {
   source: MediaSearchSource;
@@ -411,12 +453,45 @@ export type PublicMedia = PublicMediaSummary & {
   links: PublicLink[];
 };
 
+export type AdminPlaylist = {
+  id: string;
+  name: LocalizedText;
+  description: LocalizedText;
+  /** Made in the admin, or created by a Spotify import. */
+  source: "manual" | "spotify";
+  sourceUrl: string | null;
+  visibility: PhotoVisibility;
+  /** Song ids in playlist order. */
+  trackIds: string[];
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type AdminPlaylistsResponse = { playlists: AdminPlaylist[] };
+export type AdminPlaylistResponse = { playlist: AdminPlaylist };
+export type AdminPlaylistCreate = { name: LocalizedText; description?: LocalizedText };
+export type AdminPlaylistUpdate = Partial<{ name: LocalizedText; description: LocalizedText; visibility: PhotoVisibility }>;
+/** Adds songs to the end of a playlist, or removes them. */
+export type AdminPlaylistTracks = { action: "add" | "remove"; ids: string[] };
+
+/** A public playlist; its songs are the collection's songs the site shows, in playlist order. */
+export type PublicPlaylist = {
+  id: string;
+  name: LocalizedText;
+  description: LocalizedText;
+  trackIds: string[];
+  /** The playlist on Spotify, for imported ones. */
+  sourceUrl: string | null;
+};
+
 export type PublicCollection = {
   /** Kinds the site shows, in display order. */
   kinds: MediaKind[];
   items: PublicMediaSummary[];
   /** People the site shows (empty when the people switch is off). */
   people: PublicPersonSummary[];
+  /** Public playlists with at least one song the site shows. */
+  playlists: PublicPlaylist[];
 };
 
 /** How two entries, or a person and an entry, are linked. */

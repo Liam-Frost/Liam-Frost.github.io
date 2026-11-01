@@ -2744,6 +2744,192 @@ html[data-theme="light"] .aboutSection {
   }
 }
 
+/* Music by album, artist and playlist */
+.musicViews {
+  margin-top: 6px;
+}
+
+.groupCard {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  padding: 14px 10px 12px;
+  text-align: center;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: var(--card);
+  border-radius: var(--radius);
+  transition: transform 180ms var(--ease), border-color 180ms var(--ease), background 180ms var(--ease);
+}
+
+.groupCard:hover {
+  transform: translateY(-2px);
+  border-color: rgba(148, 180, 193, 0.38);
+  background: var(--card2);
+}
+
+.groupCard:focus-visible {
+  outline: 3px solid rgba(148, 180, 193, 0.5);
+  outline-offset: 3px;
+}
+
+.groupCovers {
+  width: 100%;
+  max-width: 140px;
+}
+
+.groupCovers.isSquare {
+  border-radius: 10px;
+}
+
+.groupCovers.isMosaic {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
+.groupHeader {
+  margin-top: 18px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.groupHeaderText {
+  min-width: 0;
+  flex: 1;
+}
+
+.groupTitle {
+  margin: 0;
+  font-size: 20px;
+  line-height: 1.3;
+}
+
+/* Year in review */
+.review {
+  margin-top: 18px;
+  display: grid;
+  gap: 18px;
+}
+
+.reviewHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.reviewSummary {
+  margin: 0;
+  font-size: 17px;
+  line-height: 1.6;
+}
+
+.reviewGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.reviewCard {
+  padding: 16px 18px;
+  display: grid;
+  align-content: start;
+  gap: 10px;
+}
+
+.reviewCard h3,
+.reviewSectionTitle {
+  margin: 0;
+  font-size: 13px;
+  color: var(--faint);
+  font-weight: 650;
+}
+
+.reviewMonths {
+  height: 150px;
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 4px;
+  align-items: end;
+}
+
+.reviewMonth {
+  height: 100%;
+  display: grid;
+  grid-template-rows: 1fr auto auto;
+  justify-items: center;
+  align-items: end;
+  gap: 2px;
+}
+
+.reviewBar {
+  width: 70%;
+  min-height: 2px;
+  border-radius: 4px 4px 0 0;
+  background: var(--accent, #94b4c1);
+}
+
+.reviewMonthCount,
+.reviewMonthName {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.reviewBig {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.reviewRatings {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 6px;
+}
+
+.reviewRatings li {
+  display: grid;
+  grid-template-columns: 70px minmax(0, 1fr) 28px;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+}
+
+.reviewStars {
+  color: #e2b04a;
+  letter-spacing: 1px;
+}
+
+.reviewRatingBar {
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(148, 180, 193, 0.18);
+  overflow: hidden;
+}
+
+.reviewRatingBar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #e2b04a;
+}
+
+.reviewRatingCount {
+  text-align: right;
+  color: var(--muted);
+}
+
+.reviewFavorites {
+  display: grid;
+  gap: 4px;
+}
+
 /* People tab */
 .personGrid {
   margin-top: 18px;
@@ -3036,6 +3222,7 @@ html[data-theme="light"] .aboutSection {
   .mediaCard,
   .mediaRow,
   .personCard,
+  .groupCard,
   .linkRow,
   .playButton,
   .mediaDrawer {

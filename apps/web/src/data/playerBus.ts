@@ -4,7 +4,11 @@ import { useSyncExternalStore } from "react";
 /** A song the page asks the player to play: the site player uses the preview, Spotify's player the link. */
 export type PlayRequest = SpotifyTrack & { spotifyUrl: string | null };
 
-type Command = { type: "play"; track: PlayRequest } | { type: "pause" };
+type Command =
+  | { type: "play"; track: PlayRequest }
+  | { type: "pause" }
+  /** Plays a list (an album, an artist, a playlist) from its first song; Spotify's player shows `spotifyUrl`. */
+  | { type: "queue"; tracks: PlayRequest[]; spotifyUrl: string | null };
 type NowPlaying = { trackId: string | null; playing: boolean };
 
 const COMMAND = "lf:player";
