@@ -110,6 +110,13 @@ People linked to collection entries (migration `20261102090000_people_relations`
 
 Reading direction: `soundtrack` song → work, `adaptation` adaptation → source, `sequel` sequel → prequel, `credit` person → work. A relation is stored once and listed from both ends.
 
+## Playlist Models
+
+Playlists of songs (migration `20261105090000_playlists`):
+
+- `Playlist`: localized `name` and `description`, `source` (`manual` or `spotify`) and `sourceId` (the Spotify playlist id, or `liked`; unique together, so an import finds its playlist again), `sourceUrl`, `visibility`.
+- `PlaylistTrack`: a song (`mediaId`) at a `position` in a playlist; one row per playlist and song. Deleting a playlist or a song deletes its rows.
+
 ## Setting Model
 
 `Setting` stores site-wide settings as one validated JSON document per key (migration `20261031120000_settings`):

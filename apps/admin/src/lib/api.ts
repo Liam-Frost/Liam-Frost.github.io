@@ -5,6 +5,11 @@ import {
   type AdminCollectionSettingsResponse,
   type AdminMediaBatchPatch,
   type AdminPersonUpdate as AdminPersonUpdateBody,
+  type AdminPlaylistCreate,
+  type AdminPlaylistResponse,
+  type AdminPlaylistsResponse,
+  type AdminPlaylistTracks,
+  type AdminPlaylistUpdate,
   type AdminMediaCreate,
   type AdminMediaImport,
   type AdminMediaListResponse,
@@ -142,6 +147,7 @@ const projectPath = (id: string) => `/api/admin/projects/${encodeURIComponent(id
 const mediaPath = (id: string) => `/api/admin/media/${encodeURIComponent(id)}`;
 const personPath = (id: string) => `/api/admin/people/${encodeURIComponent(id)}`;
 const relationPath = (id: string) => `/api/admin/relations/${encodeURIComponent(id)}`;
+const playlistPath = (id: string) => `/api/admin/playlists/${encodeURIComponent(id)}`;
 
 export const api = {
   session: () => request<AdminSessionResponse>("/api/admin/session"),
@@ -203,6 +209,12 @@ export const api = {
   createRelation: (body: AdminRelationCreate) => request<AdminRelationResponse>("/api/admin/relations", { method: "POST", json: body }),
   updateRelation: (id: string, update: AdminRelationUpdate) => request<AdminRelationResponse>(relationPath(id), { method: "PATCH", json: update }),
   deleteRelation: (id: string) => request<void>(relationPath(id), { method: "DELETE" }),
+  playlists: () => request<AdminPlaylistsResponse>("/api/admin/playlists"),
+  createPlaylist: (body: AdminPlaylistCreate) => request<AdminPlaylistResponse>("/api/admin/playlists", { method: "POST", json: body }),
+  updatePlaylist: (id: string, update: AdminPlaylistUpdate) => request<AdminPlaylistResponse>(playlistPath(id), { method: "PATCH", json: update }),
+  deletePlaylist: (id: string) => request<void>(playlistPath(id), { method: "DELETE" }),
+  playlistTracks: (id: string, body: AdminPlaylistTracks) => request<AdminPlaylistResponse>(`${playlistPath(id)}/tracks`, { method: "POST", json: body }),
+  reorderPlaylist: (id: string, ids: string[]) => request<AdminPlaylistResponse>(`${playlistPath(id)}/order`, { method: "PUT", json: { ids } }),
   collectionSettings: () => request<AdminCollectionSettingsResponse>("/api/admin/collection/settings"),
   updateCollectionSettings: (settings: CollectionSettings) =>
     request<AdminCollectionSettingsResponse>("/api/admin/collection/settings", { method: "PUT", json: settings })

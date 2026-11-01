@@ -5,7 +5,8 @@ import { Link, useNavigate, useSearchParams } from "react-router";
 
 import { MediaBatchActions } from "../components/collection/MediaBatchActions";
 import { PageHeader } from "../components/layout/AdminLayout";
-import { MusicList, MusicSearchDialog, PlaylistImportDialog, SpotifyAccountDialog } from "../components/music/MusicTools";
+import { MusicSearchDialog, PlaylistImportDialog, SpotifyAccountDialog } from "../components/music/MusicTools";
+import { MusicTab } from "../components/music/MusicViews";
 import { BatchBar, SelectMark } from "../components/ui/BatchBar";
 import { DatabaseNotice } from "../components/ui/DatabaseNotice";
 import { Dialog } from "../components/ui/Dialog";
@@ -123,7 +124,7 @@ export function CollectionPage() {
       </div>
 
       {kind === "track" ? (
-        <MusicList items={ofKind} />
+        <MusicTab items={ofKind} />
       ) : (
         <WatchList kind={kind} items={ofKind} status={status} onStatus={(s) => select({ status: s })} />
       )}

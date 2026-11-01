@@ -4,9 +4,10 @@ import { Trash2 } from "lucide-react";
 import { useState } from "react";
 
 import { mediaItemKey, mediaKey } from "../../hooks/useMedia";
+import { usePlaylists, useSetPlaylist } from "../../hooks/usePlaylists";
 import type { Selection } from "../../hooks/useSelection";
 import { api } from "../../lib/api";
-import { statusLabels } from "../../lib/i18n";
+import { pickText, statusLabels } from "../../lib/i18n";
 import { describeBatch } from "../ui/BatchBar";
 import { Dialog } from "../ui/Dialog";
 import { useToast } from "../ui/Toast";
@@ -19,6 +20,23 @@ export function MediaBatchActions({ kind, selection }: { kind: string; selection
   const [confirming, setConfirming] = useState(false);
   const ids = selection.selected;
   const isMusic = kind === "track";
+  const { data: playlists } = usePlaylists();
+  const setPlaylist = useSetPlaylist();
+
+  const addToPlaylist = async (playlistId: string) => {
+    setBusy(true);
+    try {
+      const before = playlists?.find((p) => p.id === playlistId)?.trackIds.length ?? 0;
+      const { playlist } = await api.playlistTracks(playlistId, { action: "add", ids });
+      setPlaylist(playlist);
+      const added = playlist.trackIds.length - before;
+      toast(`已加入“${pickText(playlist.name)}” ${added} 首${added < ids.length ? `（${ids.length - added} 首已在歌单里）` : ""}`);
+    } catch (e) {
+      toast(e instanceof Error ? e.message : "操作失败", "error");
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const run = async (request: AdminBatchRequest<AdminMediaBatchPatch>, verb: string) => {
     setBusy(true);
@@ -62,6 +80,24 @@ export function MediaBatchActions({ kind, selection }: { kind: string; selection
           <button type="button" className="btn-secondary" disabled={disabled} onClick={() => update({ inPlayer: false }, "移出播放器")}>
             移出播放器
           </button>
+          {playlists?.length ? (
+            <select
+              className="field w-auto"
+              aria-label="加入歌单"
+              value=""
+              disabled={disabled}
+              onChange={(e) => {
+                if (e.target.value) void addToPlaylist(e.target.value);
+              }}
+            >
+              <option value="">加入歌单…</option>
+              {playlists.map((playlist) => (
+                <option key={playlist.id} value={playlist.id}>
+                  {pickText(playlist.name, "未命名歌单")}
+                </option>
+              ))}
+            </select>
+          ) : null}
         </>
       ) : (
         <select

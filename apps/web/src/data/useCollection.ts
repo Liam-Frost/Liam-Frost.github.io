@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 
 import { apiFetchEnabled, apiUrl } from "../lib/api";
 
-const EMPTY: PublicCollection = { kinds: [], items: [], people: [] };
+const EMPTY: PublicCollection = { kinds: [], items: [], people: [], playlists: [] };
 
 /**
  * The public collection. It only exists in the database, so without the API (static builds) or when it
@@ -22,7 +22,7 @@ export function useCollection() {
         return response.json() as Promise<PublicCollection>;
       })
       .then((data) => {
-        setCollection(Array.isArray(data?.items) ? { ...data, people: Array.isArray(data.people) ? data.people : [] } : EMPTY);
+        setCollection(Array.isArray(data?.items) ? { ...data, people: Array.isArray(data.people) ? data.people : [], playlists: Array.isArray(data.playlists) ? data.playlists : [] } : EMPTY);
         setStatus("ready");
       })
       .catch((error: unknown) => {

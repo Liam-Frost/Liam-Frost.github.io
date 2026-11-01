@@ -320,10 +320,29 @@ Status: implementation complete; Claude Code review complete and fixes applied.
 - Verified with a temporary PostgreSQL and the real IGDB: seeded Elden Ring (简 / 繁 / 日 / 英 names, 6 platforms) and Hollow Knight, checked the site's game tab and panel and the admin editor (playtime saved).
 - Ran Claude Code review for Stage 16 (`docs/reviews/2026-11-04-claude-code-stage-16.md`) and fixed the findings.
 
+### Stage 17a: Bulk Actions
+
+Status: implementation complete; Claude Code review complete and fixes applied.
+
+- `POST /api/admin/media/batch` and `/api/admin/people/batch`: delete or update up to 500 at a time with the single-edit rules, reporting refused ones with the reason; deletes clean up files and links.
+- Admin: 选择 mode on every collection tab, the music list and the people page; Shift-click ranges; bar with publish / hide / featured / status / player / delete.
+- Verified in the browser with a temporary database: deleted five of 100 imported songs, moved one out of the player, changed two films to 想看. Browser testing found Shift ranges selecting only one item (fixed).
+
+### Stage 17b: Music by Album, Artist and Playlist
+
+Status: implementation complete; Claude Code review complete and fixes applied.
+
+- `Playlist` and `PlaylistTrack` tables (migration `20261105090000_playlists`); admin playlist routes; Spotify imports fill a playlist of the same name; public playlists in the collection; the site player can play one playlist.
+- Admin music tab: 全部歌曲 / 专辑 / 艺人 / 歌单 views, playlist editor (names, visibility, order, add, remove, delete), 加入歌单 bulk action, playlist choice on the 播放器 page.
+- Site music tab: the same four views; an album, artist or playlist opens as a page with 播放全部 (the site player plays it from the first song; Spotify's player shows the playlist on Spotify).
+- Tests: 151 passed.
+- Verified with a temporary database: importing City Pop Best again created its playlist (100 songs in order); four iTunes songs of one album formed an album; the site's views and 播放全部 worked; in the admin a song was moved, the playlist renamed, a new playlist created and filled from a filtered selection.
+- Ran Claude Code review for Stage 17a / 17b (`docs/reviews/2026-11-05-claude-code-stage-17ab.md`).
+
 ### Upcoming
 
-- PR #16 was merged; `npm run db:deploy` applies the game migration.
-- Stage 17 (`docs/plan-collection.md`): 17a bulk actions, 17b music views and playlists, 17c Steam sync (needs `STEAM_WEB_API_KEY`), 17d yearly review.
+- `npm run db:deploy` applies the playlist migration.
+- Stage 17c: Steam sync (needs `STEAM_WEB_API_KEY` in `apps/api/.env`); 17d yearly review.
 - Stage 10: VPS deployment and CI/CD (needs the VPS and domain details).
 - Stage 10: VPS deployment and CI/CD (needs the VPS provider/OS/specs, DNS manager and domain from the user).
 - Stage 5: back-end foundation and admin auth refinement (`ADMIN_PATH`, IP allowlist, CSRF, Zod, tests). See `docs/plan-admin-projects-deploy.md`.
