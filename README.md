@@ -5,7 +5,7 @@ A personal website for photography, software projects, and a collection of films
 [![CI](https://github.com/Liam-Frost/Liam-Frost.github.io/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Liam-Frost/Liam-Frost.github.io/actions/workflows/ci.yml)
 [![Docker smoke test](https://github.com/Liam-Frost/Liam-Frost.github.io/actions/workflows/docker.yml/badge.svg?branch=dev)](https://github.com/Liam-Frost/Liam-Frost.github.io/actions/workflows/docker.yml)
 [![CodeQL enabled](https://img.shields.io/badge/CodeQL-enabled-2088FF?logo=github)](https://github.com/Liam-Frost/Liam-Frost.github.io/security/code-scanning)
-[![Node.js 22.22+](https://img.shields.io/badge/Node.js-%E2%89%A522.22-339933?logo=nodedotjs&logoColor=white)](https://nodejs.org/)
+[![Node.js 26.13+](https://img.shields.io/badge/Node.js-%E2%89%A526.13-339933?logo=nodedotjs&logoColor=white)](https://nodejs.org/)
 [![Code license: MIT](https://img.shields.io/badge/code_license-MIT-blue)](LICENSE)
 
 **[Visit the website](https://www.twilightfrosty.com)** · [Documentation](docs/README.md) · [Report a bug](https://github.com/Liam-Frost/Liam-Frost.github.io/issues) · [Report a vulnerability](SECURITY.md)
@@ -43,7 +43,7 @@ The full-stack runtime uses one origin: Caddy forwards requests to Fastify, whic
 
 ### Requirements
 
-- **Node.js 22.22+** and npm. CI runs on Node 22.
+- **Node.js 26.13+** and npm. CI and Docker run on Node 26; `.node-version` records the minimum LTS version.
 - **PostgreSQL** for the full application. Docker Compose can provide a local PostgreSQL 16 instance.
 - **Docker with Compose v2** only if using the container workflow or integration tests.
 

@@ -1,5 +1,12 @@
 # Development Log
 
+## 2026-11-01: Node 26 candidate and deferred TypeScript upgrade
+
+- Synced merged dependency PRs #19, #20 and #23 before testing; kept TypeScript unchanged.
+- Prepared a coordinated Node 26 candidate: CI, Pages builds, Docker image, `@types/node`, engine minimum, `.node-version` and setup documentation.
+- Local Windows Node 26.12.1 passed lint, formatting, typecheck, 162 tests and the full build with the candidate dependencies. Node 26.13.0 is the first LTS release and differs from 26.12.1 only in LTS metadata; Linux/container compatibility is verified separately by the candidate PR checks.
+- Kept TypeScript PR #22 open and documented its typescript-eslint prerequisite. Created a Monday 10:00 Asia/Shanghai monitor in this chat to report actionable support changes without automatically upgrading or merging.
+
 ## 2026-11-01: README and repository presentation
 
 - Rewrote the README around project features, actual deployment status, stack, reproducible local setup, Docker, commands, contribution checks, documentation, security and licensing.
