@@ -12,7 +12,19 @@ import { StarRating } from "../components/ui/StarRating";
 import { useToast } from "../components/ui/Toast";
 import { useDeleteMedia, useMediaItem, useUpdateMedia, useUploadMediaPoster } from "../hooks/useMedia";
 import { ApiError } from "../lib/api";
-import { COLLECTION_KIND_LABELS, formatDuration, LANG_LABELS, LANGS, MEDIA_STATUS_LABELS, pickText, SOURCE_LABELS, type CollectionKind, type Lang } from "../lib/i18n";
+import {
+  COLLECTION_KIND_LABELS,
+  formatDuration,
+  isReadKind,
+  LANG_LABELS,
+  LANGS,
+  MEDIA_STATUS_LABELS,
+  pickText,
+  SOURCE_LABELS,
+  statusLabels,
+  type CollectionKind,
+  type Lang
+} from "../lib/i18n";
 
 const ACCEPT = "image/jpeg,image/png,image/webp,image/avif,image/tiff";
 
@@ -31,6 +43,10 @@ type Draft = {
   watched: string;
   total: string;
   album: string;
+  publisher: string;
+  pages: string;
+  volumes: string;
+  ongoing: "" | "yes" | "no";
   inPlayer: boolean;
   featured: boolean;
   visibility: AdminMediaItem["visibility"];
@@ -52,6 +68,10 @@ function toDraft(item: AdminMediaItem): Draft {
     watched: item.progress ? String(item.progress.watched) : "",
     total: item.progress?.total ? String(item.progress.total) : "",
     album: item.music?.album ?? "",
+    publisher: item.publication?.publisher ?? "",
+    pages: item.publication?.pages ? String(item.publication.pages) : "",
+    volumes: item.publication?.volumes ? String(item.publication.volumes) : "",
+    ongoing: item.publication?.ongoing === true ? "yes" : item.publication?.ongoing === false ? "no" : "",
     inPlayer: item.inPlayer,
     featured: item.featured,
     visibility: item.visibility
@@ -95,7 +115,10 @@ function MediaEditor({ item }: { item: AdminMediaItem }) {
   const toast = useToast();
   const kind = item.kind as CollectionKind;
   const isMusic = kind === "track";
-  const hasEpisodes = kind === "tv" || kind === "anime";
+  const isRead = isReadKind(kind);
+  // Progress: episodes of series and anime, volumes of comics, pages of books.
+  const hasEpisodes = kind === "tv" || kind === "anime" || isRead;
+  const unit = kind === "comic" ? "卷" : kind === "book" ? "页" : "集";
   const [fixingPreview, setFixingPreview] = useState(false);
   const preview = usePreview();
   const backTo = `/collection?kind=${kind}`;
@@ -131,9 +154,13 @@ function MediaEditor({ item }: { item: AdminMediaItem }) {
     const watched = draft.watched.trim() ? Number(draft.watched) : null;
     const total = draft.total.trim() ? Number(draft.total) : null;
     if ((watched !== null && !(Number.isInteger(watched) && watched >= 0)) || (total !== null && !(Number.isInteger(total) && total >= 1))) {
-      return setError("集数进度无效");
+      return setError(`${unit}数进度无效`);
     }
-    if (watched !== null && total !== null && watched > total) return setError("已看集数超过总集数");
+    if (watched !== null && total !== null && watched > total) return setError(`进度超过总${unit}数`);
+    const optionalCount = (text: string) => (text.trim() ? Number(text) : null);
+    const pages = optionalCount(draft.pages);
+    const volumes = optionalCount(draft.volumes);
+    if ([pages, volumes].some((n) => n !== null && !(Number.isInteger(n) && n >= 1))) return setError("页数和卷数需要是正整数");
     setError("");
 
     const shared: AdminMediaUpdate = {
@@ -156,7 +183,10 @@ function MediaEditor({ item }: { item: AdminMediaItem }) {
           status: draft.status,
           watchedOn: draft.watchedOn || null,
           rewatchCount,
-          progress: hasEpisodes && (watched !== null || total !== null) ? { watched: watched ?? 0, total } : null
+          progress: hasEpisodes && (watched !== null || total !== null) ? { watched: watched ?? 0, total } : null,
+          ...(isRead
+            ? { publication: { publisher: draft.publisher, pages, volumes, ongoing: draft.ongoing === "" ? null : draft.ongoing === "yes" } }
+            : {})
         };
     update.mutate(body, {
       onSuccess: ({ item: next }) => {
@@ -234,7 +264,7 @@ function MediaEditor({ item }: { item: AdminMediaItem }) {
                 <select id="media-status" className="field" value={draft.status} onChange={(e) => set("status", e.target.value as MediaStatus)}>
                   {(Object.keys(MEDIA_STATUS_LABELS) as MediaStatus[]).map((status) => (
                     <option key={status} value={status}>
-                      {MEDIA_STATUS_LABELS[status]}
+                      {statusLabels(kind)[status]}
                     </option>
                   ))}
                 </select>
@@ -243,7 +273,7 @@ function MediaEditor({ item }: { item: AdminMediaItem }) {
                 <p className="mb-1.5 text-[12.5px] font-medium text-brand-dark">评分</p>
                 <StarRating value={draft.rating} onChange={(value) => set("rating", value)} />
               </div>
-              <Field label="看完的日期" htmlFor="media-watched-on">
+              <Field label={isRead ? "读完的日期" : "看完的日期"} htmlFor="media-watched-on">
                 <div className="flex gap-2">
                   <input id="media-watched-on" type="date" className="field" value={draft.watchedOn} max={today()} onChange={(e) => set("watchedOn", e.target.value)} />
                   <button type="button" className="btn-secondary shrink-0" onClick={() => set("watchedOn", today())}>
@@ -251,15 +281,15 @@ function MediaEditor({ item }: { item: AdminMediaItem }) {
                   </button>
                 </div>
               </Field>
-              <Field label="重看次数" htmlFor="media-rewatch">
+              <Field label={isRead ? "重读次数" : "重看次数"} htmlFor="media-rewatch">
                 <input id="media-rewatch" type="number" min={0} max={999} className="field w-28" value={draft.rewatchCount} onChange={(e) => set("rewatchCount", e.target.value)} />
               </Field>
               {hasEpisodes ? (
-                <Field label="集数进度" htmlFor="media-watched" hint="已看 / 总集数，总集数未知可留空">
+                <Field label={`${unit}数进度`} htmlFor="media-watched" hint={`${isRead ? "已读" : "已看"} / 总${unit}数，总${unit}数未知可留空`}>
                   <div className="flex items-center gap-2">
-                    <input id="media-watched" type="number" min={0} className="field w-24" aria-label="已看集数" value={draft.watched} onChange={(e) => set("watched", e.target.value)} />
+                    <input id="media-watched" type="number" min={0} className="field w-24" aria-label={`${isRead ? "已读" : "已看"}${unit}数`} value={draft.watched} onChange={(e) => set("watched", e.target.value)} />
                     <span className="text-subtle">/</span>
-                    <input type="number" min={1} className="field w-24" aria-label="总集数" value={draft.total} onChange={(e) => set("total", e.target.value)} />
+                    <input type="number" min={1} className="field w-24" aria-label={`总${unit}数`} value={draft.total} onChange={(e) => set("total", e.target.value)} />
                   </div>
                 </Field>
               ) : null}
@@ -341,7 +371,9 @@ function MediaEditor({ item }: { item: AdminMediaItem }) {
               <Switch id="media-public" checked={draft.visibility === "public"} onChange={(on) => set("visibility", on ? "public" : "private")} label="公开显示" />
               <Switch id="media-featured" checked={draft.featured} onChange={(on) => set("featured", on)} label="首页精选" />
             </div>
-            {draft.status === "want" ? <p className="text-[11.5px] leading-relaxed text-faint">“想看”的条目还受“显示设置”里的总开关控制。</p> : null}
+            {draft.status === "want" ? (
+              <p className="text-[11.5px] leading-relaxed text-faint">“{statusLabels(kind).want}”的条目还受“显示设置”里的总开关控制。</p>
+            ) : null}
           </Panel>
 
           <Panel title="资料">
@@ -354,6 +386,31 @@ function MediaEditor({ item }: { item: AdminMediaItem }) {
                 <input id="media-original" className="field" value={draft.originalTitle} maxLength={200} onChange={(e) => set("originalTitle", e.target.value)} />
               </Field>
             )}
+            {isRead ? (
+              <>
+                <Field label="出版社" htmlFor="media-publisher">
+                  <input id="media-publisher" className="field" value={draft.publisher} maxLength={200} onChange={(e) => set("publisher", e.target.value)} />
+                </Field>
+                {kind === "book" ? (
+                  <Field label="页数" htmlFor="media-pages">
+                    <input id="media-pages" type="number" min={1} className="field w-28" value={draft.pages} onChange={(e) => set("pages", e.target.value)} />
+                  </Field>
+                ) : (
+                  <div className="grid grid-cols-2 gap-3">
+                    <Field label="卷数" htmlFor="media-volumes">
+                      <input id="media-volumes" type="number" min={1} className="field" value={draft.volumes} onChange={(e) => set("volumes", e.target.value)} />
+                    </Field>
+                    <Field label="连载" htmlFor="media-ongoing">
+                      <select id="media-ongoing" className="field" value={draft.ongoing} onChange={(e) => set("ongoing", e.target.value as Draft["ongoing"])}>
+                        <option value="">不注明</option>
+                        <option value="yes">连载中</option>
+                        <option value="no">已完结</option>
+                      </select>
+                    </Field>
+                  </div>
+                )}
+              </>
+            ) : null}
             <Field label="年份" htmlFor="media-year">
               <input id="media-year" type="number" min={1870} max={2100} className="field w-28" value={draft.year} onChange={(e) => set("year", e.target.value)} />
             </Field>
@@ -369,7 +426,7 @@ function MediaEditor({ item }: { item: AdminMediaItem }) {
             />
             <ChipsField
               id="media-credits"
-              label={isMusic ? "歌手" : kind === "anime" ? "导演 / 制作" : "导演 / 主创"}
+              label={isMusic ? "歌手" : isRead ? "作者" : kind === "anime" ? "导演 / 制作" : "导演 / 主创"}
               hint="回车添加"
               values={draft.credits}
               input={creditInput}
@@ -476,7 +533,7 @@ function PosterPanel({ item }: { item: AdminMediaItem }) {
   const input = useRef<HTMLInputElement>(null);
   // Songs have square covers; films, series and anime have 2:3 posters.
   const square = item.kind === "track";
-  const noun = square ? "封面" : "海报";
+  const noun = square || isReadKind(item.kind) ? "封面" : "海报";
 
   return (
     <Panel title={noun}>

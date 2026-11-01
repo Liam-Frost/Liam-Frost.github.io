@@ -30,7 +30,7 @@ const miyazaki: PersonDetails = {
 function sources(overrides: Partial<MediaSources> = {}): MediaSources {
   return {
     ...offlineMediaSources,
-    available: () => ({ tmdb: true, bangumi: true }),
+    available: () => ({ tmdb: true, bangumi: true, openlibrary: true, anilist: true }),
     download: async () => png,
     searchPeople: async () => [{ source: "tmdb", sourceId: "608", name: "Hayao Miyazaki", department: "Directing", knownFor: ["Spirited Away"], photoUrl: null }],
     person: async (sourceId) => ({ ...miyazaki, sourceId, sourceUrl: `https://www.themoviedb.org/person/${sourceId}` }),
@@ -43,7 +43,8 @@ const ids = {
   anime: "22222222-2222-4222-8222-222222222222",
   song: "33333333-3333-4333-8333-333333333333",
   sequel: "44444444-4444-4444-8444-444444444444",
-  hidden: "55555555-5555-4555-8555-555555555555"
+  hidden: "55555555-5555-4555-8555-555555555555",
+  comic: "66666666-6666-4666-8666-666666666666"
 };
 
 async function setup(mediaSources: MediaSources = sources()) {
@@ -59,6 +60,7 @@ async function setup(mediaSources: MediaSources = sources()) {
   await entry(ids.song, "track", "青春コンプレックス", { credits: ["結束バンド"] });
   await entry(ids.sequel, "anime", "孤独摇滚！ 剧场版", { originalTitle: "劇場総集編ぼっち・ざ・ろっく！", year: 2024 });
   await entry(ids.hidden, "movie", "私密", { visibility: "private" });
+  await entry(ids.comic, "comic", "孤独摇滚！（漫画）", { originalTitle: "ぼっち・ざ・ろっく！", year: 2018, credits: ["はまじあき"] });
 
   const app = await buildTestServer({ UPLOAD_DIR: uploadDir }, { media, people, relations, settings, mediaSources });
   const cookie = await login(app);
@@ -206,28 +208,39 @@ describe("relation suggestions", () => {
     const band = await manual("Kessoku Band");
     await people.update(band.id, { name: { en: "Kessoku Band", ja: "結束バンド" } });
     const { suggestions } = (await app.inject({ url: `/api/admin/media/${ids.song}/suggestions`, headers })).json();
-    expect(suggestions).toEqual([{ kind: "artist", name: "結束バンド", personId: band.id }]);
+    expect(suggestions).toEqual([{ kind: "name", name: "結束バンド", role: "singer", personId: band.id }]);
+  });
+
+  it("suggests a comic's authors by name", async () => {
+    const { app, headers } = await setup();
+    const { suggestions } = (await app.inject({ url: `/api/admin/media/${ids.comic}/suggestions`, headers })).json();
+    expect(suggestions).toEqual([{ kind: "name", name: "はまじあき", role: "author", personId: null }]);
   });
 
   it("turns AniList relations into links between entries in the collection", async () => {
-    const animeRelations: MediaSources["animeRelations"] = async () => [
-      { relationType: "SEQUEL", mediaType: "ANIME", titles: ["劇場総集編 ぼっち・ざ・ろっく！", "Bocchi the Rock! Movie"] },
-      // The manga has the TV anime's title; it must not match the anime.
-      { relationType: "SOURCE", mediaType: "MANGA", titles: ["ぼっち・ざ・ろっく！"] },
-      { relationType: "CHARACTER", mediaType: "ANIME", titles: ["劇場総集編ぼっち・ざ・ろっく！"] }
+    const relations: MediaSources["relations"] = async () => [
+      { relationType: "SEQUEL", kind: "anime", titles: ["劇場総集編 ぼっち・ざ・ろっく！", "Bocchi the Rock! Movie"] },
+      // The manga has the TV anime's title: it matches the comic, not the anime itself.
+      { relationType: "SOURCE", kind: "comic", titles: ["ぼっち・ざ・ろっく！"] },
+      { relationType: "CHARACTER", kind: "anime", titles: ["劇場総集編ぼっち・ざ・ろっく！"] }
     ];
-    const { app, headers, link } = await setup(sources({ animeRelations }));
+    const { app, headers, link } = await setup(sources({ relations }));
     const url = `/api/admin/media/${ids.anime}/suggestions`;
     const { suggestions } = (await app.inject({ url, headers })).json();
-    // The film is the TV anime's sequel: the link starts at the film.
+    // The film is the TV anime's sequel (the link starts at the film); the anime adapts the comic.
     expect(suggestions).toEqual([
       {
         kind: "media",
         relation: { from: { type: "media", id: ids.sequel }, toId: ids.anime, type: "sequel" },
         other: expect.objectContaining({ type: "media", id: ids.sequel })
+      },
+      {
+        kind: "media",
+        relation: { from: { type: "media", id: ids.anime }, toId: ids.comic, type: "adaptation" },
+        other: expect.objectContaining({ type: "media", id: ids.comic, kind: "comic" })
       }
     ]);
-    await link(suggestions[0].relation);
+    for (const suggestion of suggestions) await link(suggestion.relation);
     expect((await app.inject({ url, headers })).json().suggestions).toEqual([]);
   });
 });

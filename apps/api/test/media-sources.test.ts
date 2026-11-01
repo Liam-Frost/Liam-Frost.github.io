@@ -149,7 +149,7 @@ describe("TMDB", () => {
     await expect(createMediaSources({}).search("tmdb", "movie", "x")).rejects.toThrow("未配置 TMDB_API_KEY");
     const rejected = createMediaSources({ tmdbKey: "bad", fetchImpl: fakeFetch(() => new Response("", { status: 401 })) });
     await expect(rejected.search("tmdb", "movie", "x")).rejects.toThrow(/API key/);
-    expect(createMediaSources({}).available()).toEqual({ tmdb: false, bangumi: true });
+    expect(createMediaSources({}).available()).toEqual({ tmdb: false, bangumi: true, openlibrary: true, anilist: true });
   });
 });
 
@@ -226,5 +226,129 @@ describe("Bangumi", () => {
     await expect(sources.download("http://image.tmdb.org/t/p/w780/p.jpg")).rejects.toThrow("海报地址无效");
     await expect(sources.download("https://internal.example/p.jpg")).rejects.toThrow("海报地址无效");
     expect(await sources.search("bangumi", "anime", "x")).toEqual([]);
+  });
+});
+
+describe("Books and comics", () => {
+  it("searches and imports Open Library works", async () => {
+    const fetchImpl = fakeFetch((url) => {
+      if (url.pathname === "/search.json" && url.searchParams.get("q") === "key:/works/OL17267881W") {
+        return Response.json({
+          docs: [
+            {
+              key: "/works/OL17267881W",
+              title: "三体",
+              author_name: ["刘慈欣", "Ken Liu"],
+              first_publish_year: 2008,
+              cover_i: 9157544,
+              number_of_pages_median: 416,
+              publisher: ["重庆出版社"],
+              subject: ["Science fiction", "award:hugo_award=2015", "Fiction, science fiction, general", "Chinese fiction"]
+            }
+          ]
+        });
+      }
+      if (url.pathname === "/search.json") return Response.json({ docs: [{ key: "/works/OL17267881W", title: "三体", author_name: ["刘慈欣"], cover_i: 1 }] });
+      if (url.pathname === "/works/OL17267881W.json") return Response.json({ description: { value: "A novel.\n----------\nSee also: ..." } });
+      return new Response("", { status: 404 });
+    });
+    const sources = createMediaSources({ fetchImpl });
+
+    const [hit] = await sources.search("openlibrary", "book", "三体");
+    expect(hit).toMatchObject({ source: "openlibrary", sourceId: "OL17267881W", creators: ["刘慈欣"], posterUrl: "https://covers.openlibrary.org/b/id/1-M.jpg" });
+
+    const details = await sources.details("openlibrary", "book", "OL17267881W");
+    expect(details).toMatchObject({
+      sourceUrl: "https://openlibrary.org/works/OL17267881W",
+      title: { zh: "三体" },
+      year: 2008,
+      genres: [{ en: "Science fiction" }, { en: "Chinese fiction" }],
+      credits: ["刘慈欣"],
+      overview: { en: "A novel." },
+      posterUrl: "https://covers.openlibrary.org/b/id/9157544-L.jpg",
+      publication: { publisher: "重庆出版社", pages: 416, volumes: null, ongoing: null }
+    });
+    await expect(sources.details("openlibrary", "book", "OL1A")).rejects.toThrow("无效");
+  });
+
+  it("imports AniList manga with authors, translated genres and status", async () => {
+    const fetchImpl = fakeFetch(() =>
+      Response.json({
+        data: {
+          Media: {
+            id: 111258,
+            siteUrl: "https://anilist.co/manga/111258",
+            status: "RELEASING",
+            volumes: null,
+            genres: ["Comedy", "Music"],
+            title: { romaji: "Bocchi the Rock!", native: "ぼっち・ざ・ろっく！", english: "Bocchi the Rock!" },
+            startDate: { year: 2018 },
+            coverImage: { extraLarge: "https://s4.anilist.co/x.jpg" },
+            description: "Hitori wants friends.<br><br>\n(Source: Yen Press)",
+            staff: { edges: [{ role: "Story & Art", node: { name: { full: "Aki Hamaji", native: "はまじあき" } } }, { role: "Translator", node: { name: { full: "Someone" } } }] }
+          }
+        }
+      })
+    );
+    const details = await createMediaSources({ fetchImpl }).details("anilist", "comic", "111258");
+    expect(details).toMatchObject({
+      title: { ja: "ぼっち・ざ・ろっく！", en: "Bocchi the Rock!", fr: "Bocchi the Rock!" },
+      originalTitle: "ぼっち・ざ・ろっく！",
+      genres: [{ en: "Comedy", zh: "喜剧" }, { en: "Music", zh: "音乐" }],
+      credits: ["はまじあき"],
+      overview: { en: "Hitori wants friends." },
+      publication: { volumes: null, ongoing: true }
+    });
+    const missing = createMediaSources({ fetchImpl: fakeFetch(() => Response.json({ data: { Media: null }, errors: [{ status: 404 }] })) });
+    await expect(missing.details("anilist", "comic", "1")).rejects.toThrow("找不到");
+  });
+
+  it("splits Bangumi books into comics and the rest, and reads publication details", async () => {
+    const fetchImpl = fakeFetch((url, init) => {
+      if (url.pathname === "/v0/search/subjects") {
+        expect(JSON.parse(String(init.body)).filter).toEqual({ type: [1] });
+        return Response.json({
+          data: [
+            { id: 1, name: "ぼっち・ざ・ろっく！", platform: "漫画" },
+            { id: 2, name: "三体", name_cn: "三体", platform: "小说" }
+          ]
+        });
+      }
+      return Response.json({
+        id: 241088,
+        name: "ぼっち・ざ・ろっく！",
+        name_cn: "孤独摇滚！",
+        platform: "漫画",
+        volumes: 7,
+        infobox: [
+          { key: "作者", value: "はまじあき" },
+          { key: "出版社", value: "芳文社、东立" },
+          { key: "开始", value: "2018-03-19" }
+        ]
+      });
+    });
+    const sources = createMediaSources({ fetchImpl });
+    expect((await sources.search("bangumi", "comic", "x")).map((hit) => hit.sourceId)).toEqual(["1"]);
+    expect((await sources.search("bangumi", "book", "x")).map((hit) => hit.sourceId)).toEqual(["2"]);
+    expect(await sources.details("bangumi", "comic", "241088")).toMatchObject({
+      credits: ["はまじあき"],
+      episodes: 7,
+      publication: { publisher: "芳文社", pages: null, volumes: 7, ongoing: true }
+    });
+  });
+
+  it("follows cover redirects only through image hosts", async () => {
+    const jpg = Buffer.from("jpg");
+    const fetchImpl = fakeFetch((url) => {
+      if (url.hostname === "covers.openlibrary.org") return new Response(null, { status: 302, headers: { location: "https://archive.org/download/x.jpg" } });
+      if (url.hostname === "archive.org") return new Response(null, { status: 302, headers: { location: "https://ia800507.us.archive.org/x.jpg" } });
+      if (url.hostname === "ia800507.us.archive.org") return new Response(jpg);
+      if (url.hostname === "image.tmdb.org") return new Response(null, { status: 302, headers: { location: "https://internal.example/x.jpg" } });
+      return new Response("", { status: 404 });
+    });
+    const sources = createMediaSources({ fetchImpl });
+    expect(await sources.download("https://covers.openlibrary.org/b/id/1-L.jpg")).toEqual(jpg);
+    await expect(sources.download("https://image.tmdb.org/t/p/x.jpg")).rejects.toThrow("海报地址无效");
+    expect(fetchImpl.mock.calls.every(([, init]) => (init as RequestInit).redirect === "manual")).toBe(true);
   });
 });

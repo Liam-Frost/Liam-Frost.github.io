@@ -1,4 +1,4 @@
-import type { AdminMediaItem, MediaMusic, PublicMedia, PublicMediaSummary } from "@liam-frost/shared";
+import type { AdminMediaItem, MediaMusic, MediaPublication, PublicMedia, PublicMediaSummary } from "@liam-frost/shared";
 
 import { toProjectImage } from "../projects/mapping";
 import type { LocalImageStore } from "../storage/local";
@@ -16,6 +16,20 @@ export function musicOf(row: Pick<MediaRow, "kind" | "extra">): MediaMusic | nul
     previewUrl: text(music.previewUrl),
     spotifyUrl: text(music.spotifyUrl),
     appleUrl: text(music.appleUrl)
+  };
+}
+
+const count = (value: unknown) => (typeof value === "number" && Number.isInteger(value) && value > 0 ? value : null);
+
+/** Book and comic details stored in `extra.publication`; null for other kinds. */
+export function publicationOf(row: Pick<MediaRow, "kind" | "extra">): MediaPublication | null {
+  if (row.kind !== "book" && row.kind !== "comic") return null;
+  const publication = (row.extra.publication ?? {}) as Record<string, unknown>;
+  return {
+    publisher: text(publication.publisher),
+    pages: count(publication.pages),
+    volumes: count(publication.volumes),
+    ongoing: typeof publication.ongoing === "boolean" ? publication.ongoing : null
   };
 }
 
@@ -40,6 +54,7 @@ export function toAdminMedia(row: MediaRow, store: LocalImageStore): AdminMediaI
     rewatchCount: row.rewatchCount,
     progress: row.progress,
     music: musicOf(row),
+    publication: publicationOf(row),
     inPlayer: row.inPlayer,
     featured: row.featured,
     visibility: row.visibility,
@@ -64,6 +79,7 @@ export function toPublicMediaSummary(row: MediaRow, store: LocalImageStore): Pub
     rewatchCount: row.rewatchCount,
     progress: row.progress,
     music: musicOf(row),
+    publication: publicationOf(row),
     featured: row.featured,
     hasReview: Object.values(row.review).some((text) => text?.trim()),
     updatedAt: row.updatedAt.toISOString()

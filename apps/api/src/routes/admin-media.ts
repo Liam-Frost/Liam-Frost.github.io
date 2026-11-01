@@ -115,7 +115,7 @@ export function registerAdminMediaRoutes(
 
   app.patch("/api/admin/media/:id", admin, async (request): Promise<AdminMediaResponse> => {
     const id = mediaId(request);
-    const { music, ...patch } = parseInput(mediaUpdateSchema, request.body);
+    const { music, publication, ...patch } = parseInput(mediaUpdateSchema, request.body);
     // Music details merge into `extra`; read and write under the entry's lock.
     return lock.run(id, async () => {
       const row = await get(id);
@@ -124,8 +124,10 @@ export function registerAdminMediaRoutes(
         throw badRequest("Music entries have no watch status or progress", "VALIDATION");
       }
       if (!isMusic && (music !== undefined || patch.inPlayer !== undefined)) throw badRequest("Only songs have music details", "VALIDATION");
+      if (publication !== undefined && row.kind !== "book" && row.kind !== "comic") throw badRequest("Only books and comics have publication details", "VALIDATION");
       const next: MediaPatch = { ...patch };
       if (music) next.extra = { ...row.extra, music: { ...(row.extra.music as object | undefined), ...music } };
+      if (publication) next.extra = { ...row.extra, publication: { ...(row.extra.publication as object | undefined), ...publication } };
       if (isMusic && (next.inPlayer ?? row.inPlayer) && !musicOf({ kind: row.kind, extra: next.extra ?? row.extra })?.previewUrl) {
         throw badRequest("Songs need a preview to be in the player", "VALIDATION");
       }

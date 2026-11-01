@@ -23,7 +23,11 @@ export function mediaTitle(item: Pick<PublicMediaSummary, "title" | "originalTit
   return pickLocalized(item.title, lang) || item.originalTitle || "";
 }
 
-export const statusKey = (status: NonNullable<PublicMediaSummary["status"]>) => `collection.status.${status}` as Key;
+/** Books and comics are read; the rest are watched. */
+export const isReadKind = (kind: PublicMediaSummary["kind"]) => kind === "book" || kind === "comic";
+
+export const statusKey = (status: NonNullable<PublicMediaSummary["status"]>, kind: PublicMediaSummary["kind"]) =>
+  (isReadKind(kind) ? `collection.read.${status}` : `collection.status.${status}`) as Key;
 
 function Poster({ item, sizes, priority }: { item: PublicMediaSummary; sizes: string; priority?: boolean }) {
   const { lang } = useI18n();
@@ -54,7 +58,7 @@ export default function MediaCard({ item, to, state, priority }: { item: PublicM
     <Link className="mediaCard" to={to} state={state} aria-label={t("collection.open", { title })}>
       <div className="mediaPoster">
         <Poster item={item} sizes="(max-width: 520px) 45vw, 200px" priority={priority} />
-        {item.status && item.status !== "done" ? <span className={`mediaBadge mediaBadge-${item.status}`}>{t(statusKey(item.status))}</span> : null}
+        {item.status && item.status !== "done" ? <span className={`mediaBadge mediaBadge-${item.status}`}>{t(statusKey(item.status, item.kind))}</span> : null}
       </div>
       <div className="mediaCardBody">
         <h3 className="mediaCardTitle">{title}</h3>
@@ -89,7 +93,7 @@ export function MediaRow({ item, to, state }: { item: PublicMediaSummary; to: To
         <p className="mediaRowMeta">{meta.filter(Boolean).join(" · ")}</p>
       </div>
       <div className="mediaRowSide">
-        {item.status ? <span className={`mediaBadge mediaBadge-${item.status}`}>{t(statusKey(item.status))}</span> : null}
+        {item.status ? <span className={`mediaBadge mediaBadge-${item.status}`}>{t(statusKey(item.status, item.kind))}</span> : null}
         <Stars rating={item.rating} />
         {item.watchedOn ? <span className="mediaRowDate">{item.watchedOn}</span> : null}
       </div>

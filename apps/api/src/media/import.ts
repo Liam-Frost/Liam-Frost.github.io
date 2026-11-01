@@ -32,9 +32,10 @@ export async function importMedia(
   const details = await sources.details(source, kind, sourceId);
   const id = randomUUID();
 
-  // Anime keeps its romaji name in English and French rather than falling back to Chinese.
-  if (kind === "anime" && details.originalTitle) {
-    const romaji = await sources.romaji(details.originalTitle, details.year);
+  // Anime and comics keep their romaji name in English and French rather than falling back to Chinese
+  // (AniList's own entries have it already).
+  if ((kind === "anime" || kind === "comic") && source !== "anilist" && details.originalTitle) {
+    const romaji = await sources.romaji(details.originalTitle, details.year, kind);
     if (romaji) details.title = { ...details.title, en: romaji, fr: romaji };
   }
 
@@ -63,7 +64,9 @@ export async function importMedia(
       overview: details.overview,
       poster,
       status: "done",
-      progress: kind !== "movie" && details.episodes ? { watched: 0, total: details.episodes } : null
+      // Episodes of series and anime, volumes of comics; books track no progress by default.
+      progress: (kind === "tv" || kind === "anime" || kind === "comic") && details.episodes ? { watched: 0, total: details.episodes } : null,
+      extra: details.publication ? { publication: details.publication } : {}
     });
   } catch (error) {
     if (poster) await store.remove(`media/${id}`).catch(() => undefined);
