@@ -54,6 +54,7 @@ TRUST_PROXY=false
 | `ADMIN_ALLOWED_IPS` | empty (no restriction) | Comma-separated IPs / CIDR ranges, IPv4 and IPv6. |
 | `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET` | empty | A Spotify developer app, for importing Liked Songs and your playlists. Set both or neither. |
 | `SPOTIFY_REDIRECT_URI` | `http://127.0.0.1:<PORT>/api/admin/spotify/callback` | Must match the redirect URI registered in the Spotify app. In production use `https://<domain>/api/admin/spotify/callback`. |
+| `GOOGLE_BOOKS_API_KEY` | empty | Google Books as a book source (Google Cloud Console → enable Books API → API key; free, no billing). |
 | `TRUST_PROXY` | `false` | Behind a reverse proxy, list the proxy's IPs / CIDR ranges (e.g. `127.0.0.1` or the Docker network); only then is `X-Forwarded-For` used for the client IP. `true` trusts any hop and is safe only when the API port is not reachable except through the proxy. |
 
 Admin auth is enabled only when both `ADMIN_PASSWORD_HASH` and `ADMIN_SESSION_SECRET` are set; setting just one is a configuration error. With neither set, admin routes answer `503 ADMIN_NOT_CONFIGURED`.
@@ -103,7 +104,7 @@ API: `GET/POST /api/admin/projects`, `GET/PATCH/DELETE /api/admin/projects/:id`,
 
 ## Collection (Films, Series, Anime, Books, Comics)
 
-Requires `DATABASE_URL`. Searching films and series needs `TMDB_API_KEY` (a TMDB v3 API key or v4 read access token) in `apps/api/.env`; without it they can only be added by hand. Anime is searched on Bangumi (no key) or TMDB; books on Open Library or Bangumi (novels and light novels with Chinese names); comics on AniList (romaji and English titles, authors, serialization) or Bangumi (Chinese names). None of these need a key.
+Requires `DATABASE_URL`. Searching films and series needs `TMDB_API_KEY` (a TMDB v3 API key or v4 read access token) in `apps/api/.env`; without it they can only be added by hand. Anime is searched on Bangumi (no key) or TMDB; books on Open Library, Google Books (needs `GOOGLE_BOOKS_API_KEY`; the most complete for Chinese books, with publisher, pages, descriptions in the book's language and covers up to 800 px) or Bangumi (novels and light novels with Chinese names); comics on AniList (romaji and English titles, authors, serialization) or Bangumi (Chinese names). Only TMDB and Google Books need a key; a source without its key is not offered in the add dialog.
 
 - **Books and comics** use 想读 / 在读 / 读过 / 弃了, a finished date, reread count and progress in pages (books) or volumes (comics). The editor also has publisher, pages (books) and volumes and serialization (comics). Comics imported from Bangumi get their romaji name from AniList as the English and French title, like anime. AniList has no Chinese titles: comics imported from it show the English title in Chinese until you add one. Open Library has one title per work (usually the original language) and English descriptions; its subjects are kept only when they are common genres, translated into every site language.
 

@@ -306,6 +306,7 @@ Status: implementation complete; Claude Code review complete and fixes applied.
 - The music tab has a cover wall (square album covers, singer under the title) besides the list.
 - Verified in the browser with a temporary database and three iTunes songs (one outside the player): playing, switching, pausing from the button, list and panel buttons, and Spotify mode (buttons only for songs with a Spotify link; the embed switched to the requested song).
 - The user's Twitch app was checked: an app token and an IGDB search worked.
+- Google Books added as a third book source with the user's key (`GOOGLE_BOOKS_API_KEY`): search, details (title and description in the book's language, authors, publisher, pages, genres from its categories) and covers up to 800 px. Verified with the real key and a temporary database: searches in English and Chinese, imports of Norwegian Wood (cover 128 → 300 px, the largest it has) and 三体 (早川書房, 800 × 1185 cover). Tests: 141 passed.
 
 ### Upcoming
 

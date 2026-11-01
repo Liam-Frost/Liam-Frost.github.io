@@ -30,7 +30,7 @@ const miyazaki: PersonDetails = {
 function sources(overrides: Partial<MediaSources> = {}): MediaSources {
   return {
     ...offlineMediaSources,
-    available: () => ({ tmdb: true, bangumi: true, openlibrary: true, anilist: true }),
+    available: () => ({ tmdb: true, bangumi: true, openlibrary: true, googlebooks: true, anilist: true }),
     download: async () => png,
     searchPeople: async () => [{ source: "tmdb", sourceId: "608", name: "Hayao Miyazaki", department: "Directing", knownFor: ["Spirited Away"], photoUrl: null }],
     person: async (sourceId) => ({ ...miyazaki, sourceId, sourceUrl: `https://www.themoviedb.org/person/${sourceId}` }),

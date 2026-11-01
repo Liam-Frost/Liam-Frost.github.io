@@ -62,6 +62,7 @@ const envSchema = z.object({
   UPLOAD_DIR: optionalString,
   UPLOAD_MAX_MB: optionalNumber.pipe(z.number().int().min(1).max(200).default(40)),
   TMDB_API_KEY: optionalString,
+  GOOGLE_BOOKS_API_KEY: optionalString,
   SPOTIFY_CLIENT_ID: optionalString,
   SPOTIFY_CLIENT_SECRET: optionalString,
   SPOTIFY_REDIRECT_URI: optionalString
@@ -95,6 +96,8 @@ export type AppConfig = {
   };
   /** TMDB API key (v3) or read access token (v4) for collection searches; empty disables TMDB. */
   tmdbApiKey: string;
+  /** Google Books API key; empty disables Google Books as a book source. */
+  googleBooksApiKey: string;
   /** Spotify developer app for importing the admin's Liked Songs and playlists; null when not set up. */
   spotify: { clientId: string; clientSecret: string; redirectUri: string } | null;
 };
@@ -191,6 +194,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
       maxBytes: values.UPLOAD_MAX_MB * 1024 * 1024
     },
     tmdbApiKey: values.TMDB_API_KEY ?? "",
+    googleBooksApiKey: values.GOOGLE_BOOKS_API_KEY ?? "",
     spotify: spotifyId && spotifySecret ? { clientId: spotifyId, clientSecret: spotifySecret, redirectUri: spotifyRedirect } : null
   };
 }

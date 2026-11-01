@@ -163,20 +163,21 @@ export const projectImageSlotSchema = z.object({ slot: z.enum(["cover", "gallery
 const mediaKind = z.enum(["movie", "tv", "anime", "book", "comic", "track", "album"]);
 /** Kinds added by searching a source or by hand (songs have their own routes). */
 const watchKind = z.enum(["movie", "tv", "anime", "book", "comic"]);
-const searchSource = z.enum(["tmdb", "bangumi", "openlibrary", "anilist"]);
+const searchSource = z.enum(["tmdb", "bangumi", "openlibrary", "googlebooks", "anilist"]);
 
 /** Which sources each kind is searched on. */
 const KIND_SOURCES: Record<z.infer<typeof watchKind>, readonly string[]> = {
   movie: ["tmdb"],
   tv: ["tmdb"],
   anime: ["bangumi", "tmdb"],
-  book: ["openlibrary", "bangumi"],
+  book: ["openlibrary", "googlebooks", "bangumi"],
   comic: ["anilist", "bangumi"]
 };
 const SOURCE_IDS: Record<z.infer<typeof searchSource>, RegExp> = {
   tmdb: /^(movie|tv):\d{1,12}$/,
   bangumi: /^\d{1,12}$/,
   openlibrary: /^OL\d{1,12}W$/,
+  googlebooks: /^[A-Za-z0-9_-]{12}$/,
   anilist: /^\d{1,9}$/
 };
 

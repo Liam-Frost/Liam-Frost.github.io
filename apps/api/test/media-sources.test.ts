@@ -149,7 +149,7 @@ describe("TMDB", () => {
     await expect(createMediaSources({}).search("tmdb", "movie", "x")).rejects.toThrow("未配置 TMDB_API_KEY");
     const rejected = createMediaSources({ tmdbKey: "bad", fetchImpl: fakeFetch(() => new Response("", { status: 401 })) });
     await expect(rejected.search("tmdb", "movie", "x")).rejects.toThrow(/API key/);
-    expect(createMediaSources({}).available()).toEqual({ tmdb: false, bangumi: true, openlibrary: true, anilist: true });
+    expect(createMediaSources({}).available()).toEqual({ tmdb: false, bangumi: true, openlibrary: true, googlebooks: false, anilist: true });
   });
 });
 
@@ -379,5 +379,62 @@ describe("Books and comics", () => {
     expect(await sources.download("https://covers.openlibrary.org/b/id/1-L.jpg")).toEqual(jpg);
     await expect(sources.download("https://image.tmdb.org/t/p/x.jpg")).rejects.toThrow("海报地址无效");
     expect(fetchImpl.mock.calls.every(([, init]) => (init as RequestInit).redirect === "manual")).toBe(true);
+  });
+});
+
+describe("Google Books", () => {
+  const volume = {
+    id: "27KePwAACAAJ",
+    volumeInfo: {
+      title: "ノルウェイの森",
+      authors: ["村上春樹"],
+      publisher: "講談社",
+      publishedDate: "1987-09-04",
+      description: "<p>僕は三十七歳で…</p>",
+      pageCount: 268,
+      categories: ["Fiction / Literary", "Romance"],
+      language: "ja",
+      imageLinks: { thumbnail: "http://books.google.com/books/content?id=27KePwAACAAJ&printsec=frontcover&img=1&zoom=1&edge=curl", large: "http://books.google.com/books/content?id=27KePwAACAAJ&zoom=3" },
+      canonicalVolumeLink: "https://books.google.com/books/about/x.html?id=27KePwAACAAJ"
+    }
+  };
+
+  it("searches and imports volumes with the key", async () => {
+    const fetchImpl = fakeFetch((url) => {
+      expect(url.searchParams.get("key")).toBe("gkey");
+      if (url.pathname === "/books/v1/volumes") return Response.json({ items: [volume] });
+      if (url.pathname === "/books/v1/volumes/27KePwAACAAJ") return Response.json(volume);
+      return new Response("", { status: 404 });
+    });
+    const sources = createMediaSources({ googleBooksKey: "gkey", fetchImpl });
+    expect(sources.available().googlebooks).toBe(true);
+
+    const [hit] = await sources.search("googlebooks", "book", "ノルウェイの森");
+    expect(hit).toMatchObject({
+      source: "googlebooks",
+      sourceId: "27KePwAACAAJ",
+      creators: ["村上春樹"],
+      year: 1987,
+      posterUrl: "https://books.google.com/books/content?id=27KePwAACAAJ&printsec=frontcover&img=1&zoom=1"
+    });
+
+    expect(await sources.details("googlebooks", "book", "27KePwAACAAJ")).toMatchObject({
+      title: { ja: "ノルウェイの森" },
+      originalTitle: "ノルウェイの森",
+      genres: [{ en: "Fiction" }, { en: "Romance" }],
+      credits: ["村上春樹"],
+      overview: { ja: "僕は三十七歳で…" },
+      posterUrl: "https://books.google.com/books/content?id=27KePwAACAAJ&zoom=3&fife=w800",
+      publication: { publisher: "講談社", pages: 268, volumes: null, ongoing: null }
+    });
+    await expect(sources.details("googlebooks", "book", "../x")).rejects.toThrow("无效");
+  });
+
+  it("is off without a key, and explains a rejected key without showing it", async () => {
+    await expect(createMediaSources({}).search("googlebooks", "book", "x")).rejects.toThrow("未配置 GOOGLE_BOOKS_API_KEY");
+    const rejected = createMediaSources({ googleBooksKey: "secret-key", fetchImpl: fakeFetch(() => new Response("", { status: 400 })) });
+    const error = await rejected.search("googlebooks", "book", "x").catch((e: Error) => e);
+    expect(String(error)).toContain("GOOGLE_BOOKS_API_KEY");
+    expect(String(error)).not.toContain("secret-key");
   });
 });
