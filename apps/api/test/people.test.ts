@@ -142,7 +142,12 @@ describe("admin relations", () => {
       [{ from: { type: "media", id: ids.song }, toId: ids.anime, type: "soundtrack", role: "director" }, 400],
       [{ from: { type: "media", id: ids.song }, toId: ids.film, type: "adaptation" }, 400],
       [{ from: { type: "media", id: ids.film }, toId: ids.anime, type: "related", role: "opening" }, 400],
-      [{ from: { type: "media", id: ids.film }, toId: "99999999-9999-4999-8999-999999999999", type: "related" }, 404]
+      [{ from: { type: "media", id: ids.film }, toId: "99999999-9999-4999-8999-999999999999", type: "related" }, 404],
+      // Malformed bodies are refused, not crashed on.
+      [{ toId: ids.anime, type: "related" }, 400],
+      [{ from: { type: "media", id: "nope" }, toId: ids.anime, type: "related" }, 400],
+      [{ from: null, toId: ids.anime, type: "credit", role: "director" }, 400],
+      [{ from: { type: "media", id: ids.film }, toId: ids.anime, type: "remake" }, 400]
     ];
     for (const [payload, status] of cases) expect((await link(payload)).statusCode, JSON.stringify(payload)).toBe(status);
   });

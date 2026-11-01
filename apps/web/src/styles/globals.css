@@ -2650,6 +2650,155 @@ html[data-theme="light"] .aboutSection {
   line-height: 1.6;
 }
 
+/* People tab */
+.personGrid {
+  margin-top: 18px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 16px;
+}
+
+.personCard {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  padding: 16px 10px 14px;
+  text-align: center;
+  color: inherit;
+  text-decoration: none;
+  border: 1px solid var(--border);
+  background: var(--card);
+  border-radius: var(--radius);
+  backdrop-filter: blur(20px) saturate(1.25);
+  -webkit-backdrop-filter: blur(20px) saturate(1.25);
+  transition: transform 180ms var(--ease), border-color 180ms var(--ease), background 180ms var(--ease);
+}
+
+.personCard:hover {
+  transform: translateY(-2px);
+  border-color: rgba(148, 180, 193, 0.38);
+  background: var(--card2);
+}
+
+.personCard:focus-visible,
+.linkRow:focus-visible {
+  outline: 3px solid rgba(148, 180, 193, 0.5);
+  outline-offset: 3px;
+}
+
+.personCardPhoto {
+  width: 96px;
+  aspect-ratio: 1;
+  margin-bottom: 6px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: rgba(148, 180, 193, 0.14);
+}
+
+.personCardPhoto img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.personCardName {
+  font-weight: 650;
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+.personCardMeta {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+@media (max-width: 520px) {
+  .personGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+}
+
+/* Links in the detail panel */
+.linkList {
+  display: grid;
+  gap: 8px;
+}
+
+.linkRow {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  padding: 8px 10px 8px 8px;
+  color: inherit;
+  text-decoration: none;
+  border: 1px solid var(--border);
+  background: var(--card);
+  border-radius: 12px;
+  transition: border-color 180ms var(--ease), background 180ms var(--ease);
+}
+
+.linkRow:hover {
+  border-color: rgba(148, 180, 193, 0.38);
+  background: var(--card2);
+}
+
+.linkRowThumb {
+  width: 40px;
+  aspect-ratio: 2 / 3;
+  border-radius: 6px;
+  overflow: hidden;
+  background: rgba(148, 180, 193, 0.14);
+}
+
+.linkRowThumb.isSquare {
+  aspect-ratio: 1;
+}
+
+.linkRowThumb.isRound {
+  aspect-ratio: 1;
+  border-radius: 50%;
+}
+
+.linkRowThumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.linkRowThumb .mediaPosterEmpty {
+  font-size: 16px;
+}
+
+.linkRowMain {
+  min-width: 0;
+  display: grid;
+  gap: 1px;
+}
+
+.linkRowTitle {
+  font-weight: 650;
+  font-size: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.linkRowMeta {
+  color: var(--muted);
+  font-size: 12.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mediaDrawerPoster.isRound {
+  border-radius: 50%;
+}
+
 /* Collection detail panel */
 .mediaDrawerBackdrop {
   place-items: stretch end;
@@ -2792,6 +2941,8 @@ html[data-theme="light"] .aboutSection {
 @media (prefers-reduced-motion: reduce) {
   .mediaCard,
   .mediaRow,
+  .personCard,
+  .linkRow,
   .mediaDrawer {
     transition: none;
     animation: none;

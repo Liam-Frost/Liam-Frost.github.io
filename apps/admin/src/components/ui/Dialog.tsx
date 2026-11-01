@@ -1,5 +1,6 @@
 import { X } from "lucide-react";
 import { useEffect, useId, useRef, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 
 type Props = {
   open: boolean;
@@ -30,10 +31,14 @@ export function Dialog({ open, title, onClose, children, footer, size = "lg" }: 
     if (!open && dialog.open) dialog.close();
   }, [open]);
 
-  return (
+  // Rendered into <body>: dialogs often open from inside an editor's <form>, and a form nested in it would
+  // submit the editor (or reload the page). React still bubbles events along the component tree, so a
+  // submit inside the dialog stops here.
+  return createPortal(
     <dialog
       ref={ref}
       aria-labelledby={titleId}
+      onSubmit={(e) => e.stopPropagation()}
       onCancel={(e) => {
         e.preventDefault();
         onClose();
@@ -56,6 +61,7 @@ export function Dialog({ open, title, onClose, children, footer, size = "lg" }: 
           {footer ? <div className="flex flex-wrap justify-end gap-2 border-t border-line-soft px-5 py-3.5">{footer}</div> : null}
         </div>
       ) : null}
-    </dialog>
+    </dialog>,
+    document.body
   );
 }

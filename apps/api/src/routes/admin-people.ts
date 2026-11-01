@@ -160,13 +160,13 @@ export function registerAdminPeopleRoutes(
     const { sourceId } = parseInput(personImportSchema, request.body);
     const { people } = repo();
     if ((await people.findBySource("tmdb", [sourceId])).has(sourceId)) throw new HttpError(409, "PERSON_EXISTS", "This person is already in the collection");
-    const details = await sources.person(sourceId).catch(sourceFailure);
+    const { photoUrl, ...details } = await sources.person(sourceId).catch(sourceFailure);
     const id = randomUUID();
 
     let photo: StoredImage | null = null;
-    if (details.photoUrl) {
+    if (photoUrl) {
       try {
-        photo = await storePoster(store, id, await processImage(await sources.download(details.photoUrl)), "people");
+        photo = await storePoster(store, id, await processImage(await sources.download(photoUrl)), "people");
       } catch (error) {
         if (!(error instanceof SourceError || error instanceof InvalidImageError)) throw error;
         request.log.warn({ error, sourceId }, "Photo download failed");

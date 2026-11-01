@@ -9,6 +9,16 @@ import {
   type AdminMediaUpdate,
   type AdminMusicImport,
   type AdminMusicSearchResponse,
+  type AdminPeopleResponse,
+  type AdminPersonCreate,
+  type AdminPersonResponse,
+  type AdminPersonSearchResponse,
+  type AdminPersonUpdate,
+  type AdminRelationCreate,
+  type AdminRelationResponse,
+  type AdminRelationsResponse,
+  type AdminRelationSuggestionsResponse,
+  type AdminRelationUpdate,
   type AdminPhotoResponse,
   type AdminPhotosResponse,
   type AdminPhotoUpdate,
@@ -125,6 +135,8 @@ export function uploadPhoto(file: File, onProgress: (fraction: number) => void) 
 const photoPath = (id: string) => `/api/admin/photos/${encodeURIComponent(id)}`;
 const projectPath = (id: string) => `/api/admin/projects/${encodeURIComponent(id)}`;
 const mediaPath = (id: string) => `/api/admin/media/${encodeURIComponent(id)}`;
+const personPath = (id: string) => `/api/admin/people/${encodeURIComponent(id)}`;
+const relationPath = (id: string) => `/api/admin/relations/${encodeURIComponent(id)}`;
 
 export const api = {
   session: () => request<AdminSessionResponse>("/api/admin/session"),
@@ -169,6 +181,20 @@ export const api = {
   disconnectSpotify: () => request<void>("/api/admin/spotify/account", { method: "DELETE" }),
   spotifyPlaylists: () => request<{ playlists: SpotifyOwnPlaylist[] }>("/api/admin/spotify/playlists"),
   musicJob: (id: string) => request<{ job: MusicImportJob }>(`/api/admin/music/jobs/${encodeURIComponent(id)}`),
+  people: () => request<AdminPeopleResponse>("/api/admin/people"),
+  person: (id: string) => request<AdminPersonResponse>(personPath(id)),
+  searchPeople: (q: string) => request<AdminPersonSearchResponse>(`/api/admin/people/search?${new URLSearchParams({ q })}`),
+  importPerson: (sourceId: string) => request<AdminPersonResponse>("/api/admin/people/import", { method: "POST", json: { source: "tmdb", sourceId } }),
+  createPerson: (body: AdminPersonCreate) => request<AdminPersonResponse>("/api/admin/people", { method: "POST", json: body }),
+  updatePerson: (id: string, update: AdminPersonUpdate) => request<AdminPersonResponse>(personPath(id), { method: "PATCH", json: update }),
+  deletePerson: (id: string) => request<void>(personPath(id), { method: "DELETE" }),
+  uploadPersonPhoto: (id: string, file: File) => uploadFile<AdminPersonResponse>(`${personPath(id)}/photo`, file),
+  relations: (subject: { type: "media" | "person"; id: string }) =>
+    request<AdminRelationsResponse>(`${subject.type === "media" ? mediaPath(subject.id) : personPath(subject.id)}/relations`),
+  suggestions: (mediaId: string) => request<AdminRelationSuggestionsResponse>(`${mediaPath(mediaId)}/suggestions`),
+  createRelation: (body: AdminRelationCreate) => request<AdminRelationResponse>("/api/admin/relations", { method: "POST", json: body }),
+  updateRelation: (id: string, update: AdminRelationUpdate) => request<AdminRelationResponse>(relationPath(id), { method: "PATCH", json: update }),
+  deleteRelation: (id: string) => request<void>(relationPath(id), { method: "DELETE" }),
   collectionSettings: () => request<AdminCollectionSettingsResponse>("/api/admin/collection/settings"),
   updateCollectionSettings: (settings: CollectionSettings) =>
     request<AdminCollectionSettingsResponse>("/api/admin/collection/settings", { method: "PUT", json: settings })
