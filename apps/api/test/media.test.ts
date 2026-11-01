@@ -256,7 +256,7 @@ describe("admin collection", () => {
 describe("public collection", () => {
   it("is empty without a database", async () => {
     const app = await buildTestServer();
-    expect((await app.inject("/api/collection")).json()).toEqual({ kinds: [], items: [], people: [] });
+    expect((await app.inject("/api/collection")).json()).toEqual({ kinds: [], items: [], people: [], playlists: [] });
   });
 
   it("lists only what the site may show, without synopses or reviews", async () => {
@@ -297,7 +297,7 @@ describe("public collection", () => {
     media.get = async () => {
       throw refused;
     };
-    expect((await app.inject("/api/collection")).json()).toEqual({ kinds: [], items: [], people: [] });
+    expect((await app.inject("/api/collection")).json()).toEqual({ kinds: [], items: [], people: [], playlists: [] });
     expect((await app.inject(`/api/collection/${item.id}`)).statusCode).toBe(503);
   });
 });

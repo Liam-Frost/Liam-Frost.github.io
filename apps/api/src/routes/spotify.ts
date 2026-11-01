@@ -20,8 +20,8 @@ export function registerSpotifyRoutes(app: FastifyInstance, auth: AdminAuthServi
     }
   };
   const respond = async (): Promise<AdminSpotifyResponse> => {
-    const [settings, tracks] = await Promise.all([spotify.settings(), spotify.tracks()]);
-    return { settings, playerTracks: tracks.length };
+    const settings = await spotify.settings();
+    return { settings, playerTracks: (await spotify.tracks(settings.playlistId)).length };
   };
 
   app.get("/api/spotify/player", async (): Promise<PublicSpotifyPlayer> => spotify.player());
