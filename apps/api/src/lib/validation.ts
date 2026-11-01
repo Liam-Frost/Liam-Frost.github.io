@@ -339,7 +339,8 @@ export const mediaUpdateSchema = z
       .object({
         platforms: z.array(z.string().trim().min(1).max(60)).max(20, "At most 20 platforms"),
         publishers: z.array(z.string().trim().min(1).max(100)).max(10, "At most 10 publishers"),
-        playtimeHours: z.number().int().min(0).max(100_000).nullable()
+        playtimeHours: z.number().int().min(0).max(100_000).nullable(),
+        purchasedOn: isoDate
       })
       .partial()
       .strict(),

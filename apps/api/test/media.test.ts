@@ -374,7 +374,7 @@ describe("games", () => {
     });
 
     const edited = await patch(item.id, { game: { playtimeHours: 132, platforms: ["PlayStation 5"] }, status: "watching" });
-    expect(edited.json().item.game).toEqual({ platforms: ["PlayStation 5"], publishers: ["Bandai Namco Entertainment"], playtimeHours: 132 });
+    expect(edited.json().item.game).toEqual({ platforms: ["PlayStation 5"], publishers: ["Bandai Namco Entertainment"], playtimeHours: 132, steamAppId: null, lastPlayedOn: null, purchasedOn: null });
     expect((await patch(item.id, { game: { playtimeHours: -1 } })).statusCode).toBe(400);
     expect((await patch(item.id, { publication: { pages: 10 } })).statusCode).toBe(400);
   });
