@@ -359,7 +359,8 @@ const plainText = (value: string | null | undefined) =>
   clean(
     value
       ?.replace(/<br\s*\/?>/gi, "\n")
-      .replace(/<[^>]+>/g, "")
+      .replace(/<[^<>]*>/g, "")
+      .replace(/[<>]/g, "")
       .replace(/\n*\(Source:[^)]*\)\s*$/i, "")
       .replace(/\n{3,}/g, "\n\n")
   );

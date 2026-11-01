@@ -3,6 +3,7 @@ import "dotenv/config";
 import cookie from "@fastify/cookie";
 import cors from "@fastify/cors";
 import multipart from "@fastify/multipart";
+import rateLimit from "@fastify/rate-limit";
 import Fastify from "fastify";
 import * as http from "node:http";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -99,6 +100,8 @@ function defaultSettingsRepository(): SettingsRepository | null {
 }
 
 export type BuildServerOptions = {
+  /** Per-IP requests per minute, shared across routes; defaults to 600. */
+  requestLimit?: number;
   config?: AppConfig;
   logger?: boolean;
   /** Where the admin app build lives; defaults to apps/admin/dist. */
@@ -135,7 +138,8 @@ export type BuildServerOptions = {
   fetchPlaylist?: PlaylistFetcher;
 };
 
-export function buildServer({
+export async function buildServer({
+  requestLimit = 600,
   config = loadConfig(),
   logger = true,
   adminDistDir = DEFAULT_ADMIN_DIST_DIR,
@@ -207,6 +211,18 @@ export function buildServer({
   app.register(cookie);
   app.register(multipart, {
     limits: { fileSize: config.uploads.maxBytes, files: 1, fields: 0, parts: 1 }
+  });
+
+  // Register before defining routes so every route receives the onRequest limiter.
+  // Health probes do not consume a visitor's budget. The stricter login limiter remains.
+  await app.register(rateLimit, {
+    global: true,
+    max: requestLimit,
+    timeWindow: "1 minute",
+    cache: 10_000,
+    allowList: (request) => request.routeOptions.url === "/api/health",
+    errorResponseBuilder: () =>
+      new HttpError(429, "RATE_LIMITED", "Too many requests. Try again later.")
   });
 
   app.addHook("onSend", async (_request, reply, payload) => {
@@ -316,7 +332,7 @@ export async function startServer() {
     .setGlobalProxyFromEnv;
   if (proxyEnv && typeof setGlobalProxyFromEnv === "function") setGlobalProxyFromEnv();
 
-  const app = buildServer({ config });
+  const app = await buildServer({ config });
   if (!config.admin.configured) {
     app.log.warn(
       "Admin authentication is not configured; set ADMIN_PASSWORD_HASH and ADMIN_SESSION_SECRET"
