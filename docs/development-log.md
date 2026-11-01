@@ -105,6 +105,7 @@
 - The browser pane reported a 0×0 viewport while hidden; the embedded player was checked after setting an explicit size.
 - `.env.example` had `…` as the Spotify values, which would have counted as configured; they are now empty.
 - The model ran Claude Code review for Stage 13b and fixed four findings.
+- PR #13 was merged. The user confirmed the proposal for books, comics, games, people and links between entries; it was written into the collection plan as Stages 14-16.
 
 ## Notes
 

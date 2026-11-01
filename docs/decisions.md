@@ -2,6 +2,10 @@
 
 ## User Decisions
 
+### 2026-11-01: More Collection Kinds and Links
+
+The collection should also cover books, comics, games and people (actors, directors, singers, writers and so on), and entries should link to each other: songs as soundtracks of works, adaptations of comics and books, and people's roles in works. Books, comics and games are new `MediaItem` kinds; people get their own table; links live in one relation table, stored once and shown on both sides. Plan: `docs/plan-collection.md` (Stages 14-16).
+
 ### 2026-10-31: Collection Module Scope
 
 Movies, TV, anime and music get a collection module (`docs/plan-collection.md`). Mainland China accessibility is not a concern. There are no existing records for films, series or anime, so they are added one by one (search to prefill); music comes from a Spotify Liked Songs import plus manual additions. Ratings are out of five; short reviews are multilingual. Whether "want to watch" items show on the site is a global switch in the admin, plus each item's own visibility.
