@@ -57,7 +57,7 @@ const MUSIC: MediaKind[] = ["track", "album"];
 /** Whether the site may show an entry: its own visibility, its kind's switch, and the "want" switch. */
 export function isMediaPublic(item: Pick<MediaRow, "kind" | "status" | "visibility">, settings: CollectionSettings) {
   if (item.visibility !== "public") return false;
-  const kindShown = MUSIC.includes(item.kind) ? settings.show.music : settings.show[item.kind as "movie" | "tv" | "anime"];
+  const kindShown = MUSIC.includes(item.kind) ? settings.show.music : settings.show[item.kind as Exclude<MediaKind, "track" | "album">];
   if (!kindShown) return false;
   return item.status !== "want" || settings.showWant;
 }

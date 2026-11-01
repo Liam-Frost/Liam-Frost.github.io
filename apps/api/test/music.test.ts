@@ -110,7 +110,7 @@ async function setup(options: { music?: Partial<MusicSource>; fetchPlaylist?: Pl
   const download = vi.fn(options.download ?? (async () => jpg));
   const mediaSources: MediaSources = {
     ...offlineMediaSources,
-    available: () => ({ tmdb: false, bangumi: true }),
+    available: () => ({ tmdb: false, bangumi: true, openlibrary: true, googlebooks: true, anilist: true }),
     search: async () => [],
     details: async () => {
       throw new SourceError("unused");

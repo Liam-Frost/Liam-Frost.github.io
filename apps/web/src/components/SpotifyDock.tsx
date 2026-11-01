@@ -1,6 +1,7 @@
 import type { PublicSpotifyPlayer } from "@liam-frost/shared";
 import { useCallback, useEffect, useRef, useState, type FocusEvent } from "react";
 
+import { onPlayerCommand, setNowPlaying, type PlayRequest } from "../data/playerBus";
 import { useSpotifyPlayer } from "../data/useSpotifyPlayer";
 import { SpotifyCard } from "./spotify-card";
 
@@ -43,6 +44,21 @@ function EmbedDock({ player, src }: { player: PublicSpotifyPlayer; src: string }
   const [isExpanded, setIsExpanded] = useState(true);
   const [isHovering, setIsHovering] = useState(false);
   const [hasAutoCollapsed, setHasAutoCollapsed] = useState(false);
+  // A song chosen on the page replaces the configured link. Spotify's iframe cannot be started from the
+  // page, so the visitor presses play in it.
+  const [shown, setShown] = useState(src);
+
+  useEffect(
+    () =>
+      onPlayerCommand((command) => {
+        const chosen = command.type === "play" && command.track.spotifyUrl ? embedSrc(command.track.spotifyUrl) : null;
+        if (!chosen) return;
+        setShown(chosen);
+        setIsExpanded(true);
+        setHasAutoCollapsed(true);
+      }),
+    []
+  );
 
   useEffect(() => {
     const delay = player.autoCollapseSeconds;
@@ -69,7 +85,7 @@ function EmbedDock({ player, src }: { player: PublicSpotifyPlayer; src: string }
       <div className="spotifyDockPanel">
         <iframe
           title="Spotify"
-          src={src}
+          src={shown}
           width="100%"
           height="152"
           allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
@@ -89,7 +105,9 @@ function EmbedDock({ player, src }: { player: PublicSpotifyPlayer; src: string }
 }
 
 function Dock({ player }: { player: PublicSpotifyPlayer }) {
-  const { tracks, shuffle } = player;
+  const { shuffle } = player;
+  // Songs played from the page join the list after the current one.
+  const [tracks, setTracks] = useState(player.tracks);
   const [order, setOrder] = useState(() => playOrder(tracks.length, shuffle));
   const [position, setPosition] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -120,9 +138,49 @@ function Dock({ player }: { player: PublicSpotifyPlayer }) {
     setPosition((position - 1 + order.length) % order.length);
   }, [order.length, position]);
 
+  /** Plays a song chosen on the page: jump to it, or queue it right after the current song. */
+  const playRequested = (request: PlayRequest) => {
+    if (!request.previewUrl) return;
+    const index = tracks.findIndex((candidate) => candidate.id === request.id);
+    if (index >= 0) {
+      setPosition(order.indexOf(index));
+    } else {
+      setTracks([...tracks, request]);
+      setOrder([...order.slice(0, position + 1), tracks.length, ...order.slice(position + 1)]);
+      setPosition(position + 1);
+    }
+    // Started now, inside the click that asked for it, so browsers allow the audio.
+    const audio = ensureAudio();
+    failuresRef.current = 0;
+    audio.src = request.previewUrl;
+    audio.play().catch((error: unknown) => {
+      if (error instanceof DOMException && error.name === "NotAllowedError") setIsPlaying(false);
+    });
+    setIsPlaying(true);
+    setIsExpanded(true);
+  };
+
   // Audio event handlers outlive renders; route them through a ref to the latest callbacks.
-  const handlers = useRef({ next, previous });
-  handlers.current = { next, previous };
+  const handlers = useRef({ next, previous, playRequested });
+  handlers.current = { next, previous, playRequested };
+
+  useEffect(
+    () =>
+      onPlayerCommand((command) => {
+        if (command.type === "play") handlers.current.playRequested(command.track);
+        else audioRef.current?.pause();
+      }),
+    []
+  );
+
+  // Play buttons on the page show which song is playing.
+  useEffect(() => setNowPlaying({ trackId: track.id, playing: isPlaying }), [track.id, isPlaying]);
+  useEffect(() => () => setNowPlaying({ trackId: null, playing: false }), []);
+
+  // One song repeats on its own; more advance on "ended".
+  useEffect(() => {
+    if (audioRef.current) audioRef.current.loop = tracks.length === 1;
+  }, [tracks.length]);
 
   const ensureAudio = () => {
     if (audioRef.current) return audioRef.current;

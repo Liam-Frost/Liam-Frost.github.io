@@ -160,9 +160,26 @@ export const projectOrderSchema = z
 
 export const projectImageSlotSchema = z.object({ slot: z.enum(["cover", "gallery"]) });
 
-const mediaKind = z.enum(["movie", "tv", "anime", "track", "album"]);
-/** Films, series and anime; music comes in a later stage. */
-const watchKind = z.enum(["movie", "tv", "anime"]);
+const mediaKind = z.enum(["movie", "tv", "anime", "book", "comic", "track", "album"]);
+/** Kinds added by searching a source or by hand (songs have their own routes). */
+const watchKind = z.enum(["movie", "tv", "anime", "book", "comic"]);
+const searchSource = z.enum(["tmdb", "bangumi", "openlibrary", "googlebooks", "anilist"]);
+
+/** Which sources each kind is searched on. */
+const KIND_SOURCES: Record<z.infer<typeof watchKind>, readonly string[]> = {
+  movie: ["tmdb"],
+  tv: ["tmdb"],
+  anime: ["bangumi", "tmdb"],
+  book: ["openlibrary", "googlebooks", "bangumi"],
+  comic: ["anilist", "bangumi"]
+};
+const SOURCE_IDS: Record<z.infer<typeof searchSource>, RegExp> = {
+  tmdb: /^(movie|tv):\d{1,12}$/,
+  bangumi: /^\d{1,12}$/,
+  openlibrary: /^OL\d{1,12}W$/,
+  googlebooks: /^[A-Za-z0-9_-]{12}$/,
+  anilist: /^\d{1,9}$/
+};
 
 export const mediaIdSchema = projectIdSchema;
 export const mediaListQuerySchema = z.object({ kind: mediaKind.optional() });
@@ -177,16 +194,20 @@ export const mediaCreateSchema = z
 export const mediaImportSchema = z
   .object({
     kind: watchKind,
-    source: z.enum(["tmdb", "bangumi"]),
-    sourceId: z.string().trim().regex(/^((movie|tv):)?\d{1,12}$/, "Invalid source id")
+    source: searchSource,
+    sourceId: z.string().trim().max(40)
   })
-  .strict();
+  .strict()
+  .refine((value) => KIND_SOURCES[value.kind].includes(value.source), "This source has no entries of that kind")
+  .refine((value) => SOURCE_IDS[value.source].test(value.sourceId), "Invalid source id");
 
-export const mediaSearchQuerySchema = z.object({
-  kind: watchKind,
-  source: z.enum(["tmdb", "bangumi"]),
-  q: z.string().trim().min(1, "Enter a title to search").max(100)
-});
+export const mediaSearchQuerySchema = z
+  .object({
+    kind: watchKind,
+    source: searchSource,
+    q: z.string().trim().min(1, "Enter a title to search").max(100)
+  })
+  .refine((value) => KIND_SOURCES[value.kind].includes(value.source), "This source has no entries of that kind");
 
 /** An https URL on one of the given hosts; null or "" clears it. */
 const hostLink = (hosts: RegExp, message: string) =>
@@ -303,6 +324,15 @@ export const mediaUpdateSchema = z
       })
       .partial()
       .strict(),
+    publication: z
+      .object({
+        publisher: clearableString(200),
+        pages: z.number().int().min(1).max(100_000).nullable(),
+        volumes: z.number().int().min(1).max(10_000).nullable(),
+        ongoing: z.boolean().nullable()
+      })
+      .partial()
+      .strict(),
     inPlayer: z.boolean(),
     featured: z.boolean(),
     visibility: z.enum(["public", "private"])
@@ -312,8 +342,18 @@ export const mediaUpdateSchema = z
 
 export const collectionSettingsSchema = z
   .object({
-    // Settings saved before people existed have no `people`; they show people.
-    show: z.object({ movie: z.boolean(), tv: z.boolean(), anime: z.boolean(), music: z.boolean(), people: z.boolean().default(true) }).strict(),
+    // Settings saved before a kind existed have no switch for it; it is shown.
+    show: z
+      .object({
+        movie: z.boolean(),
+        tv: z.boolean(),
+        anime: z.boolean(),
+        book: z.boolean().default(true),
+        comic: z.boolean().default(true),
+        music: z.boolean(),
+        people: z.boolean().default(true)
+      })
+      .strict(),
     showWant: z.boolean()
   })
   .strict();

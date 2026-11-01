@@ -127,7 +127,7 @@ export function buildServer({
   media = defaultMediaRepository(),
   people = defaultPersonRepository(),
   relations = defaultRelationRepository(),
-  mediaSources = createMediaSources({ tmdbKey: config.tmdbApiKey }),
+  mediaSources = createMediaSources({ tmdbKey: config.tmdbApiKey, googleBooksKey: config.googleBooksApiKey }),
   settings = defaultSettingsRepository(),
   fetchPlaylist = createPlaylistFetcher(),
   musicSource = createMusicSource(),
