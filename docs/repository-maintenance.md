@@ -2,7 +2,7 @@
 
 ## Local quality checks
 
-Use Node.js 22.22 or newer; GitHub Actions uses Node 22. From a clean checkout:
+Use Node.js 26.13 or newer; GitHub Actions and Docker use Node 26. From a clean checkout:
 
 ```sh
 npm ci
@@ -41,6 +41,22 @@ Check names must match the names reported by Actions, not workflow filenames.
 New required checks cannot pass until the workflow is pushed and runs on the PR.
 
 ## Dependency maintenance
+
+### Deferred TypeScript 7 upgrade
+
+Keep Dependabot PR #22 open while TypeScript 7 is outside typescript-eslint's
+official support range. Do not permanently ignore TypeScript major updates merely
+to remove the reminder. As of this review, typescript-eslint 8.72.1 supports
+`>=4.8.4 <6.1.0`; upgrading ESLint itself does not resolve this prerequisite.
+
+A weekly monitor in the current Codex chat checks stable typescript-eslint release
+notes, official support ranges and npm peer dependencies on Mondays at 10:00
+Asia/Shanghai. It stays quiet while unsupported and reports when an upgrade becomes
+actionable. Once support arrives, update TypeScript across all workspaces and the
+parser/plugin together, verify the actual compiler/parser versions, and rerun
+lint, typecheck, tests, builds and the Docker smoke test before merging.
+
+### Update policy
 
 `.github/dependabot.yml` checks the root npm workspace lockfile and Actions every
 Monday at 09:00 Asia/Shanghai. Version updates group Prisma packages together,

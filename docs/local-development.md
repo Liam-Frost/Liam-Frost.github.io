@@ -11,7 +11,7 @@ There are two ways to run the site locally:
 
 ## Development (`npm run dev`)
 
-Requirements: Node.js 22.22 or newer, and a PostgreSQL database for photos, projects and music settings (the site works without one, using seed photos and no projects).
+Requirements: Node.js 26.13 or newer, and a PostgreSQL database for photos, projects and music settings (the site works without one, using seed photos and no projects). CI and Docker use Node 26; `.node-version` records the minimum LTS version.
 
 1. Install dependencies:
 

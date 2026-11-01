@@ -2,6 +2,20 @@
 
 ## User Decisions
 
+### 2026-11-01: Evaluate Node 26 and track TypeScript 7 support
+
+User requested actual Node 26 compatibility validation after merging Dependabot
+PRs #19, #20 and #23, and a way to revisit TypeScript 7 when lint tooling supports it.
+Prepare a candidate PR that moves CI, Pages builds, the Docker image and Node types
+together, with a minimum of Node 26.13.0 (the first Node 26 LTS release). Main stays
+unchanged until review. Record the local runtime separately from hosted Linux/Docker
+validation; green Node 22 tests alone are not evidence for the Node 26 container.
+
+Keep TypeScript on the current supported version and PR #22 open. A weekly Monday
+10:00 Asia/Shanghai chat monitor checks typescript-eslint's stable support range,
+not merely ESLint's version, and reports only an actionable change or a problem
+requiring user attention. It does not upgrade or merge automatically.
+
 ### 2026-11-01: Repository licensing and maintenance
 
 Original code and technical documentation use the standard MIT license, attributed
