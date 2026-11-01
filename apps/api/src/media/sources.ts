@@ -67,8 +67,9 @@ const USER_AGENT = "liam-frost-site/0.1 (https://github.com/Liam-Frost/Liam-Fros
 const TMDB_API = "https://api.themoviedb.org/3";
 const ANILIST_API = "https://graphql.anilist.co";
 const ANILIST_QUERY = "query ($search: String, $type: MediaType) { Media(search: $search, type: $type) { title { romaji native } startDate { year } } }";
+// relationType version 2 tells a work's source (SOURCE) from its adaptations (ADAPTATION); version 1 calls both ADAPTATION.
 const ANILIST_RELATIONS_QUERY =
-  "query ($search: String, $type: MediaType) { Media(search: $search, type: $type) { title { romaji native } startDate { year } relations { edges { relationType node { type format title { romaji native english } } } } } }";
+  "query ($search: String, $type: MediaType) { Media(search: $search, type: $type) { title { romaji native } startDate { year } relations { edges { relationType(version: 2) node { type format title { romaji native english } } } } } }";
 const ANILIST_MANGA_FIELDS =
   "id siteUrl format status volumes genres title { romaji native english } startDate { year } coverImage { extraLarge large } description(asHtml: false) staff(perPage: 8) { edges { role node { name { full native } } } }";
 const ANILIST_MANGA_SEARCH = `query ($search: String) { Page(perPage: 20) { media(search: $search, type: MANGA, format_not: NOVEL) { ${ANILIST_MANGA_FIELDS} } } }`;
@@ -97,6 +98,40 @@ const ANILIST_GENRES: Record<string, Omit<LocalizedText, "en">> = {
 /** AniList staff roles that make someone an author of a comic. */
 const ANILIST_AUTHOR_ROLES = /^(Story & Art|Story|Art|Original Creator|Original Story)\b/;
 const OPENLIBRARY = "https://openlibrary.org";
+/**
+ * Open Library subjects mix genres with places, people, awards and other languages' headings; only these
+ * genres are kept, by their lowercase subject name.
+ */
+const OPENLIBRARY_GENRES: Record<string, LocalizedText> = {
+  fiction: { zh: "小说", "zh-Hant": "小說", en: "Fiction", fr: "Fiction", ja: "小説" },
+  "science fiction": { zh: "科幻", "zh-Hant": "科幻", en: "Science fiction", fr: "Science-fiction", ja: "SF" },
+  fantasy: { zh: "奇幻", "zh-Hant": "奇幻", en: "Fantasy", fr: "Fantasy", ja: "ファンタジー" },
+  "fantasy fiction": { zh: "奇幻", "zh-Hant": "奇幻", en: "Fantasy", fr: "Fantasy", ja: "ファンタジー" },
+  mystery: { zh: "推理", "zh-Hant": "推理", en: "Mystery", fr: "Policier", ja: "ミステリー" },
+  "detective and mystery stories": { zh: "推理", "zh-Hant": "推理", en: "Mystery", fr: "Policier", ja: "ミステリー" },
+  thriller: { zh: "惊悚", "zh-Hant": "驚悚", en: "Thriller", fr: "Thriller", ja: "スリラー" },
+  horror: { zh: "恐怖", "zh-Hant": "恐怖", en: "Horror", fr: "Horreur", ja: "ホラー" },
+  "horror tales": { zh: "恐怖", "zh-Hant": "恐怖", en: "Horror", fr: "Horreur", ja: "ホラー" },
+  romance: { zh: "爱情", "zh-Hant": "愛情", en: "Romance", fr: "Romance", ja: "恋愛" },
+  "love stories": { zh: "爱情", "zh-Hant": "愛情", en: "Romance", fr: "Romance", ja: "恋愛" },
+  "historical fiction": { zh: "历史小说", "zh-Hant": "歷史小說", en: "Historical fiction", fr: "Roman historique", ja: "歴史小説" },
+  history: { zh: "历史", "zh-Hant": "歷史", en: "History", fr: "Histoire", ja: "歴史" },
+  biography: { zh: "传记", "zh-Hant": "傳記", en: "Biography", fr: "Biographie", ja: "伝記" },
+  autobiography: { zh: "自传", "zh-Hant": "自傳", en: "Autobiography", fr: "Autobiographie", ja: "自伝" },
+  poetry: { zh: "诗歌", "zh-Hant": "詩歌", en: "Poetry", fr: "Poésie", ja: "詩" },
+  philosophy: { zh: "哲学", "zh-Hant": "哲學", en: "Philosophy", fr: "Philosophie", ja: "哲学" },
+  psychology: { zh: "心理学", "zh-Hant": "心理學", en: "Psychology", fr: "Psychologie", ja: "心理学" },
+  essays: { zh: "随笔", "zh-Hant": "隨筆", en: "Essays", fr: "Essais", ja: "エッセイ" },
+  "short stories": { zh: "短篇", "zh-Hant": "短篇", en: "Short stories", fr: "Nouvelles", ja: "短編" },
+  "young adult fiction": { zh: "青少年", "zh-Hant": "青少年", en: "Young adult", fr: "Jeunesse", ja: "ヤングアダルト" },
+  "children's fiction": { zh: "儿童", "zh-Hant": "兒童", en: "Children's", fr: "Jeunesse", ja: "児童書" },
+  "comic books, strips": { zh: "漫画", "zh-Hant": "漫畫", en: "Comics", fr: "Bande dessinée", ja: "コミック" },
+  science: { zh: "科学", "zh-Hant": "科學", en: "Science", fr: "Sciences", ja: "科学" },
+  economics: { zh: "经济", "zh-Hant": "經濟", en: "Economics", fr: "Économie", ja: "経済" },
+  "computer science": { zh: "计算机", "zh-Hant": "電腦", en: "Computer science", fr: "Informatique", ja: "コンピュータ" },
+  travel: { zh: "旅行", "zh-Hant": "旅行", en: "Travel", fr: "Voyage", ja: "旅行" },
+  humor: { zh: "幽默", "zh-Hant": "幽默", en: "Humor", fr: "Humour", ja: "ユーモア" }
+};
 const OPENLIBRARY_FIELDS = "key,title,author_name,first_publish_year,cover_i,number_of_pages_median,subject,publisher";
 /** Redirect hops a poster download may follow (Open Library covers go through archive.org). */
 const MAX_REDIRECTS = 3;
@@ -128,7 +163,8 @@ const yearOf = (date: string | null | undefined) => {
   const year = Number(date?.slice(0, 4));
   return Number.isInteger(year) && year > 1800 ? year : null;
 };
-const clean = (value: string | null | undefined) => value?.trim() || "";
+/** Trimmed text without invisible direction marks (Open Library publishers start with U+200E). */
+const clean = (value: string | null | undefined) => value?.replace(/[\u200e\u200f\u202a-\u202e]/g, "").trim() || "";
 /** AniList descriptions carry some HTML and a "(Source: ...)" credit line. */
 const plainText = (value: string | null | undefined) =>
   clean(
@@ -509,11 +545,14 @@ export function createMediaSources(options: { tmdbKey?: string; fetchImpl?: type
           title: compact({ [scriptLang(title)]: title }),
           originalTitle: title || null,
           year: doc.first_publish_year ?? null,
-          // Subjects mix genres with awards, lists and other languages' headings; keep a few plain ones.
-          genres: (doc.subject ?? [])
-            .filter((subject) => !/[:/,(]/.test(subject) && subject.length <= 24)
-            .slice(0, 5)
-            .map((subject) => ({ en: subject })),
+          genres: [
+            ...new Map(
+              (doc.subject ?? [])
+                .map((subject) => OPENLIBRARY_GENRES[subject.trim().toLowerCase()])
+                .filter((genre): genre is LocalizedText => Boolean(genre))
+                .map((genre) => [genre.en, genre])
+            ).values()
+          ].slice(0, 5),
           // Later names are often translators and illustrators of editions.
           credits: (doc.author_name ?? []).slice(0, 1),
           // Descriptions often end with a "----------" block of links.
@@ -568,7 +607,7 @@ export function createMediaSources(options: { tmdbKey?: string; fetchImpl?: type
       // User tags mix genres with studios, publishers and seasons; keep the ones the infobox does not name.
       const named = infobox.map((entry) => infoboxText(entry.value)).join(" ").toLowerCase();
       const genres = (subject.tags ?? [])
-        .filter((tag) => !/\d/.test(tag.name) && tag.name.length <= 12 && !named.includes(tag.name.toLowerCase()))
+        .filter((tag) => !/\d/.test(tag.name) && tag.name.length <= 12 && tag.name !== subject.platform && !named.includes(tag.name.toLowerCase()))
         .sort((a, b) => b.count - a.count)
         .slice(0, 6)
         .map((tag) => ({ zh: tag.name }));

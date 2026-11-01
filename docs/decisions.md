@@ -52,6 +52,18 @@ React and related dependencies should be upgraded to the latest versions. This u
 
 ## Model Decisions
 
+### 2026-11-03: Book and Comic Sources Without Keys
+
+Books come from Open Library and Bangumi, comics from AniList and Bangumi; Google Books is not used.
+
+Reason: Google Books answered every keyless request with a daily quota of zero, so it would need a Google Cloud key; Open Library covers most books and Bangumi covers Chinese and Japanese novels and comics with Chinese names, both without keys. Google Books can be added later with a key.
+
+### 2026-11-03: AniList Relation Types Version 2
+
+AniList relations are read with `relationType(version: 2)`.
+
+Reason: version 1 (the default) calls a work's source material ADAPTATION, the same as its adaptations, so an anime's manga was suggested as an adaptation of the anime; version 2 has SOURCE.
+
 ### 2026-11-02: Suggestions Never Link by Themselves
 
 Suggested links (TMDB cast and crew, a song's singers, AniList relations) are listed for the admin to add one by one; nothing is linked automatically. AniList relations only match anime in the collection to anime, because a manga usually shares the anime's title.

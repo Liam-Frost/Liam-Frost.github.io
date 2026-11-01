@@ -167,6 +167,32 @@ describe("AniList romaji", () => {
     expect(await match.romaji("別の作品", 2010)).toBeNull();
   });
 
+  it("reads relations with their direction and the other work's kind", async () => {
+    const fetchImpl = fakeFetch((_url, init) => {
+      expect(String(init.body)).toContain("relationType(version: 2)");
+      return Response.json({
+        data: {
+          Media: {
+            title: { romaji: "Bocchi the Rock!", native: "ぼっち・ざ・ろっく！" },
+            startDate: { year: 2022 },
+            relations: {
+              edges: [
+                { relationType: "SOURCE", node: { type: "MANGA", format: "MANGA", title: { native: "ぼっち・ざ・ろっく！" } } },
+                { relationType: "ADAPTATION", node: { type: "MANGA", format: "NOVEL", title: { romaji: "Some Novel" } } },
+                { relationType: "SEQUEL", node: { type: "ANIME", format: "TV", title: { native: "続編" } } }
+              ]
+            }
+          }
+        }
+      });
+    });
+    expect(await createMediaSources({ fetchImpl }).relations("anime", "ぼっち・ざ・ろっく！", 2022)).toEqual([
+      { relationType: "SOURCE", kind: "comic", titles: ["ぼっち・ざ・ろっく！"] },
+      { relationType: "ADAPTATION", kind: "book", titles: ["Some Novel"] },
+      { relationType: "SEQUEL", kind: "anime", titles: ["続編"] }
+    ]);
+  });
+
   it("gives up quietly when AniList fails", async () => {
     expect(await createMediaSources({ fetchImpl: fakeFetch(() => new Response("", { status: 500 })) }).romaji("x", 2020)).toBeNull();
     expect(await createMediaSources({ fetchImpl: anilist(null) }).romaji("x", 2020)).toBeNull();
@@ -242,8 +268,8 @@ describe("Books and comics", () => {
               first_publish_year: 2008,
               cover_i: 9157544,
               number_of_pages_median: 416,
-              publisher: ["重庆出版社"],
-              subject: ["Science fiction", "award:hugo_award=2015", "Fiction, science fiction, general", "Chinese fiction"]
+              publisher: ["\u200e重庆出版社"],
+              subject: ["Science fiction", "award:hugo_award=2015", "Fiction, science fiction, general", "Liebesbeziehung", "Fiction", "science fiction"]
             }
           ]
         });
@@ -262,7 +288,10 @@ describe("Books and comics", () => {
       sourceUrl: "https://openlibrary.org/works/OL17267881W",
       title: { zh: "三体" },
       year: 2008,
-      genres: [{ en: "Science fiction" }, { en: "Chinese fiction" }],
+      genres: [
+        { zh: "科幻", "zh-Hant": "科幻", en: "Science fiction", fr: "Science-fiction", ja: "SF" },
+        { zh: "小说", "zh-Hant": "小說", en: "Fiction", fr: "Fiction", ja: "小説" }
+      ],
       credits: ["刘慈欣"],
       overview: { en: "A novel." },
       posterUrl: "https://covers.openlibrary.org/b/id/9157544-L.jpg",
