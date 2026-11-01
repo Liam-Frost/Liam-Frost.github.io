@@ -48,7 +48,16 @@ export function useSelection(order: string[]) {
   const selectAll = () => setPicked(new Set(order));
   const clear = () => setPicked(new Set());
 
-  return { active, selected, isSelected: (id: string) => picked.has(id), toggle, start, stop, selectAll, clear };
+  return {
+    active,
+    selected,
+    isSelected: (id: string) => picked.has(id),
+    toggle,
+    start,
+    stop,
+    selectAll,
+    clear
+  };
 }
 
 export type Selection = ReturnType<typeof useSelection>;

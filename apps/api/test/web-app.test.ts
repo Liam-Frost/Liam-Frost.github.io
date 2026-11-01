@@ -43,7 +43,9 @@ describe("public site hosting", () => {
   it("sends a CSP that allows the inline bootstrap script by hash only", async () => {
     const app = await buildTestServer({}, { webDistDir: dist });
     const csp = String((await app.inject("/")).headers["content-security-policy"]);
-    const hash = createHash("sha256").update('document.documentElement.dataset.ok = "1";').digest("base64");
+    const hash = createHash("sha256")
+      .update('document.documentElement.dataset.ok = "1";')
+      .digest("base64");
     expect(csp).toContain(`script-src 'self' 'sha256-${hash}'`);
     expect(csp).toContain("frame-ancestors 'none'");
     expect(csp).toContain("frame-src https://open.spotify.com");
@@ -52,7 +54,13 @@ describe("public site hosting", () => {
 
   it("serves only files in the build", async () => {
     const app = await buildTestServer({}, { webDistDir: dist });
-    for (const url of ["/.env", "/assets/../.env", "/%2e%2e/package.json", "/projects", "/nope.js"]) {
+    for (const url of [
+      "/.env",
+      "/assets/../.env",
+      "/%2e%2e/package.json",
+      "/projects",
+      "/nope.js"
+    ]) {
       expect((await app.inject(url)).statusCode, url).toBe(404);
     }
     // Malformed percent-encoding is rejected by Fastify before routing.

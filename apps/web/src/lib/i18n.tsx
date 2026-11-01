@@ -60,7 +60,8 @@ const zh = {
   "about.capabilities.b2": "性能与可访问性：让体验更快、更稳",
   "about.capabilities.b3": "动效与交互语义：克制但有层次",
 
-  "about.focus.body": "把前端、后端与摄影视为同一件事：用清晰的结构、稳定的系统和可延展的叙事，把复杂内容组织成可被理解、浏览并长期演进的体验。",
+  "about.focus.body":
+    "把前端、后端与摄影视为同一件事：用清晰的结构、稳定的系统和可延展的叙事，把复杂内容组织成可被理解、浏览并长期演进的体验。",
 
   // Skills
   "skills.title": "技术栈",
@@ -177,7 +178,8 @@ const zh = {
   "collection.close": "关闭",
   "collection.open": "查看：{title}",
   "collection.notFound": "这个条目不存在或尚未公开。",
-  "collection.attribution": "电影和剧集资料来自 TMDB，动漫资料来自 Bangumi，图书和漫画资料来自 Open Library、Google Books、AniList 和 Bangumi，游戏资料来自 IGDB。本网站使用 TMDB API，但未获得 TMDB 的认可或认证。",
+  "collection.attribution":
+    "电影和剧集资料来自 TMDB，动漫资料来自 Bangumi，图书和漫画资料来自 Open Library、Google Books、AniList 和 Bangumi，游戏资料来自 IGDB。本网站使用 TMDB API，但未获得 TMDB 的认可或认证。",
   "collection.kind.track": "音乐",
   "collection.artists": "歌手",
   "collection.album": "专辑：{album}",
@@ -316,7 +318,8 @@ const en: Record<Key, string> = {
   "about.capabilities.b2": "Performance & accessibility: faster, clearer experiences",
   "about.capabilities.b3": "Motion & interaction semantics: restrained but layered",
 
-  "about.focus.body": "I approach frontend, backend, and photography in the same way: structuring complexity into systems and narratives that are clear, navigable, and built to evolve over time.",
+  "about.focus.body":
+    "I approach frontend, backend, and photography in the same way: structuring complexity into systems and narratives that are clear, navigable, and built to evolve over time.",
 
   "skills.title": "Tech Stack",
   "skills.subtitle": "A structured skill stack with clear grouping and priority.",
@@ -370,7 +373,8 @@ const en: Record<Key, string> = {
   // Projects
   "nav.projects": "Projects",
   "projects.title": "Projects",
-  "projects.subtitle": "Products, tools and experiments I've built, and the trade-offs behind them.",
+  "projects.subtitle":
+    "Products, tools and experiments I've built, and the trade-offs behind them.",
   "projects.home.subtitle": "A few selected projects. Open one for the details.",
   "projects.cta.all": "All projects",
   "projects.empty": "No public projects yet.",
@@ -389,7 +393,8 @@ const en: Record<Key, string> = {
   "projects.open": "Open project: {title}",
   "nav.collection": "Collection",
   "collection.title": "Collection",
-  "collection.subtitle": "Films, series and anime I've watched, books and comics I've read, with my ratings and notes.",
+  "collection.subtitle":
+    "Films, series and anime I've watched, books and comics I've read, with my ratings and notes.",
   "collection.home.title": "Recently watched",
   "collection.home.subtitle": "What I've just finished and what I'm following now.",
   "collection.cta.all": "Whole collection",
@@ -427,7 +432,8 @@ const en: Record<Key, string> = {
   "collection.close": "Close",
   "collection.open": "Open: {title}",
   "collection.notFound": "This entry doesn't exist or isn't public.",
-  "collection.attribution": "Film and series data from TMDB, anime data from Bangumi, book and comic data from Open Library, Google Books, AniList and Bangumi, game data from IGDB. This product uses the TMDB API but is not endorsed or certified by TMDB.",
+  "collection.attribution":
+    "Film and series data from TMDB, anime data from Bangumi, book and comic data from Open Library, Google Books, AniList and Bangumi, game data from IGDB. This product uses the TMDB API but is not endorsed or certified by TMDB.",
   "collection.kind.track": "Music",
   "collection.artists": "Artists",
   "collection.album": "Album: {album}",
@@ -548,7 +554,8 @@ const fr: Record<Key, string> = {
   "home.cta.contact": "Me contacter",
 
   "about.title": "À propos",
-  "about.subtitle": "Je m'intéresse au storytelling visuel, aux détails d'interaction et aux performances.",
+  "about.subtitle":
+    "Je m'intéresse au storytelling visuel, aux détails d'interaction et aux performances.",
 
   "about.card.left": "Capacités & approche",
   "about.card.right": "Matériel",
@@ -564,7 +571,8 @@ const fr: Record<Key, string> = {
   "about.capabilities.b2": "Performance & accessibilité : expériences plus rapides et claires",
   "about.capabilities.b3": "Motion & sémantique d'interaction : sobre mais riche",
 
-  "about.focus.body": "Frontend, backend et photographie relèvent pour moi de la même démarche: structurer la complexité en systèmes et récits clairs, parcourables et conçus pour évoluer dans le temps.",
+  "about.focus.body":
+    "Frontend, backend et photographie relèvent pour moi de la même démarche: structurer la complexité en systèmes et récits clairs, parcourables et conçus pour évoluer dans le temps.",
 
   "skills.title": "Technos",
   "skills.subtitle": "Stack structuré : groupes + priorité.",
@@ -618,7 +626,8 @@ const fr: Record<Key, string> = {
   // Projects
   "nav.projects": "Projets",
   "projects.title": "Projets",
-  "projects.subtitle": "Produits, outils et expériences que j'ai construits, et les choix derrière eux.",
+  "projects.subtitle":
+    "Produits, outils et expériences que j'ai construits, et les choix derrière eux.",
   "projects.home.subtitle": "Quelques projets choisis. Ouvre-en un pour les détails.",
   "projects.cta.all": "Tous les projets",
   "projects.empty": "Aucun projet public pour l'instant.",
@@ -637,7 +646,8 @@ const fr: Record<Key, string> = {
   "projects.open": "Voir le projet : {title}",
   "nav.collection": "Collection",
   "collection.title": "Collection",
-  "collection.subtitle": "Films, séries et anime que j'ai vus, livres et mangas que j'ai lus, avec mes notes et mes avis.",
+  "collection.subtitle":
+    "Films, séries et anime que j'ai vus, livres et mangas que j'ai lus, avec mes notes et mes avis.",
   "collection.home.title": "Vus récemment",
   "collection.home.subtitle": "Ce que je viens de finir et ce que je suis en ce moment.",
   "collection.cta.all": "Toute la collection",
@@ -675,7 +685,8 @@ const fr: Record<Key, string> = {
   "collection.close": "Fermer",
   "collection.open": "Ouvrir : {title}",
   "collection.notFound": "Cette entrée n'existe pas ou n'est pas publique.",
-  "collection.attribution": "Données des films et séries : TMDB ; données des anime : Bangumi ; livres et mangas : Open Library, Google Books, AniList et Bangumi ; jeux : IGDB. Ce produit utilise l'API TMDB mais n'est ni approuvé ni certifié par TMDB.",
+  "collection.attribution":
+    "Données des films et séries : TMDB ; données des anime : Bangumi ; livres et mangas : Open Library, Google Books, AniList et Bangumi ; jeux : IGDB. Ce produit utilise l'API TMDB mais n'est ni approuvé ni certifié par TMDB.",
   "collection.kind.track": "Musique",
   "collection.artists": "Artistes",
   "collection.album": "Album : {album}",
@@ -796,7 +807,8 @@ const ja: Record<Key, string> = {
   "home.cta.contact": "連絡する",
 
   "about.title": "概要",
-  "about.subtitle": "ビジュアルストーリー、インタラクションの細部、パフォーマンスを大切にしています。",
+  "about.subtitle":
+    "ビジュアルストーリー、インタラクションの細部、パフォーマンスを大切にしています。",
 
   "about.card.left": "能力とアプローチ",
   "about.card.right": "機材",
@@ -812,7 +824,8 @@ const ja: Record<Key, string> = {
   "about.capabilities.b2": "パフォーマンス／アクセシビリティ：速く、分かりやすく",
   "about.capabilities.b3": "モーション／インタラクション語彙：控えめに層を作る",
 
-  "about.focus.body": "フロントエンド、バックエンド、そして写真制作を、私は同じ視点で捉えています。複雑な要素を整理し、理解しやすく、閲覧でき、継続的に拡張できる体験へと構成することです。",
+  "about.focus.body":
+    "フロントエンド、バックエンド、そして写真制作を、私は同じ視点で捉えています。複雑な要素を整理し、理解しやすく、閲覧でき、継続的に拡張できる体験へと構成することです。",
 
   "skills.title": "技術スタック",
   "skills.subtitle": "構造化したスキルスタック（グループ＋優先度）。",
@@ -923,7 +936,8 @@ const ja: Record<Key, string> = {
   "collection.close": "閉じる",
   "collection.open": "開く：{title}",
   "collection.notFound": "この作品は存在しないか、公開されていません。",
-  "collection.attribution": "映画・ドラマの情報は TMDB、アニメの情報は Bangumi、本と漫画の情報は Open Library・Google Books・AniList・Bangumi、ゲームの情報は IGDB より。本サイトは TMDB API を使用していますが、TMDB による承認・認定は受けていません。",
+  "collection.attribution":
+    "映画・ドラマの情報は TMDB、アニメの情報は Bangumi、本と漫画の情報は Open Library・Google Books・AniList・Bangumi、ゲームの情報は IGDB より。本サイトは TMDB API を使用していますが、TMDB による承認・認定は受けていません。",
   "collection.kind.track": "音楽",
   "collection.artists": "アーティスト",
   "collection.album": "アルバム：{album}",
@@ -1065,7 +1079,8 @@ const zhHant: Record<Key, string> = {
   "about.capabilities.b2": "效能與可及性：讓體驗更快、更穩",
   "about.capabilities.b3": "動效與互動語意：克制但有層次",
 
-  "about.focus.body": "把前端、後端與攝影視為同一件事：用清晰的結構、穩定的系統和可延展的敘事，把複雜內容組織成可被理解、瀏覽並長期演進的體驗。",
+  "about.focus.body":
+    "把前端、後端與攝影視為同一件事：用清晰的結構、穩定的系統和可延展的敘事，把複雜內容組織成可被理解、瀏覽並長期演進的體驗。",
 
   // Skills
   "skills.title": "技術棧",
@@ -1182,7 +1197,8 @@ const zhHant: Record<Key, string> = {
   "collection.close": "關閉",
   "collection.open": "查看：{title}",
   "collection.notFound": "這個項目不存在或尚未公開。",
-  "collection.attribution": "電影和影集資料來自 TMDB，動畫資料來自 Bangumi，圖書和漫畫資料來自 Open Library、Google Books、AniList 和 Bangumi，遊戲資料來自 IGDB。本網站使用 TMDB API，但未獲得 TMDB 的認可或認證。",
+  "collection.attribution":
+    "電影和影集資料來自 TMDB，動畫資料來自 Bangumi，圖書和漫畫資料來自 Open Library、Google Books、AniList 和 Bangumi，遊戲資料來自 IGDB。本網站使用 TMDB API，但未獲得 TMDB 的認可或認證。",
   "collection.kind.track": "音樂",
   "collection.artists": "歌手",
   "collection.album": "專輯：{album}",
@@ -1299,7 +1315,8 @@ function detectLang(): Lang {
   }
 
   const nav = (navigator.language || "").toLowerCase();
-  if (nav.startsWith("zh-tw") || nav.startsWith("zh-hk") || nav.startsWith("zh-hant")) return "zh-Hant";
+  if (nav.startsWith("zh-tw") || nav.startsWith("zh-hk") || nav.startsWith("zh-hant"))
+    return "zh-Hant";
   if (nav.startsWith("fr")) return "fr";
   if (nav.startsWith("ja")) return "ja";
   if (nav.startsWith("en")) return "en";

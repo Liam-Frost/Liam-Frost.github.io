@@ -25,7 +25,11 @@ export function UploadQueue({ items, onClear }: { items: UploadItem[]; onClear: 
       <div className="mb-2 flex items-center justify-between">
         <h2 className="text-[13px] font-semibold text-brand-dark">上传</h2>
         {!active ? (
-          <button type="button" className="text-[12px] text-subtle hover:text-brand" onClick={onClear}>
+          <button
+            type="button"
+            className="text-[12px] text-subtle hover:text-brand"
+            onClick={onClear}
+          >
             清除记录
           </button>
         ) : null}
@@ -39,7 +43,10 @@ export function UploadQueue({ items, onClear }: { items: UploadItem[]; onClear: 
               ) : item.status === "error" ? (
                 <CircleAlert aria-hidden="true" className="size-4 shrink-0 text-status-error" />
               ) : (
-                <LoaderCircle aria-hidden="true" className="size-4 shrink-0 animate-spin text-brand-secondary" />
+                <LoaderCircle
+                  aria-hidden="true"
+                  className="size-4 shrink-0 animate-spin text-brand-secondary"
+                />
               )}
               <span className="min-w-0 flex-1 truncate">{item.name}</span>
               <span className={item.status === "error" ? "text-status-error" : "text-subtle"}>
@@ -47,8 +54,18 @@ export function UploadQueue({ items, onClear }: { items: UploadItem[]; onClear: 
               </span>
             </div>
             {item.status === "uploading" ? (
-              <div className="mt-1 h-1 overflow-hidden rounded-full bg-line-soft" role="progressbar" aria-valuenow={Math.round(item.progress * 100)} aria-valuemin={0} aria-valuemax={100} aria-label={item.name}>
-                <div className="h-full bg-brand-secondary transition-[width]" style={{ width: `${item.progress * 100}%` }} />
+              <div
+                className="mt-1 h-1 overflow-hidden rounded-full bg-line-soft"
+                role="progressbar"
+                aria-valuenow={Math.round(item.progress * 100)}
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-label={item.name}
+              >
+                <div
+                  className="h-full bg-brand-secondary transition-[width]"
+                  style={{ width: `${item.progress * 100}%` }}
+                />
               </div>
             ) : null}
           </li>

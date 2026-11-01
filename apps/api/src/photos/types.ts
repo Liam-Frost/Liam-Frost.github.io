@@ -32,7 +32,9 @@ export type PhotoRow = {
   updatedAt: Date;
 };
 
-export type NewPhoto = Omit<PhotoRow, "createdAt" | "updatedAt" | "sortOrder"> & { sortOrder?: number };
+export type NewPhoto = Omit<PhotoRow, "createdAt" | "updatedAt" | "sortOrder"> & {
+  sortOrder?: number;
+};
 
 export type PhotoPatch = Partial<
   Pick<

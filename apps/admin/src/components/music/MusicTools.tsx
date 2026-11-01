@@ -1,4 +1,9 @@
-import type { AdminMediaItem, MusicImportJob, MusicImportRequest, MusicSearchResult } from "@liam-frost/shared";
+import type {
+  AdminMediaItem,
+  MusicImportJob,
+  MusicImportRequest,
+  MusicSearchResult
+} from "@liam-frost/shared";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Music, Pause, Play, Search } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
@@ -27,7 +32,9 @@ export function usePreview() {
         audio.current = new Audio();
         audio.current.volume = 0.5;
         audio.current.addEventListener("ended", () => setPlaying(null));
-        audio.current.addEventListener("pause", () => setPlaying((current) => (audio.current?.ended ? null : current)));
+        audio.current.addEventListener("pause", () =>
+          setPlaying((current) => (audio.current?.ended ? null : current))
+        );
       }
       if (playing === url) {
         audio.current.pause();
@@ -44,7 +51,13 @@ export function usePreview() {
   return { playing, toggle };
 }
 
-export function PreviewButton({ url, preview }: { url: string | null; preview: ReturnType<typeof usePreview> }) {
+export function PreviewButton({
+  url,
+  preview
+}: {
+  url: string | null;
+  preview: ReturnType<typeof usePreview>;
+}) {
   if (!url) return null;
   const active = preview.playing === url;
   return (
@@ -55,16 +68,28 @@ export function PreviewButton({ url, preview }: { url: string | null; preview: R
       title={active ? "暂停试听" : "试听"}
       className={`flex size-8 shrink-0 items-center justify-center rounded-full transition-colors ${active ? "bg-brand text-white" : "bg-brand-secondary/12 text-brand hover:bg-brand-secondary/20"}`}
     >
-      {active ? <Pause aria-hidden="true" className="size-3.5" /> : <Play aria-hidden="true" className="ml-0.5 size-3.5" />}
+      {active ? (
+        <Pause aria-hidden="true" className="size-3.5" />
+      ) : (
+        <Play aria-hidden="true" className="ml-0.5 size-3.5" />
+      )}
     </button>
   );
 }
 
 function Cover({ src, size = "size-10" }: { src: string | null | undefined; size?: string }) {
   return src ? (
-    <img src={src} alt="" loading="lazy" referrerPolicy="no-referrer" className={`${size} shrink-0 rounded-md bg-line-soft object-cover`} />
+    <img
+      src={src}
+      alt=""
+      loading="lazy"
+      referrerPolicy="no-referrer"
+      className={`${size} shrink-0 rounded-md bg-line-soft object-cover`}
+    />
   ) : (
-    <span className={`flex ${size} shrink-0 items-center justify-center rounded-md bg-line-soft text-faint`}>
+    <span
+      className={`flex ${size} shrink-0 items-center justify-center rounded-md bg-line-soft text-faint`}
+    >
       <Music aria-hidden="true" className="size-4" />
     </span>
   );
@@ -121,10 +146,20 @@ export function MusicSearchDialog({
     try {
       const { item } = await api.importMusic({ itunesId: result.itunesId, country });
       setItem(item);
-      setResults((list) => list?.map((r) => (r.itunesId === result.itunesId ? { ...r, existingId: item.id } : r)) ?? null);
+      setResults(
+        (list) =>
+          list?.map((r) => (r.itunesId === result.itunesId ? { ...r, existingId: item.id } : r)) ??
+          null
+      );
       toast(`已添加：${result.title}${item.inPlayer ? "" : "（没有试听，未加入播放器）"}`);
     } catch (e) {
-      setError(e instanceof ApiError && e.code === "MEDIA_EXISTS" ? "这首歌已在收藏中" : e instanceof Error ? e.message : "添加失败");
+      setError(
+        e instanceof ApiError && e.code === "MEDIA_EXISTS"
+          ? "这首歌已在收藏中"
+          : e instanceof Error
+            ? e.message
+            : "添加失败"
+      );
     } finally {
       setAdding(null);
     }
@@ -134,7 +169,12 @@ export function MusicSearchDialog({
     <Dialog open title={mode === "add" ? "添加歌曲" : "选择试听"} onClose={onClose}>
       <form onSubmit={search} className="flex flex-wrap items-end gap-2">
         <Field label="商店" htmlFor="music-store">
-          <select id="music-store" className="field" value={country} onChange={(e) => setCountry(e.target.value)}>
+          <select
+            id="music-store"
+            className="field"
+            value={country}
+            onChange={(e) => setCountry(e.target.value)}
+          >
             {MUSIC_STORES.map(([code, label]) => (
               <option key={code} value={code}>
                 {label}
@@ -143,14 +183,24 @@ export function MusicSearchDialog({
           </select>
         </Field>
         <Field label="在 iTunes 搜索" htmlFor="music-query" className="min-w-0 flex-1">
-          <input id="music-query" className="field" value={query} maxLength={100} placeholder="歌名和歌手" onChange={(e) => setQuery(e.target.value)} data-autofocus />
+          <input
+            id="music-query"
+            className="field"
+            value={query}
+            maxLength={100}
+            placeholder="歌名和歌手"
+            onChange={(e) => setQuery(e.target.value)}
+            data-autofocus
+          />
         </Field>
         <button type="submit" className="btn-primary" disabled={searching || !query.trim()}>
           <Search aria-hidden="true" className="size-4" />
           {searching ? "搜索中…" : "搜索"}
         </button>
       </form>
-      <p className="mt-2 text-[11.5px] text-faint">日文歌在“日本”商店更容易找到，并显示日文歌名。</p>
+      <p className="mt-2 text-[11.5px] text-faint">
+        日文歌在“日本”商店更容易找到，并显示日文歌名。
+      </p>
 
       {error ? (
         <p role="alert" className="mt-3 text-[12.5px] text-status-error">
@@ -165,14 +215,23 @@ export function MusicSearchDialog({
               <li key={result.itunesId} className="flex items-center gap-3 p-2.5">
                 <Cover src={result.artworkUrl} size="size-12" />
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-[13.5px] font-semibold text-brand-dark">{result.title}</p>
+                  <p className="truncate text-[13.5px] font-semibold text-brand-dark">
+                    {result.title}
+                  </p>
                   <p className="truncate text-[12px] text-subtle">
-                    {[result.artist, result.album, result.year, formatDuration(result.durationMs)].filter(Boolean).join(" · ")}
+                    {[result.artist, result.album, result.year, formatDuration(result.durationMs)]
+                      .filter(Boolean)
+                      .join(" · ")}
                   </p>
                 </div>
                 <PreviewButton url={result.previewUrl} preview={preview} />
                 {mode === "preview" ? (
-                  <button type="button" className="btn-primary shrink-0" disabled={!result.previewUrl} onClick={() => onPick?.(result)}>
+                  <button
+                    type="button"
+                    className="btn-primary shrink-0"
+                    disabled={!result.previewUrl}
+                    onClick={() => onPick?.(result)}
+                  >
                     用这个
                   </button>
                 ) : result.existingId ? (
@@ -180,7 +239,12 @@ export function MusicSearchDialog({
                     已添加
                   </Link>
                 ) : (
-                  <button type="button" className="btn-primary shrink-0" disabled={adding !== null} onClick={() => void add(result)}>
+                  <button
+                    type="button"
+                    className="btn-primary shrink-0"
+                    disabled={adding !== null}
+                    onClick={() => void add(result)}
+                  >
                     {adding === result.itunesId ? "添加中…" : "添加"}
                   </button>
                 )}
@@ -212,12 +276,18 @@ function useImportJob(jobId: string | null) {
 
 function JobProgress({ job }: { job: MusicImportJob }) {
   return (
-    <div className="mt-4 space-y-2 rounded-xl border border-line-soft p-3 text-[13px]" role="status">
+    <div
+      className="mt-4 space-y-2 rounded-xl border border-line-soft p-3 text-[13px]"
+      role="status"
+    >
       <p className="font-semibold text-brand-dark">{job.playlistName ?? "读取中…"}</p>
       {job.total ? (
         <>
           <div className="h-2 overflow-hidden rounded-full bg-line-soft">
-            <div className="h-full rounded-full bg-brand transition-[width]" style={{ width: `${Math.round((job.processed / job.total) * 100)}%` }} />
+            <div
+              className="h-full rounded-full bg-brand transition-[width]"
+              style={{ width: `${Math.round((job.processed / job.total) * 100)}%` }}
+            />
           </div>
           <p className="text-muted">
             {job.processed} / {job.total} · 新增 {job.added} · 已有 {job.skipped}
@@ -225,7 +295,11 @@ function JobProgress({ job }: { job: MusicImportJob }) {
           </p>
         </>
       ) : null}
-      {job.state === "done" ? <p className="text-status-ok">导入完成。没有试听的歌不会加入播放器，可以在列表里为它们找试听。</p> : null}
+      {job.state === "done" ? (
+        <p className="text-status-ok">
+          导入完成。没有试听的歌不会加入播放器，可以在列表里为它们找试听。
+        </p>
+      ) : null}
       {job.state === "failed" ? <p className="text-status-error">导入失败：{job.error}</p> : null}
     </div>
   );
@@ -255,7 +329,11 @@ export function PlaylistImportDialog({ onClose }: { onClose: () => void }) {
   return (
     <Dialog open size="sm" title="导入 Spotify 歌单" onClose={onClose}>
       <form onSubmit={start} className="space-y-3">
-        <Field label="歌单链接" htmlFor="playlist-link" hint="公开歌单的分享链接。每首歌带 30 秒试听；已在收藏里的歌会跳过，所以可以重复导入同一个歌单来补充新歌。">
+        <Field
+          label="歌单链接"
+          htmlFor="playlist-link"
+          hint="公开歌单的分享链接。每首歌带 30 秒试听；已在收藏里的歌会跳过，所以可以重复导入同一个歌单来补充新歌。"
+        >
           <input
             id="playlist-link"
             className="field"
@@ -267,7 +345,11 @@ export function PlaylistImportDialog({ onClose }: { onClose: () => void }) {
             data-autofocus
           />
         </Field>
-        <button type="submit" className="btn-primary" disabled={!link.trim() || starting || running}>
+        <button
+          type="submit"
+          className="btn-primary"
+          disabled={!link.trim() || starting || running}
+        >
           {running ? "导入中…" : "开始导入"}
         </button>
       </form>
@@ -286,9 +368,16 @@ export function PlaylistImportDialog({ onClose }: { onClose: () => void }) {
 export function SpotifyAccountDialog({ onClose }: { onClose: () => void }) {
   const qc = useQueryClient();
   const toast = useToast();
-  const { data: status, isPending } = useQuery({ queryKey: ["admin", "spotify-account"], queryFn: api.spotifyAccount });
+  const { data: status, isPending } = useQuery({
+    queryKey: ["admin", "spotify-account"],
+    queryFn: api.spotifyAccount
+  });
   const connected = Boolean(status?.account);
-  const { data: playlists, error: playlistsError } = useQuery({ queryKey: ["admin", "spotify-playlists"], queryFn: () => api.spotifyPlaylists().then((r) => r.playlists), enabled: connected });
+  const { data: playlists, error: playlistsError } = useQuery({
+    queryKey: ["admin", "spotify-playlists"],
+    queryFn: () => api.spotifyPlaylists().then((r) => r.playlists),
+    enabled: connected
+  });
   const [jobId, setJobId] = useState<string | null>(null);
   const [error, setError] = useState("");
   const { job, running } = useImportJob(jobId);
@@ -326,14 +415,17 @@ export function SpotifyAccountDialog({ onClose }: { onClose: () => void }) {
       {isPending ? <p className="text-[13px] text-subtle">加载中…</p> : null}
       {status && !status.configured ? (
         <p className="text-[13px] leading-relaxed text-muted">
-          还没有配置 Spotify 应用。在 <code className="chip">apps/api/.env</code> 中设置 <code className="chip">SPOTIFY_CLIENT_ID</code> 和{" "}
+          还没有配置 Spotify 应用。在 <code className="chip">apps/api/.env</code> 中设置{" "}
+          <code className="chip">SPOTIFY_CLIENT_ID</code> 和{" "}
           <code className="chip">SPOTIFY_CLIENT_SECRET</code> 后重启 API。
         </p>
       ) : null}
       {status?.configured && !status.account ? (
         <div className="space-y-3 text-[13px] text-muted">
           <p>连接你的 Spotify 账号后，可以导入“已点赞的歌曲”和你的歌单（只读权限）。</p>
-          <p className="text-[12px] text-faint">Spotify 应用里登记的 Redirect URI 必须是：{status.redirectUri}</p>
+          <p className="text-[12px] text-faint">
+            Spotify 应用里登记的 Redirect URI 必须是：{status.redirectUri}
+          </p>
           <button type="button" className="btn-primary" onClick={() => void connect()}>
             连接 Spotify
           </button>
@@ -343,36 +435,60 @@ export function SpotifyAccountDialog({ onClose }: { onClose: () => void }) {
         <div className="space-y-4">
           <div className="flex flex-wrap items-center gap-3 text-[13px]">
             <span className="text-muted">
-              已连接：<span className="font-semibold text-brand-dark">{status.account.displayName}</span>
+              已连接：
+              <span className="font-semibold text-brand-dark">{status.account.displayName}</span>
             </span>
-            <button type="button" className="btn-secondary" onClick={() => void disconnect()} disabled={running}>
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={() => void disconnect()}
+              disabled={running}
+            >
               断开
             </button>
           </div>
           <div className="flex flex-wrap items-center gap-3 rounded-xl border border-line-soft p-3">
             <div className="min-w-0 flex-1">
               <p className="text-[13.5px] font-semibold text-brand-dark">已点赞的歌曲</p>
-              <p className="text-[12px] text-subtle">试听优先用 Spotify 的，没有时到 iTunes 找同一首歌；歌多时需要几分钟。</p>
+              <p className="text-[12px] text-subtle">
+                试听优先用 Spotify 的，没有时到 iTunes 找同一首歌；歌多时需要几分钟。
+              </p>
             </div>
-            <button type="button" className="btn-primary" disabled={running} onClick={() => void importFrom({ source: "liked" })}>
+            <button
+              type="button"
+              className="btn-primary"
+              disabled={running}
+              onClick={() => void importFrom({ source: "liked" })}
+            >
               导入
             </button>
           </div>
           <div>
             <p className="mb-2 text-[12.5px] font-medium text-brand-dark">我的歌单</p>
-            {playlistsError ? <p className="text-[12.5px] text-status-error">{playlistsError.message}</p> : null}
+            {playlistsError ? (
+              <p className="text-[12.5px] text-status-error">{playlistsError.message}</p>
+            ) : null}
             {playlists?.length ? (
               <ul className="max-h-72 divide-y divide-line-soft overflow-y-auto rounded-xl border border-line-soft">
                 {playlists.map((playlist) => (
                   <li key={playlist.id} className="flex items-center gap-3 p-2.5">
                     <Cover src={playlist.image} />
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-[13px] font-semibold text-brand-dark">{playlist.name}</p>
+                      <p className="truncate text-[13px] font-semibold text-brand-dark">
+                        {playlist.name}
+                      </p>
                       <p className="truncate text-[12px] text-subtle">
                         {playlist.tracks} 首 · {playlist.owner}
                       </p>
                     </div>
-                    <button type="button" className="btn-secondary shrink-0" disabled={running} onClick={() => void importFrom({ source: "playlist", playlistId: playlist.id })}>
+                    <button
+                      type="button"
+                      className="btn-secondary shrink-0"
+                      disabled={running}
+                      onClick={() =>
+                        void importFrom({ source: "playlist", playlistId: playlist.id })
+                      }
+                    >
                       导入
                     </button>
                   </li>
@@ -413,10 +529,23 @@ export function MusicList({ items }: { items: AdminMediaItem[] }) {
   const q = needle.trim().toLowerCase();
   const visible = items.filter(
     (item) =>
-      (filter === "all" || (filter === "player" ? item.inPlayer : filter === "notPlayer" ? !item.inPlayer : !item.music?.previewUrl)) &&
-      (!q || [pickText(item.title), ...item.credits, item.music?.album ?? ""].some((text) => text.toLowerCase().includes(q)))
+      (filter === "all" ||
+        (filter === "player"
+          ? item.inPlayer
+          : filter === "notPlayer"
+            ? !item.inPlayer
+            : !item.music?.previewUrl)) &&
+      (!q ||
+        [pickText(item.title), ...item.credits, item.music?.album ?? ""].some((text) =>
+          text.toLowerCase().includes(q)
+        ))
   );
-  const labels: Record<MusicFilter, string> = { all: "全部", player: "在播放器中", notPlayer: "不在播放器中", noPreview: "没有试听" };
+  const labels: Record<MusicFilter, string> = {
+    all: "全部",
+    player: "在播放器中",
+    notPlayer: "不在播放器中",
+    noPreview: "没有试听"
+  };
   const order = useMemo(() => visible.map((item) => item.id), [visible]);
   const selection = useSelection(order);
 
@@ -424,14 +553,29 @@ export function MusicList({ items }: { items: AdminMediaItem[] }) {
     <>
       <div className="mb-5 flex flex-wrap items-center gap-2">
         {(Object.keys(labels) as MusicFilter[]).map((f) => (
-          <button key={f} type="button" aria-pressed={filter === f} onClick={() => setFilter(f)} className={`chip ${filter === f ? "border-brand bg-brand/10 text-brand" : ""}`}>
+          <button
+            key={f}
+            type="button"
+            aria-pressed={filter === f}
+            onClick={() => setFilter(f)}
+            className={`chip ${filter === f ? "border-brand bg-brand/10 text-brand" : ""}`}
+          >
             {labels[f]} {counts[f]}
           </button>
         ))}
         <div className="ml-auto flex w-full items-center gap-2 sm:w-auto">
           <div className="relative flex-1 sm:w-60">
-            <Search aria-hidden="true" className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-faint" />
-            <input className="field pl-9" placeholder="筛选歌名、歌手、专辑" aria-label="筛选歌曲" value={needle} onChange={(e) => setNeedle(e.target.value)} />
+            <Search
+              aria-hidden="true"
+              className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-faint"
+            />
+            <input
+              className="field pl-9"
+              placeholder="筛选歌名、歌手、专辑"
+              aria-label="筛选歌曲"
+              value={needle}
+              onChange={(e) => setNeedle(e.target.value)}
+            />
           </div>
           {visible.length && !selection.active ? (
             <button type="button" className="btn-secondary shrink-0" onClick={selection.start}>
@@ -442,11 +586,21 @@ export function MusicList({ items }: { items: AdminMediaItem[] }) {
       </div>
 
       {visible.length === 0 ? (
-        <div className="card p-10 text-center text-[13.5px] text-muted">{items.length ? "没有符合条件的歌曲" : "还没有歌曲，点击“添加歌曲”或“导入 Spotify 歌单”开始"}</div>
+        <div className="card p-10 text-center text-[13.5px] text-muted">
+          {items.length
+            ? "没有符合条件的歌曲"
+            : "还没有歌曲，点击“添加歌曲”或“导入 Spotify 歌单”开始"}
+        </div>
       ) : (
         <ul className="card divide-y divide-line-soft">
           {visible.map((item) => (
-            <MusicRow key={item.id} item={item} preview={preview} onFix={() => setFixing(item)} selection={selection} />
+            <MusicRow
+              key={item.id}
+              item={item}
+              preview={preview}
+              onFix={() => setFixing(item)}
+              selection={selection}
+            />
           ))}
         </ul>
       )}
@@ -460,7 +614,17 @@ export function MusicList({ items }: { items: AdminMediaItem[] }) {
   );
 }
 
-function MusicRow({ item, preview, onFix, selection }: { item: AdminMediaItem; preview: ReturnType<typeof usePreview>; onFix: () => void; selection: Selection }) {
+function MusicRow({
+  item,
+  preview,
+  onFix,
+  selection
+}: {
+  item: AdminMediaItem;
+  preview: ReturnType<typeof usePreview>;
+  onFix: () => void;
+  selection: Selection;
+}) {
   const update = useUpdateMedia(item.id);
   const toast = useToast();
   const title = pickText(item.title, "未命名");
@@ -470,16 +634,27 @@ function MusicRow({ item, preview, onFix, selection }: { item: AdminMediaItem; p
   return (
     <li className={`flex items-center gap-3 px-3 py-2.5 ${selected ? "bg-brand/6" : ""}`}>
       {selection.active ? (
-        <button type="button" aria-pressed={selected} aria-label={`选择 ${title}`} className="rounded-md p-0.5" onClick={(e) => selection.toggle(item.id, e.shiftKey)}>
+        <button
+          type="button"
+          aria-pressed={selected}
+          aria-label={`选择 ${title}`}
+          className="rounded-md p-0.5"
+          onClick={(e) => selection.toggle(item.id, e.shiftKey)}
+        >
           <SelectMark checked={selected} />
         </button>
       ) : null}
       <Cover src={item.poster?.variants[0].url} />
       <div className="min-w-0 flex-1">
-        <Link to={`/collection/${item.id}`} className="block truncate text-[13.5px] font-semibold text-brand-dark hover:text-brand">
+        <Link
+          to={`/collection/${item.id}`}
+          className="block truncate text-[13.5px] font-semibold text-brand-dark hover:text-brand"
+        >
           {title}
         </Link>
-        <p className="truncate text-[12px] text-subtle">{[item.credits.join(", "), item.music?.album].filter(Boolean).join(" · ")}</p>
+        <p className="truncate text-[12px] text-subtle">
+          {[item.credits.join(", "), item.music?.album].filter(Boolean).join(" · ")}
+        </p>
       </div>
       {item.visibility === "private" ? <span className="chip">隐藏</span> : null}
       {previewUrl ? (

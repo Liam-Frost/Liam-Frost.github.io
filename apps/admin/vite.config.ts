@@ -2,7 +2,11 @@ import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import { defineConfig, loadEnv, type Plugin } from "vite";
 
-import { ADMIN_PATH_META, isAdminPagePath, normalizeAdminPath } from "../../packages/shared/src/adminPath.ts";
+import {
+  ADMIN_PATH_META,
+  isAdminPagePath,
+  normalizeAdminPath
+} from "../../packages/shared/src/adminPath.ts";
 
 /**
  * Dev only: mirror the API (apps/api/src/routes/admin-app.ts). The admin path is written into the page

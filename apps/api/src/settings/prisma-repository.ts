@@ -11,6 +11,10 @@ export class PrismaSettingsRepository implements SettingsRepository {
 
   async set(key: string, value: unknown) {
     const json = value as Prisma.InputJsonValue;
-    await this.prisma.setting.upsert({ where: { key }, create: { key, value: json }, update: { value: json } });
+    await this.prisma.setting.upsert({
+      where: { key },
+      create: { key, value: json },
+      update: { value: json }
+    });
   }
 }

@@ -6,10 +6,26 @@ import PlayButton from "./PlayButton";
 import { isReadKind, mediaTitle, Stars, statusKey } from "./MediaCard";
 import { imageSrcSet } from "./ProjectCard";
 
-const SOURCE_NAMES: Record<string, string> = { tmdb: "TMDB", bangumi: "Bangumi", openlibrary: "Open Library", googlebooks: "Google Books", anilist: "AniList", igdb: "IGDB", steam: "Steam" };
+const SOURCE_NAMES: Record<string, string> = {
+  tmdb: "TMDB",
+  bangumi: "Bangumi",
+  openlibrary: "Open Library",
+  googlebooks: "Google Books",
+  anilist: "AniList",
+  igdb: "IGDB",
+  steam: "Steam"
+};
 
 /** Side panel with one entry's details and links; Esc, the backdrop and the close button call onClose. */
-export default function MediaDetail({ id, onClose, linkTo }: { id: string; onClose: () => void; linkTo: CollectionLinkTo }) {
+export default function MediaDetail({
+  id,
+  onClose,
+  linkTo
+}: {
+  id: string;
+  onClose: () => void;
+  linkTo: CollectionLinkTo;
+}) {
   const { lang, t } = useI18n();
   const { item, status } = useCollectionItem(id);
 
@@ -33,7 +49,9 @@ export default function MediaDetail({ id, onClose, linkTo }: { id: string; onClo
 
   return (
     <DetailDrawer id={id} labelledBy="media-detail-title" onClose={onClose}>
-      {status === "loading" || status === "idle" ? <p className="sectionSubtitle">{t("collection.loading")}</p> : null}
+      {status === "loading" || status === "idle" ? (
+        <p className="sectionSubtitle">{t("collection.loading")}</p>
+      ) : null}
       {status === "missing" ? <p className="sectionSubtitle">{t("collection.notFound")}</p> : null}
 
       {item ? (
@@ -41,7 +59,12 @@ export default function MediaDetail({ id, onClose, linkTo }: { id: string; onClo
           <div className="mediaDrawerHead">
             <div className={isMusic ? "mediaDrawerPoster isSquare" : "mediaDrawerPoster"}>
               {item.poster ? (
-                <img src={item.poster.variants[item.poster.variants.length - 1].url} srcSet={imageSrcSet(item.poster)} sizes="180px" alt="" />
+                <img
+                  src={item.poster.variants[item.poster.variants.length - 1].url}
+                  srcSet={imageSrcSet(item.poster)}
+                  sizes="180px"
+                  alt=""
+                />
               ) : (
                 <span className="mediaPosterEmpty" aria-hidden="true">
                   {title.slice(0, 1)}
@@ -53,31 +76,91 @@ export default function MediaDetail({ id, onClose, linkTo }: { id: string; onClo
               <h2 className="mediaDrawerTitle" id="media-detail-title">
                 {title}
               </h2>
-              {item.originalTitle && item.originalTitle !== title ? <p className="mediaRowOriginal">{item.originalTitle}</p> : null}
-              <p className="mediaRowMeta">{[t(`collection.kind.${item.kind as "movie" | "tv" | "anime" | "book" | "comic" | "game" | "track"}`), item.year].filter(Boolean).join(" · ")}</p>
-              {item.music?.album ? <p className="mediaRowMeta">{t("collection.album", { album: item.music.album })}</p> : null}
+              {item.originalTitle && item.originalTitle !== title ? (
+                <p className="mediaRowOriginal">{item.originalTitle}</p>
+              ) : null}
+              <p className="mediaRowMeta">
+                {[
+                  t(
+                    `collection.kind.${item.kind as "movie" | "tv" | "anime" | "book" | "comic" | "game" | "track"}`
+                  ),
+                  item.year
+                ]
+                  .filter(Boolean)
+                  .join(" · ")}
+              </p>
+              {item.music?.album ? (
+                <p className="mediaRowMeta">{t("collection.album", { album: item.music.album })}</p>
+              ) : null}
               <div className="mediaDrawerFacts">
-                {item.status ? <span className={`mediaBadge mediaBadge-${item.status}`}>{t(statusKey(item.status, item.kind))}</span> : null}
+                {item.status ? (
+                  <span className={`mediaBadge mediaBadge-${item.status}`}>
+                    {t(statusKey(item.status, item.kind))}
+                  </span>
+                ) : null}
                 <Stars rating={item.rating} />
               </div>
               <ul className="mediaDrawerList">
-                {item.watchedOn ? <li>{t(isGame ? "collection.playedOn" : isRead ? "collection.readOn" : "collection.watchedOn", { date: item.watchedOn })}</li> : null}
-                {progress && (item.status === "watching" || item.status === "dropped") ? (
-                  <li>{progress.total ? t(progressKeys[0], { watched: progress.watched, total: progress.total }) : t(progressKeys[1], { watched: progress.watched })}</li>
+                {item.watchedOn ? (
+                  <li>
+                    {t(
+                      isGame
+                        ? "collection.playedOn"
+                        : isRead
+                          ? "collection.readOn"
+                          : "collection.watchedOn",
+                      { date: item.watchedOn }
+                    )}
+                  </li>
                 ) : null}
-                {item.rewatchCount ? <li>{t(isGame ? "collection.replay" : isRead ? "collection.reread" : "collection.rewatch", { n: item.rewatchCount })}</li> : null}
-                {game?.playtimeHours ? <li>{t("collection.playtime", { n: game.playtimeHours })}</li> : null}
-                {game?.lastPlayedOn ? <li>{t("collection.lastPlayed", { date: game.lastPlayedOn })}</li> : null}
-                {game?.purchasedOn ? <li>{t("collection.purchasedOn", { date: game.purchasedOn })}</li> : null}
-                {game?.platforms.length ? <li>{t("collection.platforms", { platforms: game.platforms.join(" · ") })}</li> : null}
-                {game?.publishers.length ? <li>{t("collection.publishers", { publishers: game.publishers.join(" · ") })}</li> : null}
-                {publication?.publisher ? <li>{t("collection.publisher", { publisher: publication.publisher })}</li> : null}
-                {publication && (publication.pages || publication.volumes || publication.ongoing !== null) ? (
+                {progress && (item.status === "watching" || item.status === "dropped") ? (
+                  <li>
+                    {progress.total
+                      ? t(progressKeys[0], { watched: progress.watched, total: progress.total })
+                      : t(progressKeys[1], { watched: progress.watched })}
+                  </li>
+                ) : null}
+                {item.rewatchCount ? (
+                  <li>
+                    {t(
+                      isGame
+                        ? "collection.replay"
+                        : isRead
+                          ? "collection.reread"
+                          : "collection.rewatch",
+                      { n: item.rewatchCount }
+                    )}
+                  </li>
+                ) : null}
+                {game?.playtimeHours ? (
+                  <li>{t("collection.playtime", { n: game.playtimeHours })}</li>
+                ) : null}
+                {game?.lastPlayedOn ? (
+                  <li>{t("collection.lastPlayed", { date: game.lastPlayedOn })}</li>
+                ) : null}
+                {game?.purchasedOn ? (
+                  <li>{t("collection.purchasedOn", { date: game.purchasedOn })}</li>
+                ) : null}
+                {game?.platforms.length ? (
+                  <li>{t("collection.platforms", { platforms: game.platforms.join(" · ") })}</li>
+                ) : null}
+                {game?.publishers.length ? (
+                  <li>{t("collection.publishers", { publishers: game.publishers.join(" · ") })}</li>
+                ) : null}
+                {publication?.publisher ? (
+                  <li>{t("collection.publisher", { publisher: publication.publisher })}</li>
+                ) : null}
+                {publication &&
+                (publication.pages || publication.volumes || publication.ongoing !== null) ? (
                   <li>
                     {[
                       publication.pages ? t("collection.pages", { n: publication.pages }) : "",
-                      publication.volumes ? t("collection.volumes", { n: publication.volumes }) : "",
-                      publication.ongoing === null ? "" : t(publication.ongoing ? "collection.ongoing" : "collection.finished")
+                      publication.volumes
+                        ? t("collection.volumes", { n: publication.volumes })
+                        : "",
+                      publication.ongoing === null
+                        ? ""
+                        : t(publication.ongoing ? "collection.ongoing" : "collection.finished")
                     ]
                       .filter(Boolean)
                       .join(" · ")}
@@ -105,9 +188,20 @@ export default function MediaDetail({ id, onClose, linkTo }: { id: string; onClo
           ) : null}
 
           {/* Linked people replace the plain credits from the source. */}
-          {item.credits.length && !item.links.some((link) => link.type === "credit" && link.direction === "to") ? (
+          {item.credits.length &&
+          !item.links.some((link) => link.type === "credit" && link.direction === "to") ? (
             <section className="mediaDrawerSection">
-              <h3>{t(isMusic ? "collection.artists" : isRead ? "collection.authors" : isGame ? "collection.developers" : "collection.credits")}</h3>
+              <h3>
+                {t(
+                  isMusic
+                    ? "collection.artists"
+                    : isRead
+                      ? "collection.authors"
+                      : isGame
+                        ? "collection.developers"
+                        : "collection.credits"
+                )}
+              </h3>
               <p>{item.credits.join(" · ")}</p>
             </section>
           ) : null}
@@ -122,19 +216,34 @@ export default function MediaDetail({ id, onClose, linkTo }: { id: string; onClo
           ) : null}
 
           {item.sourceUrl && SOURCE_NAMES[item.source] ? (
-            <a className="btn btnSoft btnSmall mediaSourceLink" href={item.sourceUrl} target="_blank" rel="noopener noreferrer">
+            <a
+              className="btn btnSoft btnSmall mediaSourceLink"
+              href={item.sourceUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
               {t("collection.source", { source: SOURCE_NAMES[item.source] })}
             </a>
           ) : null}
           {item.music?.spotifyUrl || item.music?.appleUrl ? (
             <div className="mediaListenLinks">
               {item.music.spotifyUrl ? (
-                <a className="btn btnSoft btnSmall" href={item.music.spotifyUrl} target="_blank" rel="noopener noreferrer">
+                <a
+                  className="btn btnSoft btnSmall"
+                  href={item.music.spotifyUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
                   Spotify
                 </a>
               ) : null}
               {item.music.appleUrl ? (
-                <a className="btn btnSoft btnSmall" href={item.music.appleUrl} target="_blank" rel="noopener noreferrer">
+                <a
+                  className="btn btnSoft btnSmall"
+                  href={item.music.appleUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
                   Apple Music
                 </a>
               ) : null}

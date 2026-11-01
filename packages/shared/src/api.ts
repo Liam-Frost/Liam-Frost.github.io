@@ -195,9 +195,20 @@ export type MediaKind = "movie" | "tv" | "anime" | "book" | "comic" | "game" | "
 /** Status: watched for films, series and anime, read for books and comics, played for games. */
 export type MediaStatus = "want" | "watching" | "done" | "dropped";
 /** Where an entry's details came from. */
-export type MediaSource = "tmdb" | "bangumi" | "openlibrary" | "googlebooks" | "anilist" | "igdb" | "steam" | "spotify" | "itunes" | "manual";
+export type MediaSource =
+  | "tmdb"
+  | "bangumi"
+  | "openlibrary"
+  | "googlebooks"
+  | "anilist"
+  | "igdb"
+  | "steam"
+  | "spotify"
+  | "itunes"
+  | "manual";
 /** Sources the admin can search for films, series, anime, books and comics. */
-export type MediaSearchSource = "tmdb" | "bangumi" | "openlibrary" | "googlebooks" | "anilist" | "igdb";
+export type MediaSearchSource =
+  "tmdb" | "bangumi" | "openlibrary" | "googlebooks" | "anilist" | "igdb";
 
 /** Book and comic details (kinds "book" and "comic"). */
 export type MediaPublication = {
@@ -228,7 +239,14 @@ export type MediaGame = {
 export type SteamAccountStatus = {
   /** STEAM_WEB_API_KEY is set. */
   configured: boolean;
-  account: { steamId: string; name: string; avatar: string | null; profileUrl: string; connectedAt: string; lastSyncedAt: string | null } | null;
+  account: {
+    steamId: string;
+    name: string;
+    avatar: string | null;
+    profileUrl: string;
+    connectedAt: string;
+    lastSyncedAt: string | null;
+  } | null;
 };
 
 /** Progress of a Steam library sync running on the server. */
@@ -330,10 +348,17 @@ export type AdminMediaUpdate = Partial<{
 }>;
 
 /** Changes a bulk action may make to every selected entry. */
-export type AdminMediaBatchPatch = Partial<{ visibility: PhotoVisibility; featured: boolean; status: MediaStatus; inPlayer: boolean }>;
+export type AdminMediaBatchPatch = Partial<{
+  visibility: PhotoVisibility;
+  featured: boolean;
+  status: MediaStatus;
+  inPlayer: boolean;
+}>;
 
 /** A bulk action on up to 500 entries (or people, which take visibility and featured only). */
-export type AdminBatchRequest<Patch> = { ids: string[] } & ({ action: "delete" } | { action: "update"; patch: Patch });
+export type AdminBatchRequest<Patch> = { ids: string[] } & (
+  { action: "delete" } | { action: "update"; patch: Patch }
+);
 
 /** Which entries a bulk action changed, and why the others were refused. */
 export type AdminBatchResult = { done: string[]; failed: { id: string; message: string }[] };
@@ -357,7 +382,16 @@ export type MediaSearchResult = {
 
 export type CollectionSettings = {
   /** Which kinds the site shows (people: the people tab and people in entries' links). */
-  show: { movie: boolean; tv: boolean; anime: boolean; book: boolean; comic: boolean; game: boolean; music: boolean; people: boolean };
+  show: {
+    movie: boolean;
+    tv: boolean;
+    anime: boolean;
+    book: boolean;
+    comic: boolean;
+    game: boolean;
+    music: boolean;
+    people: boolean;
+  };
   /** Off: "want" entries never appear on the site, whatever their own visibility. */
   showWant: boolean;
 };
@@ -389,7 +423,13 @@ export type SpotifyAccountStatus = {
   account: { id: string; displayName: string; connectedAt: string } | null;
 };
 
-export type SpotifyOwnPlaylist = { id: string; name: string; tracks: number; image: string | null; owner: string };
+export type SpotifyOwnPlaylist = {
+  id: string;
+  name: string;
+  tracks: number;
+  image: string | null;
+  owner: string;
+};
 
 /** What a music import reads: a public playlist link, the admin's Liked Songs, or one of their playlists. */
 export type MusicImportRequest = { source: "liked" } | { source: "playlist"; playlistId: string };
@@ -470,7 +510,11 @@ export type AdminPlaylist = {
 export type AdminPlaylistsResponse = { playlists: AdminPlaylist[] };
 export type AdminPlaylistResponse = { playlist: AdminPlaylist };
 export type AdminPlaylistCreate = { name: LocalizedText; description?: LocalizedText };
-export type AdminPlaylistUpdate = Partial<{ name: LocalizedText; description: LocalizedText; visibility: PhotoVisibility }>;
+export type AdminPlaylistUpdate = Partial<{
+  name: LocalizedText;
+  description: LocalizedText;
+  visibility: PhotoVisibility;
+}>;
 /** Adds songs to the end of a playlist, or removes them. */
 export type AdminPlaylistTracks = { action: "add" | "remove"; ids: string[] };
 
@@ -529,7 +573,13 @@ export const PERSON_ROLES: readonly PersonRole[] = [
   "studio",
   "other"
 ];
-export const SOUNDTRACK_ROLES: readonly SoundtrackRole[] = ["opening", "ending", "insert", "theme", "score"];
+export const SOUNDTRACK_ROLES: readonly SoundtrackRole[] = [
+  "opening",
+  "ending",
+  "insert",
+  "theme",
+  "score"
+];
 
 /** Where a person's details came from. */
 export type PersonSource = "tmdb" | "manual";
@@ -582,8 +632,22 @@ export type AdminPersonSearchResponse = { results: PersonSearchResult[] };
 
 /** The other end of a relation in the admin. */
 export type AdminRelationEnd =
-  | { type: "media"; id: string; kind: MediaKind; title: LocalizedText; year: number | null; poster: ProjectImage | null; visibility: PhotoVisibility }
-  | { type: "person"; id: string; name: LocalizedText; photo: ProjectImage | null; visibility: PhotoVisibility };
+  | {
+      type: "media";
+      id: string;
+      kind: MediaKind;
+      title: LocalizedText;
+      year: number | null;
+      poster: ProjectImage | null;
+      visibility: PhotoVisibility;
+    }
+  | {
+      type: "person";
+      id: string;
+      name: LocalizedText;
+      photo: ProjectImage | null;
+      visibility: PhotoVisibility;
+    };
 
 export type AdminRelation = {
   id: string;
@@ -609,11 +673,23 @@ export type AdminRelationResponse = { relation: AdminRelation };
 /** A link the admin may want to add, found from the entry's source data. */
 export type RelationSuggestion =
   /** A cast or crew member on TMDB; importing the person comes first when they are not in the collection. */
-  | { kind: "tmdb-person"; sourceId: string; name: string; role: PersonRole; character: string | null; photoUrl: string | null; personId: string | null }
+  | {
+      kind: "tmdb-person";
+      sourceId: string;
+      name: string;
+      role: PersonRole;
+      character: string | null;
+      photoUrl: string | null;
+      personId: string | null;
+    }
   /** A song's singer or a book's author by name; a person is created when none matches. */
   | { kind: "name"; name: string; role: PersonRole; personId: string | null }
   /** Another entry in the collection that AniList links to this one. */
-  | { kind: "media"; relation: AdminRelationCreate; other: Extract<AdminRelationEnd, { type: "media" }> };
+  | {
+      kind: "media";
+      relation: AdminRelationCreate;
+      other: Extract<AdminRelationEnd, { type: "media" }>;
+    };
 
 export type AdminRelationSuggestionsResponse = { suggestions: RelationSuggestion[] };
 
@@ -636,7 +712,8 @@ export type PublicLink = {
   role: string | null;
   note: LocalizedText;
   direction: "from" | "to";
-  other: { type: "media"; item: PublicMediaSummary } | { type: "person"; person: PublicPersonSummary };
+  other:
+    { type: "media"; item: PublicMediaSummary } | { type: "person"; person: PublicPersonSummary };
 };
 
 /** One person with their entries, for the person view. */

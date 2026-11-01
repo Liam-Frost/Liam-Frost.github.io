@@ -22,7 +22,9 @@ export function IconButton({
       onClick={onClick}
       disabled={disabled}
       className={`rounded-full p-1.5 text-faint transition-colors disabled:opacity-30 ${
-        danger ? "hover:bg-status-error/10 hover:text-status-error" : "hover:bg-brand-secondary/12 hover:text-brand"
+        danger
+          ? "hover:bg-status-error/10 hover:text-status-error"
+          : "hover:bg-brand-secondary/12 hover:text-brand"
       }`}
     >
       {children}

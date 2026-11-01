@@ -64,7 +64,10 @@ function cacheControl(urlPath: string) {
 export function registerWebApp(app: FastifyInstance, distDir: string) {
   const indexFile = join(distDir, "index.html");
   if (!existsSync(indexFile)) {
-    app.log.info({ distDir }, "Site build not found; run `npm run build:web` to serve it from the API");
+    app.log.info(
+      { distDir },
+      "Site build not found; run `npm run build:web` to serve it from the API"
+    );
     return;
   }
   const files = listFiles(distDir);

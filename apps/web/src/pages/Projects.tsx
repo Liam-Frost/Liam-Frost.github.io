@@ -16,8 +16,12 @@ export default function ProjectsPage() {
   // Technologies used by more than one project make useful filters; one-offs would only clutter the bar.
   const filters = useMemo(() => {
     const counts = new Map<string, number>();
-    for (const project of projects) for (const name of project.techStack) counts.set(name, (counts.get(name) ?? 0) + 1);
-    return [...counts.entries()].filter(([, count]) => count > 1).map(([name]) => name).sort((a, b) => a.localeCompare(b));
+    for (const project of projects)
+      for (const name of project.techStack) counts.set(name, (counts.get(name) ?? 0) + 1);
+    return [...counts.entries()]
+      .filter(([, count]) => count > 1)
+      .map(([name]) => name)
+      .sort((a, b) => a.localeCompare(b));
   }, [projects]);
 
   const visible = tech === ALL ? projects : projects.filter((p) => p.techStack.includes(tech));
@@ -33,7 +37,12 @@ export default function ProjectsPage() {
         {filters.length ? (
           <div className="filters projectFilters" aria-label={t("projects.title")}>
             {[ALL, ...filters].map((name) => (
-              <button key={name} type="button" className={cx("btn", "btnSmall", name === tech ? "btnSoft" : "btnGhost")} onClick={() => setTech(name)}>
+              <button
+                key={name}
+                type="button"
+                className={cx("btn", "btnSmall", name === tech ? "btnSoft" : "btnGhost")}
+                onClick={() => setTech(name)}
+              >
                 {name === ALL ? t("projects.filterAll") : name}
               </button>
             ))}

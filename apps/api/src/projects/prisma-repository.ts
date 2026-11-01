@@ -1,11 +1,29 @@
 import type { LocalizedText, ProjectLinks, ProjectStatus } from "@liam-frost/shared";
 
-import { Prisma, type PrismaClient, type Project as PrismaProject } from "../generated/prisma/client";
-import { SlugTakenError, type NewProject, type ProjectPatch, type ProjectRepository, type ProjectRow, type StoredImage } from "./types";
+import {
+  Prisma,
+  type PrismaClient,
+  type Project as PrismaProject
+} from "../generated/prisma/client";
+import {
+  SlugTakenError,
+  type NewProject,
+  type ProjectPatch,
+  type ProjectRepository,
+  type ProjectRow,
+  type StoredImage
+} from "./types";
 
-const ORDER = [{ sortOrder: "asc" }, { createdAt: "desc" }] satisfies Prisma.ProjectOrderByWithRelationInput[];
+const ORDER = [
+  { sortOrder: "asc" },
+  { createdAt: "desc" }
+] satisfies Prisma.ProjectOrderByWithRelationInput[];
 
-const STATUS_TO_DB = { "in-progress": "IN_PROGRESS", completed: "COMPLETED", archived: "ARCHIVED" } as const;
+const STATUS_TO_DB = {
+  "in-progress": "IN_PROGRESS",
+  completed: "COMPLETED",
+  archived: "ARCHIVED"
+} as const;
 const STATUS_FROM_DB: Record<PrismaProject["status"], ProjectStatus> = {
   IN_PROGRESS: "in-progress",
   COMPLETED: "completed",
@@ -48,7 +66,10 @@ export class PrismaProjectRepository implements ProjectRepository {
   constructor(private readonly prisma: PrismaClient) {}
 
   async list({ includePrivate = false } = {}) {
-    const records = await this.prisma.project.findMany({ where: includePrivate ? undefined : { visibility: "PUBLIC" }, orderBy: ORDER });
+    const records = await this.prisma.project.findMany({
+      where: includePrivate ? undefined : { visibility: "PUBLIC" },
+      orderBy: ORDER
+    });
     return records.map(toRow);
   }
 
@@ -58,7 +79,10 @@ export class PrismaProjectRepository implements ProjectRepository {
   }
 
   async imageAccess(id: string) {
-    const record = await this.prisma.project.findUnique({ where: { id }, select: { visibility: true, cover: true, gallery: true } });
+    const record = await this.prisma.project.findUnique({
+      where: { id },
+      select: { visibility: true, cover: true, gallery: true }
+    });
     if (!record) return null;
     return {
       visibility: record.visibility === "PRIVATE" ? ("private" as const) : ("public" as const),
@@ -73,10 +97,20 @@ export class PrismaProjectRepository implements ProjectRepository {
   }
 
   async create(project: NewProject) {
-    const min = (await this.prisma.project.aggregate({ _min: { sortOrder: true } }))._min.sortOrder ?? 1;
+    const min =
+      (await this.prisma.project.aggregate({ _min: { sortOrder: true } }))._min.sortOrder ?? 1;
     try {
       const record = await this.prisma.project.create({
-        data: { ...project, summary: {}, body: {}, gallery: [], techStack: [], links: {}, visibility: "PRIVATE", sortOrder: min - 1 }
+        data: {
+          ...project,
+          summary: {},
+          body: {},
+          gallery: [],
+          techStack: [],
+          links: {},
+          visibility: "PRIVATE",
+          sortOrder: min - 1
+        }
       });
       return toRow(record);
     } catch (error) {
@@ -105,6 +139,10 @@ export class PrismaProjectRepository implements ProjectRepository {
   }
 
   async reorder(ids: string[]) {
-    await this.prisma.$transaction(ids.map((id, index) => this.prisma.project.update({ where: { id }, data: { sortOrder: index } })));
+    await this.prisma.$transaction(
+      ids.map((id, index) =>
+        this.prisma.project.update({ where: { id }, data: { sortOrder: index } })
+      )
+    );
   }
 }

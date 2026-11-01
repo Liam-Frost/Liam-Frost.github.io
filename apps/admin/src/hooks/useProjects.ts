@@ -7,11 +7,19 @@ export const projectsKey = ["admin", "projects"] as const;
 export const projectKey = (id: string) => ["admin", "projects", id] as const;
 
 export function useProjects() {
-  return useQuery({ queryKey: projectsKey, queryFn: api.projects, select: (data) => data.projects });
+  return useQuery({
+    queryKey: projectsKey,
+    queryFn: api.projects,
+    select: (data) => data.projects
+  });
 }
 
 export function useProject(id: string) {
-  return useQuery({ queryKey: projectKey(id), queryFn: () => api.project(id), select: (data) => data.project });
+  return useQuery({
+    queryKey: projectKey(id),
+    queryFn: () => api.project(id),
+    select: (data) => data.project
+  });
 }
 
 /** Writes a changed project into both the detail and the list cache. */
@@ -23,14 +31,21 @@ export function useSetProject() {
     qc.setQueryData<AdminProjectsResponse>(projectsKey, (data) => {
       if (!data) return data;
       const exists = data.projects.some((p) => p.id === project.id);
-      return { projects: exists ? data.projects.map((p) => (p.id === project.id ? project : p)) : [project, ...data.projects] };
+      return {
+        projects: exists
+          ? data.projects.map((p) => (p.id === project.id ? project : p))
+          : [project, ...data.projects]
+      };
     });
   };
 }
 
 export function useCreateProject() {
   const setProject = useSetProject();
-  return useMutation({ mutationFn: api.createProject, onSuccess: ({ project }) => setProject(project) });
+  return useMutation({
+    mutationFn: api.createProject,
+    onSuccess: ({ project }) => setProject(project)
+  });
 }
 
 export function useUpdateProject(id: string) {
@@ -47,7 +62,10 @@ export function useDeleteProject() {
     mutationFn: (id: string) => api.deleteProject(id),
     onSuccess: (_data, id) => {
       qc.removeQueries({ queryKey: projectKey(id) });
-      qc.setQueryData<AdminProjectsResponse>(projectsKey, (data) => data && { projects: data.projects.filter((p) => p.id !== id) });
+      qc.setQueryData<AdminProjectsResponse>(
+        projectsKey,
+        (data) => data && { projects: data.projects.filter((p) => p.id !== id) }
+      );
     }
   });
 }
@@ -62,7 +80,9 @@ export function useReorderProjects() {
       const previous = qc.getQueryData<AdminProjectsResponse>(projectsKey);
       if (previous) {
         const byId = new Map(previous.projects.map((p) => [p.id, p]));
-        qc.setQueryData<AdminProjectsResponse>(projectsKey, { projects: ids.map((id) => byId.get(id)).filter((p): p is AdminProject => Boolean(p)) });
+        qc.setQueryData<AdminProjectsResponse>(projectsKey, {
+          projects: ids.map((id) => byId.get(id)).filter((p): p is AdminProject => Boolean(p))
+        });
       }
       return { previous };
     },
@@ -76,7 +96,8 @@ export function useReorderProjects() {
 export function useProjectImages(id: string) {
   const setProject = useSetProject();
   const upload = useMutation({
-    mutationFn: ({ slot, file }: { slot: "cover" | "gallery"; file: File }) => api.uploadProjectImage(id, slot, file),
+    mutationFn: ({ slot, file }: { slot: "cover" | "gallery"; file: File }) =>
+      api.uploadProjectImage(id, slot, file),
     onSuccess: ({ project }) => setProject(project)
   });
   const remove = useMutation({

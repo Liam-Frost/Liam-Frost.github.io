@@ -59,7 +59,11 @@ export function LoginPage() {
           </p>
         ) : null}
 
-        <button type="submit" disabled={login.isPending || !username || !password} className="btn-primary mt-5 w-full">
+        <button
+          type="submit"
+          disabled={login.isPending || !username || !password}
+          className="btn-primary mt-5 w-full"
+        >
           {login.isPending ? "登录中…" : "登录"}
         </button>
       </form>
@@ -73,7 +77,8 @@ export function NotConfiguredPage() {
       <h1 className="mb-2 text-[17px] font-semibold text-brand-dark">管理功能尚未启用</h1>
       <p className="text-[13.5px] leading-relaxed text-muted">
         服务端未配置管理员凭据。请在 <code className="chip">apps/api/.env</code> 中设置{" "}
-        <code className="chip">ADMIN_PASSWORD_HASH</code> 和 <code className="chip">ADMIN_SESSION_SECRET</code> 后重启 API（见{" "}
+        <code className="chip">ADMIN_PASSWORD_HASH</code> 和{" "}
+        <code className="chip">ADMIN_SESSION_SECRET</code> 后重启 API（见{" "}
         <code className="chip">docs/admin.md</code>）。
       </p>
     </CenteredCard>
@@ -83,7 +88,9 @@ export function NotConfiguredPage() {
 export function CenteredCard({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-dvh items-center justify-center px-4 py-10">
-      <div className="w-full max-w-[400px] rounded-[var(--radius-feature)] border border-line bg-surface p-6 shadow-feature">{children}</div>
+      <div className="w-full max-w-[400px] rounded-[var(--radius-feature)] border border-line bg-surface p-6 shadow-feature">
+        {children}
+      </div>
     </div>
   );
 }

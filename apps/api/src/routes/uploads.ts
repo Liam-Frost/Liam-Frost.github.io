@@ -28,12 +28,20 @@ export function registerUploadRoutes(
   },
   auth: AdminAuthService
 ) {
-  const send = async (request: FastifyRequest, reply: FastifyReply, key: string, isPublic: boolean) => {
+  const send = async (
+    request: FastifyRequest,
+    reply: FastifyReply,
+    key: string,
+    isPublic: boolean
+  ) => {
     if (!isPublic && !auth.identify(request)) throw notFound();
     const data = await store.readPublic(key, (request.params as { file: string }).file);
     if (!data) throw notFound();
     reply.header("content-type", "image/webp");
-    reply.header("cache-control", isPublic ? "public, max-age=31536000, immutable" : "private, no-store");
+    reply.header(
+      "cache-control",
+      isPublic ? "public, max-age=31536000, immutable" : "private, no-store"
+    );
     return reply.send(data);
   };
 
@@ -79,6 +87,11 @@ export function registerUploadRoutes(
     const row = await repos.people.get(id).catch(() => null);
     if (!row?.photo || row.photo.id !== imageId) throw notFound();
     const settings = await repos.collection.get().catch(() => null);
-    return send(request, reply, row.photo.key, row.visibility === "public" && settings?.show.people === true);
+    return send(
+      request,
+      reply,
+      row.photo.key,
+      row.visibility === "public" && settings?.show.people === true
+    );
   });
 }

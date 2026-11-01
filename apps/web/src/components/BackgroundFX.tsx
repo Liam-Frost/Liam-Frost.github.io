@@ -130,7 +130,15 @@ export default function BackgroundFX() {
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("blur", onBlur);
     };
-  }, [config.decorativeMultiplier, config.enableDecorativeAnimations, config.fpsCap, config.updateEveryNFrames, reducedMotion, tier, themeTick]);
+  }, [
+    config.decorativeMultiplier,
+    config.enableDecorativeAnimations,
+    config.fpsCap,
+    config.updateEveryNFrames,
+    reducedMotion,
+    tier,
+    themeTick
+  ]);
 
   return <div ref={ref} className="bgFx" aria-hidden="true" />;
 }

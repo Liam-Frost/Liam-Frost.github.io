@@ -15,17 +15,17 @@
 
 可从 `D:\Projects\internal-developer-tools-portal` 复用的部分(同为 Fastify 5 + React + npm workspaces):
 
-| 来源 | 用途 | 方式 |
-|---|---|---|
-| `server/src/services/auth.ts`、`routes/auth.ts`、`routes/guards.ts` | 管理员登录、会话 Cookie、CSRF、登录限流、管理来源 IP 白名单 | 移植,去掉 proxy 认证模式 |
-| `packages/shared/src/adminPath.ts`、`server/src/routes/web.ts`、`web/vite.config.ts` 中的 adminPath 插件 | 可配置的管理后台地址(`ADMIN_PATH`),只对管理页面注入地址 | 移植并改为服务独立的 admin 构建产物 |
-| `server/src/lib/errors.ts`、`lib/validation.ts`、`app.ts` 的错误处理 | 统一错误格式 + Zod 校验 | 移植 |
-| `app.ts` 的安全响应头 / CSP / 日志脱敏 | 生产环境加固 | 移植 |
-| `server/src/services/screenshot/image.ts`、`routes/thumbnails.ts` 的上传 | 图片上传处理 | 移植并扩展(多尺寸、EXIF) |
-| `web/src/lib/api.ts` | 后台请求封装 `request()` / `ApiError` | 移植 |
-| `web/src/pages/admin/*`、`web/src/components/ui/*` | 后台列表、编辑弹窗、表单、Toast、Select 等 | 移植到 `apps/admin`(Tailwind) |
-| Vitest + Fastify `inject` 测试 | 接口测试 | 移植测试配置 |
-| `docs/deployment.md` | 部署参考 | 参考 |
+| 来源                                                                                                     | 用途                                                        | 方式                                |
+| -------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- | ----------------------------------- |
+| `server/src/services/auth.ts`、`routes/auth.ts`、`routes/guards.ts`                                      | 管理员登录、会话 Cookie、CSRF、登录限流、管理来源 IP 白名单 | 移植,去掉 proxy 认证模式            |
+| `packages/shared/src/adminPath.ts`、`server/src/routes/web.ts`、`web/vite.config.ts` 中的 adminPath 插件 | 可配置的管理后台地址(`ADMIN_PATH`),只对管理页面注入地址     | 移植并改为服务独立的 admin 构建产物 |
+| `server/src/lib/errors.ts`、`lib/validation.ts`、`app.ts` 的错误处理                                     | 统一错误格式 + Zod 校验                                     | 移植                                |
+| `app.ts` 的安全响应头 / CSP / 日志脱敏                                                                   | 生产环境加固                                                | 移植                                |
+| `server/src/services/screenshot/image.ts`、`routes/thumbnails.ts` 的上传                                 | 图片上传处理                                                | 移植并扩展(多尺寸、EXIF)            |
+| `web/src/lib/api.ts`                                                                                     | 后台请求封装 `request()` / `ApiError`                       | 移植                                |
+| `web/src/pages/admin/*`、`web/src/components/ui/*`                                                       | 后台列表、编辑弹窗、表单、Toast、Select 等                  | 移植到 `apps/admin`(Tailwind)       |
+| Vitest + Fastify `inject` 测试                                                                           | 接口测试                                                    | 移植测试配置                        |
+| `docs/deployment.md`                                                                                     | 部署参考                                                    | 参考                                |
 
 不复用:JSON 文件存储、SQLite/Drizzle、使用分析、proxy 认证、URL 白名单(等服务端需要主动访问外部地址时再引入)。
 

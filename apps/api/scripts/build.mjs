@@ -25,6 +25,8 @@ await build({
   sourcemap: true,
   external,
   // Bundled CommonJS code may call require(); give ESM output a real one.
-  banner: { js: 'import { createRequire as __createRequire } from "node:module"; const require = __createRequire(import.meta.url);' },
+  banner: {
+    js: 'import { createRequire as __createRequire } from "node:module"; const require = __createRequire(import.meta.url);'
+  },
   logLevel: "info"
 });

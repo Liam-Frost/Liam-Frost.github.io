@@ -10,10 +10,23 @@ const API = "https://api.steampowered.com";
 const STATE_TTL_MS = 10 * 60 * 1000;
 const TIMEOUT_MS = 20_000;
 
-type StoredAccount = { steamId: string; name: string; avatar: string | null; profileUrl: string; connectedAt: string; lastSyncedAt: string | null };
+type StoredAccount = {
+  steamId: string;
+  name: string;
+  avatar: string | null;
+  profileUrl: string;
+  connectedAt: string;
+  lastSyncedAt: string | null;
+};
 
 /** A game in the Steam library. */
-export type OwnedGame = { appId: number; name: string; minutes: number; minutesTwoWeeks: number; lastPlayed: number | null };
+export type OwnedGame = {
+  appId: number;
+  name: string;
+  minutes: number;
+  minutesTwoWeeks: number;
+  lastPlayed: number | null;
+};
 
 /**
  * The admin's Steam account. Steam has no OAuth for other sites, only "Sign in through Steam" (OpenID
@@ -22,7 +35,10 @@ export type OwnedGame = { appId: number; name: string; minutes: number; minutesT
  * secret is stored: only the SteamID and the profile's name and avatar.
  */
 export class SteamAccount {
-  private readonly states = new Map<string, { returnTo: string; callbackUrl: string; expires: number }>();
+  private readonly states = new Map<
+    string,
+    { returnTo: string; callbackUrl: string; expires: number }
+  >();
 
   constructor(
     private readonly apiKey: string,
@@ -43,7 +59,8 @@ export class SteamAccount {
   /** Steam's sign-in page; it returns to `callbackUrl` with a one-time state, then the admin goes to `returnTo`. */
   signInUrl(returnTo: string, callbackUrl: string) {
     if (!this.apiKey) throw new SourceError("未配置 STEAM_WEB_API_KEY");
-    for (const [state, entry] of this.states) if (entry.expires < this.now()) this.states.delete(state);
+    for (const [state, entry] of this.states)
+      if (entry.expires < this.now()) this.states.delete(state);
     const state = randomBytes(16).toString("hex");
     const back = `${callbackUrl}?state=${state}`;
     this.states.set(state, { returnTo, callbackUrl: back, expires: this.now() + STATE_TTL_MS });
@@ -72,19 +89,24 @@ export class SteamAccount {
    */
   async complete(params: Record<string, string>, expectedReturnTo: string) {
     if (params["openid.mode"] !== "id_res") throw new SourceError("已取消 Steam 登录");
-    if (params["openid.op_endpoint"] !== OPENID || params["openid.return_to"] !== expectedReturnTo) throw new SourceError("Steam 登录信息不匹配");
-    const steamId = /^https:\/\/steamcommunity\.com\/openid\/id\/(\d{17})$/.exec(params["openid.claimed_id"] ?? "")?.[1];
+    if (params["openid.op_endpoint"] !== OPENID || params["openid.return_to"] !== expectedReturnTo)
+      throw new SourceError("Steam 登录信息不匹配");
+    const steamId = /^https:\/\/steamcommunity\.com\/openid\/id\/(\d{17})$/.exec(
+      params["openid.claimed_id"] ?? ""
+    )?.[1];
     if (!steamId) throw new SourceError("Steam 没有返回账号");
 
-    const check = new URLSearchParams(Object.entries(params).filter(([key]) => key.startsWith("openid.")));
+    const check = new URLSearchParams(
+      Object.entries(params).filter(([key]) => key.startsWith("openid."))
+    );
     check.set("openid.mode", "check_authentication");
     const answer = await this.request(OPENID, { method: "POST", body: check }, "Steam");
-    if (!/is_valid\s*:\s*true/.test(await answer.text())) throw new SourceError("Steam 没有确认这次登录");
+    if (!/is_valid\s*:\s*true/.test(await answer.text()))
+      throw new SourceError("Steam 没有确认这次登录");
 
-    const summary = await this.api<{ response?: { players?: { personaname?: string; avatarfull?: string; profileurl?: string }[] } }>(
-      "/ISteamUser/GetPlayerSummaries/v2/",
-      { steamids: steamId }
-    );
+    const summary = await this.api<{
+      response?: { players?: { personaname?: string; avatarfull?: string; profileurl?: string }[] };
+    }>("/ISteamUser/GetPlayerSummaries/v2/", { steamids: steamId });
     const player = summary.response?.players?.[0];
     const account: StoredAccount = {
       steamId,
@@ -104,7 +126,8 @@ export class SteamAccount {
 
   async markSynced() {
     const account = await this.stored();
-    if (account) await this.repo?.set(KEY, { ...account, lastSyncedAt: new Date(this.now()).toISOString() });
+    if (account)
+      await this.repo?.set(KEY, { ...account, lastSyncedAt: new Date(this.now()).toISOString() });
   }
 
   /** The library with playtimes. An empty answer means the profile's game details are not public. */
@@ -112,9 +135,23 @@ export class SteamAccount {
     const account = await this.stored();
     if (!account) throw new SourceError("还没有连接 Steam 账号");
     const data = await this.api<{
-      response?: { game_count?: number; games?: { appid: number; name?: string; playtime_forever?: number; playtime_2weeks?: number; rtime_last_played?: number }[] };
-    }>("/IPlayerService/GetOwnedGames/v1/", { steamid: account.steamId, include_appinfo: "1", include_played_free_games: "1" });
-    if (!data.response?.games) throw new SourceError("读取不到游戏库：请在 Steam 隐私设置里把“游戏详情”设为公开");
+      response?: {
+        game_count?: number;
+        games?: {
+          appid: number;
+          name?: string;
+          playtime_forever?: number;
+          playtime_2weeks?: number;
+          rtime_last_played?: number;
+        }[];
+      };
+    }>("/IPlayerService/GetOwnedGames/v1/", {
+      steamid: account.steamId,
+      include_appinfo: "1",
+      include_played_free_games: "1"
+    });
+    if (!data.response?.games)
+      throw new SourceError("读取不到游戏库：请在 Steam 隐私设置里把“游戏详情”设为公开");
     return data.response.games.map((game) => ({
       appId: game.appid,
       name: game.name?.trim() || `App ${game.appid}`,
@@ -133,7 +170,8 @@ export class SteamAccount {
       return (await (await this.request(url.toString(), {}, "Steam")).json()) as T;
     } catch (error) {
       // Steam answers a bad key with 403; the key must never reach a message.
-      if (error instanceof SourceError && /HTTP 40[13]/.test(error.message)) throw new SourceError("Steam 拒绝了请求，请检查 STEAM_WEB_API_KEY");
+      if (error instanceof SourceError && /HTTP 40[13]/.test(error.message))
+        throw new SourceError("Steam 拒绝了请求，请检查 STEAM_WEB_API_KEY");
       throw error;
     }
   }
@@ -143,7 +181,9 @@ export class SteamAccount {
     try {
       response = await this.fetchImpl(url, { ...init, signal: AbortSignal.timeout(TIMEOUT_MS) });
     } catch {
-      throw new SourceError(`无法连接 ${what}。如果访问它需要代理，请在 apps/api/.env 中设置 HTTPS_PROXY 后重启 API`);
+      throw new SourceError(
+        `无法连接 ${what}。如果访问它需要代理，请在 apps/api/.env 中设置 HTTPS_PROXY 后重启 API`
+      );
     }
     if (!response.ok) {
       await response.body?.cancel();

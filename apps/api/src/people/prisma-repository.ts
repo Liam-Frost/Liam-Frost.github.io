@@ -1,6 +1,11 @@
 import type { LocalizedText, PersonSource, RelationType } from "@liam-frost/shared";
 
-import { Prisma, type MediaRelation, type Person, type PrismaClient } from "../generated/prisma/client";
+import {
+  Prisma,
+  type MediaRelation,
+  type Person,
+  type PrismaClient
+} from "../generated/prisma/client";
 import type { StoredImage } from "../projects/types";
 import {
   DuplicatePersonError,
@@ -15,7 +20,13 @@ import {
   type RelationRow
 } from "./types";
 
-const TYPE_TO_DB = { soundtrack: "SOUNDTRACK", adaptation: "ADAPTATION", sequel: "SEQUEL", related: "RELATED", credit: "CREDIT" } as const;
+const TYPE_TO_DB = {
+  soundtrack: "SOUNDTRACK",
+  adaptation: "ADAPTATION",
+  sequel: "SEQUEL",
+  related: "RELATED",
+  credit: "CREDIT"
+} as const;
 const TYPE_FROM_DB: Record<MediaRelation["type"], RelationType> = {
   SOUNDTRACK: "soundtrack",
   ADAPTATION: "adaptation",
@@ -25,9 +36,12 @@ const TYPE_FROM_DB: Record<MediaRelation["type"], RelationType> = {
 };
 
 /** Nullable Json columns need Prisma.DbNull; a plain null is rejected. */
-const json = (value: unknown) => (value === null ? Prisma.DbNull : (value as Prisma.InputJsonValue));
-const isUniqueConflict = (error: unknown) => error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002";
-const isMissing = (error: unknown) => error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025";
+const json = (value: unknown) =>
+  value === null ? Prisma.DbNull : (value as Prisma.InputJsonValue);
+const isUniqueConflict = (error: unknown) =>
+  error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002";
+const isMissing = (error: unknown) =>
+  error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025";
 
 function personRow(record: Person): PersonRow {
   return {
@@ -51,7 +65,8 @@ function personData(patch: PersonPatch): Prisma.PersonUpdateInput {
 
 /** People sort by name; names are JSON, so in code. */
 export function byName(a: PersonRow, b: PersonRow) {
-  const key = (row: PersonRow) => (row.name.en ?? row.name.zh ?? Object.values(row.name).find(Boolean) ?? "").toLowerCase();
+  const key = (row: PersonRow) =>
+    (row.name.en ?? row.name.zh ?? Object.values(row.name).find(Boolean) ?? "").toLowerCase();
   return key(a).localeCompare(key(b));
 }
 
@@ -59,7 +74,9 @@ export class PrismaPersonRepository implements PersonRepository {
   constructor(private readonly prisma: PrismaClient) {}
 
   async list({ includePrivate = false }: { includePrivate?: boolean } = {}) {
-    const records = await this.prisma.person.findMany({ where: includePrivate ? {} : { visibility: "PUBLIC" } });
+    const records = await this.prisma.person.findMany({
+      where: includePrivate ? {} : { visibility: "PUBLIC" }
+    });
     return records.map(personRow).sort(byName);
   }
 
@@ -70,7 +87,10 @@ export class PrismaPersonRepository implements PersonRepository {
 
   async findBySource(source: PersonSource, sourceIds: string[]) {
     if (!sourceIds.length) return new Map<string, string>();
-    const records = await this.prisma.person.findMany({ where: { source, sourceId: { in: sourceIds } }, select: { id: true, sourceId: true } });
+    const records = await this.prisma.person.findMany({
+      where: { source, sourceId: { in: sourceIds } },
+      select: { id: true, sourceId: true }
+    });
     return new Map(records.map((record) => [record.sourceId!, record.id]));
   }
 
@@ -78,7 +98,13 @@ export class PrismaPersonRepository implements PersonRepository {
     const { photo, visibility, links, ...rest } = person;
     try {
       const record = await this.prisma.person.create({
-        data: { bio: {}, ...rest, links: links ?? [], photo: json(photo ?? null), visibility: visibility === "private" ? "PRIVATE" : "PUBLIC" }
+        data: {
+          bio: {},
+          ...rest,
+          links: links ?? [],
+          photo: json(photo ?? null),
+          visibility: visibility === "private" ? "PRIVATE" : "PUBLIC"
+        }
       });
       return personRow(record);
     } catch (error) {
@@ -120,7 +146,10 @@ export class PrismaRelationRepository implements RelationRepository {
       : personId
         ? { fromPersonId: personId }
         : {};
-    const records = await this.prisma.mediaRelation.findMany({ where, orderBy: { createdAt: "asc" } });
+    const records = await this.prisma.mediaRelation.findMany({
+      where,
+      orderBy: { createdAt: "asc" }
+    });
     return records.map(relationRow);
   }
 
@@ -132,7 +161,9 @@ export class PrismaRelationRepository implements RelationRepository {
   async create(relation: NewRelation) {
     const { type, ...rest } = relation;
     try {
-      return relationRow(await this.prisma.mediaRelation.create({ data: { ...rest, type: TYPE_TO_DB[type] } }));
+      return relationRow(
+        await this.prisma.mediaRelation.create({ data: { ...rest, type: TYPE_TO_DB[type] } })
+      );
     } catch (error) {
       if (isUniqueConflict(error)) throw new DuplicateRelationError();
       throw error;

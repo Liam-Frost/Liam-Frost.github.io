@@ -3,7 +3,10 @@ import type { MusicSearchResult } from "@liam-frost/shared";
 import { SourceError } from "./sources";
 
 /** An iTunes song, with a large cover for importing. */
-export type ItunesSong = Omit<MusicSearchResult, "existingId"> & { artworkLarge: string | null; genre: string | null };
+export type ItunesSong = Omit<MusicSearchResult, "existingId"> & {
+  artworkLarge: string | null;
+  genre: string | null;
+};
 
 export interface MusicSource {
   /** Songs matching a free-text search in one iTunes store (e.g. "US", "JP"). */
@@ -54,9 +57,14 @@ function toSong(result: ItunesResult): ItunesSong | null {
 }
 
 /** Compares names ignoring case, width, spacing and punctuation. */
-const key = (value: string) => value.normalize("NFKC").toLowerCase().replace(/[\s\p{P}\p{S}]/gu, "");
+const key = (value: string) =>
+  value
+    .normalize("NFKC")
+    .toLowerCase()
+    .replace(/[\s\p{P}\p{S}]/gu, "");
 /** "Song (2019 Remaster)" and "Song - Remastered" match "Song". */
-const baseTitle = (value: string) => key(value.replace(/\s*[([（【].*?[)\]）】]\s*/g, " ").replace(/\s+-\s+.*$/, ""));
+const baseTitle = (value: string) =>
+  key(value.replace(/\s*[([（【].*?[)\]）】]\s*/g, " ").replace(/\s+-\s+.*$/, ""));
 
 export function createMusicSource(fetchImpl: typeof fetch = fetch): MusicSource {
   const get = async (path: string, params: Record<string, string>) => {
@@ -64,9 +72,14 @@ export function createMusicSource(fetchImpl: typeof fetch = fetch): MusicSource 
     for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
     let response: Response;
     try {
-      response = await fetchImpl(url, { headers: { accept: "application/json" }, signal: AbortSignal.timeout(TIMEOUT_MS) });
+      response = await fetchImpl(url, {
+        headers: { accept: "application/json" },
+        signal: AbortSignal.timeout(TIMEOUT_MS)
+      });
     } catch {
-      throw new SourceError("无法连接 iTunes。如果访问它需要代理，请在 apps/api/.env 中设置 HTTPS_PROXY 后重启 API");
+      throw new SourceError(
+        "无法连接 iTunes。如果访问它需要代理，请在 apps/api/.env 中设置 HTTPS_PROXY 后重启 API"
+      );
     }
     if (!response.ok) {
       await response.body?.cancel();
@@ -76,7 +89,8 @@ export function createMusicSource(fetchImpl: typeof fetch = fetch): MusicSource 
     return (data.results ?? []).map(toSong).filter((song): song is ItunesSong => song !== null);
   };
 
-  const search = (term: string, country: string) => get("/search", { term, country, entity: "song", limit: "25" });
+  const search = (term: string, country: string) =>
+    get("/search", { term, country, entity: "song", limit: "25" });
 
   return {
     search,
@@ -99,8 +113,14 @@ export function createMusicSource(fetchImpl: typeof fetch = fetch): MusicSource 
         const match = songs.find((song) => {
           if (!song.previewUrl) return false;
           const sameTitle = baseTitle(song.title) === wantTitle;
-          const sameArtist = !wantArtist || key(song.artist).includes(wantArtist) || wantArtist.includes(key(song.artist));
-          const closeLength = durationMs === null || song.durationMs === null || Math.abs(song.durationMs - durationMs) <= 5000;
+          const sameArtist =
+            !wantArtist ||
+            key(song.artist).includes(wantArtist) ||
+            wantArtist.includes(key(song.artist));
+          const closeLength =
+            durationMs === null ||
+            song.durationMs === null ||
+            Math.abs(song.durationMs - durationMs) <= 5000;
           return sameTitle && sameArtist && closeLength;
         });
         if (match) return match;

@@ -65,9 +65,9 @@ The provider sets global DOM attributes:
 
 The CSS degrade ladder uses these to:
 
-1) Disable expensive `backdrop-filter`/`filter` while keeping the UI readable via more opaque backgrounds.
-2) Reduce/disable decorative CSS keyframe animations.
-3) Reduce blur-heavy reveal effects at low tiers.
+1. Disable expensive `backdrop-filter`/`filter` while keeping the UI readable via more opaque backgrounds.
+2. Reduce/disable decorative CSS keyframe animations.
+3. Reduce blur-heavy reveal effects at low tiers.
 
 ## Flickr image strategy
 
@@ -112,9 +112,9 @@ Tier-aware behavior:
 
 Lightbox uses progressive loading:
 
-1) Load a medium image immediately (`z/c/b` depending on tier + layout).
-2) Start loading a full image (`h/k/3k/4k`) based on viewport and original dimensions.
-3) Swap in full with a short crossfade once loaded.
+1. Load a medium image immediately (`z/c/b` depending on tier + layout).
+2. Start loading a full image (`h/k/3k/4k`) based on viewport and original dimensions.
+3. Swap in full with a short crossfade once loaded.
 
 ### Error fallback chain (must not affect tier)
 
@@ -127,16 +127,16 @@ This **does not** trigger global quality degradation.
 
 ## How to test
 
-1) Run web dev: `npm run dev:web` (debug panel shows by default).
-2) Try `?debug=1` in preview/build.
-3) Use DevTools:
+1. Run web dev: `npm run dev:web` (debug panel shows by default).
+2. Try `?debug=1` in preview/build.
+3. Use DevTools:
    - CPU throttling (4× / 6×)
    - Performance panel: look for Long Tasks
-4) Test visibility:
+4. Test visibility:
    - switch tabs for 10–20s
    - return and confirm it re-warm-ups (no tier penalty)
-5) Test accessibility:
+5. Test accessibility:
    - enable `prefers-reduced-motion` in OS/browser
    - confirm tier is forced to 0 and decorative animations stop
-6) Battery vs plugged in:
+6. Battery vs plugged in:
    - observe tier behavior and filter toggles on laptops

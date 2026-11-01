@@ -11,11 +11,19 @@ import { MemoryPhotoRepository, remotePhoto } from "./memory-photo-repository";
 let cameraJpeg: Buffer;
 
 beforeAll(async () => {
-  cameraJpeg = await sharp({ create: { width: 4000, height: 3000, channels: 3, background: { r: 40, g: 90, b: 140 } } })
+  cameraJpeg = await sharp({
+    create: { width: 4000, height: 3000, channels: 3, background: { r: 40, g: 90, b: 140 } }
+  })
     .jpeg({ quality: 70 })
     .withExif({
       IFD0: { Make: "Canon", Model: "Canon EOS R5" },
-      IFD2: { ExposureTime: "1/200", FNumber: "2.8", ISOSpeedRatings: "400", DateTimeOriginal: "2025:05:04 18:30:00", LensModel: "RF24mm F1.4 L VCM" }
+      IFD2: {
+        ExposureTime: "1/200",
+        FNumber: "2.8",
+        ISOSpeedRatings: "400",
+        DateTimeOriginal: "2025:05:04 18:30:00",
+        LensModel: "RF24mm F1.4 L VCM"
+      }
     })
     // sharp ignores Orientation inside withExif; withMetadata sets it.
     .withMetadata({ orientation: 6 })
@@ -29,9 +37,19 @@ async function setup(env: Record<string, string> = {}) {
   return { app, photos, cookie };
 }
 
-async function upload(app: Awaited<ReturnType<typeof setup>>["app"], cookie: string, fileName: string, data: Buffer) {
+async function upload(
+  app: Awaited<ReturnType<typeof setup>>["app"],
+  cookie: string,
+  fileName: string,
+  data: Buffer
+) {
   const body = multipartFile(fileName, data, "image/jpeg");
-  return app.inject({ method: "POST", url: "/api/admin/photos", headers: { ...csrf, cookie, ...body.headers }, payload: body.payload });
+  return app.inject({
+    method: "POST",
+    url: "/api/admin/photos",
+    headers: { ...csrf, cookie, ...body.headers },
+    payload: body.payload
+  });
 }
 
 describe("public photo routes with a database", () => {
@@ -44,7 +62,10 @@ describe("public photo routes with a database", () => {
     await photos.create(remotePhoto({ id: "b", visibility: "private" }));
     const list = (await app.inject("/api/photos")).json();
     expect(list.map((p: { id: string }) => p.id)).toEqual(["a"]);
-    expect(list[0]).toMatchObject({ featured: true, src: "https://live.staticflickr.com/1/2_abc_b.jpg" });
+    expect(list[0]).toMatchObject({
+      featured: true,
+      src: "https://live.staticflickr.com/1/2_abc_b.jpg"
+    });
     expect(list[0].variants).toBeUndefined();
   });
 
@@ -77,12 +98,19 @@ describe("admin photo management", () => {
     const { app } = await setup();
     expect((await app.inject("/api/admin/photos")).statusCode).toBe(401);
     const noCsrf = multipartFile("x.jpg", cameraJpeg);
-    const anonymous = await app.inject({ method: "POST", url: "/api/admin/photos", headers: noCsrf.headers, payload: noCsrf.payload });
+    const anonymous = await app.inject({
+      method: "POST",
+      url: "/api/admin/photos",
+      headers: noCsrf.headers,
+      payload: noCsrf.payload
+    });
     expect(anonymous.statusCode).toBe(403);
   });
 
   it("turns an upload into a hidden photo with oriented sizes and EXIF suggestions", async () => {
-    const uploadDir = (await import("node:fs")).mkdtempSync(join((await import("node:os")).tmpdir(), "lf-up-"));
+    const uploadDir = (await import("node:fs")).mkdtempSync(
+      join((await import("node:os")).tmpdir(), "lf-up-")
+    );
     const { app, cookie } = await setup({ UPLOAD_DIR: uploadDir });
 
     const response = await upload(app, cookie, "IMG_1234 (2).JPG", cameraJpeg);
@@ -102,8 +130,12 @@ describe("admin photo management", () => {
       settings: "1/200 · f/2.8 · ISO 400",
       date: "2025-05-04"
     });
-    expect(photo.variants.map((v: { height: number }) => v.height)).toEqual([640, 1280, 2048, 3072]);
-    expect(photo.variants.every((v: { width: number; height: number }) => v.width < v.height)).toBe(true);
+    expect(photo.variants.map((v: { height: number }) => v.height)).toEqual([
+      640, 1280, 2048, 3072
+    ]);
+    expect(photo.variants.every((v: { width: number; height: number }) => v.width < v.height)).toBe(
+      true
+    );
     expect(photo.thumbnail).toBe(photo.variants[0].url);
     expect(photo.src).toBe(photo.variants[3].url);
 
@@ -117,21 +149,30 @@ describe("admin photo management", () => {
     expect(served.headers["cache-control"]).toBe("private, no-store");
     const servedMeta = await sharp(served.rawPayload).metadata();
     expect(servedMeta.exif).toBeUndefined();
-    expect((await app.inject({ url: `/uploads/photos/${photo.id}/original.jpg`, headers: { cookie } })).statusCode).toBe(404);
+    expect(
+      (await app.inject({ url: `/uploads/photos/${photo.id}/original.jpg`, headers: { cookie } }))
+        .statusCode
+    ).toBe(404);
 
     // Hidden until published.
     expect((await app.inject("/api/photos")).json()).toEqual([]);
   });
 
   it("does not upscale small images", async () => {
-    const small = await sharp({ create: { width: 900, height: 600, channels: 3, background: "#888" } }).png().toBuffer();
+    const small = await sharp({
+      create: { width: 900, height: 600, channels: 3, background: "#888" }
+    })
+      .png()
+      .toBuffer();
     const { app, cookie } = await setup();
     const { photo } = (await upload(app, cookie, "small.png", small)).json();
     expect(photo.variants.map((v: { width: number }) => v.width)).toEqual([640, 900]);
   });
 
   it("rejects files that are not images and leaves nothing behind", async () => {
-    const uploadDir = (await import("node:fs")).mkdtempSync(join((await import("node:os")).tmpdir(), "lf-up-"));
+    const uploadDir = (await import("node:fs")).mkdtempSync(
+      join((await import("node:os")).tmpdir(), "lf-up-")
+    );
     const { app, cookie, photos } = await setup({ UPLOAD_DIR: uploadDir });
     const response = await upload(app, cookie, "notes.jpg", Buffer.from("definitely not an image"));
     expect(response.statusCode).toBe(400);
@@ -147,12 +188,19 @@ describe("admin photo management", () => {
   });
 
   it("edits, publishes and deletes a photo", async () => {
-    const uploadDir = (await import("node:fs")).mkdtempSync(join((await import("node:os")).tmpdir(), "lf-up-"));
+    const uploadDir = (await import("node:fs")).mkdtempSync(
+      join((await import("node:os")).tmpdir(), "lf-up-")
+    );
     const { app, cookie } = await setup({ UPLOAD_DIR: uploadDir });
     const { photo } = (await upload(app, cookie, "street.jpg", cameraJpeg)).json();
     const url = `/api/admin/photos/${photo.id}`;
 
-    const invalid = await app.inject({ method: "PATCH", url, headers: { ...csrf, cookie }, payload: { title: { zh: "  " } } });
+    const invalid = await app.inject({
+      method: "PATCH",
+      url,
+      headers: { ...csrf, cookie },
+      payload: { title: { zh: "  " } }
+    });
     expect(invalid.statusCode).toBe(400);
 
     const patched = await app.inject({
@@ -170,7 +218,12 @@ describe("admin photo management", () => {
       }
     });
     expect(patched.statusCode).toBe(200);
-    expect(patched.json().photo).toMatchObject({ title: { zh: "街头", en: "Street" }, lens: null, visibility: "public", featured: true });
+    expect(patched.json().photo).toMatchObject({
+      title: { zh: "街头", en: "Street" },
+      lens: null,
+      visibility: "public",
+      featured: true
+    });
     expect(patched.json().photo.title.fr).toBeUndefined();
 
     const publicList = (await app.inject("/api/photos")).json();
@@ -188,24 +241,41 @@ describe("admin photo management", () => {
     expect(existsSync(join(uploadDir, "photos", photo.id))).toBe(false);
     expect((await app.inject(`/api/photos/${photo.id}`)).statusCode).toBe(404);
     expect((await app.inject(photo.src)).statusCode).toBe(404);
-    expect((await app.inject({ method: "DELETE", url, headers: { ...csrf, cookie } })).statusCode).toBe(404);
+    expect(
+      (await app.inject({ method: "DELETE", url, headers: { ...csrf, cookie } })).statusCode
+    ).toBe(404);
   });
 
   it("reorders photos only with the complete, current list", async () => {
     const { app, cookie, photos } = await setup();
     for (const id of ["a", "b", "c"]) await photos.create(remotePhoto({ id }));
 
-    const stale = await app.inject({ method: "PUT", url: "/api/admin/photos/order", headers: { ...csrf, cookie }, payload: { ids: ["a", "b"] } });
+    const stale = await app.inject({
+      method: "PUT",
+      url: "/api/admin/photos/order",
+      headers: { ...csrf, cookie },
+      payload: { ids: ["a", "b"] }
+    });
     expect(stale.statusCode).toBe(409);
 
-    const ok = await app.inject({ method: "PUT", url: "/api/admin/photos/order", headers: { ...csrf, cookie }, payload: { ids: ["c", "a", "b"] } });
+    const ok = await app.inject({
+      method: "PUT",
+      url: "/api/admin/photos/order",
+      headers: { ...csrf, cookie },
+      payload: { ids: ["c", "a", "b"] }
+    });
     expect(ok.statusCode).toBe(200);
     expect(ok.json().photos.map((p: { id: string }) => p.id)).toEqual(["c", "a", "b"]);
   });
 
   it("serves only generated sizes from /uploads", async () => {
     const { app } = await setup();
-    for (const url of ["/uploads/photos/x/../../secret", "/uploads/photos/x/original.jpg", "/uploads/photos/X%2F../640.webp", "/uploads/photos/missing/640.webp"]) {
+    for (const url of [
+      "/uploads/photos/x/../../secret",
+      "/uploads/photos/x/original.jpg",
+      "/uploads/photos/X%2F../640.webp",
+      "/uploads/photos/missing/640.webp"
+    ]) {
       expect((await app.inject(url)).statusCode, url).toBe(404);
     }
   });

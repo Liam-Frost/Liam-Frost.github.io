@@ -1,11 +1,22 @@
-import type { AdminPlaylist, AdminPlaylistResponse, AdminPlaylistsResponse } from "@liam-frost/shared";
+import type {
+  AdminPlaylist,
+  AdminPlaylistResponse,
+  AdminPlaylistsResponse
+} from "@liam-frost/shared";
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import { randomUUID } from "node:crypto";
 
 import type { AdminAuthService } from "../auth/service";
 import { badRequest, HttpError, notFound } from "../lib/errors";
 import { KeyedLock } from "../lib/keyed-lock";
-import { parseInput, playlistCreateSchema, playlistIdSchema, playlistOrderSchema, playlistTracksSchema, playlistUpdateSchema } from "../lib/validation";
+import {
+  parseInput,
+  playlistCreateSchema,
+  playlistIdSchema,
+  playlistOrderSchema,
+  playlistTracksSchema,
+  playlistUpdateSchema
+} from "../lib/validation";
 import type { MediaRepository } from "../media/types";
 import type { PlaylistRepository, PlaylistRow } from "../playlists/types";
 
@@ -24,9 +35,18 @@ export function toAdminPlaylist(row: PlaylistRow): AdminPlaylist {
 }
 
 /** Playlists of songs: create, rename, hide, delete, add and remove songs, reorder. */
-export function registerAdminPlaylistRoutes(app: FastifyInstance, auth: AdminAuthService, deps: { media: MediaRepository | null; playlists: PlaylistRepository | null }) {
+export function registerAdminPlaylistRoutes(
+  app: FastifyInstance,
+  auth: AdminAuthService,
+  deps: { media: MediaRepository | null; playlists: PlaylistRepository | null }
+) {
   const repo = () => {
-    if (!deps.media || !deps.playlists) throw new HttpError(503, "DATABASE_NOT_CONFIGURED", "Playlists need a database (set DATABASE_URL)");
+    if (!deps.media || !deps.playlists)
+      throw new HttpError(
+        503,
+        "DATABASE_NOT_CONFIGURED",
+        "Playlists need a database (set DATABASE_URL)"
+      );
     return { media: deps.media, playlists: deps.playlists };
   };
   const admin = { preHandler: auth.requireAdmin };
@@ -42,14 +62,25 @@ export function registerAdminPlaylistRoutes(app: FastifyInstance, auth: AdminAut
     playlists: (await repo().playlists.list({ includePrivate: true })).map(toAdminPlaylist)
   }));
 
-  app.post("/api/admin/playlists", admin, async (request, reply): Promise<AdminPlaylistResponse> => {
-    const { name, description } = parseInput(playlistCreateSchema, request.body);
-    const row = await repo().playlists.create({ id: randomUUID(), name, description: description ?? {}, source: "manual" });
-    reply.code(201);
-    return found(row);
-  });
+  app.post(
+    "/api/admin/playlists",
+    admin,
+    async (request, reply): Promise<AdminPlaylistResponse> => {
+      const { name, description } = parseInput(playlistCreateSchema, request.body);
+      const row = await repo().playlists.create({
+        id: randomUUID(),
+        name,
+        description: description ?? {},
+        source: "manual"
+      });
+      reply.code(201);
+      return found(row);
+    }
+  );
 
-  app.get("/api/admin/playlists/:id", admin, async (request) => found(await repo().playlists.get(playlistId(request))));
+  app.get("/api/admin/playlists/:id", admin, async (request) =>
+    found(await repo().playlists.get(playlistId(request)))
+  );
 
   app.patch("/api/admin/playlists/:id", admin, async (request) => {
     const id = playlistId(request);
@@ -71,7 +102,11 @@ export function registerAdminPlaylistRoutes(app: FastifyInstance, auth: AdminAut
       if (action === "remove") return found(await playlists.removeTracks(id, ids));
       const rows = await Promise.all(ids.map((mediaId) => media.get(mediaId)));
       const notSongs = ids.filter((_, index) => rows[index]?.kind !== "track");
-      if (notSongs.length) throw badRequest(`Only songs go in playlists (${notSongs.length} of ${ids.length} are not songs)`, "VALIDATION");
+      if (notSongs.length)
+        throw badRequest(
+          `Only songs go in playlists (${notSongs.length} of ${ids.length} are not songs)`,
+          "VALIDATION"
+        );
       return found(await playlists.addTracks(id, ids));
     });
   });
@@ -84,7 +119,9 @@ export function registerAdminPlaylistRoutes(app: FastifyInstance, auth: AdminAut
     return lock.run(id, async () => {
       const current = await playlists.get(id);
       if (!current) throw notFound("Playlist not found");
-      const same = ids.length === current.trackIds.length && ids.every((mediaId) => current.trackIds.includes(mediaId));
+      const same =
+        ids.length === current.trackIds.length &&
+        ids.every((mediaId) => current.trackIds.includes(mediaId));
       if (!same) throw badRequest("The order must list exactly the playlist's songs", "VALIDATION");
       return found(await playlists.reorder(id, ids));
     });

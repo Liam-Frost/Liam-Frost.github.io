@@ -1,4 +1,15 @@
-import type { LocalizedText, MediaGame, MediaKind, MediaPublication, MediaSearchResult, MediaSearchSource, PersonRole, PersonSearchResult } from "@liam-frost/shared";
+import type {
+  LocalizedText,
+  MediaGame,
+  MediaKind,
+  MediaPublication,
+  MediaSearchResult,
+  MediaSearchSource,
+  PersonRole,
+  PersonSearchResult
+} from "@liam-frost/shared";
+
+import { stripMarkup } from "../lib/plain-text";
 
 /** Errors worth showing in the admin as they are. */
 export class SourceError extends Error {}
@@ -39,10 +50,20 @@ export type PersonDetails = {
 };
 
 /** A cast or crew member of a TMDB film or series. */
-export type CreditHit = { sourceId: string; name: string; role: PersonRole; character: string | null; photoUrl: string | null };
+export type CreditHit = {
+  sourceId: string;
+  name: string;
+  role: PersonRole;
+  character: string | null;
+  photoUrl: string | null;
+};
 
 /** An AniList relation: how the other work relates to this one, which kind it is, and its titles. */
-export type AniListRelation = { relationType: string; kind: "anime" | "comic" | "book"; titles: string[] };
+export type AniListRelation = {
+  relationType: string;
+  kind: "anime" | "comic" | "book";
+  titles: string[];
+};
 
 export interface MediaSources {
   available(): Record<SearchSource, boolean>;
@@ -51,7 +72,11 @@ export interface MediaSources {
   /** Downloads a poster for the image pipeline. */
   download(url: string): Promise<Buffer>;
   /** Romaji title of an anime or comic from AniList, matched by its Japanese title; null when not found or unreachable. */
-  romaji(nativeTitle: string, year: number | null, kind?: "anime" | "comic"): Promise<string | null>;
+  romaji(
+    nativeTitle: string,
+    year: number | null,
+    kind?: "anime" | "comic"
+  ): Promise<string | null>;
   /** TMDB people search. */
   searchPeople(query: string): Promise<PersonHit[]>;
   /** One TMDB person. */
@@ -61,7 +86,11 @@ export interface MediaSources {
   /** IGDB games for Steam app ids (Steam's id as text → IGDB's id); missing ones are not on IGDB. */
   steamGames(appIds: string[]): Promise<Map<string, string>>;
   /** AniList relations of an anime, comic or (light) novel matched by its Japanese title; empty when not found or unreachable. */
-  relations(kind: "anime" | "comic" | "book", nativeTitle: string, year: number | null): Promise<AniListRelation[]>;
+  relations(
+    kind: "anime" | "comic" | "book",
+    nativeTitle: string,
+    year: number | null
+  ): Promise<AniListRelation[]>;
 }
 
 const TIMEOUT_MS = 10_000;
@@ -70,7 +99,8 @@ const USER_AGENT = "liam-frost-site/0.1 (https://github.com/Liam-Frost/Liam-Fros
 
 const TMDB_API = "https://api.themoviedb.org/3";
 const ANILIST_API = "https://graphql.anilist.co";
-const ANILIST_QUERY = "query ($search: String, $type: MediaType) { Media(search: $search, type: $type) { title { romaji native } startDate { year } } }";
+const ANILIST_QUERY =
+  "query ($search: String, $type: MediaType) { Media(search: $search, type: $type) { title { romaji native } startDate { year } } }";
 // relationType version 2 tells a work's source (SOURCE) from its adaptations (ADAPTATION); version 1 calls both ADAPTATION.
 const ANILIST_RELATIONS_QUERY =
   "query ($search: String, $type: MediaType) { Media(search: $search, type: $type) { title { romaji native } startDate { year } relations { edges { relationType(version: 2) node { type format title { romaji native english } } } } } }";
@@ -114,72 +144,181 @@ const IGDB_FIELDS =
 const IGDB_GENRES: Record<string, Omit<LocalizedText, "en">> = {
   Adventure: { zh: "冒险", "zh-Hant": "冒險", ja: "アドベンチャー", fr: "Aventure" },
   Arcade: { zh: "街机", "zh-Hant": "街機", ja: "アーケード", fr: "Arcade" },
-  "Card & Board Game": { zh: "卡牌桌游", "zh-Hant": "卡牌桌遊", ja: "カード・ボード", fr: "Cartes et plateau" },
+  "Card & Board Game": {
+    zh: "卡牌桌游",
+    "zh-Hant": "卡牌桌遊",
+    ja: "カード・ボード",
+    fr: "Cartes et plateau"
+  },
   Fighting: { zh: "格斗", "zh-Hant": "格鬥", ja: "格闘", fr: "Combat" },
-  "Hack and slash/Beat 'em up": { zh: "动作砍杀", "zh-Hant": "動作砍殺", ja: "ハクスラ", fr: "Beat 'em up" },
+  "Hack and slash/Beat 'em up": {
+    zh: "动作砍杀",
+    "zh-Hant": "動作砍殺",
+    ja: "ハクスラ",
+    fr: "Beat 'em up"
+  },
   Indie: { zh: "独立", "zh-Hant": "獨立", ja: "インディー", fr: "Indépendant" },
   MOBA: { zh: "MOBA", "zh-Hant": "MOBA", ja: "MOBA", fr: "MOBA" },
   Music: { zh: "音乐", "zh-Hant": "音樂", ja: "音楽", fr: "Musique" },
   Pinball: { zh: "弹珠台", "zh-Hant": "彈珠台", ja: "ピンボール", fr: "Flipper" },
   Platform: { zh: "平台跳跃", "zh-Hant": "平台跳躍", ja: "アクション", fr: "Plateforme" },
-  "Point-and-click": { zh: "点击解谜", "zh-Hant": "點擊解謎", ja: "ポイントアンドクリック", fr: "Point'n click" },
+  "Point-and-click": {
+    zh: "点击解谜",
+    "zh-Hant": "點擊解謎",
+    ja: "ポイントアンドクリック",
+    fr: "Point'n click"
+  },
   Puzzle: { zh: "解谜", "zh-Hant": "解謎", ja: "パズル", fr: "Réflexion" },
   "Quiz/Trivia": { zh: "问答", "zh-Hant": "問答", ja: "クイズ", fr: "Quiz" },
   Racing: { zh: "竞速", "zh-Hant": "競速", ja: "レース", fr: "Course" },
-  "Real Time Strategy (RTS)": { zh: "即时战略", "zh-Hant": "即時戰略", ja: "RTS", fr: "Stratégie en temps réel" },
+  "Real Time Strategy (RTS)": {
+    zh: "即时战略",
+    "zh-Hant": "即時戰略",
+    ja: "RTS",
+    fr: "Stratégie en temps réel"
+  },
   "Role-playing (RPG)": { zh: "角色扮演", "zh-Hant": "角色扮演", ja: "RPG", fr: "Jeu de rôle" },
   Shooter: { zh: "射击", "zh-Hant": "射擊", ja: "シューティング", fr: "Tir" },
   Simulator: { zh: "模拟", "zh-Hant": "模擬", ja: "シミュレーション", fr: "Simulation" },
   Sport: { zh: "体育", "zh-Hant": "體育", ja: "スポーツ", fr: "Sport" },
   Strategy: { zh: "策略", "zh-Hant": "策略", ja: "ストラテジー", fr: "Stratégie" },
   Tactical: { zh: "战术", "zh-Hant": "戰術", ja: "タクティクス", fr: "Tactique" },
-  "Turn-based strategy (TBS)": { zh: "回合制策略", "zh-Hant": "回合制策略", ja: "ターン制ストラテジー", fr: "Stratégie au tour par tour" },
-  "Visual Novel": { zh: "视觉小说", "zh-Hant": "視覺小說", ja: "ビジュアルノベル", fr: "Visual novel" }
+  "Turn-based strategy (TBS)": {
+    zh: "回合制策略",
+    "zh-Hant": "回合制策略",
+    ja: "ターン制ストラテジー",
+    fr: "Stratégie au tour par tour"
+  },
+  "Visual Novel": {
+    zh: "视觉小说",
+    "zh-Hant": "視覺小說",
+    ja: "ビジュアルノベル",
+    fr: "Visual novel"
+  }
 };
 /** Google Books languages ("zh-CN", "ja", ...) as site languages. */
-const GOOGLE_LANGS: Record<string, SiteLang> = { zh: "zh", "zh-CN": "zh", "zh-TW": "zh-Hant", "zh-HK": "zh-Hant", ja: "ja", en: "en", fr: "fr" };
+const GOOGLE_LANGS: Record<string, SiteLang> = {
+  zh: "zh",
+  "zh-CN": "zh",
+  "zh-TW": "zh-Hant",
+  "zh-HK": "zh-Hant",
+  ja: "ja",
+  en: "en",
+  fr: "fr"
+};
 /**
  * Open Library subjects mix genres with places, people, awards and other languages' headings; only these
  * genres are kept, by their lowercase subject name.
  */
 const OPENLIBRARY_GENRES: Record<string, LocalizedText> = {
   fiction: { zh: "小说", "zh-Hant": "小說", en: "Fiction", fr: "Fiction", ja: "小説" },
-  "science fiction": { zh: "科幻", "zh-Hant": "科幻", en: "Science fiction", fr: "Science-fiction", ja: "SF" },
+  "science fiction": {
+    zh: "科幻",
+    "zh-Hant": "科幻",
+    en: "Science fiction",
+    fr: "Science-fiction",
+    ja: "SF"
+  },
   fantasy: { zh: "奇幻", "zh-Hant": "奇幻", en: "Fantasy", fr: "Fantasy", ja: "ファンタジー" },
-  "fantasy fiction": { zh: "奇幻", "zh-Hant": "奇幻", en: "Fantasy", fr: "Fantasy", ja: "ファンタジー" },
+  "fantasy fiction": {
+    zh: "奇幻",
+    "zh-Hant": "奇幻",
+    en: "Fantasy",
+    fr: "Fantasy",
+    ja: "ファンタジー"
+  },
   mystery: { zh: "推理", "zh-Hant": "推理", en: "Mystery", fr: "Policier", ja: "ミステリー" },
-  "detective and mystery stories": { zh: "推理", "zh-Hant": "推理", en: "Mystery", fr: "Policier", ja: "ミステリー" },
+  "detective and mystery stories": {
+    zh: "推理",
+    "zh-Hant": "推理",
+    en: "Mystery",
+    fr: "Policier",
+    ja: "ミステリー"
+  },
   thriller: { zh: "惊悚", "zh-Hant": "驚悚", en: "Thriller", fr: "Thriller", ja: "スリラー" },
   horror: { zh: "恐怖", "zh-Hant": "恐怖", en: "Horror", fr: "Horreur", ja: "ホラー" },
   "horror tales": { zh: "恐怖", "zh-Hant": "恐怖", en: "Horror", fr: "Horreur", ja: "ホラー" },
   romance: { zh: "爱情", "zh-Hant": "愛情", en: "Romance", fr: "Romance", ja: "恋愛" },
   "love stories": { zh: "爱情", "zh-Hant": "愛情", en: "Romance", fr: "Romance", ja: "恋愛" },
-  "historical fiction": { zh: "历史小说", "zh-Hant": "歷史小說", en: "Historical fiction", fr: "Roman historique", ja: "歴史小説" },
+  "historical fiction": {
+    zh: "历史小说",
+    "zh-Hant": "歷史小說",
+    en: "Historical fiction",
+    fr: "Roman historique",
+    ja: "歴史小説"
+  },
   history: { zh: "历史", "zh-Hant": "歷史", en: "History", fr: "Histoire", ja: "歴史" },
   biography: { zh: "传记", "zh-Hant": "傳記", en: "Biography", fr: "Biographie", ja: "伝記" },
-  autobiography: { zh: "自传", "zh-Hant": "自傳", en: "Autobiography", fr: "Autobiographie", ja: "自伝" },
+  autobiography: {
+    zh: "自传",
+    "zh-Hant": "自傳",
+    en: "Autobiography",
+    fr: "Autobiographie",
+    ja: "自伝"
+  },
   poetry: { zh: "诗歌", "zh-Hant": "詩歌", en: "Poetry", fr: "Poésie", ja: "詩" },
   philosophy: { zh: "哲学", "zh-Hant": "哲學", en: "Philosophy", fr: "Philosophie", ja: "哲学" },
-  psychology: { zh: "心理学", "zh-Hant": "心理學", en: "Psychology", fr: "Psychologie", ja: "心理学" },
+  psychology: {
+    zh: "心理学",
+    "zh-Hant": "心理學",
+    en: "Psychology",
+    fr: "Psychologie",
+    ja: "心理学"
+  },
   essays: { zh: "随笔", "zh-Hant": "隨筆", en: "Essays", fr: "Essais", ja: "エッセイ" },
-  "short stories": { zh: "短篇", "zh-Hant": "短篇", en: "Short stories", fr: "Nouvelles", ja: "短編" },
-  "young adult fiction": { zh: "青少年", "zh-Hant": "青少年", en: "Young adult", fr: "Jeunesse", ja: "ヤングアダルト" },
-  "children's fiction": { zh: "儿童", "zh-Hant": "兒童", en: "Children's", fr: "Jeunesse", ja: "児童書" },
-  "comic books, strips": { zh: "漫画", "zh-Hant": "漫畫", en: "Comics", fr: "Bande dessinée", ja: "コミック" },
+  "short stories": {
+    zh: "短篇",
+    "zh-Hant": "短篇",
+    en: "Short stories",
+    fr: "Nouvelles",
+    ja: "短編"
+  },
+  "young adult fiction": {
+    zh: "青少年",
+    "zh-Hant": "青少年",
+    en: "Young adult",
+    fr: "Jeunesse",
+    ja: "ヤングアダルト"
+  },
+  "children's fiction": {
+    zh: "儿童",
+    "zh-Hant": "兒童",
+    en: "Children's",
+    fr: "Jeunesse",
+    ja: "児童書"
+  },
+  "comic books, strips": {
+    zh: "漫画",
+    "zh-Hant": "漫畫",
+    en: "Comics",
+    fr: "Bande dessinée",
+    ja: "コミック"
+  },
   science: { zh: "科学", "zh-Hant": "科學", en: "Science", fr: "Sciences", ja: "科学" },
   economics: { zh: "经济", "zh-Hant": "經濟", en: "Economics", fr: "Économie", ja: "経済" },
-  "computer science": { zh: "计算机", "zh-Hant": "電腦", en: "Computer science", fr: "Informatique", ja: "コンピュータ" },
+  "computer science": {
+    zh: "计算机",
+    "zh-Hant": "電腦",
+    en: "Computer science",
+    fr: "Informatique",
+    ja: "コンピュータ"
+  },
   travel: { zh: "旅行", "zh-Hant": "旅行", en: "Travel", fr: "Voyage", ja: "旅行" },
   humor: { zh: "幽默", "zh-Hant": "幽默", en: "Humor", fr: "Humour", ja: "ユーモア" }
 };
-const OPENLIBRARY_FIELDS = "key,title,author_name,first_publish_year,cover_i,number_of_pages_median,subject,publisher";
+const OPENLIBRARY_FIELDS =
+  "key,title,author_name,first_publish_year,cover_i,number_of_pages_median,subject,publisher";
 /** Redirect hops a poster download may follow (Open Library covers go through archive.org). */
 const MAX_REDIRECTS = 3;
 /** Main cast members suggested for a film or series. */
 const CAST_LIMIT = 8;
 
 /** Compares titles ignoring width, spacing and punctuation ("ぼっち・ざ・ろっく！" = "ぼっちざろっく!"). */
-export const titleKey = (title: string) => title.normalize("NFKC").toLowerCase().replace(/[\s\p{P}\p{S}]/gu, "");
+export const titleKey = (title: string) =>
+  title
+    .normalize("NFKC")
+    .toLowerCase()
+    .replace(/[\s\p{P}\p{S}]/gu, "");
 /** Image hosts of TMDB, Bangumi, iTunes, Spotify, AniList and Open Library; posters and covers are only downloaded from these. */
 const POSTER_HOSTS = [
   /^image\.tmdb\.org$/,
@@ -201,7 +340,13 @@ const POSTER_HOSTS = [
 export const isPosterHost = (hostname: string) => POSTER_HOSTS.some((host) => host.test(hostname));
 const TMDB_IMAGE = "https://image.tmdb.org/t/p";
 /** Site languages and the TMDB locale for each. */
-const TMDB_LANGS = { zh: "zh-CN", "zh-Hant": "zh-TW", en: "en-US", fr: "fr-FR", ja: "ja-JP" } as const;
+const TMDB_LANGS = {
+  zh: "zh-CN",
+  "zh-Hant": "zh-TW",
+  en: "en-US",
+  fr: "fr-FR",
+  ja: "ja-JP"
+} as const;
 type SiteLang = keyof typeof TMDB_LANGS;
 
 const yearOf = (date: string | null | undefined) => {
@@ -209,18 +354,18 @@ const yearOf = (date: string | null | undefined) => {
   return Number.isInteger(year) && year > 1800 ? year : null;
 };
 /** Trimmed text without invisible direction marks (Open Library publishers start with U+200E). */
-const clean = (value: string | null | undefined) => value?.replace(/[\u200e\u200f\u202a-\u202e]/g, "").trim() || "";
+const clean = (value: string | null | undefined) =>
+  value?.replace(/[\u200e\u200f\u202a-\u202e]/g, "").trim() || "";
 /** AniList descriptions carry some HTML and a "(Source: ...)" credit line. */
 const plainText = (value: string | null | undefined) =>
   clean(
-    value
-      ?.replace(/<br\s*\/?>/gi, "\n")
-      .replace(/<[^>]+>/g, "")
+    stripMarkup((value ?? "").replace(/<br\s*\/?>/gi, "\n"))
       .replace(/\n*\(Source:[^)]*\)\s*$/i, "")
       .replace(/\n{3,}/g, "\n\n")
   );
 /** The language a title is probably written in: kana → Japanese, other CJK → Chinese, otherwise English. */
-const scriptLang = (text: string): SiteLang => (/[\u3040-\u30ff]/.test(text) ? "ja" : /[\u3400-\u9fff]/.test(text) ? "zh" : "en");
+const scriptLang = (text: string): SiteLang =>
+  /[\u3040-\u30ff]/.test(text) ? "ja" : /[\u3400-\u9fff]/.test(text) ? "zh" : "en";
 const compact = (text: Partial<Record<SiteLang, string>>): LocalizedText =>
   Object.fromEntries(Object.entries(text).filter(([, value]) => value?.trim())) as LocalizedText;
 
@@ -239,7 +384,11 @@ type TmdbHit = {
   overview?: string;
 };
 
-type TmdbTranslation = { iso_639_1: string; iso_3166_1: string; data: { title?: string; name?: string; overview?: string } };
+type TmdbTranslation = {
+  iso_639_1: string;
+  iso_3166_1: string;
+  data: { title?: string; name?: string; overview?: string };
+};
 
 type TmdbDetails = TmdbHit & {
   original_language?: string;
@@ -263,18 +412,39 @@ type TmdbPerson = TmdbPersonHit & {
   biography?: string;
   homepage?: string | null;
   imdb_id?: string | null;
-  translations?: { translations: { iso_639_1: string; iso_3166_1: string; data: { biography?: string; name?: string } }[] };
+  translations?: {
+    translations: {
+      iso_639_1: string;
+      iso_3166_1: string;
+      data: { biography?: string; name?: string };
+    }[];
+  };
 };
 
 type TmdbCredits = {
-  cast?: { id: number; name: string; character?: string; profile_path?: string | null; order?: number }[];
+  cast?: {
+    id: number;
+    name: string;
+    character?: string;
+    profile_path?: string | null;
+    order?: number;
+  }[];
   crew?: { id: number; name: string; job: string; profile_path?: string | null }[];
 };
 
 type AniListMedia = {
   title?: { romaji?: string; native?: string };
   startDate?: { year?: number };
-  relations?: { edges?: { relationType?: string; node?: { type?: string; format?: string; title?: { romaji?: string; native?: string; english?: string } } }[] };
+  relations?: {
+    edges?: {
+      relationType?: string;
+      node?: {
+        type?: string;
+        format?: string;
+        title?: { romaji?: string; native?: string; english?: string };
+      };
+    }[];
+  };
 };
 
 type AniListManga = {
@@ -373,7 +543,9 @@ export function createMediaSources(options: {
     try {
       response = await fetchImpl(url, { ...init, signal: AbortSignal.timeout(TIMEOUT_MS) });
     } catch {
-      throw new SourceError(`无法连接 ${what}。如果访问它需要代理，请在 apps/api/.env 中设置 HTTPS_PROXY 后重启 API`);
+      throw new SourceError(
+        `无法连接 ${what}。如果访问它需要代理，请在 apps/api/.env 中设置 HTTPS_PROXY 后重启 API`
+      );
     }
     // With redirect: "manual" the caller follows 3xx responses itself.
     const redirect = init.redirect === "manual" && response.status >= 300 && response.status < 400;
@@ -404,11 +576,20 @@ export function createMediaSources(options: {
       list = (async () => {
         const names = new Map<number, Partial<Record<SiteLang, string>>>();
         for (const [lang, locale] of Object.entries(TMDB_LANGS) as [SiteLang, string][]) {
-          const { genres } = await tmdb<{ genres: { id: number; name: string }[] }>(`/genre/${type}/list`, { language: locale });
-          for (const genre of genres) names.set(genre.id, { ...names.get(genre.id), [lang]: genre.name });
+          const { genres } = await tmdb<{ genres: { id: number; name: string }[] }>(
+            `/genre/${type}/list`,
+            { language: locale }
+          );
+          for (const genre of genres)
+            names.set(genre.id, { ...names.get(genre.id), [lang]: genre.name });
         }
         // TMDB answers zh-TW genre lists with the Simplified names; keep only real Traditional ones.
-        return new Map([...names].map(([id, text]) => [id, compact(text["zh-Hant"] === text.zh ? { ...text, "zh-Hant": "" } : text)]));
+        return new Map(
+          [...names].map(([id, text]) => [
+            id,
+            compact(text["zh-Hant"] === text.zh ? { ...text, "zh-Hant": "" } : text)
+          ])
+        );
       })();
       list.catch(() => genreLists.delete(type));
       genreLists.set(type, list);
@@ -417,11 +598,20 @@ export function createMediaSources(options: {
   };
 
   /** One AniList anime or manga matched by its Japanese title (same title, or a year within one); null otherwise. */
-  const anilist = async (query: string, type: "ANIME" | "MANGA", nativeTitle: string, year: number | null): Promise<AniListMedia | null> => {
+  const anilist = async (
+    query: string,
+    type: "ANIME" | "MANGA",
+    nativeTitle: string,
+    year: number | null
+  ): Promise<AniListMedia | null> => {
     try {
       const response = await fetchImpl(ANILIST_API, {
         method: "POST",
-        headers: { "content-type": "application/json", accept: "application/json", "user-agent": USER_AGENT },
+        headers: {
+          "content-type": "application/json",
+          accept: "application/json",
+          "user-agent": USER_AGENT
+        },
         body: JSON.stringify({ query, variables: { search: nativeTitle, type } }),
         signal: AbortSignal.timeout(TIMEOUT_MS)
       });
@@ -432,8 +622,12 @@ export function createMediaSources(options: {
       const media = ((await response.json()) as { data?: { Media?: AniListMedia } }).data?.Media;
       if (!media) return null;
       // Search returns the closest match; accept it only when it is the same work.
-      const sameTitle = media.title?.native && titleKey(media.title.native) === titleKey(nativeTitle);
-      const sameYear = year !== null && media.startDate?.year !== undefined && Math.abs(media.startDate.year - year) <= 1;
+      const sameTitle =
+        media.title?.native && titleKey(media.title.native) === titleKey(nativeTitle);
+      const sameYear =
+        year !== null &&
+        media.startDate?.year !== undefined &&
+        Math.abs(media.startDate.year - year) <= 1;
       return sameTitle || sameYear ? media : null;
     } catch {
       return null;
@@ -446,13 +640,23 @@ export function createMediaSources(options: {
       ANILIST_API,
       {
         method: "POST",
-        headers: { "content-type": "application/json", accept: "application/json", "user-agent": USER_AGENT },
+        headers: {
+          "content-type": "application/json",
+          accept: "application/json",
+          "user-agent": USER_AGENT
+        },
         body: JSON.stringify({ query, variables })
       },
       "AniList"
     );
-    const body = (await response.json()) as { data?: T; errors?: { message?: string; status?: number }[] };
-    if (!body.data) throw new SourceError(body.errors?.[0]?.status === 404 ? "AniList 上找不到这个条目" : "AniList 返回错误");
+    const body = (await response.json()) as {
+      data?: T;
+      errors?: { message?: string; status?: number }[];
+    };
+    if (!body.data)
+      throw new SourceError(
+        body.errors?.[0]?.status === 404 ? "AniList 上找不到这个条目" : "AniList 返回错误"
+      );
     return body.data;
   };
 
@@ -462,10 +666,13 @@ export function createMediaSources(options: {
     for (const [key, value] of Object.entries(params)) url.searchParams.set(key, value);
     url.searchParams.set("key", googleBooksKey);
     try {
-      return (await request(url.toString(), { headers: { accept: "application/json" } }, "Google Books")).json() as Promise<T>;
+      return (
+        await request(url.toString(), { headers: { accept: "application/json" } }, "Google Books")
+      ).json() as Promise<T>;
     } catch (error) {
       // Google answers a bad key with 400 and an exhausted quota with 429; the key must never reach a message.
-      if (error instanceof SourceError && /HTTP 4(00|03|29)/.test(error.message)) throw new SourceError("Google Books 拒绝了请求，请检查 GOOGLE_BOOKS_API_KEY 或当日配额");
+      if (error instanceof SourceError && /HTTP 4(00|03|29)/.test(error.message))
+        throw new SourceError("Google Books 拒绝了请求，请检查 GOOGLE_BOOKS_API_KEY 或当日配额");
       throw error;
     }
   };
@@ -476,12 +683,21 @@ export function createMediaSources(options: {
   const igdbAccess = async () => {
     if (!twitch) throw new SourceError("未配置 TWITCH_CLIENT_ID / TWITCH_CLIENT_SECRET");
     if (igdbToken && igdbToken.expiresAt > now() + 60_000) return igdbToken.value;
-    const body = new URLSearchParams({ client_id: twitch.clientId, client_secret: twitch.clientSecret, grant_type: "client_credentials" });
+    const body = new URLSearchParams({
+      client_id: twitch.clientId,
+      client_secret: twitch.clientSecret,
+      grant_type: "client_credentials"
+    });
     let token: { access_token?: string; expires_in?: number };
     try {
-      token = (await (await request(TWITCH_TOKEN, { method: "POST", body }, "Twitch")).json()) as typeof token;
+      token = (await (
+        await request(TWITCH_TOKEN, { method: "POST", body }, "Twitch")
+      ).json()) as typeof token;
     } catch (error) {
-      if (error instanceof SourceError && /HTTP 40[03]|拒绝/.test(error.message)) throw new SourceError("Twitch 拒绝了应用凭证，请检查 TWITCH_CLIENT_ID 和 TWITCH_CLIENT_SECRET");
+      if (error instanceof SourceError && /HTTP 40[03]|拒绝/.test(error.message))
+        throw new SourceError(
+          "Twitch 拒绝了应用凭证，请检查 TWITCH_CLIENT_ID 和 TWITCH_CLIENT_SECRET"
+        );
       throw error;
     }
     if (!token.access_token) throw new SourceError("Twitch 没有返回令牌");
@@ -492,11 +708,18 @@ export function createMediaSources(options: {
     const token = await igdbAccess();
     const response = await fetchImpl(`${IGDB}/${endpoint}`, {
       method: "POST",
-      headers: { "Client-ID": twitch!.clientId, authorization: `Bearer ${token}`, accept: "application/json", "content-type": "text/plain" },
+      headers: {
+        "Client-ID": twitch!.clientId,
+        authorization: `Bearer ${token}`,
+        accept: "application/json",
+        "content-type": "text/plain"
+      },
       body: query,
       signal: AbortSignal.timeout(TIMEOUT_MS)
     }).catch(() => {
-      throw new SourceError("无法连接 IGDB。如果访问它需要代理，请在 apps/api/.env 中设置 HTTPS_PROXY 后重启 API");
+      throw new SourceError(
+        "无法连接 IGDB。如果访问它需要代理，请在 apps/api/.env 中设置 HTTPS_PROXY 后重启 API"
+      );
     });
     if (response.status === 401 && retry) {
       // A revoked or expired token: get a new one once.
@@ -516,22 +739,40 @@ export function createMediaSources(options: {
     }
     return response.json() as Promise<T>;
   };
-  const igdbCover = (game: IgdbGame, size: string) => (game.cover?.image_id ? `${IGDB_IMAGE}/${size}/${game.cover.image_id}.jpg` : null);
-  const igdbYear = (game: IgdbGame) => (game.first_release_date ? new Date(game.first_release_date * 1000).getUTCFullYear() : null);
-  const igdbCompanies = (game: IgdbGame, role: "developer" | "publisher") =>
-    [...new Set((game.involved_companies ?? []).filter((company) => company[role]).map((company) => clean(company.company?.name)).filter(Boolean))];
+  const igdbCover = (game: IgdbGame, size: string) =>
+    game.cover?.image_id ? `${IGDB_IMAGE}/${size}/${game.cover.image_id}.jpg` : null;
+  const igdbYear = (game: IgdbGame) =>
+    game.first_release_date ? new Date(game.first_release_date * 1000).getUTCFullYear() : null;
+  const igdbCompanies = (game: IgdbGame, role: "developer" | "publisher") => [
+    ...new Set(
+      (game.involved_companies ?? [])
+        .filter((company) => company[role])
+        .map((company) => clean(company.company?.name))
+        .filter(Boolean)
+    )
+  ];
 
   const openLibrary = async <T>(path: string, params: Record<string, string> = {}): Promise<T> => {
     const url = new URL(OPENLIBRARY + path);
     for (const [key, value] of Object.entries(params)) url.searchParams.set(key, value);
-    return (await request(url.toString(), { headers: { "user-agent": USER_AGENT, accept: "application/json" } }, "Open Library")).json() as Promise<T>;
+    return (
+      await request(
+        url.toString(),
+        { headers: { "user-agent": USER_AGENT, accept: "application/json" } },
+        "Open Library"
+      )
+    ).json() as Promise<T>;
   };
 
   /**
    * A Google Books cover over https, without the page-curl effect. `fife=w800` asks for up to 800 px wide
    * (the API's own links are about 128 px); zoom=0 is not used, since it answers a placeholder for many books.
    */
-  const googleCover = (links: Record<string, string> | undefined, sizes: string[], width?: number) => {
+  const googleCover = (
+    links: Record<string, string> | undefined,
+    sizes: string[],
+    width?: number
+  ) => {
     const link = sizes.map((size) => links?.[size]).find(Boolean);
     if (!link) return null;
     const url = new URL(link.replace(/^http:/, "https:"));
@@ -562,8 +803,14 @@ export function createMediaSources(options: {
     ].slice(0, 4);
 
   const bangumi = async <T>(path: string, init: RequestInit = {}): Promise<T> => {
-    const headers = { "user-agent": USER_AGENT, accept: "application/json", ...(init.body ? { "content-type": "application/json" } : {}) };
-    return (await request(`https://api.bgm.tv${path}`, { ...init, headers }, "Bangumi")).json() as Promise<T>;
+    const headers = {
+      "user-agent": USER_AGENT,
+      accept: "application/json",
+      ...(init.body ? { "content-type": "application/json" } : {})
+    };
+    return (
+      await request(`https://api.bgm.tv${path}`, { ...init, headers }, "Bangumi")
+    ).json() as Promise<T>;
   };
 
   const tmdbHit = (hit: TmdbHit, type: TmdbType): SourceHit => ({
@@ -578,14 +825,26 @@ export function createMediaSources(options: {
     overview: clean(hit.overview)
   });
 
-  const bangumiPoster = (subject: BangumiSubject) => subject.images?.large || subject.images?.common || null;
+  const bangumiPoster = (subject: BangumiSubject) =>
+    subject.images?.large || subject.images?.common || null;
 
   return {
-    available: () => ({ tmdb: Boolean(tmdbKey), bangumi: true, openlibrary: true, googlebooks: Boolean(googleBooksKey), anilist: true, igdb: Boolean(twitch) }),
+    available: () => ({
+      tmdb: Boolean(tmdbKey),
+      bangumi: true,
+      openlibrary: true,
+      googlebooks: Boolean(googleBooksKey),
+      anilist: true,
+      igdb: Boolean(twitch)
+    }),
 
     async search(source, kind, query) {
       if (source === "openlibrary") {
-        const { docs } = await openLibrary<{ docs?: OpenLibraryDoc[] }>("/search.json", { q: query, limit: "20", fields: OPENLIBRARY_FIELDS });
+        const { docs } = await openLibrary<{ docs?: OpenLibraryDoc[] }>("/search.json", {
+          q: query,
+          limit: "20",
+          fields: OPENLIBRARY_FIELDS
+        });
         return (docs ?? []).map((doc) => ({
           source: "openlibrary" as const,
           sourceId: doc.key.replace(/^\/works\//, ""),
@@ -594,13 +853,19 @@ export function createMediaSources(options: {
           title: clean(doc.title),
           originalTitle: null,
           year: doc.first_publish_year ?? null,
-          posterUrl: doc.cover_i ? `https://covers.openlibrary.org/b/id/${doc.cover_i}-M.jpg` : null,
+          posterUrl: doc.cover_i
+            ? `https://covers.openlibrary.org/b/id/${doc.cover_i}-M.jpg`
+            : null,
           overview: ""
         }));
       }
 
       if (source === "googlebooks") {
-        const { items } = await googleBooks<{ items?: GoogleVolume[] }>("/volumes", { q: query, maxResults: "20", printType: "books" });
+        const { items } = await googleBooks<{ items?: GoogleVolume[] }>("/volumes", {
+          q: query,
+          maxResults: "20",
+          printType: "books"
+        });
         return (items ?? []).map((volume) => {
           const info = volume.volumeInfo ?? {};
           return {
@@ -608,7 +873,9 @@ export function createMediaSources(options: {
             sourceId: volume.id,
             mediaType: null,
             creators: (info.authors ?? []).slice(0, 2),
-            title: [clean(info.title), clean(info.subtitle)].filter(Boolean).join("：") || clean(info.title),
+            title:
+              [clean(info.title), clean(info.subtitle)].filter(Boolean).join("：") ||
+              clean(info.title),
             originalTitle: null,
             year: yearOf(info.publishedDate),
             posterUrl: googleCover(info.imageLinks, ["thumbnail", "smallThumbnail"]),
@@ -633,18 +900,25 @@ export function createMediaSources(options: {
           originalTitle: null,
           year: igdbYear(game),
           posterUrl: igdbCover(game, "t_cover_small"),
-          overview: (game.platforms ?? []).map((platform) => clean(platform.name)).filter(Boolean).join(" · ")
+          overview: (game.platforms ?? [])
+            .map((platform) => clean(platform.name))
+            .filter(Boolean)
+            .join(" · ")
         }));
       }
 
       if (source === "anilist") {
-        const { Page } = await anilistQuery<{ Page?: { media?: AniListManga[] } }>(ANILIST_MANGA_SEARCH, { search: query });
+        const { Page } = await anilistQuery<{ Page?: { media?: AniListManga[] } }>(
+          ANILIST_MANGA_SEARCH,
+          { search: query }
+        );
         return (Page?.media ?? []).map((manga) => ({
           source: "anilist" as const,
           sourceId: String(manga.id),
           mediaType: null,
           creators: anilistAuthors(manga),
-          title: clean(manga.title?.english) || clean(manga.title?.romaji) || clean(manga.title?.native),
+          title:
+            clean(manga.title?.english) || clean(manga.title?.romaji) || clean(manga.title?.native),
           originalTitle: clean(manga.title?.native) || null,
           year: manga.startDate?.year ?? null,
           posterUrl: manga.coverImage?.large ?? null,
@@ -675,16 +949,16 @@ export function createMediaSources(options: {
       return (data ?? [])
         .filter((subject) => !isPrint || (kind === "comic") === (subject.platform === "漫画"))
         .map((subject) => ({
-        source: "bangumi" as const,
-        sourceId: String(subject.id),
-        mediaType: isPrint ? null : ("tv" as const),
-        creators: [],
-        title: clean(subject.name_cn) || clean(subject.name),
-        originalTitle: clean(subject.name) || null,
-        year: yearOf(subject.date),
-        posterUrl: subject.images?.common || subject.images?.medium || null,
-        overview: clean(subject.summary)
-      }));
+          source: "bangumi" as const,
+          sourceId: String(subject.id),
+          mediaType: isPrint ? null : ("tv" as const),
+          creators: [],
+          title: clean(subject.name_cn) || clean(subject.name),
+          originalTitle: clean(subject.name) || null,
+          year: yearOf(subject.date),
+          posterUrl: subject.images?.common || subject.images?.medium || null,
+          overview: clean(subject.summary)
+        }));
     },
 
     async details(source, kind, sourceId) {
@@ -693,27 +967,40 @@ export function createMediaSources(options: {
         if (!match) throw new SourceError("无效的 TMDB 条目");
         const type = match[1] as TmdbType;
         const id = match[2];
-        const details = await tmdb<TmdbDetails>(`/${type}/${id}`, { language: "zh-CN", append_to_response: "translations,credits" });
+        const details = await tmdb<TmdbDetails>(`/${type}/${id}`, {
+          language: "zh-CN",
+          append_to_response: "translations,credits"
+        });
         const translations = details.translations?.translations ?? [];
         // Chinese is split by region (Simplified CN/SG, Traditional TW/HK), so it never falls back across
         // regions; other languages take any region when the preferred ones are missing.
         const translated = (lang: string, regions: string[], field: "title" | "overview") => {
           const candidates = translations.filter((t) => t.iso_639_1 === lang);
-          const preferred = regions.map((region) => candidates.find((t) => t.iso_3166_1 === region)).find(Boolean);
+          const preferred = regions
+            .map((region) => candidates.find((t) => t.iso_3166_1 === region))
+            .find(Boolean);
           const pick = preferred ?? (lang === "zh" ? undefined : candidates[0]);
-          return clean(field === "title" ? (pick?.data.title ?? pick?.data.name) : pick?.data.overview);
+          return clean(
+            field === "title" ? (pick?.data.title ?? pick?.data.name) : pick?.data.overview
+          );
         };
         const original = clean(details.original_title ?? details.original_name) || null;
         // TMDB leaves the original language's translation empty (e.g. no English title for an English
         // series); the original title is that language's title.
-        const inOriginal = (lang: string) => (details.original_language === lang ? (original ?? "") : "");
+        const inOriginal = (lang: string) =>
+          details.original_language === lang ? (original ?? "") : "";
         // Localized genre names are optional; without them the details' Chinese names are used.
         const genreNames = await tmdbGenres(type).catch(() => new Map<number, LocalizedText>());
         const credits =
           type === "movie"
-            ? (details.credits?.crew ?? []).filter((member) => member.job === "Director").map((member) => member.name)
+            ? (details.credits?.crew ?? [])
+                .filter((member) => member.job === "Director")
+                .map((member) => member.name)
             : (details.created_by ?? []).map((person) => person.name);
-        const studios = type === "tv" || !credits.length ? (details.production_companies ?? []).slice(0, 2).map((company) => company.name) : [];
+        const studios =
+          type === "tv" || !credits.length
+            ? (details.production_companies ?? []).slice(0, 2).map((company) => company.name)
+            : [];
 
         return {
           sourceId,
@@ -727,7 +1014,9 @@ export function createMediaSources(options: {
           }),
           originalTitle: original,
           year: yearOf(details.release_date ?? details.first_air_date),
-          genres: (details.genres ?? []).map((genre) => genreNames.get(genre.id) ?? { zh: genre.name }),
+          genres: (details.genres ?? []).map(
+            (genre) => genreNames.get(genre.id) ?? { zh: genre.name }
+          ),
           credits: [...new Set([...credits, ...studios])].slice(0, 6),
           overview: compact({
             zh: translated("zh", ["CN", "SG"], "overview") || clean(details.overview),
@@ -745,13 +1034,18 @@ export function createMediaSources(options: {
       if (source === "openlibrary") {
         if (!/^OL\d+W$/.test(sourceId)) throw new SourceError("无效的 Open Library 条目");
         const [{ docs }, work] = await Promise.all([
-          openLibrary<{ docs?: OpenLibraryDoc[] }>("/search.json", { q: `key:/works/${sourceId}`, limit: "1", fields: OPENLIBRARY_FIELDS }),
+          openLibrary<{ docs?: OpenLibraryDoc[] }>("/search.json", {
+            q: `key:/works/${sourceId}`,
+            limit: "1",
+            fields: OPENLIBRARY_FIELDS
+          }),
           openLibrary<{ description?: string | { value?: string } }>(`/works/${sourceId}.json`)
         ]);
         const doc = docs?.[0];
         if (!doc) throw new SourceError("Open Library 上找不到这个条目");
         const title = clean(doc.title);
-        const description = typeof work.description === "string" ? work.description : work.description?.value;
+        const description =
+          typeof work.description === "string" ? work.description : work.description?.value;
         return {
           sourceId,
           sourceUrl: `${OPENLIBRARY}/works/${sourceId}`,
@@ -763,14 +1057,22 @@ export function createMediaSources(options: {
           credits: (doc.author_name ?? []).slice(0, 1),
           // Descriptions often end with a "----------" block of links.
           overview: compact({ en: clean(description?.split(/\n-{5,}/)[0]) }),
-          posterUrl: doc.cover_i ? `https://covers.openlibrary.org/b/id/${doc.cover_i}-L.jpg` : null,
+          posterUrl: doc.cover_i
+            ? `https://covers.openlibrary.org/b/id/${doc.cover_i}-L.jpg`
+            : null,
           episodes: null,
-          publication: { publisher: clean(doc.publisher?.[0]) || null, pages: doc.number_of_pages_median ?? null, volumes: null, ongoing: null }
+          publication: {
+            publisher: clean(doc.publisher?.[0]) || null,
+            pages: doc.number_of_pages_median ?? null,
+            volumes: null,
+            ongoing: null
+          }
         };
       }
 
       if (source === "googlebooks") {
-        if (!/^[A-Za-z0-9_-]{12}$/.test(sourceId)) throw new SourceError("无效的 Google Books 条目");
+        if (!/^[A-Za-z0-9_-]{12}$/.test(sourceId))
+          throw new SourceError("无效的 Google Books 条目");
         const volume = await googleBooks<GoogleVolume>(`/volumes/${sourceId}`);
         const info = volume.volumeInfo ?? {};
         const title = clean(info.title);
@@ -784,20 +1086,36 @@ export function createMediaSources(options: {
           genres: knownGenres(info.categories ?? []).slice(0, 5),
           credits: (info.authors ?? []).map(clean).filter(Boolean).slice(0, 3),
           overview: compact({ [lang]: plainText(info.description) }),
-          posterUrl: googleCover(info.imageLinks, ["extraLarge", "large", "medium", "small", "thumbnail"], 800),
+          posterUrl: googleCover(
+            info.imageLinks,
+            ["extraLarge", "large", "medium", "small", "thumbnail"],
+            800
+          ),
           episodes: null,
-          publication: { publisher: clean(info.publisher) || null, pages: info.pageCount || info.printedPageCount || null, volumes: null, ongoing: null }
+          publication: {
+            publisher: clean(info.publisher) || null,
+            pages: info.pageCount || info.printedPageCount || null,
+            volumes: null,
+            ongoing: null
+          }
         };
       }
 
       if (source === "igdb") {
         if (!/^\d{1,12}$/.test(sourceId)) throw new SourceError("无效的 IGDB 条目");
-        const [game] = await igdb<IgdbGame[]>("games", `fields ${IGDB_FIELDS}; where id = ${sourceId};`);
+        const [game] = await igdb<IgdbGame[]>(
+          "games",
+          `fields ${IGDB_FIELDS}; where id = ${sourceId};`
+        );
         if (!game) throw new SourceError("IGDB 上找不到这个条目");
         const name = clean(game.name);
         // Local names: IGDB's localizations, then alternative names labelled with their language.
         const localized = (regions: string[], comment: RegExp) =>
-          clean(game.game_localizations?.find((entry) => regions.includes(entry.region?.identifier ?? ""))?.name) ||
+          clean(
+            game.game_localizations?.find((entry) =>
+              regions.includes(entry.region?.identifier ?? "")
+            )?.name
+          ) ||
           clean(game.alternative_names?.find((entry) => comment.test(entry.comment ?? ""))?.name);
         return {
           sourceId,
@@ -810,14 +1128,19 @@ export function createMediaSources(options: {
           }),
           originalTitle: name || null,
           year: igdbYear(game),
-          genres: (game.genres ?? []).map((genre) => clean(genre.name)).filter(Boolean).map((genre) => compact({ en: genre, ...IGDB_GENRES[genre] })),
+          genres: (game.genres ?? [])
+            .map((genre) => clean(genre.name))
+            .filter(Boolean)
+            .map((genre) => compact({ en: genre, ...IGDB_GENRES[genre] })),
           credits: igdbCompanies(game, "developer").slice(0, 3),
           overview: compact({ en: clean(game.summary) }),
           posterUrl: igdbCover(game, "t_cover_big_2x"),
           episodes: null,
           publication: null,
           game: {
-            platforms: (game.platforms ?? []).map((platform) => clean(platform.name)).filter(Boolean),
+            platforms: (game.platforms ?? [])
+              .map((platform) => clean(platform.name))
+              .filter(Boolean),
             publishers: igdbCompanies(game, "publisher").slice(0, 3),
             playtimeHours: null
           }
@@ -826,17 +1149,25 @@ export function createMediaSources(options: {
 
       if (source === "anilist") {
         if (!/^\d{1,9}$/.test(sourceId)) throw new SourceError("无效的 AniList 条目");
-        const { Media: manga } = await anilistQuery<{ Media?: AniListManga }>(ANILIST_MANGA, { id: Number(sourceId) });
+        const { Media: manga } = await anilistQuery<{ Media?: AniListManga }>(ANILIST_MANGA, {
+          id: Number(sourceId)
+        });
         if (!manga) throw new SourceError("AniList 上找不到这个条目");
         const romaji = clean(manga.title?.romaji);
         return {
           sourceId,
           sourceUrl: manga.siteUrl ?? `https://anilist.co/manga/${sourceId}`,
           // AniList has no Chinese titles; English and French get the English (or romaji) title.
-          title: compact({ ja: clean(manga.title?.native), en: clean(manga.title?.english) || romaji, fr: romaji }),
+          title: compact({
+            ja: clean(manga.title?.native),
+            en: clean(manga.title?.english) || romaji,
+            fr: romaji
+          }),
           originalTitle: clean(manga.title?.native) || null,
           year: manga.startDate?.year ?? null,
-          genres: (manga.genres ?? []).filter((genre) => genre !== "Hentai").map((genre) => compact({ en: genre, ...ANILIST_GENRES[genre] })),
+          genres: (manga.genres ?? [])
+            .filter((genre) => genre !== "Hentai")
+            .map((genre) => compact({ en: genre, ...ANILIST_GENRES[genre] })),
           credits: anilistAuthors(manga),
           overview: compact({ en: plainText(manga.description) }),
           posterUrl: manga.coverImage?.extraLarge ?? manga.coverImage?.large ?? null,
@@ -845,7 +1176,12 @@ export function createMediaSources(options: {
             publisher: null,
             pages: null,
             volumes: manga.volumes ?? null,
-            ongoing: manga.status === "RELEASING" || manga.status === "HIATUS" ? true : manga.status === "FINISHED" ? false : null
+            ongoing:
+              manga.status === "RELEASING" || manga.status === "HIATUS"
+                ? true
+                : manga.status === "FINISHED"
+                  ? false
+                  : null
           }
         };
       }
@@ -853,7 +1189,8 @@ export function createMediaSources(options: {
       if (!/^\d+$/.test(sourceId)) throw new SourceError("无效的 Bangumi 条目");
       const subject = await bangumi<BangumiSubject>(`/v0/subjects/${sourceId}`);
       const infobox = subject.infobox ?? [];
-      const infoboxText = (value: string | { v: string }[]) => (typeof value === "string" ? value : value.map((item) => item.v).join(" "));
+      const infoboxText = (value: string | { v: string }[]) =>
+        typeof value === "string" ? value : value.map((item) => item.v).join(" ");
       const isPrint = kind === "book" || kind === "comic";
       const field = (key: string) => {
         const value = infobox.find((entry) => entry.key === key)?.value;
@@ -861,14 +1198,24 @@ export function createMediaSources(options: {
       };
       const credits = (isPrint ? BANGUMI_BOOK_CREDIT_KEYS : BANGUMI_CREDIT_KEYS).flatMap((key) => {
         const value = infobox.find((entry) => entry.key === key)?.value;
-        const names = typeof value === "string" ? value.split(/[、,，/]/) : (value ?? []).map((item) => item.v);
+        const names =
+          typeof value === "string" ? value.split(/[、,，/]/) : (value ?? []).map((item) => item.v);
         // Drop notes such as "（芳文社「まんがタイムきららMAX」連載中）".
         return names.map((name) => name.replace(/[（(][^）)]*[）)]/g, "").trim()).filter(Boolean);
       });
       // User tags mix genres with studios, publishers and seasons; keep the ones the infobox does not name.
-      const named = infobox.map((entry) => infoboxText(entry.value)).join(" ").toLowerCase();
+      const named = infobox
+        .map((entry) => infoboxText(entry.value))
+        .join(" ")
+        .toLowerCase();
       const genres = (subject.tags ?? [])
-        .filter((tag) => !/\d/.test(tag.name) && tag.name.length <= 12 && tag.name !== subject.platform && !named.includes(tag.name.toLowerCase()))
+        .filter(
+          (tag) =>
+            !/\d/.test(tag.name) &&
+            tag.name.length <= 12 &&
+            tag.name !== subject.platform &&
+            !named.includes(tag.name.toLowerCase())
+        )
         .sort((a, b) => b.count - a.count)
         .slice(0, 6)
         .map((tag) => ({ zh: tag.name }));
@@ -876,7 +1223,10 @@ export function createMediaSources(options: {
       return {
         sourceId,
         sourceUrl: `https://bgm.tv/subject/${sourceId}`,
-        title: compact({ zh: clean(subject.name_cn) || clean(subject.name), ja: clean(subject.name) }),
+        title: compact({
+          zh: clean(subject.name_cn) || clean(subject.name),
+          ja: clean(subject.name)
+        }),
         originalTitle: clean(subject.name) || null,
         year: yearOf(subject.date),
         genres,
@@ -888,7 +1238,10 @@ export function createMediaSources(options: {
         episodes: isPrint ? subject.volumes || null : subject.eps || subject.total_episodes || null,
         publication: isPrint
           ? {
-              publisher: field("出版社").split(/[、,，/]/)[0]?.trim() || null,
+              publisher:
+                field("出版社")
+                  .split(/[、,，/]/)[0]
+                  ?.trim() || null,
               pages: Number(field("页数")) || null,
               volumes: subject.volumes || null,
               // Serialized comics list a start and, once finished, an end.
@@ -904,46 +1257,77 @@ export function createMediaSources(options: {
       for (let at = 0; at < appIds.length; at += 500) {
         const ids = appIds.slice(at, at + 500).filter((id) => /^\d{1,10}$/.test(id));
         if (!ids.length) continue;
-        const rows = await igdb<{ game?: number; uid?: string }[]>("external_games", `fields game,uid; where external_game_source = 1 & uid = (${ids.map((id) => `"${id}"`).join(",")}); limit 500;`);
-        for (const row of rows) if (row.game && row.uid && !found.has(row.uid)) found.set(row.uid, String(row.game));
+        const rows = await igdb<{ game?: number; uid?: string }[]>(
+          "external_games",
+          `fields game,uid; where external_game_source = 1 & uid = (${ids.map((id) => `"${id}"`).join(",")}); limit 500;`
+        );
+        for (const row of rows)
+          if (row.game && row.uid && !found.has(row.uid)) found.set(row.uid, String(row.game));
       }
       return found;
     },
 
     async romaji(nativeTitle, year, kind = "anime") {
-      return (await anilist(ANILIST_QUERY, kind === "comic" ? "MANGA" : "ANIME", nativeTitle, year))?.title?.romaji?.trim() || null;
+      return (
+        (
+          await anilist(ANILIST_QUERY, kind === "comic" ? "MANGA" : "ANIME", nativeTitle, year)
+        )?.title?.romaji?.trim() || null
+      );
     },
 
     async relations(kind, nativeTitle, year) {
-      const media = await anilist(ANILIST_RELATIONS_QUERY, kind === "anime" ? "ANIME" : "MANGA", nativeTitle, year);
+      const media = await anilist(
+        ANILIST_RELATIONS_QUERY,
+        kind === "anime" ? "ANIME" : "MANGA",
+        nativeTitle,
+        year
+      );
       return (media?.relations?.edges ?? []).flatMap((edge): AniListRelation[] => {
-        const titles = [edge.node?.title?.native, edge.node?.title?.romaji, edge.node?.title?.english].map(clean).filter(Boolean);
+        const titles = [
+          edge.node?.title?.native,
+          edge.node?.title?.romaji,
+          edge.node?.title?.english
+        ]
+          .map(clean)
+          .filter(Boolean);
         const type = edge.node?.type;
-        if (!edge.relationType || !titles.length || (type !== "ANIME" && type !== "MANGA")) return [];
+        if (!edge.relationType || !titles.length || (type !== "ANIME" && type !== "MANGA"))
+          return [];
         const other = type === "ANIME" ? "anime" : edge.node?.format === "NOVEL" ? "book" : "comic";
         return [{ relationType: edge.relationType, kind: other, titles }];
       });
     },
 
     async searchPeople(query) {
-      const data = await tmdb<{ results?: TmdbPersonHit[] }>("/search/person", { query, language: "zh-CN", include_adult: "false" });
+      const data = await tmdb<{ results?: TmdbPersonHit[] }>("/search/person", {
+        query,
+        language: "zh-CN",
+        include_adult: "false"
+      });
       return (data.results ?? []).slice(0, 20).map((hit) => ({
         source: "tmdb" as const,
         sourceId: String(hit.id),
         name: clean(hit.name),
         department: hit.known_for_department ?? null,
-        knownFor: (hit.known_for ?? []).map((work) => clean(work.title ?? work.name)).filter(Boolean).slice(0, 3),
+        knownFor: (hit.known_for ?? [])
+          .map((work) => clean(work.title ?? work.name))
+          .filter(Boolean)
+          .slice(0, 3),
         photoUrl: hit.profile_path ? `${TMDB_IMAGE}/w185${hit.profile_path}` : null
       }));
     },
 
     async person(sourceId) {
       if (!/^\d{1,12}$/.test(sourceId)) throw new SourceError("无效的 TMDB 人物");
-      const details = await tmdb<TmdbPerson>(`/person/${sourceId}`, { append_to_response: "translations" });
+      const details = await tmdb<TmdbPerson>(`/person/${sourceId}`, {
+        append_to_response: "translations"
+      });
       const translations = details.translations?.translations ?? [];
       const translated = (lang: string, regions: string[], field: "name" | "biography") => {
         const candidates = translations.filter((t) => t.iso_639_1 === lang);
-        const preferred = regions.map((region) => candidates.find((t) => t.iso_3166_1 === region)).find(Boolean);
+        const preferred = regions
+          .map((region) => candidates.find((t) => t.iso_3166_1 === region))
+          .find(Boolean);
         return clean((preferred ?? (lang === "zh" ? undefined : candidates[0]))?.data[field]);
       };
       const name = clean(details.name);
@@ -968,7 +1352,9 @@ export function createMediaSources(options: {
         }),
         links: [
           details.homepage && /^https:\/\//.test(details.homepage) ? details.homepage : "",
-          details.imdb_id && /^nm\d+$/.test(details.imdb_id) ? `https://www.imdb.com/name/${details.imdb_id}/` : ""
+          details.imdb_id && /^nm\d+$/.test(details.imdb_id)
+            ? `https://www.imdb.com/name/${details.imdb_id}/`
+            : ""
         ].filter(Boolean),
         photoUrl: details.profile_path ? `${TMDB_IMAGE}/w780${details.profile_path}` : null
       };
@@ -978,20 +1364,36 @@ export function createMediaSources(options: {
       const match = /^(movie|tv):(\d+)$/.exec(sourceId);
       if (!match) throw new SourceError("无效的 TMDB 条目");
       const type = match[1] as TmdbType;
-      const details = await tmdb<{ created_by?: { id: number; name: string; profile_path?: string | null }[]; credits?: TmdbCredits }>(`/${type}/${match[2]}`, {
+      const details = await tmdb<{
+        created_by?: { id: number; name: string; profile_path?: string | null }[];
+        credits?: TmdbCredits;
+      }>(`/${type}/${match[2]}`, {
         append_to_response: "credits"
       });
-      const photo = (path: string | null | undefined) => (path ? `${TMDB_IMAGE}/w185${path}` : null);
+      const photo = (path: string | null | undefined) =>
+        path ? `${TMDB_IMAGE}/w185${path}` : null;
       const crew = details.credits?.crew ?? [];
       const hits: CreditHit[] = [
         ...(type === "tv"
-          ? (details.created_by ?? []).map((person) => ({ id: person.id, name: person.name, role: "creator" as const, profile_path: person.profile_path }))
-          : crew.filter((member) => member.job === "Director").map((member) => ({ ...member, role: "director" as const }))),
-        ...crew.filter((member) => member.job === "Screenplay" || member.job === "Writer").map((member) => ({ ...member, role: "screenwriter" as const })),
+          ? (details.created_by ?? []).map((person) => ({
+              id: person.id,
+              name: person.name,
+              role: "creator" as const,
+              profile_path: person.profile_path
+            }))
+          : crew
+              .filter((member) => member.job === "Director")
+              .map((member) => ({ ...member, role: "director" as const }))),
+        ...crew
+          .filter((member) => member.job === "Screenplay" || member.job === "Writer")
+          .map((member) => ({ ...member, role: "screenwriter" as const })),
         ...(details.credits?.cast ?? [])
           .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
           .slice(0, CAST_LIMIT)
-          .map((member) => ({ ...member, role: kind === "anime" ? ("voice" as const) : ("actor" as const) }))
+          .map((member) => ({
+            ...member,
+            role: kind === "anime" ? ("voice" as const) : ("actor" as const)
+          }))
       ].map((member) => {
         const character = "character" in member ? clean(member.character as string) : "";
         // Animated films list voice actors as cast with "(voice)" after the character.
@@ -1021,9 +1423,15 @@ export function createMediaSources(options: {
       let response: Response | null = null;
       for (let hop = 0; hop <= MAX_REDIRECTS && !response; hop++) {
         const parsed = new URL(next);
-        if (parsed.protocol !== "https:" || !isPosterHost(parsed.hostname)) throw new SourceError("海报地址无效");
-        const answer = await request(next, { headers: { "user-agent": USER_AGENT }, redirect: "manual" }, "海报服务器");
-        const location = answer.status >= 300 && answer.status < 400 ? answer.headers.get("location") : null;
+        if (parsed.protocol !== "https:" || !isPosterHost(parsed.hostname))
+          throw new SourceError("海报地址无效");
+        const answer = await request(
+          next,
+          { headers: { "user-agent": USER_AGENT }, redirect: "manual" },
+          "海报服务器"
+        );
+        const location =
+          answer.status >= 300 && answer.status < 400 ? answer.headers.get("location") : null;
         if (!location) {
           response = answer;
         } else {

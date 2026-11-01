@@ -15,7 +15,13 @@ import type { MediaPatch } from "../media/types";
 import { LocalImageStore } from "../storage/local";
 import { createPrismaClient } from "./client";
 
-type Sample = { kind: MediaKind; source: SearchSource; sourceId?: string; query?: string; patch: MediaPatch };
+type Sample = {
+  kind: MediaKind;
+  source: SearchSource;
+  sourceId?: string;
+  query?: string;
+  patch: MediaPatch;
+};
 
 const SAMPLES: Sample[] = [
   {
@@ -27,52 +33,147 @@ const SAMPLES: Sample[] = [
       watchedOn: "2026-10-20",
       rewatchCount: 3,
       featured: true,
-      review: { zh: "每次重看都能发现新的细节。\n汤屋的夜景永远看不腻。", en: "Something new on every rewatch." }
+      review: {
+        zh: "每次重看都能发现新的细节。\n汤屋的夜景永远看不腻。",
+        en: "Something new on every rewatch."
+      }
     }
   },
-  { kind: "movie", source: "tmdb", sourceId: "movie:4935", patch: { rating: 4, watchedOn: "2026-09-02" } },
-  { kind: "movie", source: "tmdb", sourceId: "movie:496243", patch: { rating: 5, watchedOn: "2026-08-15", review: { zh: "后半段一直坐立不安。" } } },
-  { kind: "movie", source: "tmdb", sourceId: "movie:194", patch: { rating: 4, watchedOn: "2026-05-03", review: { fr: "Un conte de Paris plein de charme." } } },
+  {
+    kind: "movie",
+    source: "tmdb",
+    sourceId: "movie:4935",
+    patch: { rating: 4, watchedOn: "2026-09-02" }
+  },
+  {
+    kind: "movie",
+    source: "tmdb",
+    sourceId: "movie:496243",
+    patch: { rating: 5, watchedOn: "2026-08-15", review: { zh: "后半段一直坐立不安。" } }
+  },
+  {
+    kind: "movie",
+    source: "tmdb",
+    sourceId: "movie:194",
+    patch: {
+      rating: 4,
+      watchedOn: "2026-05-03",
+      review: { fr: "Un conte de Paris plein de charme." }
+    }
+  },
   { kind: "movie", source: "tmdb", sourceId: "movie:27205", patch: { status: "want" } },
   // Hidden: must not appear on the site.
-  { kind: "movie", source: "tmdb", sourceId: "movie:157336", patch: { rating: 5, watchedOn: "2026-04-11", visibility: "private" } },
-  { kind: "tv", source: "tmdb", sourceId: "tv:64010", patch: { rating: 5, watchedOn: "2026-07-01", review: { zh: "看完像告别了一整条街坊。" } } },
-  { kind: "tv", source: "tmdb", sourceId: "tv:1396", patch: { status: "watching", rating: 4, progress: { watched: 30, total: 62 } } },
-  { kind: "tv", source: "tmdb", sourceId: "tv:42009", patch: { status: "dropped", rating: 3, progress: { watched: 7, total: null } } },
+  {
+    kind: "movie",
+    source: "tmdb",
+    sourceId: "movie:157336",
+    patch: { rating: 5, watchedOn: "2026-04-11", visibility: "private" }
+  },
+  {
+    kind: "tv",
+    source: "tmdb",
+    sourceId: "tv:64010",
+    patch: { rating: 5, watchedOn: "2026-07-01", review: { zh: "看完像告别了一整条街坊。" } }
+  },
+  {
+    kind: "tv",
+    source: "tmdb",
+    sourceId: "tv:1396",
+    patch: { status: "watching", rating: 4, progress: { watched: 30, total: 62 } }
+  },
+  {
+    kind: "tv",
+    source: "tmdb",
+    sourceId: "tv:42009",
+    patch: { status: "dropped", rating: 3, progress: { watched: 7, total: null } }
+  },
   {
     kind: "anime",
     source: "bangumi",
     sourceId: "328609",
-    patch: { rating: 5, watchedOn: "2026-10-28", featured: true, review: { zh: "社恐吉他手，太真实了。", ja: "リアルすぎる。" } }
+    patch: {
+      rating: 5,
+      watchedOn: "2026-10-28",
+      featured: true,
+      review: { zh: "社恐吉他手，太真实了。", ja: "リアルすぎる。" }
+    }
   },
-  { kind: "anime", source: "bangumi", sourceId: "400602", patch: { status: "watching", rating: 4, progress: { watched: 10, total: 28 } } },
-  { kind: "anime", source: "tmdb", sourceId: "movie:372058", patch: { rating: 4, watchedOn: "2026-06-12" } },
+  {
+    kind: "anime",
+    source: "bangumi",
+    sourceId: "400602",
+    patch: { status: "watching", rating: 4, progress: { watched: 10, total: 28 } }
+  },
+  {
+    kind: "anime",
+    source: "tmdb",
+    sourceId: "movie:372058",
+    patch: { rating: 4, watchedOn: "2026-06-12" }
+  },
   { kind: "anime", source: "bangumi", query: "进击的巨人", patch: { status: "want" } },
-  { kind: "book", source: "openlibrary", sourceId: "OL17267881W", patch: { rating: 5, watchedOn: "2026-03-14", review: { zh: "黑暗森林那一段读得背后发凉。" } } },
-  { kind: "book", source: "bangumi", query: "涼宮ハルヒの憂鬱", patch: { status: "watching", progress: { watched: 120, total: null } } },
-  { kind: "comic", source: "anilist", sourceId: "111258", patch: { status: "watching", rating: 5, progress: { watched: 5, total: null } } },
-  { kind: "comic", source: "bangumi", query: "葬送のフリーレン", patch: { rating: 4, watchedOn: "2026-09-30" } },
+  {
+    kind: "book",
+    source: "openlibrary",
+    sourceId: "OL17267881W",
+    patch: { rating: 5, watchedOn: "2026-03-14", review: { zh: "黑暗森林那一段读得背后发凉。" } }
+  },
+  {
+    kind: "book",
+    source: "bangumi",
+    query: "涼宮ハルヒの憂鬱",
+    patch: { status: "watching", progress: { watched: 120, total: null } }
+  },
+  {
+    kind: "comic",
+    source: "anilist",
+    sourceId: "111258",
+    patch: { status: "watching", rating: 5, progress: { watched: 5, total: null } }
+  },
+  {
+    kind: "comic",
+    source: "bangumi",
+    query: "葬送のフリーレン",
+    patch: { rating: 4, watchedOn: "2026-09-30" }
+  },
   {
     kind: "game",
     source: "igdb",
     sourceId: "119133",
-    patch: { rating: 5, watchedOn: "2026-02-20", review: { zh: "第一次打过大树守卫的时候手都在抖。" } }
+    patch: {
+      rating: 5,
+      watchedOn: "2026-02-20",
+      review: { zh: "第一次打过大树守卫的时候手都在抖。" }
+    }
   },
   { kind: "game", source: "igdb", query: "Hollow Knight", patch: { status: "watching", rating: 4 } }
 ];
 
 // Like the server: honour HTTPS_PROXY for TMDB / Bangumi when set.
-const setGlobalProxyFromEnv = (http as { setGlobalProxyFromEnv?: () => void }).setGlobalProxyFromEnv;
-if ((process.env.HTTPS_PROXY || process.env.https_proxy) && typeof setGlobalProxyFromEnv === "function") setGlobalProxyFromEnv();
+const setGlobalProxyFromEnv = (http as { setGlobalProxyFromEnv?: () => void })
+  .setGlobalProxyFromEnv;
+if (
+  (process.env.HTTPS_PROXY || process.env.https_proxy) &&
+  typeof setGlobalProxyFromEnv === "function"
+)
+  setGlobalProxyFromEnv();
 
 const databaseUrl = process.env.DATABASE_URL?.trim();
 if (!databaseUrl) throw new Error("DATABASE_URL is required (see apps/api/.env.example)");
 
 const prisma = createPrismaClient(databaseUrl);
 const media = new PrismaMediaRepository(prisma);
-const twitch = process.env.TWITCH_CLIENT_ID && process.env.TWITCH_CLIENT_SECRET ? { clientId: process.env.TWITCH_CLIENT_ID, clientSecret: process.env.TWITCH_CLIENT_SECRET } : null;
-const sources = createMediaSources({ tmdbKey: process.env.TMDB_API_KEY, googleBooksKey: process.env.GOOGLE_BOOKS_API_KEY, twitch });
-const store = new LocalImageStore(process.env.UPLOAD_DIR?.trim() || fileURLToPath(new URL("../../uploads", import.meta.url)));
+const twitch =
+  process.env.TWITCH_CLIENT_ID && process.env.TWITCH_CLIENT_SECRET
+    ? { clientId: process.env.TWITCH_CLIENT_ID, clientSecret: process.env.TWITCH_CLIENT_SECRET }
+    : null;
+const sources = createMediaSources({
+  tmdbKey: process.env.TMDB_API_KEY,
+  googleBooksKey: process.env.GOOGLE_BOOKS_API_KEY,
+  twitch
+});
+const store = new LocalImageStore(
+  process.env.UPLOAD_DIR?.trim() || fileURLToPath(new URL("../../uploads", import.meta.url))
+);
 
 let added = 0;
 try {
@@ -81,7 +182,9 @@ try {
       console.log(`skip  ${sample.sourceId ?? sample.query}: ${sample.source} is not configured`);
       continue;
     }
-    const sourceId = sample.sourceId ?? (await sources.search(sample.source, sample.kind, sample.query!))[0]?.sourceId;
+    const sourceId =
+      sample.sourceId ??
+      (await sources.search(sample.source, sample.kind, sample.query!))[0]?.sourceId;
     if (!sourceId) {
       console.log(`skip  "${sample.query}": no search result`);
       continue;
@@ -93,7 +196,9 @@ try {
     const row = await importMedia({ media, sources, store }, sample.kind, sample.source, sourceId);
     await media.update(row.id, sample.patch);
     added += 1;
-    console.log(`added ${sample.kind.padEnd(5)} ${row.title.zh ?? row.title.en ?? row.originalTitle}`);
+    console.log(
+      `added ${sample.kind.padEnd(5)} ${row.title.zh ?? row.title.en ?? row.originalTitle}`
+    );
   }
   console.log(`Done: ${added} added.`);
 } finally {

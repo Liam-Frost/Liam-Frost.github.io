@@ -11,7 +11,13 @@ sharp.cache(false);
 export const VARIANT_SIZES = [640, 1280, 2048, 3072];
 
 const ACCEPTED_FORMATS = new Set(["jpeg", "png", "webp", "avif", "tiff"]);
-const ORIGINAL_EXTENSIONS: Record<string, string> = { jpeg: "jpg", png: "png", webp: "webp", avif: "avif", tiff: "tif" };
+const ORIGINAL_EXTENSIONS: Record<string, string> = {
+  jpeg: "jpg",
+  png: "png",
+  webp: "webp",
+  avif: "avif",
+  tiff: "tif"
+};
 
 /** 120 megapixels: generous for camera files, but stops decompression bombs. */
 const MAX_PIXELS = 120_000_000;
@@ -55,7 +61,11 @@ export async function processImage(input: Buffer): Promise<ProcessedImage> {
   const largest = sizes[sizes.length - 1];
 
   // Decode, rotate and downscale the original once; every size is rendered from that smaller raw image.
-  const base = await sharp(input, { failOn: "error", limitInputPixels: MAX_PIXELS, animated: false })
+  const base = await sharp(input, {
+    failOn: "error",
+    limitInputPixels: MAX_PIXELS,
+    animated: false
+  })
     .rotate()
     .resize(largest, largest, { fit: "inside", withoutEnlargement: true })
     .raw()

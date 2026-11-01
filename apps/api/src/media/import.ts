@@ -8,11 +8,22 @@ import { SourceError, type MediaSources, type SearchSource } from "./sources";
 import { DuplicateMediaError, type MediaRepository, type MediaRow } from "./types";
 
 /** Saves a processed poster (or a person's photo) under the owner's folder; the caller attaches it. */
-export async function storePoster(store: LocalImageStore, entryId: string, image: ProcessedImage, folder: "media" | "people" = "media"): Promise<StoredImage> {
+export async function storePoster(
+  store: LocalImageStore,
+  entryId: string,
+  image: ProcessedImage,
+  folder: "media" | "people" = "media"
+): Promise<StoredImage> {
   const imageId = randomBytes(6).toString("hex");
   const key = `${folder}/${entryId}/${imageId}`;
   await saveImage(store, key, image);
-  return { id: imageId, key, width: image.width, height: image.height, variants: image.variants.map(({ width, height }) => ({ width, height })) };
+  return {
+    id: imageId,
+    key,
+    width: image.width,
+    height: image.height,
+    variants: image.variants.map(({ width, height }) => ({ width, height }))
+  };
 }
 
 /**
@@ -21,7 +32,12 @@ export async function storePoster(store: LocalImageStore, entryId: string, image
  * entry is already in the collection, SourceError when the source fails.
  */
 export async function importMedia(
-  deps: { media: MediaRepository; sources: MediaSources; store: LocalImageStore; onPosterError?: (error: unknown) => void },
+  deps: {
+    media: MediaRepository;
+    sources: MediaSources;
+    store: LocalImageStore;
+    onPosterError?: (error: unknown) => void;
+  },
   kind: MediaKind,
   source: SearchSource,
   sourceId: string,
@@ -44,7 +60,11 @@ export async function importMedia(
   let poster: StoredImage | null = null;
   if (details.posterUrl) {
     try {
-      poster = await storePoster(store, id, await processImage(await sources.download(details.posterUrl)));
+      poster = await storePoster(
+        store,
+        id,
+        await processImage(await sources.download(details.posterUrl))
+      );
     } catch (error) {
       if (!(error instanceof SourceError || error instanceof InvalidImageError)) throw error;
       deps.onPosterError?.(error);
@@ -67,10 +87,23 @@ export async function importMedia(
       poster,
       status: "done",
       // Episodes of series and anime, volumes of comics; books track no progress by default.
-      progress: (kind === "tv" || kind === "anime" || kind === "comic") && details.episodes ? { watched: 0, total: details.episodes } : null,
-      extra: { ...(details.publication ? { publication: details.publication } : {}), ...(details.game ? { game: details.game } : {}) },
+      progress:
+        (kind === "tv" || kind === "anime" || kind === "comic") && details.episodes
+          ? { watched: 0, total: details.episodes }
+          : null,
+      extra: {
+        ...(details.publication ? { publication: details.publication } : {}),
+        ...(details.game ? { game: details.game } : {})
+      },
       ...initial,
-      ...(initial.extra && details.game ? { extra: { ...initial.extra, game: { ...details.game, ...(initial.extra.game as object | undefined) } } } : {})
+      ...(initial.extra && details.game
+        ? {
+            extra: {
+              ...initial.extra,
+              game: { ...details.game, ...(initial.extra.game as object | undefined) }
+            }
+          }
+        : {})
     });
   } catch (error) {
     if (poster) await store.remove(`media/${id}`).catch(() => undefined);
