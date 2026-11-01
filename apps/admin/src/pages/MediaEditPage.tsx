@@ -3,6 +3,7 @@ import { ArrowLeft, Clapperboard, ExternalLink, ImagePlus, Trash2, X } from "luc
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 
+import { FixPreviewDialog, PreviewButton, usePreview } from "../components/music/MusicTools";
 import { Dialog } from "../components/ui/Dialog";
 import { Field, Switch } from "../components/ui/Field";
 import { Panel } from "../components/ui/Panel";
@@ -10,7 +11,7 @@ import { StarRating } from "../components/ui/StarRating";
 import { useToast } from "../components/ui/Toast";
 import { useDeleteMedia, useMediaItem, useUpdateMedia, useUploadMediaPoster } from "../hooks/useMedia";
 import { ApiError } from "../lib/api";
-import { KIND_LABELS, LANG_LABELS, LANGS, MEDIA_STATUS_LABELS, pickText, SOURCE_LABELS, type Lang, type WatchKind } from "../lib/i18n";
+import { COLLECTION_KIND_LABELS, formatDuration, LANG_LABELS, LANGS, MEDIA_STATUS_LABELS, pickText, SOURCE_LABELS, type CollectionKind, type Lang } from "../lib/i18n";
 
 const ACCEPT = "image/jpeg,image/png,image/webp,image/avif,image/tiff";
 
@@ -28,6 +29,8 @@ type Draft = {
   rewatchCount: string;
   watched: string;
   total: string;
+  album: string;
+  inPlayer: boolean;
   featured: boolean;
   visibility: AdminMediaItem["visibility"];
 };
@@ -47,6 +50,8 @@ function toDraft(item: AdminMediaItem): Draft {
     rewatchCount: String(item.rewatchCount),
     watched: item.progress ? String(item.progress.watched) : "",
     total: item.progress?.total ? String(item.progress.total) : "",
+    album: item.music?.album ?? "",
+    inPlayer: item.inPlayer,
     featured: item.featured,
     visibility: item.visibility
   };
@@ -87,8 +92,11 @@ function MediaEditor({ item }: { item: AdminMediaItem }) {
   const remove = useDeleteMedia();
   const navigate = useNavigate();
   const toast = useToast();
-  const kind = item.kind as WatchKind;
-  const hasEpisodes = kind !== "movie";
+  const kind = item.kind as CollectionKind;
+  const isMusic = kind === "track";
+  const hasEpisodes = kind === "tv" || kind === "anime";
+  const [fixingPreview, setFixingPreview] = useState(false);
+  const preview = usePreview();
   const backTo = `/collection?kind=${kind}`;
 
   useEffect(() => {
@@ -127,22 +135,28 @@ function MediaEditor({ item }: { item: AdminMediaItem }) {
     if (watched !== null && total !== null && watched > total) return setError("已看集数超过总集数");
     setError("");
 
-    const body: AdminMediaUpdate = {
+    const shared: AdminMediaUpdate = {
       title: draft.title,
-      originalTitle: draft.originalTitle,
       year,
       genres: draft.genres,
       credits: draft.credits,
-      overview: draft.overview,
-      status: draft.status,
       rating: draft.rating,
       review: draft.review,
-      watchedOn: draft.watchedOn || null,
-      rewatchCount,
-      progress: hasEpisodes && (watched !== null || total !== null) ? { watched: watched ?? 0, total } : null,
       featured: draft.featured,
       visibility: draft.visibility
     };
+    // Songs have no watch status, dates or episodes; films, series and anime have no music details.
+    const body: AdminMediaUpdate = isMusic
+      ? { ...shared, inPlayer: draft.inPlayer, music: { album: draft.album } }
+      : {
+          ...shared,
+          originalTitle: draft.originalTitle,
+          overview: draft.overview,
+          status: draft.status,
+          watchedOn: draft.watchedOn || null,
+          rewatchCount,
+          progress: hasEpisodes && (watched !== null || total !== null) ? { watched: watched ?? 0, total } : null
+        };
     update.mutate(body, {
       onSuccess: ({ item: next }) => {
         const normalized = toDraft(next);
@@ -171,7 +185,7 @@ function MediaEditor({ item }: { item: AdminMediaItem }) {
         </Link>
         <h1 className="min-w-0 flex-1 truncate text-[22px] font-semibold text-brand-dark">
           {title}
-          <span className="chip ml-2 align-middle">{KIND_LABELS[kind]}</span>
+          <span className="chip ml-2 align-middle">{COLLECTION_KIND_LABELS[kind]}</span>
         </h1>
         {dirty ? (
           <span className="text-[12.5px] text-status-warn" role="status">
@@ -191,6 +205,28 @@ function MediaEditor({ item }: { item: AdminMediaItem }) {
 
       <div className="grid gap-5 lg:grid-cols-[1fr_320px]">
         <div className="min-w-0 space-y-5">
+          {isMusic ? (
+            <Panel title="我的记录">
+              <div className="grid gap-3.5 sm:grid-cols-2">
+                <div>
+                  <p className="mb-1.5 text-[12.5px] font-medium text-brand-dark">评分</p>
+                  <StarRating value={draft.rating} onChange={(value) => set("rating", value)} />
+                </div>
+                <div>
+                  <p className="mb-1.5 text-[12.5px] font-medium text-brand-dark">播放器</p>
+                  <Switch
+                    id="media-in-player"
+                    checked={draft.inPlayer}
+                    onChange={(on) => {
+                      if (on && !item.music?.previewUrl) return setError("这首歌还没有试听，先在右侧“试听”里选一个");
+                      set("inPlayer", on);
+                    }}
+                    label="加入网站播放器"
+                  />
+                </div>
+              </div>
+            </Panel>
+          ) : (
           <Panel title="我的记录">
             <div className="grid gap-3.5 sm:grid-cols-2">
               <Field label="状态" htmlFor="media-status">
@@ -228,6 +264,7 @@ function MediaEditor({ item }: { item: AdminMediaItem }) {
               ) : null}
             </div>
           </Panel>
+          )}
 
           <section className="card min-w-0 p-5" aria-label="文字">
             <div role="tablist" aria-label="语言" className="mb-3 flex flex-wrap gap-1.5">
@@ -253,15 +290,48 @@ function MediaEditor({ item }: { item: AdminMediaItem }) {
               <Field label="短评" htmlFor="media-review" hint="你自己的感受，会显示在网站上">
                 <textarea id="media-review" rows={5} className="field resize-y leading-relaxed" value={draft.review[lang] ?? ""} maxLength={5000} onChange={(e) => setText("review", e.target.value)} />
               </Field>
-              <Field label="简介" htmlFor="media-overview" hint={item.source !== "manual" ? `导入自 ${SOURCE_LABELS[item.source]}，可以修改` : undefined}>
-                <textarea id="media-overview" rows={5} className="field resize-y leading-relaxed" value={draft.overview[lang] ?? ""} maxLength={5000} onChange={(e) => setText("overview", e.target.value)} />
-              </Field>
+              {isMusic ? null : (
+                <Field label="简介" htmlFor="media-overview" hint={item.source !== "manual" ? `导入自 ${SOURCE_LABELS[item.source]}，可以修改` : undefined}>
+                  <textarea id="media-overview" rows={5} className="field resize-y leading-relaxed" value={draft.overview[lang] ?? ""} maxLength={5000} onChange={(e) => setText("overview", e.target.value)} />
+                </Field>
+              )}
             </div>
           </section>
         </div>
 
         <div className="space-y-5">
           <PosterPanel item={item} />
+
+          {isMusic ? (
+            <Panel title="试听">
+              {item.music?.previewUrl ? (
+                <div className="flex items-center gap-3">
+                  <PreviewButton url={item.music.previewUrl} preview={preview} />
+                  <span className="truncate text-[12.5px] text-subtle">
+                    {new URL(item.music.previewUrl).hostname.includes("itunes") ? "来自 iTunes" : "来自 Spotify"}
+                    {item.music.durationMs ? ` · 全曲 ${formatDuration(item.music.durationMs)}` : ""}
+                  </span>
+                </div>
+              ) : (
+                <p className="text-[12.5px] text-status-warn">没有试听，不能加入播放器。</p>
+              )}
+              <button type="button" className="btn-secondary w-full" onClick={() => setFixingPreview(true)}>
+                {item.music?.previewUrl ? "换一个试听" : "找试听"}
+              </button>
+              <div className="flex flex-wrap gap-3 text-[12.5px]">
+                {item.music?.spotifyUrl ? (
+                  <a href={item.music.spotifyUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-brand hover:underline">
+                    Spotify <ExternalLink aria-hidden="true" className="size-3.5" />
+                  </a>
+                ) : null}
+                {item.music?.appleUrl ? (
+                  <a href={item.music.appleUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-brand hover:underline">
+                    Apple Music <ExternalLink aria-hidden="true" className="size-3.5" />
+                  </a>
+                ) : null}
+              </div>
+            </Panel>
+          ) : null}
 
           <Panel title="发布">
             <div className="flex flex-col items-start gap-2.5">
@@ -272,9 +342,15 @@ function MediaEditor({ item }: { item: AdminMediaItem }) {
           </Panel>
 
           <Panel title="资料">
-            <Field label="原名" htmlFor="media-original">
-              <input id="media-original" className="field" value={draft.originalTitle} maxLength={200} onChange={(e) => set("originalTitle", e.target.value)} />
-            </Field>
+            {isMusic ? (
+              <Field label="专辑" htmlFor="media-album">
+                <input id="media-album" className="field" value={draft.album} maxLength={200} onChange={(e) => set("album", e.target.value)} />
+              </Field>
+            ) : (
+              <Field label="原名" htmlFor="media-original">
+                <input id="media-original" className="field" value={draft.originalTitle} maxLength={200} onChange={(e) => set("originalTitle", e.target.value)} />
+              </Field>
+            )}
             <Field label="年份" htmlFor="media-year">
               <input id="media-year" type="number" min={1870} max={2100} className="field w-28" value={draft.year} onChange={(e) => set("year", e.target.value)} />
             </Field>
@@ -290,7 +366,7 @@ function MediaEditor({ item }: { item: AdminMediaItem }) {
             />
             <ChipsField
               id="media-credits"
-              label={kind === "anime" ? "导演 / 制作" : "导演 / 主创"}
+              label={isMusic ? "歌手" : kind === "anime" ? "导演 / 制作" : "导演 / 主创"}
               hint="回车添加"
               values={draft.credits}
               input={creditInput}
@@ -298,7 +374,7 @@ function MediaEditor({ item }: { item: AdminMediaItem }) {
               onAdd={addCredit}
               onRemove={(index) => set("credits", draft.credits.filter((_, i) => i !== index))}
             />
-            {item.sourceUrl ? (
+            {item.sourceUrl && !isMusic ? (
               <a href={item.sourceUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[12.5px] text-brand hover:underline">
                 在 {SOURCE_LABELS[item.source]} 查看 <ExternalLink aria-hidden="true" className="size-3.5" />
               </a>
@@ -310,6 +386,8 @@ function MediaEditor({ item }: { item: AdminMediaItem }) {
           </button>
         </div>
       </div>
+
+      {fixingPreview ? <FixPreviewDialog item={item} onClose={() => setFixingPreview(false)} /> : null}
 
       <Dialog
         open={deleting}
@@ -393,19 +471,22 @@ function PosterPanel({ item }: { item: AdminMediaItem }) {
   const upload = useUploadMediaPoster(item.id);
   const toast = useToast();
   const input = useRef<HTMLInputElement>(null);
+  // Songs have square covers; films, series and anime have 2:3 posters.
+  const square = item.kind === "track";
+  const noun = square ? "封面" : "海报";
 
   return (
-    <Panel title="海报">
+    <Panel title={noun}>
       {item.poster ? (
-        <img src={item.poster.variants[item.poster.variants.length - 1].url} alt="" className="mx-auto w-full max-w-[220px] rounded-xl border border-line object-cover" style={{ aspectRatio: "2 / 3" }} />
+        <img src={item.poster.variants[item.poster.variants.length - 1].url} alt="" className="mx-auto w-full max-w-[220px] rounded-xl border border-line object-cover" style={{ aspectRatio: square ? "1 / 1" : "2 / 3" }} />
       ) : (
-        <span className="mx-auto flex aspect-[2/3] w-full max-w-[220px] items-center justify-center rounded-xl bg-line-soft text-faint">
+        <span className={`mx-auto flex ${square ? "aspect-square" : "aspect-[2/3]"} w-full max-w-[220px] items-center justify-center rounded-xl bg-line-soft text-faint`}>
           <Clapperboard aria-hidden="true" className="size-8" />
         </span>
       )}
       <button type="button" className="btn-secondary w-full" disabled={upload.isPending} onClick={() => input.current?.click()}>
         <ImagePlus aria-hidden="true" className="size-4" />
-        {upload.isPending ? "上传中…" : item.poster ? "更换海报" : "上传海报"}
+        {upload.isPending ? "上传中…" : item.poster ? `更换${noun}` : `上传${noun}`}
       </button>
       <input
         ref={input}
@@ -415,7 +496,7 @@ function PosterPanel({ item }: { item: AdminMediaItem }) {
         onChange={(e) => {
           const file = e.target.files?.[0];
           e.target.value = "";
-          if (file) upload.mutate(file, { onSuccess: () => toast("海报已更新"), onError: (err) => toast(err.message, "error") });
+          if (file) upload.mutate(file, { onSuccess: () => toast(`${noun}已更新`), onError: (err) => toast(err.message, "error") });
         }}
       />
     </Panel>

@@ -251,9 +251,35 @@ Status: implementation complete; Claude Code review complete and fixes applied.
 - Anime titles in English and French now use the romaji name from AniList (new imports, and `npm run db:backfill:romaji` for existing ones; 4 entries updated in the user's database). Tests: 107 passed.
 - Fixed a blank page when the site language is 繁體中文 and the page is reloaded (present since Traditional Chinese was added): the saved `zh-Hant` was lowercased to `zh-hant`, which matched no translation table. Language codes now map back to their canonical form, and an unknown language falls back to Simplified Chinese.
 
+### Stage 13a: Music Collection and Player
+
+Status: implementation complete; Claude Code review complete and fixes applied.
+
+- Songs (`track`) in the collection: album, length, preview and Spotify / Apple Music links in `extra.music`, `inPlayer` column (migration `20261031170000_media_player`); migration `20261101090000_drop_playlist_cache` removes the old runtime playlist cache.
+- iTunes search (seven stores), song import with 600 px covers, and preview matching helpers; poster downloads also allowed from iTunes and Spotify image hosts.
+- Spotify playlist import as a background job with progress; covers per album downloaded once; songs without a preview kept out of the player; re-imports skip existing songs; one playlist at a time.
+- The site player plays public, in-player songs with a preview, in the order added (or shuffled); the runtime playlist sync and its settings are gone; the admin 播放器 page keeps the player settings and shows the song count.
+- Admin: 音乐 tab with preview buttons, player switches, 找试听, filters; 添加歌曲 and 导入 Spotify 歌单 dialogs; the editor handles songs.
+- Site: 音乐 tab on /collection (list layout, square covers, singers and album, Spotify / Apple Music links); tabs only for kinds with entries.
+- Tests: 110 passed.
+- Verified with a temporary PostgreSQL: imported City Pop Best (100 songs in 37 s, all with previews and covers), added a song from the JP iTunes store, edited a song and swapped its preview to iTunes; the site player played collection songs and the public music tab and detail panel showed them. The user's local database got the new migration (schema diff empty).
+- Ran Claude Code review for Stage 13a (`docs/reviews/2026-11-01-claude-code-stage-13a.md`) and fixed five findings.
+
+### Stage 13b: Spotify Account Import and Embedded Player
+
+Status: implementation complete; Claude Code review complete and fixes applied. The Spotify sign-in itself is for the user to test.
+
+- Connect a Spotify account (Authorization Code flow, read-only scopes, one-time state); the refresh token is stored encrypted with AES-256-GCM. Rate limits (429), expired tokens and revoked access are handled; a 403 explains the app's User Management.
+- Import Liked Songs or one of your own playlists as a background job; songs are added in list order, previews from Spotify's song page or iTunes.
+- Player type setting: the site's own player or Spotify's embedded player (playlist / album / song / artist link). The web dock shows Spotify's player in an iframe and keeps it loaded while collapsed; the site CSP allows `frame-src https://open.spotify.com`.
+- Admin: Spotify 账号 dialog (connect, disconnect, Liked Songs, own playlists, progress), player type on the 播放器 page.
+- Tests: 120 passed. Verified the embedded player in the browser against a mock API (Spotify's player loaded; collapsing kept the iframe).
+- Ran Claude Code review for Stage 13b (`docs/reviews/2026-11-01-claude-code-stage-13b.md`) and fixed four findings.
+
 ### Upcoming
 
-- Review and merge the Stage 12 PR, then Stage 13 (music collection and player; needs a Spotify developer app).
+- The user tests the Spotify connection (`npm run db:deploy` first) and merges the PR.
+- New collection kinds (books, games, comics, people) and links between entries — proposal pending the user's confirmation.
 - Stage 10: VPS deployment and CI/CD (needs the VPS provider/OS/specs, DNS manager and domain from the user).
 - Stage 5: back-end foundation and admin auth refinement (`ADMIN_PATH`, IP allowlist, CSRF, Zod, tests). See `docs/plan-admin-projects-deploy.md`.
 

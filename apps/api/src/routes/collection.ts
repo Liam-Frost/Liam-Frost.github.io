@@ -8,8 +8,14 @@ import { toPublicMedia, toPublicMediaSummary } from "../media/mapping";
 import { isMediaPublic, type MediaRepository } from "../media/types";
 import type { LocalImageStore } from "../storage/local";
 
-/** Kinds the public page has sections for so far; music arrives in a later stage. */
-const PAGE_KINDS = ["movie", "tv", "anime"] as const;
+/** Kinds the public page has sections for, with the display switch each one follows. */
+const PAGE_KINDS = [
+  ["movie", "movie"],
+  ["tv", "tv"],
+  ["anime", "anime"],
+  ["track", "music"]
+] as const;
+const PAGE_KIND_NAMES: readonly string[] = PAGE_KINDS.map(([kind]) => kind);
 
 /**
  * Public collection routes. An entry is listed when it is public, its kind is shown and it is not a
@@ -23,7 +29,7 @@ export function registerCollectionRoutes(app: FastifyInstance, deps: { media: Me
     if (!deps.media) return { kinds: [], items: [] };
     try {
       const [current, rows] = await Promise.all([settings(), deps.media.list()]);
-      const kinds = PAGE_KINDS.filter((kind) => current.show[kind]);
+      const kinds = PAGE_KINDS.filter(([, show]) => current.show[show]).map(([kind]) => kind);
       const items = rows.filter((row) => (kinds as string[]).includes(row.kind) && isMediaPublic(row, current));
       return { kinds, items: items.map((row) => toPublicMediaSummary(row, deps.store)) };
     } catch (error) {
@@ -44,7 +50,7 @@ export function registerCollectionRoutes(app: FastifyInstance, deps: { media: Me
       throw new HttpError(503, "UNAVAILABLE", "The collection is temporarily unavailable");
     }
     // Hidden entries are indistinguishable from missing ones.
-    if (!row || !(PAGE_KINDS as readonly string[]).includes(row.kind) || !isMediaPublic(row, current)) throw notFound("Entry not found");
+    if (!row || !PAGE_KIND_NAMES.includes(row.kind) || !isMediaPublic(row, current)) throw notFound("Entry not found");
     return toPublicMedia(row, deps.store);
   });
 }

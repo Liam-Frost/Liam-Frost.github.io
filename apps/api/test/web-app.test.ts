@@ -46,6 +46,7 @@ describe("public site hosting", () => {
     const hash = createHash("sha256").update('document.documentElement.dataset.ok = "1";').digest("base64");
     expect(csp).toContain(`script-src 'self' 'sha256-${hash}'`);
     expect(csp).toContain("frame-ancestors 'none'");
+    expect(csp).toContain("frame-src https://open.spotify.com");
     expect(csp.match(/'sha256-/g)).toHaveLength(1);
   });
 
