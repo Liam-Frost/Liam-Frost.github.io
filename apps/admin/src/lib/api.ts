@@ -1,6 +1,10 @@
 import {
   ADMIN_REQUEST_HEADER,
+  type AdminBatchRequest,
+  type AdminBatchResult,
   type AdminCollectionSettingsResponse,
+  type AdminMediaBatchPatch,
+  type AdminPersonUpdate as AdminPersonUpdateBody,
   type AdminMediaCreate,
   type AdminMediaImport,
   type AdminMediaListResponse,
@@ -172,6 +176,9 @@ export const api = {
   createMedia: (body: AdminMediaCreate) => request<AdminMediaResponse>("/api/admin/media", { method: "POST", json: body }),
   updateMedia: (id: string, update: AdminMediaUpdate) => request<AdminMediaResponse>(mediaPath(id), { method: "PATCH", json: update }),
   deleteMedia: (id: string) => request<void>(mediaPath(id), { method: "DELETE" }),
+  batchMedia: (body: AdminBatchRequest<AdminMediaBatchPatch>) => request<AdminBatchResult>("/api/admin/media/batch", { method: "POST", json: body }),
+  batchPeople: (body: AdminBatchRequest<Pick<AdminPersonUpdateBody, "visibility" | "featured">>) =>
+    request<AdminBatchResult>("/api/admin/people/batch", { method: "POST", json: body }),
   uploadMediaPoster: (id: string, file: File) => uploadFile<AdminMediaResponse>(`${mediaPath(id)}/poster`, file),
   searchMusic: (q: string, country: string) => request<AdminMusicSearchResponse>(`/api/admin/music/search?${new URLSearchParams({ q, country })}`),
   importMusic: (body: AdminMusicImport) => request<AdminMediaResponse>("/api/admin/music/import", { method: "POST", json: body }),

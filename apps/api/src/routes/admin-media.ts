@@ -1,5 +1,6 @@
-import type { AdminCollectionSettingsResponse, AdminMediaListResponse, AdminMediaResponse, AdminMediaSearchResponse } from "@liam-frost/shared";
+import type { AdminBatchResult, AdminCollectionSettingsResponse, AdminMediaListResponse, AdminMediaResponse, AdminMediaSearchResponse } from "@liam-frost/shared";
 import type { FastifyInstance, FastifyRequest } from "fastify";
+import type { z } from "zod";
 import { randomUUID } from "node:crypto";
 
 import type { AdminAuthService } from "../auth/service";
@@ -7,6 +8,7 @@ import { badRequest, HttpError, notFound } from "../lib/errors";
 import { KeyedLock } from "../lib/keyed-lock";
 import {
   collectionSettingsSchema,
+  mediaBatchSchema,
   mediaCreateSchema,
   mediaIdSchema,
   mediaImportSchema,
@@ -113,9 +115,12 @@ export function registerAdminMediaRoutes(
 
   app.get("/api/admin/media/:id", admin, async (request) => respond(await get(mediaId(request))));
 
-  app.patch("/api/admin/media/:id", admin, async (request): Promise<AdminMediaResponse> => {
-    const id = mediaId(request);
-    const { music, publication, game, ...patch } = parseInput(mediaUpdateSchema, request.body);
+  /**
+   * Applies an edit with the kind's rules (no status for songs, music details only for songs, ...).
+   * Shared by the editor and bulk actions; throws HttpError when the edit does not fit the entry.
+   */
+  const update = (id: string, input: z.output<typeof mediaUpdateSchema>) => {
+    const { music, publication, game, ...patch } = input;
     // Music details merge into `extra`; read and write under the entry's lock.
     return lock.run(id, async () => {
       const row = await get(id);
@@ -133,19 +138,47 @@ export function registerAdminMediaRoutes(
       if (isMusic && (next.inPlayer ?? row.inPlayer) && !musicOf({ kind: row.kind, extra: next.extra ?? row.extra })?.previewUrl) {
         throw badRequest("Songs need a preview to be in the player", "VALIDATION");
       }
-      return respond(await save(id, next));
+      return save(id, next);
     });
-  });
+  };
 
-  app.delete("/api/admin/media/:id", admin, async (request, reply) => {
-    const id = mediaId(request);
+  /** Deletes an entry and its files (its links go with it in the database). */
+  const remove = async (request: FastifyRequest, id: string) => {
     const row = await lock.run(id, async () => {
       const current = await get(id);
       await repo().media.delete(id);
       return current;
     });
     await store.remove(`media/${row.id}`).catch((error) => request.log.warn({ error, mediaId: row.id }, "Failed to remove entry files"));
+  };
+
+  app.patch("/api/admin/media/:id", admin, async (request): Promise<AdminMediaResponse> => respond(await update(mediaId(request), parseInput(mediaUpdateSchema, request.body))));
+
+  app.delete("/api/admin/media/:id", admin, async (request, reply) => {
+    await remove(request, mediaId(request));
     return reply.code(204).send();
+  });
+
+  /**
+   * Bulk delete or update. Each entry follows the same rules as a single edit; entries that do not fit
+   * (a song without a preview into the player, a status for a song) are reported, the rest still change.
+   */
+  app.post("/api/admin/media/batch", admin, async (request): Promise<AdminBatchResult> => {
+    const input = parseInput(mediaBatchSchema, request.body);
+    repo();
+    const result: AdminBatchResult = { done: [], failed: [] };
+    // One at a time: deletes touch files, and the database pool is small.
+    for (const id of input.ids) {
+      try {
+        if (input.action === "delete") await remove(request, id);
+        else await update(id, input.patch);
+        result.done.push(id);
+      } catch (error) {
+        if (!(error instanceof HttpError)) throw error;
+        result.failed.push({ id, message: error.message });
+      }
+    }
+    return result;
   });
 
   /** Replaces the poster with an uploaded image. */

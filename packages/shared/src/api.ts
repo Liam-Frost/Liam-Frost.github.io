@@ -296,6 +296,15 @@ export type AdminMediaUpdate = Partial<{
   visibility: PhotoVisibility;
 }>;
 
+/** Changes a bulk action may make to every selected entry. */
+export type AdminMediaBatchPatch = Partial<{ visibility: PhotoVisibility; featured: boolean; status: MediaStatus; inPlayer: boolean }>;
+
+/** A bulk action on up to 500 entries (or people, which take visibility and featured only). */
+export type AdminBatchRequest<Patch> = { ids: string[] } & ({ action: "delete" } | { action: "update"; patch: Patch });
+
+/** Which entries a bulk action changed, and why the others were refused. */
+export type AdminBatchResult = { done: string[]; failed: { id: string; message: string }[] };
+
 export type MediaSearchResult = {
   source: MediaSearchSource;
   sourceId: string;
