@@ -221,6 +221,33 @@ export const musicImportSchema = z
   })
   .strict();
 
+/** Where the browser returns after connecting Spotify: an http(s) URL (the admin page that started it). */
+export const spotifyConnectSchema = z
+  .object({
+    returnTo: z
+      .string()
+      .max(2048)
+      .refine((value) => {
+        try {
+          return ["http:", "https:"].includes(new URL(value).protocol);
+        } catch {
+          return false;
+        }
+      }, "Invalid return address")
+  })
+  .strict();
+
+export const spotifyCallbackQuerySchema = z.object({
+  state: z.string().regex(/^[0-9a-f]{32}$/),
+  code: z.string().max(2048).optional(),
+  error: z.string().max(200).optional()
+});
+
+export const musicAccountImportSchema = z.discriminatedUnion("source", [
+  z.object({ source: z.literal("liked") }).strict(),
+  z.object({ source: z.literal("playlist"), playlistId: z.string().regex(/^[A-Za-z0-9]{22}$/, "Invalid playlist id") }).strict()
+]);
+
 export const playlistImportSchema = z.object({ playlistUrl: z.string().trim().min(1, "Enter a playlist link").max(500) }).strict();
 export const musicJobParamsSchema = z.object({ id: z.string().regex(/^[0-9a-f]{16}$/, "Invalid job id") });
 

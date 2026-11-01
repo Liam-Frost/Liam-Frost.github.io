@@ -143,7 +143,7 @@ describe("music player", () => {
     expect((await app.inject("/api/spotify/player")).json().tracks).toEqual([]);
 
     await app.inject({ method: "PUT", url: "/api/admin/collection/settings", headers, payload: { show: { movie: true, tv: true, anime: true, music: true }, showWant: true } });
-    await app.inject({ method: "PUT", url: "/api/admin/spotify", headers, payload: { enabled: false, shuffle: true, volume: 30, autoCollapseSeconds: 3 } });
+    await app.inject({ method: "PUT", url: "/api/admin/spotify", headers, payload: { enabled: false, mode: "custom", embedUrl: "", shuffle: true, volume: 30, autoCollapseSeconds: 3 } });
     expect((await app.inject("/api/spotify/player")).json()).toMatchObject({ enabled: false, tracks: [] });
   });
 
@@ -157,9 +157,12 @@ describe("music player", () => {
     await settings.set("spotify", { enabled: true, playlistUrl: "https://open.spotify.com/playlist/x", shuffle: false, volume: 40, autoCollapseSeconds: 5 });
     await add(1);
     const current = (await app.inject({ url: "/api/admin/spotify", headers: { cookie } })).json();
-    expect(current).toEqual({ settings: { enabled: true, shuffle: false, volume: 40, autoCollapseSeconds: 5 }, playerTracks: 1 });
+    expect(current).toEqual({
+      settings: { enabled: true, mode: "custom", embedUrl: "https://open.spotify.com/playlist/37i9dQZF1DX9AUX5YVf3hc", shuffle: false, volume: 40, autoCollapseSeconds: 5 },
+      playerTracks: 1
+    });
 
-    const payload = { enabled: true, shuffle: true, volume: 55, autoCollapseSeconds: 0 };
+    const payload = { enabled: true, mode: "custom", embedUrl: "", shuffle: true, volume: 55, autoCollapseSeconds: 0 };
     expect((await app.inject({ method: "PUT", url: "/api/admin/spotify", headers, payload })).json().settings).toEqual(payload);
     for (const bad of [{ ...payload, volume: 101 }, { ...payload, autoCollapseSeconds: -1 }, { ...payload, playlistUrl: "x" }]) {
       expect((await app.inject({ method: "PUT", url: "/api/admin/spotify", headers, payload: bad })).statusCode).toBe(400);

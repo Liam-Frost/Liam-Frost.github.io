@@ -12,6 +12,7 @@ import type { PhotoRepository } from "../src/photos/types";
 import type { ProjectRepository } from "../src/projects/types";
 import { buildServer } from "../src/server";
 import type { SettingsRepository } from "../src/settings/types";
+import type { SpotifyAccount } from "../src/spotify/account";
 import type { PlaylistFetcher } from "../src/spotify/playlist";
 
 export const USERNAME = "liam";
@@ -51,6 +52,10 @@ export type TestServerOptions = {
   fetchPlaylist?: PlaylistFetcher;
   /** Defaults to one that fails, so tests never reach iTunes. */
   musicSource?: MusicSource;
+  /** Defaults to an account without a Spotify app. */
+  spotifyAccount?: SpotifyAccount;
+  /** Defaults to no preview, so tests never reach Spotify. */
+  trackPreview?: (trackId: string) => Promise<string | null>;
 };
 
 /**
@@ -76,7 +81,9 @@ export async function buildTestServer(env: Record<string, string | undefined> = 
     mediaSources: options.mediaSources ?? offlineMediaSources,
     settings: options.settings ?? null,
     fetchPlaylist: options.fetchPlaylist ?? (() => Promise.reject(new Error("no network in tests"))),
-    musicSource: options.musicSource ?? { search: offline, lookup: offline, findPreview: async () => null }
+    musicSource: options.musicSource ?? { search: offline, lookup: offline, findPreview: async () => null },
+    spotifyAccount: options.spotifyAccount,
+    trackPreview: options.trackPreview ?? (async () => null)
   });
 }
 

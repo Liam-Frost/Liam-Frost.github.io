@@ -153,3 +153,49 @@ export function createPlaylistFetcher(fetchImpl: typeof fetch = fetch): Playlist
     };
   };
 }
+
+const EMBED_TYPES = ["playlist", "album", "track", "artist"] as const;
+export type SpotifyEmbedType = (typeof EMBED_TYPES)[number];
+
+/**
+ * Normalizes a Spotify link or URI for the embedded player: open.spotify.com/[intl-xx/][embed/]{type}/{id}
+ * or spotify:{type}:{id} → https://open.spotify.com/{type}/{id}; null for anything else.
+ */
+export function spotifyLink(value: string): string | null {
+  const trimmed = value.trim();
+  const uri = /^spotify:([a-z]+):([A-Za-z0-9]{22})$/.exec(trimmed);
+  let type: string | undefined;
+  let id: string | undefined;
+  if (uri) {
+    [, type, id] = uri;
+  } else {
+    let url: URL;
+    try {
+      url = new URL(trimmed);
+    } catch {
+      return null;
+    }
+    if (url.protocol !== "https:" || url.hostname !== "open.spotify.com") return null;
+    const match = /^\/(?:intl-[a-z-]+\/)?(?:embed\/)?([a-z]+)\/([A-Za-z0-9]{22})\/?$/.exec(url.pathname);
+    if (!match) return null;
+    [, type, id] = match;
+  }
+  return (EMBED_TYPES as readonly string[]).includes(type!) ? `https://open.spotify.com/${type}/${id}` : null;
+}
+
+/** The 30-second preview of one track, from its embed page; null when it has none or the page fails. */
+export async function fetchTrackPreview(trackId: string, fetchImpl: typeof fetch = fetch): Promise<string | null> {
+  try {
+    const response = await get(fetchImpl, `https://open.spotify.com/embed/track/${trackId}`);
+    if (!response.ok) {
+      await response.body?.cancel();
+      return null;
+    }
+    const script = /<script id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/.exec(await response.text());
+    const entity = script ? JSON.parse(script[1])?.props?.pageProps?.state?.data?.entity : null;
+    const url: unknown = entity?.audioPreview?.url;
+    return typeof url === "string" && url.startsWith("https://p.scdn.co/") ? url : null;
+  } catch {
+    return null;
+  }
+}
