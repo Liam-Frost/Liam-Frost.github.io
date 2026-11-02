@@ -19,7 +19,7 @@ const RATINGS: Record<
   "needs-improvement": { label: "待改进", className: "text-status-warn", icon: TriangleAlert },
   poor: { label: "差", className: "text-status-error", icon: CircleAlert }
 };
-const JOBS: Record<string, string> = {
+export const JOBS: Record<string, string> = {
   "steam-sync": "Steam 游戏库同步",
   "music-playlist-link": "导入歌单链接",
   "music-liked": "导入 Spotify 点赞歌曲",

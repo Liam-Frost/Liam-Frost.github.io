@@ -2,6 +2,10 @@
 
 ## User Decisions
 
+### 2026-11-02: Admin Overview (Stage 20)
+
+The user wanted 概览 to show account connections and early statistics instead of links to the sections. Confirmed plan: `docs/plan-dashboard.md`: today's visits, things to fix, account and source status, content counts, recent activity and quick actions, from one admin request whose parts fail separately.
+
 ### 2026-11-02: Photo Sources (Stage 19)
 
 The user asked for photos to be added or replaced from the device, a folder on the primary VPS, a gallery link or an image / object-storage link. Confirmed plan: `docs/plan-photos.md`. Links are imported as site-hosted images by default (referencing the original link is an option); Flickr is the only gallery for now.

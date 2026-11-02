@@ -11,7 +11,8 @@ import type {
   AnalyticsMeta,
   AnalyticsOverview,
   AnalyticsRange,
-  AnalyticsRangeInfo
+  AnalyticsRangeInfo,
+  DashboardTraffic
 } from "@liam-frost/shared";
 import { createHash, randomBytes } from "node:crypto";
 
@@ -348,6 +349,30 @@ export class AnalyticsService {
       trend: { bucket: single ? "hour" : "day", points },
       topPages,
       online
+    };
+  }
+
+  /** For the admin's 概览: today against yesterday at the same time, and the last seven days. */
+  async dashboard(): Promise<DashboardTraffic> {
+    const [today, week] = await Promise.all([this.overview("today"), this.overview("7d")]);
+    return {
+      online: today.online,
+      today: today.current,
+      yesterday: today.previous,
+      week: week.trend.points.map(({ key, views, visitors }) => ({ day: key, views, visitors }))
+    };
+  }
+
+  /** The latest jobs and each external source's last answers, over the retention period. */
+  async system(jobs: number) {
+    const since = new Date(this.now().getTime() - this.config.retentionDays * DAY_MS);
+    const [recent, sources] = await Promise.all([
+      this.store.systemEvents({ since, kind: "job", limit: jobs }),
+      this.store.systemEvents({ since, kind: "source", limit: 2000 })
+    ]);
+    return {
+      jobs: recent.map((event) => ({ ...event, at: event.at.toISOString() })),
+      sources: sourceStatus(sources)
     };
   }
 

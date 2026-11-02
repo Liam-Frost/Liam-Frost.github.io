@@ -24,6 +24,7 @@ import { DatabaseNotice } from "../components/ui/DatabaseNotice";
 import { Dialog } from "../components/ui/Dialog";
 import { IconButton } from "../components/ui/IconButton";
 import { useToast } from "../components/ui/Toast";
+import { useArrivalParams } from "../hooks/useArrivalParams";
 import { useDeletePhoto, usePhotos, useReorderPhotos, useSetPhoto } from "../hooks/usePhotos";
 import { api, uploadPhoto } from "../lib/api";
 import { pickText } from "../lib/i18n";
@@ -55,8 +56,11 @@ export function PhotosPage() {
   const [uploads, setUploads] = useState<UploadItem[]>([]);
   const [dragId, setDragId] = useState<string | null>(null);
   const [dropActive, setDropActive] = useState(false);
-  const [adding, setAdding] = useState(false);
+  // 概览 links here to add a photo (?open=add) or to the photos still referencing links (?show=referenced).
+  const arrival = useArrivalParams("open", "show");
+  const [adding, setAdding] = useState(arrival.open === "add");
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>("all");
+  const [referencedOnly, setReferencedOnly] = useState(arrival.show === "referenced");
 
   const setPhoto = useSetPhoto();
   const reorder = useReorderPhotos();
@@ -151,9 +155,12 @@ export function PhotosPage() {
   const visible = all.filter(
     (p) =>
       (filter === "all" || p.visibility === filter) &&
-      (sourceFilter === "all" || (p.source?.type ?? "unknown") === sourceFilter)
+      (sourceFilter === "all" || (p.source?.type ?? "unknown") === sourceFilter) &&
+      (!referencedOnly || p.storage === "remote-url")
   );
-  const canReorder = filter === "all" && sourceFilter === "all" && !reorder.isPending;
+  const filtered = filter !== "all" || sourceFilter !== "all" || referencedOnly;
+  const canReorder = !filtered && !reorder.isPending;
+  const referenced = all.filter((p) => p.storage === "remote-url").length;
   const counts = {
     all: all.length,
     public: all.filter((p) => p.visibility === "public").length,
@@ -232,8 +239,22 @@ export function PhotosPage() {
           ))}
           <option value="unknown">未记录来源</option>
         </select>
-        {filter !== "all" || sourceFilter !== "all" ? (
-          <span className="text-[12px] text-faint">在“全部”且不筛选来源时可以调整顺序</span>
+        {referenced || referencedOnly ? (
+          <button
+            type="button"
+            aria-pressed={referencedOnly}
+            onClick={() => setReferencedOnly(!referencedOnly)}
+            className={`rounded-full px-3.5 py-1.5 text-[12.5px] transition-colors ${
+              referencedOnly
+                ? "bg-brand text-white"
+                : "bg-surface text-brand ring-1 ring-line hover:bg-brand-secondary/10"
+            }`}
+          >
+            只看引用 <span className="opacity-70">{referenced}</span>
+          </button>
+        ) : null}
+        {filtered ? (
+          <span className="text-[12px] text-faint">在“全部”且不筛选时可以调整顺序</span>
         ) : null}
       </div>
 
