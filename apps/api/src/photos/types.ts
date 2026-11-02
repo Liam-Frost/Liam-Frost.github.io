@@ -1,4 +1,4 @@
-import type { LocalizedText, PhotoVisibility } from "@liam-frost/shared";
+import type { LocalizedText, PhotoSource, PhotoVisibility } from "@liam-frost/shared";
 
 export type StoredVariant = { width: number; height: number };
 
@@ -25,6 +25,8 @@ export type PhotoRow = {
   storageKey: string | null;
   /** Generated sizes for uploaded photos, smallest first. */
   variants: StoredVariant[] | null;
+  /** Where the image came from; null before sources were recorded. */
+  source: PhotoSource | null;
   visibility: PhotoVisibility;
   featured: boolean;
   sortOrder: number;
@@ -36,9 +38,17 @@ export type NewPhoto = Omit<PhotoRow, "createdAt" | "updatedAt" | "sortOrder"> &
   sortOrder?: number;
 };
 
+/** Editable fields, and (set by the server only, never from a request body) the image itself. */
 export type PhotoPatch = Partial<
   Pick<
     PhotoRow,
+    | "src"
+    | "storage"
+    | "storageKey"
+    | "variants"
+    | "source"
+    | "width"
+    | "height"
     | "title"
     | "date"
     | "category"
@@ -58,6 +68,8 @@ export interface PhotoRepository {
   /** Ordered by sortOrder, then newest date. */
   list(options?: { includePrivate?: boolean }): Promise<PhotoRow[]>;
   get(id: string): Promise<PhotoRow | null>;
+  /** The photo whose site-hosted files are under this key. */
+  findByStorageKey(key: string): Promise<PhotoRow | null>;
   /** Without an explicit sortOrder the photo goes first. */
   create(photo: NewPhoto): Promise<PhotoRow>;
   update(id: string, patch: PhotoPatch): Promise<PhotoRow | null>;

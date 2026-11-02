@@ -2,6 +2,10 @@
 
 ## User Decisions
 
+### 2026-11-02: Photo Sources (Stage 19)
+
+The user asked for photos to be added or replaced from the device, a folder on the primary VPS, a gallery link or an image / object-storage link. Confirmed plan: `docs/plan-photos.md`. Links are imported as site-hosted images by default (referencing the original link is an option); Flickr is the only gallery for now.
+
 ### 2026-11-01: Cookieless Visitor Analytics, Admin Only
 
 The user chose cookieless analytics for Stage 18: visitors are counted per day by a server-side hash with a daily salt, nothing identifying is kept in the browser, and returning visitors are not counted. Countries are collected (country code only). Statistics are shown only in the admin, not on the public site.
@@ -95,6 +99,10 @@ The admin login address should be configurable like `internal-developer-tools-po
 React and related dependencies should be upgraded to the latest versions. This upgrade is exempt from the "Preserve Existing UI" decision.
 
 ## Model Decisions
+
+### 2026-11-02: Photo Source Details (Stage 19)
+
+The model chose: a new folder per hosted image (`photos/<photo folder>/<imageId>`) found by its storage key, because public image URLs are cached as immutable and a replaced image must get new URLs; older photos keep their flat folder until replaced. Server folder imports are always hosted (the folders are not served). Links are checked for https and public addresses before every request and redirect, with Node's fetch so a configured HTTPS_PROXY still applies; a name could resolve differently between check and request (DNS rebinding), which is accepted for an admin-only feature. 198.18.0.0/15 is allowed because proxies in fake-IP mode use it. Flickr pages use oEmbed (no key). No storage interface yet: it comes with the R2 backend in 19c.
 
 ### 2026-11-02: Styled Tooltips and Selects Without a UI Library
 

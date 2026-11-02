@@ -17,7 +17,7 @@ export function IconButton({
   children: ReactNode;
 }) {
   return (
-    <Tooltip content={label} describe={false}>
+    <Tooltip content={label} describe={false} className="inline-flex shrink-0">
       <button
         type="button"
         aria-label={label}

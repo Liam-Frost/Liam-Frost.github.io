@@ -152,3 +152,5 @@ The `Photo` table keeps localized fields as JSON:
 - `alt`
 
 This preserves the existing multilingual data shape and avoids forcing a translation-table design before the admin UI requirements are clear.
+
+Images: `storage` is `local` (hosted by the site: `storageKey` is the folder, `variants` the generated sizes) or `remote-url` (`src` is shown as is). `source` (migrations `20261108090000_photo_sources` and `20261108100000_photo_gallery_source`) records where the image came from: `{ type: "upload" | "server" | "gallery" | "url", provider, ref, importedAt }` (`provider` names the gallery site, e.g. `flickr`); the migration filled it for existing photos from how they were stored.

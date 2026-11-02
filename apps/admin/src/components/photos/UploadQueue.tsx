@@ -15,15 +15,15 @@ const STATUS_TEXT: Record<UploadItem["status"], string> = {
   error: "失败"
 };
 
-/** Per-file upload progress; the server's processing time shows as "处理中" after the bytes are sent. */
+/** Per-image progress of uploads and imports; the server's processing time shows as "处理中". */
 export function UploadQueue({ items, onClear }: { items: UploadItem[]; onClear: () => void }) {
   if (!items.length) return null;
   const active = items.some((item) => item.status === "uploading" || item.status === "processing");
 
   return (
-    <section aria-label="上传进度" className="card mb-5 p-4">
+    <section aria-label="添加进度" className="card mb-5 p-4">
       <div className="mb-2 flex items-center justify-between">
-        <h2 className="text-[13px] font-semibold text-brand-dark">上传</h2>
+        <h2 className="text-[13px] font-semibold text-brand-dark">添加</h2>
         {!active ? (
           <button
             type="button"

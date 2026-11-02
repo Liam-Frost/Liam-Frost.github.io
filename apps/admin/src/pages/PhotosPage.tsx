@@ -1,17 +1,23 @@
-import type { AdminPhoto } from "@liam-frost/shared";
+import type { AdminPhoto, AdminPhotoImport, PhotoSourceType } from "@liam-frost/shared";
 import {
   ArrowDown,
   ArrowUp,
   EyeOff,
   GripVertical,
+  Link2,
   Pencil,
+  Plus,
   Star,
-  Trash2,
-  Upload
+  Trash2
 } from "lucide-react";
-import { useRef, useState, type DragEvent } from "react";
+import { useState, type DragEvent } from "react";
 
 import { PageHeader } from "../components/layout/AdminLayout";
+import {
+  ImageSourcePicker,
+  SOURCE_LABELS,
+  sourceLabel
+} from "../components/photos/ImageSourcePicker";
 import { PhotoEditor } from "../components/photos/PhotoEditor";
 import { UploadQueue, type UploadItem } from "../components/photos/UploadQueue";
 import { DatabaseNotice } from "../components/ui/DatabaseNotice";
@@ -19,7 +25,7 @@ import { Dialog } from "../components/ui/Dialog";
 import { IconButton } from "../components/ui/IconButton";
 import { useToast } from "../components/ui/Toast";
 import { useDeletePhoto, usePhotos, useReorderPhotos, useSetPhoto } from "../hooks/usePhotos";
-import { uploadPhoto } from "../lib/api";
+import { api, uploadPhoto } from "../lib/api";
 import { pickText } from "../lib/i18n";
 
 type Filter = "all" | "public" | "private";
@@ -30,7 +36,16 @@ const FILTERS: { value: Filter; label: string }[] = [
   { value: "private", label: "隐藏" }
 ];
 
-const ACCEPT = "image/jpeg,image/png,image/webp,image/avif,image/tiff";
+/**
+ * Card metadata: status badges (hidden, featured, referenced) and the source tag. Same size, never
+ * wrapping inside; weaker than the action buttons (no hover, smaller type).
+ */
+const BADGE =
+  "inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-md px-1.5 py-0.5 text-[11px] leading-4";
+const STATUS_BADGE = `${BADGE} bg-brand-secondary/10 text-brand`;
+const SOURCE_TAG = `${BADGE} text-subtle ring-1 ring-line ring-inset`;
+
+type SourceFilter = "all" | PhotoSourceType | "unknown";
 
 export function PhotosPage() {
   const { data: photos, isPending, error } = usePhotos();
@@ -40,7 +55,8 @@ export function PhotosPage() {
   const [uploads, setUploads] = useState<UploadItem[]>([]);
   const [dragId, setDragId] = useState<string | null>(null);
   const [dropActive, setDropActive] = useState(false);
-  const fileInput = useRef<HTMLInputElement>(null);
+  const [adding, setAdding] = useState(false);
+  const [sourceFilter, setSourceFilter] = useState<SourceFilter>("all");
 
   const setPhoto = useSetPhoto();
   const reorder = useReorderPhotos();
@@ -78,6 +94,32 @@ export function PhotosPage() {
     }
   };
 
+  /** Links, gallery photos and server files, one at a time like uploads. */
+  const importItems = async (imports: AdminPhotoImport[]) => {
+    const items = imports.map((body, i) => ({
+      body,
+      item: {
+        key: `${Date.now()}-import-${i}`,
+        name: body.from.type === "server" ? body.from.path : body.from.url,
+        progress: 1,
+        status: "processing" as const
+      }
+    }));
+    setUploads((list) => [...items.map((x) => x.item), ...list]);
+    for (const { body, item } of items) {
+      try {
+        const { photo } = await api.importPhoto(body);
+        setPhoto(photo, { prepend: true });
+        patchUpload(item.key, { status: "done" });
+      } catch (e) {
+        patchUpload(item.key, {
+          status: "error",
+          error: e instanceof Error ? e.message : "添加失败"
+        });
+      }
+    }
+  };
+
   const onDropFiles = (event: DragEvent) => {
     if (!event.dataTransfer.types.includes("Files")) return;
     event.preventDefault();
@@ -106,8 +148,12 @@ export function PhotosPage() {
 
   const all = photos ?? [];
   const ids = all.map((p) => p.id);
-  const visible = filter === "all" ? all : all.filter((p) => p.visibility === filter);
-  const canReorder = filter === "all" && !reorder.isPending;
+  const visible = all.filter(
+    (p) =>
+      (filter === "all" || p.visibility === filter) &&
+      (sourceFilter === "all" || (p.source?.type ?? "unknown") === sourceFilter)
+  );
+  const canReorder = filter === "all" && sourceFilter === "all" && !reorder.isPending;
   const counts = {
     all: all.length,
     public: all.filter((p) => p.visibility === "public").length,
@@ -131,24 +177,27 @@ export function PhotosPage() {
       <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
         <PageHeader
           title="照片"
-          description="上传后照片默认隐藏，编辑好信息再设为公开。可以把图片直接拖到页面上上传。"
+          description="从本机、服务器文件夹、图库或图片链接添加；新照片默认隐藏，编辑好信息再设为公开。也可以把图片直接拖到页面上上传。"
         />
-        <button type="button" className="btn-primary" onClick={() => fileInput.current?.click()}>
-          <Upload aria-hidden="true" className="size-4" /> 上传照片
+        <button type="button" className="btn-primary" onClick={() => setAdding(true)}>
+          <Plus aria-hidden="true" className="size-4" /> 添加照片
         </button>
-        <input
-          ref={fileInput}
-          type="file"
-          accept={ACCEPT}
+      </div>
+
+      <Dialog open={adding} title="添加照片" onClose={() => setAdding(false)}>
+        <ImageSourcePicker
           multiple
-          hidden
-          onChange={(e) => {
-            const files = [...(e.target.files ?? [])];
-            e.target.value = "";
-            if (files.length) void uploadFiles(files);
+          action="添加"
+          onFiles={(files) => {
+            setAdding(false);
+            void uploadFiles(files);
+          }}
+          onImports={(items) => {
+            setAdding(false);
+            void importItems(items);
           }}
         />
-      </div>
+      </Dialog>
 
       <UploadQueue items={uploads} onClear={() => setUploads([])} />
 
@@ -169,14 +218,28 @@ export function PhotosPage() {
             {label} <span className="opacity-70">{counts[value]}</span>
           </button>
         ))}
-        {filter !== "all" ? (
-          <span className="text-[12px] text-faint">在“全部”中可以调整顺序</span>
+        <select
+          className="field !w-auto !py-1.5 !text-[12.5px]"
+          aria-label="来源"
+          value={sourceFilter}
+          onChange={(e) => setSourceFilter(e.target.value as SourceFilter)}
+        >
+          <option value="all">全部来源</option>
+          {Object.entries(SOURCE_LABELS).map(([value, label]) => (
+            <option key={value} value={value}>
+              {label}
+            </option>
+          ))}
+          <option value="unknown">未记录来源</option>
+        </select>
+        {filter !== "all" || sourceFilter !== "all" ? (
+          <span className="text-[12px] text-faint">在“全部”且不筛选来源时可以调整顺序</span>
         ) : null}
       </div>
 
       {visible.length === 0 ? (
         <div className="card p-10 text-center text-[13.5px] text-muted">
-          {all.length ? "没有符合条件的照片" : "还没有照片，点击“上传照片”或把图片拖到这里"}
+          {all.length ? "没有符合条件的照片" : "还没有照片，点击“添加照片”或把图片拖到这里"}
         </div>
       ) : (
         <ul className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-4">
@@ -202,7 +265,7 @@ export function PhotosPage() {
                   move(ids, ids.indexOf(dragId), index);
                   setDragId(null);
                 }}
-                className={`card group overflow-hidden ${dragId === photo.id ? "opacity-40" : ""}`}
+                className={`card group flex flex-col overflow-hidden ${dragId === photo.id ? "opacity-40" : ""}`}
               >
                 <button
                   type="button"
@@ -217,7 +280,7 @@ export function PhotosPage() {
                     className="aspect-[4/3] w-full bg-line-soft object-cover"
                   />
                 </button>
-                <div className="p-3">
+                <div className="flex flex-1 flex-col p-3">
                   <div className="flex items-start gap-1.5">
                     {canReorder ? (
                       <GripVertical
@@ -235,42 +298,64 @@ export function PhotosPage() {
                       </p>
                     </div>
                   </div>
-                  <div className="mt-2 flex items-center gap-1.5">
-                    {photo.visibility === "private" ? (
-                      <span className="chip inline-flex items-center gap-1">
-                        <EyeOff aria-hidden="true" className="size-3" /> 隐藏
-                      </span>
-                    ) : null}
-                    {photo.featured ? (
-                      <span className="chip inline-flex items-center gap-1">
-                        <Star aria-hidden="true" className="size-3" /> 精选
-                      </span>
-                    ) : null}
-                    <span className="flex-1" />
-                    {canReorder ? (
-                      <>
-                        <IconButton
-                          label={`上移 ${title}`}
-                          disabled={index === 0}
-                          onClick={() => move(ids, index, index - 1)}
-                        >
-                          <ArrowUp aria-hidden="true" className="size-3.5" />
-                        </IconButton>
-                        <IconButton
-                          label={`下移 ${title}`}
-                          disabled={index === ids.length - 1}
-                          onClick={() => move(ids, index, index + 1)}
-                        >
-                          <ArrowDown aria-hidden="true" className="size-3.5" />
-                        </IconButton>
-                      </>
-                    ) : null}
-                    <IconButton label={`编辑 ${title}`} onClick={() => setEditing(photo)}>
-                      <Pencil aria-hidden="true" className="size-3.5" />
-                    </IconButton>
-                    <IconButton label={`删除 ${title}`} onClick={() => setDeleting(photo)} danger>
-                      <Trash2 aria-hidden="true" className="size-3.5" />
-                    </IconButton>
+                  {/* Metadata: status badges and the source, on as many lines as they need. */}
+                  {photo.visibility === "private" ||
+                  photo.featured ||
+                  photo.source ||
+                  photo.storage === "remote-url" ? (
+                    <ul aria-label="状态和来源" className="mt-2 flex flex-wrap gap-1">
+                      {photo.visibility === "private" ? (
+                        <li className={STATUS_BADGE}>
+                          <EyeOff aria-hidden="true" className="size-3 shrink-0" /> 隐藏
+                        </li>
+                      ) : null}
+                      {photo.featured ? (
+                        <li className={STATUS_BADGE}>
+                          <Star aria-hidden="true" className="size-3 shrink-0" /> 精选
+                        </li>
+                      ) : null}
+                      {photo.storage === "remote-url" ? (
+                        <li className={STATUS_BADGE}>
+                          <Link2 aria-hidden="true" className="size-3 shrink-0" /> 引用
+                        </li>
+                      ) : null}
+                      {photo.source ? (
+                        <li className={SOURCE_TAG}>{sourceLabel(photo.source)}</li>
+                      ) : null}
+                    </ul>
+                  ) : null}
+                  {/* Grows so the action rows of one grid row line up, whatever the tags above. */}
+                  <div aria-hidden="true" className="min-h-2 flex-1" />
+                  {/* Actions: their own row, so badges never squeeze them. */}
+                  <div className="flex items-center justify-between gap-1 border-t border-line-soft pt-2">
+                    <div className="flex items-center gap-0.5">
+                      {canReorder ? (
+                        <>
+                          <IconButton
+                            label={`上移 ${title}`}
+                            disabled={index === 0}
+                            onClick={() => move(ids, index, index - 1)}
+                          >
+                            <ArrowUp aria-hidden="true" className="size-3.5" />
+                          </IconButton>
+                          <IconButton
+                            label={`下移 ${title}`}
+                            disabled={index === ids.length - 1}
+                            onClick={() => move(ids, index, index + 1)}
+                          >
+                            <ArrowDown aria-hidden="true" className="size-3.5" />
+                          </IconButton>
+                        </>
+                      ) : null}
+                    </div>
+                    <div className="flex items-center gap-0.5">
+                      <IconButton label={`编辑 ${title}`} onClick={() => setEditing(photo)}>
+                        <Pencil aria-hidden="true" className="size-3.5" />
+                      </IconButton>
+                      <IconButton label={`删除 ${title}`} onClick={() => setDeleting(photo)} danger>
+                        <Trash2 aria-hidden="true" className="size-3.5" />
+                      </IconButton>
+                    </div>
                   </div>
                 </div>
               </li>

@@ -25,6 +25,11 @@ export class MemoryPhotoRepository implements PhotoRepository {
     return this.rows.get(id) ?? null;
   }
 
+  async findByStorageKey(key: string) {
+    this.check();
+    return [...this.rows.values()].find((row) => row.storageKey === key) ?? null;
+  }
+
   async create(photo: NewPhoto) {
     this.check();
     const min = Math.min(1, ...[...this.rows.values()].map((row) => row.sortOrder));
@@ -85,6 +90,12 @@ export function remotePhoto(overrides: Partial<PhotoRow> = {}): PhotoRow {
     storage: "remote-url",
     storageKey: null,
     variants: null,
+    source: {
+      type: "gallery",
+      provider: "flickr",
+      ref: "https://live.staticflickr.com/1/2_abc_b.jpg",
+      importedAt: null
+    },
     visibility: "public",
     featured: false,
     sortOrder: 0,

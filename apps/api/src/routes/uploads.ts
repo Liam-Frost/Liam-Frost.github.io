@@ -8,7 +8,7 @@ import { isMediaPublic, type MediaRepository } from "../media/types";
 import type { PersonRepository } from "../people/types";
 import type { PhotoRepository } from "../photos/types";
 import type { ProjectRepository } from "../projects/types";
-import type { LocalImageStore } from "../storage/local";
+import { isStorageKey, type LocalImageStore } from "../storage/local";
 
 /**
  * Serves generated image sizes from UPLOAD_DIR. Only `<n>.webp` files of an existing photo or project image
@@ -53,6 +53,16 @@ export function registerUploadRoutes(
     const row = await repos.photos.get(id).catch(() => null);
     if (!row || row.storage !== "local" || row.storageKey !== `photos/${id}`) throw notFound();
     return send(request, reply, row.storageKey, row.visibility === "public");
+  });
+
+  // Images added or replaced since Stage 19: "photos/<folder>/<imageId>", found by their storage key.
+  app.get("/uploads/photos/:folder/:imageId/:file", async (request, reply) => {
+    const { folder, imageId } = request.params as { folder: string; imageId: string };
+    const key = `photos/${folder}/${imageId}`;
+    if (!isStorageKey(key) || !repos.photos) throw notFound();
+    const row = await repos.photos.findByStorageKey(key).catch(() => null);
+    if (!row || row.storage !== "local") throw notFound();
+    return send(request, reply, key, row.visibility === "public");
   });
 
   app.get("/uploads/projects/:id/:imageId/:file", async (request, reply) => {

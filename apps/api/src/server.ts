@@ -47,6 +47,7 @@ import { PrismaPersonRepository, PrismaRelationRepository } from "./people/prism
 import type { PersonRepository, RelationRepository } from "./people/types";
 import { PrismaPlaylistRepository } from "./playlists/prisma-repository";
 import type { PlaylistRepository } from "./playlists/types";
+import { PhotoSources } from "./photos/photo-sources";
 import { PrismaPhotoRepository } from "./photos/prisma-repository";
 import type { PhotoRepository } from "./photos/types";
 import { PrismaProjectRepository } from "./projects/prisma-repository";
@@ -145,6 +146,10 @@ export type BuildServerOptions = {
   spotifyAccount?: SpotifyAccount;
   /** Steam sign-in and library; defaults to one built from the config. */
   steamAccount?: SteamAccount;
+  /** Downloads of photo links (and Flickr lookups); defaults to fetch. */
+  photoFetch?: typeof fetch;
+  /** Host name resolution for photo links; defaults to DNS. */
+  photoLookup?: (host: string) => Promise<string[]>;
   /** Requests to Steam (sign-in check, Web API, store); defaults to fetch. */
   steamFetch?: typeof fetch;
   /** One track's Spotify preview; defaults to its embed page. */
@@ -180,6 +185,8 @@ export async function buildServer({
   spotifyAccount,
   steamAccount,
   steamFetch = fetch,
+  photoFetch,
+  photoLookup,
   trackPreview = (trackId: string) => fetchTrackPreview(trackId)
 }: BuildServerOptions = {}) {
   const app = Fastify({
@@ -363,7 +370,20 @@ export async function buildServer({
 
   registerAdminRoutes(app, auth);
   registerAdminApp(app, auth, adminDistDir);
-  registerAdminPhotoRoutes(app, auth, photos, store, config.uploads.maxBytes);
+  registerAdminPhotoRoutes(
+    app,
+    auth,
+    photos,
+    store,
+    config.uploads.maxBytes,
+    new PhotoSources({
+      store,
+      maxBytes: config.uploads.maxBytes,
+      importRoots: config.uploads.importDirs,
+      fetchImpl: photoFetch,
+      lookup: photoLookup
+    })
+  );
   registerAdminProjectRoutes(app, auth, projects, store, config.uploads.maxBytes);
   registerPhotoRoutes(app, photos, store);
   registerProjectRoutes(app, projects, store);
