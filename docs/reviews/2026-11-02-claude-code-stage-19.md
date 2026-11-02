@@ -30,6 +30,8 @@ Scope: branch `stage-19-photo-sources`: the photo `source` column and migration,
 - One 图库 entry for gallery sites (source `gallery` with a `provider`; Flickr for now) instead of a Flickr tab; unsupported sites get a clear message.
 - Photo card footer: the status badges, source tag and action buttons shared one non-wrapping flex row; in a card about 200 px wide the shrinkable badges were squeezed until 精选 / 引用 wrapped one character per line, and the icon buttons (in shrinkable wrappers) were pushed out. Now a wrapping metadata row of fixed-size badges (no wrapping inside) and a separate action row under a divider, pinned to the card bottom so rows align; `IconButton`'s wrapper no longer shrinks. Checked at 1440, 1180, 980, 700, 600, 470, 375 and 320 px (4 to 1 columns) with every tag combination and a long Chinese title: every badge one 20 px line, no overflow, all four buttons fully inside each card, action rows aligned in every grid row, at least 8 px above the divider; move up / down, edit and delete still work.
 
+- High (found by the user): the 图库 change edited the already-applied photo source migration, so a database migrated before it kept `{"type":"flickr"}`, which the admin did not label (an empty tag), and Prisma's checksum no longer matched. Fixed by restoring the applied migration exactly, adding `20261108100000_photo_gallery_source` to convert the old value, and a fallback label for unknown sources. Verified on the user's local database: 40 photos converted, no checksum warning.
+
 ## Follow-Up Verification
 
 - `npm test`: 192 passed. `npm run typecheck`, `npm run lint`, `npm run format:check`, `npm run build`: passed.

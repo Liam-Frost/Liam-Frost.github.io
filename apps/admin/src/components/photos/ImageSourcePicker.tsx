@@ -33,9 +33,10 @@ const GALLERY_NAMES: Record<PhotoGalleryProvider, string> = { flickr: "Flickr" }
 
 /** A photo's source as a short label: the gallery's own name for gallery photos (“Flickr”). */
 export function sourceLabel(source: PhotoSource) {
-  return source.type === "gallery" && source.provider
-    ? GALLERY_NAMES[source.provider]
-    : SOURCE_LABELS[source.type];
+  // Values this admin does not know (data written by another version) still get a readable label.
+  if (source.type === "gallery" && source.provider)
+    return GALLERY_NAMES[source.provider] ?? source.provider;
+  return SOURCE_LABELS[source.type] ?? "未知来源";
 }
 
 export const PHOTO_ACCEPT = "image/jpeg,image/png,image/webp,image/avif,image/tiff";
