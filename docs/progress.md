@@ -369,6 +369,17 @@ Status: implementation complete.
 - Site collection page 回顾 tab: per year, how many films, series, anime, books, comics and games were finished, monthly bars, rating distribution and average, top genres, five-star works. Counts entries marked done with a finished date in that year.
 - Verified in the browser with the sample collection (desktop and 375 px wide).
 
+### Stage 19a and 19b: Photo Sources
+
+Status: implementation complete; Claude Code review complete and fixes applied. 19c (R2) waits for Stage 10.
+
+- Photos record their image's source (migration `20261108090000_photo_sources`, which fills it for existing photos).
+- Add photos from the device, server import folders (`PHOTO_IMPORT_DIRS`, with previews), Flickr photo pages (oEmbed) or image links; links are imported (default) or referenced. Links are fetched over https only and never to private or local addresses.
+- Editor: source and storage, 替换图片 from any source (keeping texts, optionally taking EXIF), 转为本站托管 for referenced images. Each hosted image gets its own folder, so replaced images get new URLs.
+- Admin: 添加照片 dialog with the four sources, source badges and filter.
+- Tests: 192 passed.
+- Verified with a temporary database: the migration on photos stored the old way, a server folder import with previews and EXIF, a Flickr short link through oEmbed (referenced), an image link (imported), a refused local address, 转为本站托管 and 替换图片 from a server file with EXIF, the old image folder removed.
+
 ### Styled Tooltips and Selects
 
 - Site and admin selects keep the native element with the project's arrow, borders and focus ring; Chromium browsers also get the opened list in the project's style (`appearance: base-select`), others keep their own list.
@@ -406,7 +417,8 @@ Status: implementation complete; Claude Code review complete and fixes applied.
 
 - `npm run db:deploy` applies the playlist and analytics migrations.
 - Connect Steam in the admin (收藏 → 游戏 → Steam 游戏库) and run a first sync.
-- Stage 19: photo sources (upload, server folder, Flickr, links). See `docs/plan-photos.md`.
+- `npm run db:deploy` applies the photo source migration; set `PHOTO_IMPORT_DIRS` to import from server folders.
+- Stage 19c (R2 storage) with Stage 10.
 - Stage 10: VPS deployment and CI/CD (needs the VPS and domain details).
 - Stage 10: VPS deployment and CI/CD (needs the VPS provider/OS/specs, DNS manager and domain from the user).
 - Stage 5: back-end foundation and admin auth refinement (`ADMIN_PATH`, IP allowlist, CSRF, Zod, tests). See `docs/plan-admin-projects-deploy.md`.

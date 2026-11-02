@@ -1,17 +1,19 @@
-import type { AdminPhoto } from "@liam-frost/shared";
+import type { AdminPhoto, AdminPhotoImport, PhotoSourceType } from "@liam-frost/shared";
 import {
   ArrowDown,
   ArrowUp,
   EyeOff,
   GripVertical,
+  Link2,
   Pencil,
+  Plus,
   Star,
-  Trash2,
-  Upload
+  Trash2
 } from "lucide-react";
-import { useRef, useState, type DragEvent } from "react";
+import { useState, type DragEvent } from "react";
 
 import { PageHeader } from "../components/layout/AdminLayout";
+import { ImageSourcePicker, SOURCE_LABELS } from "../components/photos/ImageSourcePicker";
 import { PhotoEditor } from "../components/photos/PhotoEditor";
 import { UploadQueue, type UploadItem } from "../components/photos/UploadQueue";
 import { DatabaseNotice } from "../components/ui/DatabaseNotice";
@@ -19,7 +21,7 @@ import { Dialog } from "../components/ui/Dialog";
 import { IconButton } from "../components/ui/IconButton";
 import { useToast } from "../components/ui/Toast";
 import { useDeletePhoto, usePhotos, useReorderPhotos, useSetPhoto } from "../hooks/usePhotos";
-import { uploadPhoto } from "../lib/api";
+import { api, uploadPhoto } from "../lib/api";
 import { pickText } from "../lib/i18n";
 
 type Filter = "all" | "public" | "private";
@@ -30,7 +32,7 @@ const FILTERS: { value: Filter; label: string }[] = [
   { value: "private", label: "隐藏" }
 ];
 
-const ACCEPT = "image/jpeg,image/png,image/webp,image/avif,image/tiff";
+type SourceFilter = "all" | PhotoSourceType | "unknown";
 
 export function PhotosPage() {
   const { data: photos, isPending, error } = usePhotos();
@@ -40,7 +42,8 @@ export function PhotosPage() {
   const [uploads, setUploads] = useState<UploadItem[]>([]);
   const [dragId, setDragId] = useState<string | null>(null);
   const [dropActive, setDropActive] = useState(false);
-  const fileInput = useRef<HTMLInputElement>(null);
+  const [adding, setAdding] = useState(false);
+  const [sourceFilter, setSourceFilter] = useState<SourceFilter>("all");
 
   const setPhoto = useSetPhoto();
   const reorder = useReorderPhotos();
@@ -78,6 +81,32 @@ export function PhotosPage() {
     }
   };
 
+  /** Links, Flickr photos and server files, one at a time like uploads. */
+  const importItems = async (imports: AdminPhotoImport[]) => {
+    const items = imports.map((body, i) => ({
+      body,
+      item: {
+        key: `${Date.now()}-import-${i}`,
+        name: body.from.type === "server" ? body.from.path : body.from.url,
+        progress: 1,
+        status: "processing" as const
+      }
+    }));
+    setUploads((list) => [...items.map((x) => x.item), ...list]);
+    for (const { body, item } of items) {
+      try {
+        const { photo } = await api.importPhoto(body);
+        setPhoto(photo, { prepend: true });
+        patchUpload(item.key, { status: "done" });
+      } catch (e) {
+        patchUpload(item.key, {
+          status: "error",
+          error: e instanceof Error ? e.message : "添加失败"
+        });
+      }
+    }
+  };
+
   const onDropFiles = (event: DragEvent) => {
     if (!event.dataTransfer.types.includes("Files")) return;
     event.preventDefault();
@@ -106,8 +135,12 @@ export function PhotosPage() {
 
   const all = photos ?? [];
   const ids = all.map((p) => p.id);
-  const visible = filter === "all" ? all : all.filter((p) => p.visibility === filter);
-  const canReorder = filter === "all" && !reorder.isPending;
+  const visible = all.filter(
+    (p) =>
+      (filter === "all" || p.visibility === filter) &&
+      (sourceFilter === "all" || (p.source?.type ?? "unknown") === sourceFilter)
+  );
+  const canReorder = filter === "all" && sourceFilter === "all" && !reorder.isPending;
   const counts = {
     all: all.length,
     public: all.filter((p) => p.visibility === "public").length,
@@ -131,24 +164,27 @@ export function PhotosPage() {
       <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
         <PageHeader
           title="照片"
-          description="上传后照片默认隐藏，编辑好信息再设为公开。可以把图片直接拖到页面上上传。"
+          description="从本机、服务器文件夹、Flickr 或图片链接添加；新照片默认隐藏，编辑好信息再设为公开。也可以把图片直接拖到页面上上传。"
         />
-        <button type="button" className="btn-primary" onClick={() => fileInput.current?.click()}>
-          <Upload aria-hidden="true" className="size-4" /> 上传照片
+        <button type="button" className="btn-primary" onClick={() => setAdding(true)}>
+          <Plus aria-hidden="true" className="size-4" /> 添加照片
         </button>
-        <input
-          ref={fileInput}
-          type="file"
-          accept={ACCEPT}
+      </div>
+
+      <Dialog open={adding} title="添加照片" onClose={() => setAdding(false)}>
+        <ImageSourcePicker
           multiple
-          hidden
-          onChange={(e) => {
-            const files = [...(e.target.files ?? [])];
-            e.target.value = "";
-            if (files.length) void uploadFiles(files);
+          action="添加"
+          onFiles={(files) => {
+            setAdding(false);
+            void uploadFiles(files);
+          }}
+          onImports={(items) => {
+            setAdding(false);
+            void importItems(items);
           }}
         />
-      </div>
+      </Dialog>
 
       <UploadQueue items={uploads} onClear={() => setUploads([])} />
 
@@ -169,14 +205,28 @@ export function PhotosPage() {
             {label} <span className="opacity-70">{counts[value]}</span>
           </button>
         ))}
-        {filter !== "all" ? (
-          <span className="text-[12px] text-faint">在“全部”中可以调整顺序</span>
+        <select
+          className="field !w-auto !py-1.5 !text-[12.5px]"
+          aria-label="来源"
+          value={sourceFilter}
+          onChange={(e) => setSourceFilter(e.target.value as SourceFilter)}
+        >
+          <option value="all">全部来源</option>
+          {Object.entries(SOURCE_LABELS).map(([value, label]) => (
+            <option key={value} value={value}>
+              {label}
+            </option>
+          ))}
+          <option value="unknown">未记录来源</option>
+        </select>
+        {filter !== "all" || sourceFilter !== "all" ? (
+          <span className="text-[12px] text-faint">在“全部”且不筛选来源时可以调整顺序</span>
         ) : null}
       </div>
 
       {visible.length === 0 ? (
         <div className="card p-10 text-center text-[13.5px] text-muted">
-          {all.length ? "没有符合条件的照片" : "还没有照片，点击“上传照片”或把图片拖到这里"}
+          {all.length ? "没有符合条件的照片" : "还没有照片，点击“添加照片”或把图片拖到这里"}
         </div>
       ) : (
         <ul className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-4">
@@ -244,6 +294,14 @@ export function PhotosPage() {
                     {photo.featured ? (
                       <span className="chip inline-flex items-center gap-1">
                         <Star aria-hidden="true" className="size-3" /> 精选
+                      </span>
+                    ) : null}
+                    {photo.source ? (
+                      <span className="chip">{SOURCE_LABELS[photo.source.type]}</span>
+                    ) : null}
+                    {photo.storage === "remote-url" ? (
+                      <span className="chip inline-flex items-center gap-1">
+                        <Link2 aria-hidden="true" className="size-3" /> 引用
                       </span>
                     ) : null}
                     <span className="flex-1" />

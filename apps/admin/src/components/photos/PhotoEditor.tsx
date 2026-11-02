@@ -1,13 +1,21 @@
-import type { AdminPhoto, AdminPhotoUpdate, LocalizedText } from "@liam-frost/shared";
-import { Plus, X } from "lucide-react";
+import type {
+  AdminPhoto,
+  AdminPhotoImport,
+  AdminPhotoUpdate,
+  LocalizedText
+} from "@liam-frost/shared";
+import { CloudDownload, ExternalLink, Plus, Replace, X } from "lucide-react";
 import { useState, type FormEvent } from "react";
 
-import { useUpdatePhoto } from "../../hooks/usePhotos";
+import { useSetPhoto, useUpdatePhoto } from "../../hooks/usePhotos";
+import { api, uploadPhotoImage } from "../../lib/api";
 import { LANG_LABELS, LANGS, type Lang } from "../../lib/i18n";
 import { Dialog } from "../ui/Dialog";
 import { Field, Switch } from "../ui/Field";
 import { useToast } from "../ui/Toast";
 import { RecentStats } from "../analytics/RecentStats";
+import { Tooltip } from "../ui/Tooltip";
+import { ImageSourcePicker, SOURCE_LABELS } from "./ImageSourcePicker";
 
 type Draft = {
   title: LocalizedText;
@@ -48,8 +56,21 @@ function hasText(value: LocalizedText) {
 }
 
 /** Edit form for one photo: per-language texts in tabs, shared fields below. */
-export function PhotoEditor({ photo, onClose }: { photo: AdminPhoto; onClose: () => void }) {
-  const [draft, setDraft] = useState(() => toDraft(photo));
+export function PhotoEditor({
+  photo: initial,
+  onClose
+}: {
+  photo: AdminPhoto;
+  onClose: () => void;
+}) {
+  // The image can change while editing (替换图片 / 转为本站托管); the details stay in the draft.
+  const [photo, setCurrent] = useState(initial);
+  const [draft, setDraft] = useState(() => toDraft(initial));
+  const [replacing, setReplacing] = useState(false);
+  const [useExif, setUseExif] = useState(false);
+  const [imageBusy, setImageBusy] = useState(false);
+  const [imageError, setImageError] = useState("");
+  const setPhoto = useSetPhoto();
   const [lang, setLang] = useState<Lang>("zh");
   const [error, setError] = useState("");
   const update = useUpdatePhoto();
@@ -91,7 +112,42 @@ export function PhotoEditor({ photo, onClose }: { photo: AdminPhoto; onClose: ()
     );
   };
 
+  /** A new image on the photo: shown here, written into the list, and (with EXIF) into the draft. */
+  const applyImage = (next: AdminPhoto, message: string) => {
+    setCurrent(next);
+    setPhoto(next);
+    if (useExif)
+      setDraft((d) => ({
+        ...d,
+        date: next.date,
+        camera: next.camera ?? "",
+        lens: next.lens ?? "",
+        settings: next.settings ?? ""
+      }));
+    setReplacing(false);
+    toast(message);
+  };
+
+  const runImage = async (work: () => Promise<{ photo: AdminPhoto }>, message: string) => {
+    setImageBusy(true);
+    setImageError("");
+    try {
+      applyImage((await work()).photo, message);
+    } catch (e) {
+      setImageError(e instanceof Error ? e.message : "操作失败");
+    } finally {
+      setImageBusy(false);
+    }
+  };
+
+  const replaceWithFile = (files: File[]) =>
+    runImage(() => uploadPhotoImage(photo.id, files[0]!, useExif), "已替换图片");
+  const replaceWithImport = (items: AdminPhotoImport[]) =>
+    runImage(() => api.replacePhotoImage(photo.id, { ...items[0]!, useExif }), "已替换图片");
+  const host = () => runImage(() => api.hostPhoto(photo.id), "已转为本站托管");
+
   const formId = `photo-editor-${photo.id}`;
+  const source = photo.source;
 
   return (
     <Dialog
@@ -128,6 +184,68 @@ export function PhotoEditor({ photo, onClose }: { photo: AdminPhoto; onClose: ()
             <br />
             ID：{photo.id}
           </p>
+          <section
+            aria-label="图片"
+            className="space-y-2 rounded-xl border border-line-soft p-3 text-[12px]"
+          >
+            <p className="text-muted">
+              来源：
+              <span className="text-ink">{source ? SOURCE_LABELS[source.type] : "未记录"}</span>
+              {source?.importedAt ? (
+                <span className="text-faint"> · {source.importedAt.slice(0, 10)}</span>
+              ) : null}
+            </p>
+            {source?.ref ? (
+              <Tooltip content={source.ref} describe={false} className="block min-w-0">
+                <p className="truncate font-mono text-[11px] text-faint">{source.ref}</p>
+              </Tooltip>
+            ) : null}
+            <p className="text-muted">
+              存放：
+              {photo.storage === "local" ? (
+                <span className="text-ink">本站托管</span>
+              ) : (
+                <a
+                  href={photo.src}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1 text-brand hover:underline"
+                >
+                  只引用原链接 <ExternalLink aria-hidden="true" className="size-3" />
+                </a>
+              )}
+            </p>
+            <div className="flex flex-wrap gap-1.5 pt-1">
+              <button
+                type="button"
+                className="btn-secondary !px-3 !py-1.5 !text-[12px]"
+                disabled={imageBusy}
+                onClick={() => {
+                  setImageError("");
+                  setReplacing(true);
+                }}
+              >
+                <Replace aria-hidden="true" className="size-3.5" />
+                替换图片
+              </button>
+              {photo.storage === "remote-url" ? (
+                <button
+                  type="button"
+                  className="btn-secondary !px-3 !py-1.5 !text-[12px]"
+                  disabled={imageBusy}
+                  onClick={() => void host()}
+                >
+                  <CloudDownload aria-hidden="true" className="size-3.5" />
+                  {imageBusy ? "处理中…" : "转为本站托管"}
+                </button>
+              ) : null}
+            </div>
+            {imageError && !replacing ? (
+              <p role="alert" className="text-status-error">
+                {imageError}
+              </p>
+            ) : null}
+          </section>
           <div className="flex flex-col items-start gap-2.5">
             <Switch
               id="photo-public"
@@ -314,6 +432,33 @@ export function PhotoEditor({ photo, onClose }: { photo: AdminPhoto; onClose: ()
           ) : null}
         </div>
       </form>
+      <Dialog open={replacing} title="替换图片" onClose={() => !imageBusy && setReplacing(false)}>
+        <div className="space-y-4">
+          <p className="text-[13px] text-muted">
+            标题、说明、排序和公开状态都保留；原来由本站托管的图片文件会删除。
+          </p>
+          <label className="flex items-center gap-2 text-[13px]">
+            <input
+              type="checkbox"
+              checked={useExif}
+              onChange={(e) => setUseExif(e.target.checked)}
+            />
+            用新图片的 EXIF 覆盖拍摄日期和相机信息
+          </label>
+          <ImageSourcePicker
+            multiple={false}
+            busy={imageBusy}
+            action={imageBusy ? "处理中…" : "替换"}
+            onFiles={(files) => void replaceWithFile(files)}
+            onImports={(items) => void replaceWithImport(items)}
+          />
+          {imageError ? (
+            <p role="alert" className="text-[12.5px] text-status-error">
+              {imageError}
+            </p>
+          ) : null}
+        </div>
+      </Dialog>
     </Dialog>
   );
 }

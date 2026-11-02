@@ -100,6 +100,10 @@ React and related dependencies should be upgraded to the latest versions. This u
 
 ## Model Decisions
 
+### 2026-11-02: Photo Source Details (Stage 19)
+
+The model chose: a new folder per hosted image (`photos/<photo folder>/<imageId>`) found by its storage key, because public image URLs are cached as immutable and a replaced image must get new URLs; older photos keep their flat folder until replaced. Server folder imports are always hosted (the folders are not served). Links are checked for https and public addresses before every request and redirect, with Node's fetch so a configured HTTPS_PROXY still applies; a name could resolve differently between check and request (DNS rebinding), which is accepted for an admin-only feature. 198.18.0.0/15 is allowed because proxies in fake-IP mode use it. Flickr pages use oEmbed (no key). No storage interface yet: it comes with the R2 backend in 19c.
+
 ### 2026-11-02: Styled Tooltips and Selects Without a UI Library
 
 The user asked to remove the visual gap between browser-native hover tooltips / selects and the project's own UI, without a new UI framework. The model chose: keep the native `<select>` (keyboard, screen readers and phone pickers stay native) and restyle the existing `.select` (site) and `select.field` (admin) classes with the project's arrow, borders and focus ring; where the browser supports customizable selects (`appearance: base-select`, Chromium), the opened list is styled too, and other browsers show their own list. Native `title` hover hints became a small `Tooltip` component in each app (hover and keyboard focus, Escape, portal; inside a modal `<dialog>` it renders into the dialog's top layer), both positioned by `tooltipPosition` in `@liam-frost/shared`. The admin's metric explanations, which were invisible `title`s on headings and cards, became an ⓘ button (`InfoTip`).

@@ -78,17 +78,24 @@ Rate-limit counters and revoked sessions live in process memory, so the API must
 
 Requires `DATABASE_URL` (see `database.md`).
 
-- **Upload**: the button or drag-and-drop anywhere on the Photos page; files upload one at a time with progress. Accepted: JPEG, PNG, WebP, AVIF, TIFF up to `UPLOAD_MAX_MB` (default 40 MB) and 120 megapixels.
+- **Adding photos** (添加照片) from four sources, one at a time with progress:
+  - **本机上传**: files from the device (also drag-and-drop anywhere on the Photos page). Accepted: JPEG, PNG, WebP, AVIF, TIFF up to `UPLOAD_MAX_MB` (default 40 MB) and 120 megapixels.
+  - **服务器文件夹**: images in the folders listed in `PHOTO_IMPORT_DIRS` (absolute paths on the API's machine, e.g. a folder on the primary VPS filled with rsync or SFTP). Browse sub-folders with previews, pick images or a whole folder. Files are copied and processed; the originals stay where they are. Paths outside the folders (`..`, symlinks) are refused.
+  - **Flickr**: a photo page (`flickr.com/photos/…`, `flic.kr/p/…`) is looked up with Flickr's oEmbed (no key) for its title and image; a `live.staticflickr.com` image link works too.
+  - **图片链接**: any https image link (image hosts, public R2 / S3 objects).
+  - Links (Flickr and image links) are **imported** (downloaded and hosted by the site, the default) or **referenced** (shown from their own address: no copy and no generated sizes, and the photo breaks if the link goes away). Links are fetched over https only, never to private, local or link-local addresses (checked again on every redirect, at most 3), within `UPLOAD_MAX_MB`.
+- **Source**: each photo records where its image came from (本机上传 with the file name, 服务器文件 with the path, Flickr with the page, 图片链接 with the link) and when. The list shows it and can be filtered by it; photos added before Stage 19 got their source from how they were stored.
 - **Processing**: the image is auto-rotated from EXIF and rendered as WebP at 640, 1280, 2048 and 3072 px on the longest edge (never upscaled; smaller images get their own size instead). Generated files carry no metadata, so GPS and camera serial data are not published. The original file is kept next to them but is never served.
 - **New photos are hidden**: an upload becomes a private photo prefilled from EXIF (camera, lens, "1/200 · f/2.8 · ISO 400", capture date) with the file name as its title. Edit it, then switch on "公开显示". Nothing is left behind on failure, and deleting a photo removes its files.
 - **Editing**: title, category, location, description, alt text and tags per language (missing languages fall back on the site); date, camera, lens, settings; public and featured switches. A title in at least one language is required.
+- **Image** (in the editor): shows the source and whether the site hosts the image. 替换图片 puts a new image from any of the four sources on the photo, keeping its texts, order and visibility (optionally taking the new image's date and camera details); the old hosted files are removed. 转为本站托管 downloads a referenced image and hosts it, keeping its source.
 - **Featured**: the home page "featured" section shows photos with "首页精选" on, in gallery order.
 - **Order**: drag cards (or use the arrow buttons) in the "全部" view. The server only accepts the complete current list, so two tabs cannot silently overwrite each other's order.
-- **Existing Flickr photos** stay as remote URLs; their texts and flags are editable, their image is not replaced.
+- **Existing Flickr photos** stay as referenced links until replaced or hosted.
 
-Files live in `UPLOAD_DIR` (default `apps/api/uploads`) under `photos/<id>/` and are served from `/uploads/photos/<id>/<size>.webp`. Only generated sizes of existing photos are reachable: public photos with a one-year immutable cache, hidden photos only to a signed-in admin (`private, no-store`). Because public URLs are cached for a year, a photo that is later hidden or deleted can remain in browsers that already loaded it.
+Files live in `UPLOAD_DIR` (default `apps/api/uploads`): each hosted image in its own folder `photos/<photo folder>/<imageId>/`, served from `/uploads/photos/<photo folder>/<imageId>/<size>.webp`, so a replaced image gets new URLs (public ones are cached as immutable). Photos uploaded before Stage 19 keep `photos/<id>/` and `/uploads/photos/<id>/<size>.webp` until their image is replaced. Only generated sizes of existing photos are reachable: public photos with a one-year immutable cache, hidden photos only to a signed-in admin (`private, no-store`). Because public URLs are cached for a year, a photo that is later hidden or deleted can remain in browsers that already loaded it.
 
-API: `GET/POST /api/admin/photos`, `GET/PATCH/DELETE /api/admin/photos/:id`, `PUT /api/admin/photos/order`.
+API: `GET/POST /api/admin/photos` (upload), `POST /api/admin/photos/import` (`{ from: { type: "url" | "flickr", url } | { type: "server", root, path }, mode: "import" | "reference" }`), `GET/PATCH/DELETE /api/admin/photos/:id`, `POST /api/admin/photos/:id/image` (replace with an upload; `?exif=1`), `PUT /api/admin/photos/:id/image` (replace from a link, Flickr or server file; `useExif`), `POST /api/admin/photos/:id/host`, `GET /api/admin/photos/server?root&path`, `GET /api/admin/photos/server/preview?root&path`, `PUT /api/admin/photos/order`. Plan: `docs/plan-photos.md`.
 
 ## Project Management
 
