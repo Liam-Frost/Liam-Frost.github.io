@@ -406,6 +406,7 @@ Status: implementation complete; Claude Code review complete and fixes applied.
 
 - `npm run db:deploy` applies the playlist and analytics migrations.
 - Connect Steam in the admin (收藏 → 游戏 → Steam 游戏库) and run a first sync.
+- Stage 19: photo sources (upload, server folder, Flickr, links). See `docs/plan-photos.md`.
 - Stage 10: VPS deployment and CI/CD (needs the VPS and domain details).
 - Stage 10: VPS deployment and CI/CD (needs the VPS provider/OS/specs, DNS manager and domain from the user).
 - Stage 5: back-end foundation and admin auth refinement (`ADMIN_PATH`, IP allowlist, CSRF, Zod, tests). See `docs/plan-admin-projects-deploy.md`.

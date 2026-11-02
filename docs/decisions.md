@@ -2,6 +2,10 @@
 
 ## User Decisions
 
+### 2026-11-02: Photo Sources (Stage 19)
+
+The user asked for photos to be added or replaced from the device, a folder on the primary VPS, a gallery link or an image / object-storage link. Confirmed plan: `docs/plan-photos.md`. Links are imported as site-hosted images by default (referencing the original link is an option); Flickr is the only gallery for now.
+
 ### 2026-11-01: Cookieless Visitor Analytics, Admin Only
 
 The user chose cookieless analytics for Stage 18: visitors are counted per day by a server-side hash with a daily salt, nothing identifying is kept in the browser, and returning visitors are not counted. Countries are collected (country code only). Statistics are shown only in the admin, not on the public site.
