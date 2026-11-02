@@ -13,6 +13,7 @@ import {
   type AdminBatchRequest,
   type AdminBatchResult,
   type AdminCollectionSettingsResponse,
+  type AdminDashboard,
   type AdminMediaBatchPatch,
   type AdminPersonUpdate as AdminPersonUpdateBody,
   type AdminPlaylistCreate,
@@ -199,6 +200,7 @@ const playlistPath = (id: string) => `/api/admin/playlists/${encodeURIComponent(
 
 export const api = {
   session: () => request<AdminSessionResponse>("/api/admin/session"),
+  dashboard: () => request<AdminDashboard>("/api/admin/dashboard"),
   login: (username: string, password: string) =>
     request<AdminSessionResponse>("/api/admin/login", {
       method: "POST",

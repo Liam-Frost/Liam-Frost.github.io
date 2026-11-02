@@ -13,6 +13,7 @@ Current admin features:
 - Reusable backend guard: `AdminAuthService.requireAdmin` (Fastify `preHandler`).
 - Standalone admin app `apps/admin` (Stage 6), served by the API at `ADMIN_PATH`: login, layout with Overview / Photos / Projects navigation, logout.
 - Photo management (Stage 7): upload, edit in five languages, publish/hide, home-page featured flag, drag-and-drop or button reordering, delete.
+- Overview (Stage 20): today's visits, things to fix, account and data source status, content counts and recent activity; see [Overview](#overview-概览).
 - Project management (Stage 8): create, edit (texts and Markdown body in five languages, slug, status, months, tech stack, links), cover and screenshots, publish/hide, home-page featured flag, reorder, delete.
 
 Photo CRUD, uploads, project management, and media collection management come in later stages.
@@ -169,6 +170,18 @@ Songs are collection entries (收藏 → 音乐; kind `track`). The player in th
 - Spotify playlists are read from Spotify's public embed page (the official Web API does not serve editorial playlists or previews to new apps). If Spotify changes that page, imports fail with a message; songs already imported are unaffected. Liked Songs and your own playlists come through the Spotify Web API with your account (above).
 
 API: `GET /api/admin/music/search?q&country`, `POST /api/admin/music/import`, `POST /api/admin/music/playlist-import`, `POST /api/admin/music/spotify-import` (`{source: "liked"}` or `{source: "playlist", playlistId}`), `GET /api/admin/music/jobs/:id`, `GET/PUT /api/admin/spotify` (player settings), `GET/DELETE /api/admin/spotify/account`, `POST /api/admin/spotify/connect`, `GET /api/admin/spotify/callback` (authorized by a one-time state, since Spotify's redirect carries no admin cookie), `GET /api/admin/spotify/playlists`, `GET/POST /api/admin/playlists`, `GET/PATCH/DELETE /api/admin/playlists/:id`, `POST /api/admin/playlists/:id/tracks` (`{ action: "add" | "remove", ids }`), `PUT /api/admin/playlists/:id/order`. Public: `GET /api/spotify/player`. Player settings are stored in the `Setting` table (`spotify`).
+
+## Overview (概览)
+
+The admin's home page (`GET /api/admin/dashboard`, one request, refreshed every minute) shows:
+
+- **Today**: sessions active in the last five minutes, and today's views, visitors and visits against yesterday at the same time, with the last seven days' views. Hidden when analytics is off.
+- **待处理**: checks with a count, a few examples and a link to fix them: photos still referencing links (opens the photo list filtered to them), public photos and projects without an English title, public projects without a cover, finished films / series / anime / books / comics / games without a rating, a Steam library not synced for 30 days, and an external source whose last request failed.
+- **账号与服务**: Steam and Spotify (connected account, last sync; buttons open their dialogs in 收藏), and each data source (TMDB, IGDB, Google Books need a key; Bangumi, AniList, Open Library do not) with its last success or failure from the job log. Only whether a key is set is returned, never the key.
+- **内容概况** (counts with hidden, featured, referenced, per kind, in progress) and **最近动态** (recently edited content, import and sync jobs).
+- Quick actions: 添加照片, 新建项目, 添加收藏, which open those dialogs.
+
+Each part loads on its own: if one fails (for example the database), it shows a short reason and the others still show; the details go to the server log. Other pages accept one-time links from here: `?open=add` (photos, collection), `?open=new` (projects), `?open=steam|spotify` (collection), `?show=referenced` (photos); the parameter is removed after use.
 
 ## Visitor Analytics (统计)
 

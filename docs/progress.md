@@ -380,6 +380,16 @@ Status: implementation complete; Claude Code review complete and fixes applied. 
 - Tests: 192 passed.
 - Verified with a temporary database: the migration on photos stored the old way, a server folder import with previews and EXIF, a Flickr short link through oEmbed (referenced), an image link (imported), a refused local address, 转为本站托管 and 替换图片 from a server file with EXIF, the old image folder removed.
 
+### Stage 20: Admin Overview
+
+Status: implementation complete; Claude Code review complete and fixes applied.
+
+- 概览 replaced the four section links with: today's visits against yesterday, 待处理 checks with links, account and data source status, content counts, recent edits and jobs, and quick actions. Plan: `docs/plan-dashboard.md`.
+- API: `GET /api/admin/dashboard` (admin only, `no-store`); each part reports its own error. No database changes.
+- Photos page: 只看引用 filter. One-time `?open=` / `?show=` links from the overview.
+- Tests: 196 passed.
+- Verified in the browser with a temporary database (sample collection and demo statistics): all parts loaded; a failed database showed short messages per part; no horizontal overflow at 320, 375, 768 and 1280 px; the links opened 添加照片, 新建项目, 添加电影 and the Steam dialog, and filtered referenced photos.
+
 ### Styled Tooltips and Selects
 
 - Site and admin selects keep the native element with the project's arrow, borders and focus ring; Chromium browsers also get the opened list in the project's style (`appearance: base-select`), others keep their own list.

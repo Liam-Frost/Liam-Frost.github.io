@@ -16,11 +16,13 @@ import { RequestRecorder, SystemLog, withSourceLog } from "./analytics/system";
 import type { AnalyticsStore } from "./analytics/types";
 import { AdminAuthService } from "./auth/service";
 import { ConfigError, loadConfig, type AppConfig } from "./config/env";
+import { DashboardService } from "./dashboard/service";
 import { getPrismaClient, hasDatabaseUrl } from "./db/client";
 import { HttpError, isDatabaseUnavailable, notFound } from "./lib/errors";
 import { registerAdminRoutes } from "./routes/admin";
 import { registerAnalyticsRoutes } from "./routes/analytics";
 import { registerAdminApp } from "./routes/admin-app";
+import { registerAdminDashboardRoutes } from "./routes/admin-dashboard";
 import { registerAdminPhotoRoutes } from "./routes/admin-photos";
 import { registerAdminMediaRoutes } from "./routes/admin-media";
 import { registerAdminMusicRoutes } from "./routes/admin-music";
@@ -415,6 +417,23 @@ export async function buildServer({
   registerSpotifyRoutes(app, auth, spotify, account, settings !== null);
   registerSteamRoutes(app, auth, steam, steamSync);
   registerAnalyticsRoutes(app, auth, analytics, geo, config.analytics.rateLimitPerMinute);
+  registerAdminDashboardRoutes(
+    app,
+    auth,
+    new DashboardService({
+      photos,
+      projects,
+      media,
+      people,
+      playlists,
+      analytics,
+      sources: mediaSources,
+      steam,
+      spotify: account,
+      now,
+      onError: (error) => app.log.warn({ err: error }, "A part of the admin dashboard failed")
+    })
+  );
   registerWebApp(app, webDistDir);
 
   return app;
