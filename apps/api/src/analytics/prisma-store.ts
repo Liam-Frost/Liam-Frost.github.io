@@ -201,6 +201,14 @@ export class PrismaAnalyticsStore implements AnalyticsStore {
     return (await this.prisma.analyticsFlag.findUnique({ where: { key } }))?.value ?? null;
   }
 
+  async setFlag(key: string, value: string) {
+    await this.prisma.analyticsFlag.upsert({
+      where: { key },
+      create: { key, value },
+      update: { value }
+    });
+  }
+
   async clear(scope: AnalyticsClearScope) {
     const p = this.prisma;
     const usage = [
@@ -214,7 +222,9 @@ export class PrismaAnalyticsStore implements AnalyticsStore {
     await p.$transaction([
       ...(scope === "health" ? [] : usage),
       ...(scope === "events" ? [] : health),
-      ...(scope === "all" ? [p.analyticsFlag.deleteMany()] : [])
+      ...(scope === "all"
+        ? [p.analyticsFlag.deleteMany({ where: { key: { not: "collection-enabled" } } })]
+        : [])
     ]);
   }
 }

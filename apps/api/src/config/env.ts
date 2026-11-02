@@ -80,7 +80,6 @@ const envSchema = z.object({
   SPOTIFY_CLIENT_SECRET: optionalString,
   SPOTIFY_REDIRECT_URI: optionalString,
 
-  ANALYTICS_ENABLED: booleanFlag,
   ANALYTICS_TIMEZONE: optionalString,
   ANALYTICS_EVENT_RETENTION_DAYS: optionalNumber.pipe(z.number().int().min(7).max(730).default(90)),
   ANALYTICS_MIN_GROUP_SIZE: optionalNumber.pipe(z.number().int().min(1).max(50).default(3)),
@@ -109,7 +108,6 @@ export type AdminConfig = {
 };
 
 export type AnalyticsConfig = {
-  enabled: boolean;
   /** IANA time zone for days and hours. */
   timezone: string;
   retentionDays: number;
@@ -284,7 +282,6 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
         ? { clientId: spotifyId, clientSecret: spotifySecret, redirectUri: spotifyRedirect }
         : null,
     analytics: {
-      enabled: values.ANALYTICS_ENABLED ?? true,
       timezone: analyticsTimezone,
       retentionDays: values.ANALYTICS_EVENT_RETENTION_DAYS,
       minGroupSize: values.ANALYTICS_MIN_GROUP_SIZE,

@@ -102,6 +102,11 @@ export function registerAnalyticsRoutes(
     return requireAnalytics().meta();
   });
 
+  app.put("/api/admin/analytics/settings", admin, async (request): Promise<AnalyticsMeta> => {
+    const { enabled } = parseInput(z.object({ enabled: z.boolean() }).strict(), request.body);
+    return requireAnalytics().setEnabled(enabled);
+  });
+
   app.get("/api/admin/analytics/overview", admin, async (request): Promise<AnalyticsOverview> => {
     const { range, from, to } = parseInput(rangeQuerySchema, request.query);
     return ranged(() => requireAnalytics().overview(range, from, to));

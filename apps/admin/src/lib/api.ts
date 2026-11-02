@@ -328,6 +328,8 @@ export const api = {
   reorderPlaylist: (id: string, ids: string[]) =>
     request<AdminPlaylistResponse>(`${playlistPath(id)}/order`, { method: "PUT", json: { ids } }),
   analyticsMeta: () => request<AnalyticsMeta>("/api/admin/analytics/meta"),
+  updateAnalyticsSettings: (enabled: boolean) =>
+    request<AnalyticsMeta>("/api/admin/analytics/settings", { method: "PUT", json: { enabled } }),
   analyticsOverview: (range: AnalyticsRange, from?: string, to?: string) =>
     request<AnalyticsOverview>(`/api/admin/analytics/overview?${rangeQuery(range, from, to)}`),
   analyticsContent: (range: AnalyticsRange, from?: string, to?: string) =>

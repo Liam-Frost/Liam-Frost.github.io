@@ -136,18 +136,25 @@ export class DashboardService {
     const rows = this.rows();
     rows.catch(() => {});
     // Jobs and source status are extras: without them the accounts and content still show.
-    const system = analytics?.enabled
-      ? analytics.system(JOBS).catch((error: unknown) => {
+    const enabled = analytics
+      ? await analytics.isEnabled().catch((error: unknown) => {
           onError(error);
-          return null;
+          return false;
         })
-      : Promise.resolve(null);
+      : false;
+    const system =
+      analytics && enabled
+        ? analytics.system(JOBS).catch((error: unknown) => {
+            onError(error);
+            return null;
+          })
+        : Promise.resolve(null);
     // Read once for the task and the account row.
     const steam = this.deps.steam.status();
     steam.catch(() => {});
 
     const [traffic, content, tasks, connections, activity] = await Promise.all([
-      analytics?.enabled ? part(() => analytics.dashboard(), onError) : Promise.resolve(null),
+      analytics && enabled ? part(() => analytics.dashboard(), onError) : Promise.resolve(null),
       part(async () => this.content(await rows), onError),
       part(async () => this.tasks(await rows, await steam, (await system)?.sources ?? []), onError),
       part(async () => this.connections(await steam, (await system)?.sources ?? []), onError),

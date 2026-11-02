@@ -26,6 +26,7 @@ describe("admin dashboard", () => {
     const playlists = new MemoryPlaylistRepository(media);
     const settings = new MemorySettingsRepository();
     const store = new MemoryAnalyticsStore();
+    await store.setFlag("collection-enabled", String(analytics));
 
     await photos.create(remotePhoto({ id: "ref", title: { zh: "外链" } }));
     await photos.create(
@@ -88,8 +89,7 @@ describe("admin dashboard", () => {
     const app = await buildTestServer(
       {
         STEAM_WEB_API_KEY: "steam-test-key",
-        TMDB_API_KEY: "tmdb-test-key",
-        ANALYTICS_ENABLED: analytics ? "true" : "false"
+        TMDB_API_KEY: "tmdb-test-key"
       },
       {
         photos,

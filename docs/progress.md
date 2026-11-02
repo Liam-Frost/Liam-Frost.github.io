@@ -1,5 +1,12 @@
 # Progress
 
+## 2026-11-02: Analytics collection control
+
+- Added an authenticated total switch on the analytics page. Its value is stored in the database and survives application restarts and clearing statistics.
+- Removed the `ANALYTICS_ENABLED` environment toggle. Disabled collection stops visitor events, API metrics and job/source events while leaving historical reports available.
+- Regression coverage checks authorization, CSRF, input validation, persistence across application instances and discarding buffered metrics when collection is disabled.
+- Server configuration, credentials and operation guides are maintained outside this repository; only the CI/CD workflow definition is committed here.
+
 ## Repository maintenance (2026-11-01)
 
 Local implementation and checks complete: PR CI, grouped Dependabot configuration,

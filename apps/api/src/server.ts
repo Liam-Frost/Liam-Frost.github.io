@@ -225,17 +225,20 @@ export async function buildServer({
     : null;
   // The job log, source status and API timings under 统计 → 体验与运行.
   const systemLog =
-    analyticsStore && config.analytics.enabled
-      ? new SystemLog(analyticsStore, now, (error) =>
-          app.log.warn({ err: error }, "Cannot write the analytics job log")
+    analyticsStore && analytics
+      ? new SystemLog(
+          analyticsStore,
+          now,
+          (error) => app.log.warn({ err: error }, "Cannot write the analytics job log"),
+          () => analytics.isEnabled()
         )
       : null;
   const requests =
-    analytics && analyticsStore && config.analytics.enabled
-      ? new RequestRecorder(analyticsStore, analytics.clock, now)
+    analytics && analyticsStore
+      ? new RequestRecorder(analyticsStore, analytics.clock, now, () => analytics.isEnabled())
       : null;
   const sources = systemLog ? withSourceLog(mediaSources, systemLog) : mediaSources;
-  if (analytics?.enabled) {
+  if (analytics) {
     // Hourly: write the totals of finished days and delete raw data past the retention period.
     const maintain = () =>
       analytics.maintain().catch((error: unknown) => {
@@ -262,7 +265,12 @@ export async function buildServer({
       const route = request.routeOptions.url;
       if (!requests || !route?.startsWith("/api/") || route.startsWith("/api/admin/")) return;
       if (route === "/api/analytics/events" || route === "/api/health") return;
-      requests.record(route, reply.statusCode, reply.elapsedTime);
+      try {
+        if (await analytics.isEnabled())
+          requests.record(route, reply.statusCode, reply.elapsedTime);
+      } catch (error) {
+        app.log.warn({ err: error }, "Cannot read analytics collection setting");
+      }
     });
   }
 

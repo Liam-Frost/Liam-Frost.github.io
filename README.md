@@ -21,7 +21,7 @@ A personal website for photography, software projects, and a collection of films
 
 ### Project status
 
-The public website currently runs on **GitHub Pages as a static build**, with API fetching disabled. The full-stack application is implemented and exercised by Docker integration tests; **VPS production deployment is pending**. Database-backed features and the admin app require the API and are not available through the static Pages build.
+The public website currently runs on **GitHub Pages as a static build**, with API fetching disabled. The full-stack application is deployed on ZGO at **[preview.twilightfrosty.com](https://preview.twilightfrosty.com)**; the main-domain production cutover is pending. Database-backed features and the admin app are available on preview and are not available through the static Pages build. Deployment configuration, credentials and operation guides are maintained outside this repository.
 
 This is a personal project under active development.
 

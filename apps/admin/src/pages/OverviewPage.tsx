@@ -99,9 +99,7 @@ function WeekBars({ week }: { week: DashboardTraffic["week"] }) {
 function Traffic({ traffic }: { traffic: AdminDashboard["traffic"] }) {
   if (!traffic) {
     return (
-      <p className="card p-4 text-[13px] text-muted">
-        访问统计未开启（需要数据库，且没有设置 <code>ANALYTICS_ENABLED=false</code>）。
-      </p>
+      <p className="card p-4 text-[13px] text-muted">访问统计未开启，可在统计页面打开总开关。</p>
     );
   }
   return (

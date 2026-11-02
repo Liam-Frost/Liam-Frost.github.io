@@ -90,13 +90,18 @@ export class AnalyticsService {
     this.clock = new AnalyticsClock(config.timezone);
   }
 
-  get enabled() {
-    return this.config.enabled;
+  async isEnabled() {
+    return (await this.store.flag("collection-enabled")) !== "false";
+  }
+
+  async setEnabled(enabled: boolean): Promise<AnalyticsMeta> {
+    await this.store.setFlag("collection-enabled", String(enabled));
+    return this.meta();
   }
 
   async meta(): Promise<AnalyticsMeta> {
     return {
-      enabled: this.config.enabled,
+      enabled: await this.isEnabled(),
       timezone: this.config.timezone,
       retentionDays: this.config.retentionDays,
       minGroupSize: this.config.minGroupSize,
@@ -119,7 +124,7 @@ export class AnalyticsService {
 
   /** Stores a batch from the site. Returns how many events were kept; skipped requests keep none. */
   async ingest(body: unknown, request: IngestRequest) {
-    if (!this.config.enabled || request.isAdmin || isBot(request.userAgent)) return 0;
+    if (request.isAdmin || isBot(request.userAgent) || !(await this.isEnabled())) return 0;
     if (this.config.excludeIps.has(request.ip)) return 0;
     const parsed = batchSchema.safeParse(typeof body === "string" ? safeJson(body) : body);
     if (!parsed.success) return 0;
