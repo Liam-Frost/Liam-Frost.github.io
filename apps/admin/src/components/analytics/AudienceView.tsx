@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 
 import { api } from "../../lib/api";
 import { BarList, Card, PAGE_NAMES, useRange } from "./common";
+import { Tooltip } from "../ui/Tooltip";
 
 const GROUPS: Record<string, string> = {
   search: "搜索引擎",
@@ -148,9 +149,8 @@ function Heatmap({ data }: { data: AnalyticsAudience }) {
                   return (
                     <td
                       key={hour}
-                      title={label}
                       aria-label={label}
-                      className="h-5 rounded-[3px]"
+                      className="h-5 rounded-[3px] p-0"
                       style={{
                         background:
                           views === null
@@ -159,7 +159,11 @@ function Heatmap({ data }: { data: AnalyticsAudience }) {
                               ? `color-mix(in srgb, var(--color-brand-secondary) ${15 + Math.round((views / most) * 85)}%, white)`
                               : "var(--color-line-soft)"
                       }}
-                    />
+                    >
+                      <Tooltip content={label} describe={false} className="block size-full">
+                        <span className="block h-5 w-full" />
+                      </Tooltip>
+                    </td>
                   );
                 })}
               </tr>

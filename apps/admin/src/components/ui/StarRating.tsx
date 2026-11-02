@@ -1,5 +1,7 @@
 import { Star } from "lucide-react";
 
+import { Tooltip } from "./Tooltip";
+
 /** Five-star rating; clicking the current rating clears it. Read-only when onChange is omitted. */
 export function StarRating({
   value,
@@ -31,21 +33,21 @@ export function StarRating({
   return (
     <div className="inline-flex items-center gap-1" role="radiogroup" aria-label="评分">
       {[1, 2, 3, 4, 5].map((n) => (
-        <button
-          key={n}
-          type="button"
-          role="radio"
-          aria-checked={value === n}
-          aria-label={`${n} 星`}
-          title={value === n ? "再点一次清除评分" : `${n} 星`}
-          onClick={() => onChange(value === n ? null : n)}
-          className="rounded p-0.5 transition-transform hover:scale-110"
-        >
-          <Star
-            aria-hidden="true"
-            className={`${icon} ${value && n <= value ? "fill-rating text-rating" : "text-line-strong"}`}
-          />
-        </button>
+        <Tooltip key={n} content={value === n ? "再点一次清除评分" : `${n} 星`} describe={false}>
+          <button
+            type="button"
+            role="radio"
+            aria-checked={value === n}
+            aria-label={value === n ? `${n} 星，再点一次清除评分` : `${n} 星`}
+            onClick={() => onChange(value === n ? null : n)}
+            className="rounded p-0.5 transition-transform hover:scale-110"
+          >
+            <Star
+              aria-hidden="true"
+              className={`${icon} ${value && n <= value ? "fill-rating text-rating" : "text-line-strong"}`}
+            />
+          </button>
+        </Tooltip>
       ))}
       <span className="ml-1 text-[12px] text-subtle">{value ? `${value} / 5` : "未评分"}</span>
     </div>

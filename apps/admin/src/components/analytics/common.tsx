@@ -6,6 +6,7 @@ import {
 } from "@liam-frost/shared";
 import { useState, type ReactNode } from "react";
 import { useSearchParams } from "react-router";
+import { InfoTip } from "../ui/Tooltip";
 
 export const number = new Intl.NumberFormat("zh-CN");
 
@@ -160,8 +161,9 @@ export function Card({
   return (
     <section className="card p-4" aria-label={title}>
       <div className="mb-3 flex flex-wrap items-center gap-2">
-        <h2 className="flex-1 text-[14px] font-semibold text-brand-dark" title={hint}>
+        <h2 className="flex flex-1 items-center gap-1 text-[14px] font-semibold text-brand-dark">
           {title}
+          {hint ? <InfoTip text={hint} label={`${title}：说明`} /> : null}
         </h2>
         {actions}
       </div>

@@ -11,6 +11,7 @@ import {
   PAGE_NAMES,
   useRange
 } from "./common";
+import { InfoTip } from "../ui/Tooltip";
 
 type KpiKey = keyof AnalyticsKpis;
 const KPIS: { key: KpiKey; label: string; hint: string }[] = [
@@ -76,8 +77,11 @@ export function OverviewView({ data }: { data: AnalyticsOverview }) {
           // A higher bounce rate is worse; everything else is better higher.
           const good = key === "bounceRate" ? -delta.sign : delta.sign;
           return (
-            <div key={key} className="card p-4" title={hint}>
-              <p className="text-[12px] text-muted">{label}</p>
+            <div key={key} className="card p-4">
+              <p className="flex items-center gap-1 text-[12px] text-muted">
+                {label}
+                <InfoTip text={hint} label={`${label}：口径`} />
+              </p>
               <p className="mt-1 text-[22px] font-semibold text-brand-dark">
                 {formatKpi(key, data.current[key])}
               </p>

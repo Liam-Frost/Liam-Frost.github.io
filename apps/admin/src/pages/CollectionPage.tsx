@@ -47,6 +47,7 @@ import {
   type WatchKind
 } from "../lib/i18n";
 import { useRecentCounts } from "../components/analytics/RecentStats";
+import { Tooltip } from "../components/ui/Tooltip";
 
 const STATUSES = Object.keys(MEDIA_STATUS_LABELS) as MediaStatus[];
 
@@ -325,19 +326,18 @@ function MediaCard({ item, selection }: { item: AdminMediaItem; selection: Selec
         </div>
       </div>
       <div className="space-y-1 p-3">
-        <p
-          className="truncate text-[13.5px] font-semibold text-brand-dark group-hover:text-brand"
-          title={title}
-        >
-          {title}
-        </p>
+        <Tooltip content={title} describe={false} className="block min-w-0">
+          <p className="truncate text-[13.5px] font-semibold text-brand-dark group-hover:text-brand">
+            {title}
+          </p>
+        </Tooltip>
         <div className="flex items-center justify-between gap-2 text-[12px] text-subtle">
           <span>
             {item.year ?? "—"}
             {views ? (
-              <span className="ml-1.5 text-faint" title="近 30 天浏览">
-                · {views} 次浏览
-              </span>
+              <Tooltip content="近 30 天" describe={false}>
+                <span className="ml-1.5 text-faint">· {views} 次浏览</span>
+              </Tooltip>
             ) : null}
           </span>
           <StarRating value={item.rating} size="sm" />

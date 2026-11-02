@@ -20,6 +20,7 @@ import { peopleKey, personKey, usePeople, useSetPerson } from "../hooks/usePeopl
 import { useSelection, type Selection } from "../hooks/useSelection";
 import { api, ApiError } from "../lib/api";
 import { guessLang, pickText } from "../lib/i18n";
+import { Tooltip } from "../components/ui/Tooltip";
 
 /** People linked to collection entries: actors, directors, singers, writers, studios. */
 export function PeoplePage() {
@@ -145,12 +146,11 @@ function PersonCard({ person, selection }: { person: AdminPerson; selection: Sel
         </div>
       </div>
       <div className="space-y-0.5 p-3">
-        <p
-          className="truncate text-[13.5px] font-semibold text-brand-dark group-hover:text-brand"
-          title={name}
-        >
-          {name}
-        </p>
+        <Tooltip content={name} describe={false} className="block min-w-0">
+          <p className="truncate text-[13.5px] font-semibold text-brand-dark group-hover:text-brand">
+            {name}
+          </p>
+        </Tooltip>
         <p className="text-[12px] text-subtle">{person.works} 部作品</p>
       </div>
     </>

@@ -22,6 +22,7 @@ import { Dialog } from "../ui/Dialog";
 import { Field, Switch } from "../ui/Field";
 import { useToast } from "../ui/Toast";
 import { MusicList } from "./MusicTools";
+import { Tooltip } from "../ui/Tooltip";
 
 type View = "songs" | "albums" | "artists" | "playlists";
 
@@ -241,12 +242,11 @@ function GroupView({
                 onClick={() => onOpen(group.key)}
               >
                 <Mosaic covers={group.covers} round={noun === "艺人"} />
-                <p
-                  className="mt-2 truncate text-[13px] font-semibold text-brand-dark group-hover:text-brand"
-                  title={group.title}
-                >
-                  {group.title}
-                </p>
+                <Tooltip content={group.title} describe={false} className="block min-w-0">
+                  <p className="mt-2 truncate text-[13px] font-semibold text-brand-dark group-hover:text-brand">
+                    {group.title}
+                  </p>
+                </Tooltip>
                 <p className="truncate text-[12px] text-subtle">{group.subtitle}</p>
               </button>
             </li>

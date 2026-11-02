@@ -158,6 +158,11 @@
 - Stage 18a: the temporary API's launcher could not import `dotenv` from the scratch folder; it now resolves it from `apps/api`. The browser pane's sample player could not load audio offline, so play counting was checked through the player bus; visits after signing in to the admin (same host, shared cookie) were correctly not counted. `prisma dev` reported its stream server on 127.0.0.1:8787, the API's default port.
 - The user asked to fix CI on PR 26 and finish Stage 18 there. CI's only failure was CodeQL's "insecure randomness" for the `Math.random()` fallback in event ids.
 - Stage 18b/18c: the Write tool turned a `\uFEFF` escape into a literal byte-order mark in the CSV code; ESLint caught it and the escape was restored. The demo songs first had non-UUID ids, which the admin's editor rejects, so the editor check used a movie. The browser pane reported no LCP entries (pages loaded off screen), only CLS.
+- The user asked to extend `db:seed:collection` for the newer features. iTunes' first search hit was often a cover or another release (前前前世 piano cover, an EP instead of the album), so songs are matched by title, artist and album; the Japanese store has no original 前前前世, so that song comes from the US store. During testing the user's own dev servers were running and changing `apps/api/uploads`; the seed runs wrote only to a temporary `UPLOAD_DIR`.
+
+- The user asked for test statistics in the local database (testing only). The demo script gained `--force` for a database without "demo" in its name; it replaced the 2 test events, 1 visit and 7 job records there with 60 days of demo data built from the local content (301 entries, 40 photos).
+
+- The user asked to make tooltips and selects match the project's design without a new UI framework. Survey: 14 native `<select>` (site and admin) and about 15 `title` hover hints; no tooltip component existed. A first Tooltip version dropped its wrapper when the hint was empty, which would remount the child (losing focus) when the language menu toggled its hint; the wrapper now stays. The Spotify iframe's `title` stays (accessible name, not a hover hint).
 
 ## Notes
 

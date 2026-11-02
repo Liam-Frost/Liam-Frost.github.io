@@ -131,20 +131,22 @@ This is a **local verification setup**. Production credentials, HTTPS, off-serve
 
 ## Development commands
 
-| Command                                                     | Purpose                                                          |
-| ----------------------------------------------------------- | ---------------------------------------------------------------- |
-| `npm run dev`                                               | Start the API and both Vite apps                                 |
-| `npm run dev:web` / `npm run dev:admin` / `npm run dev:api` | Start an individual app                                          |
-| `npm run build`                                             | Build the public site, admin, and API                            |
-| `npm run typecheck`                                         | Check workspace TypeScript types                                 |
-| `npm test`                                                  | Run API and integration-style route tests with Vitest            |
-| `npm run lint`                                              | Check JavaScript, TypeScript, and React Hooks rules              |
-| `npm run format:check`                                      | Verify formatting                                                |
-| `npm run format`                                            | Apply Prettier formatting                                        |
-| `npm run db:migrate`                                        | Create development migrations and seed photos                    |
-| `npm run db:deploy`                                         | Apply committed migrations                                       |
-| `npm run db:studio`                                         | Open Prisma Studio                                               |
-| `bash docker/smoke-test.sh`                                 | Build and exercise the full container stack with disposable data |
+| Command                                                     | Purpose                                                           |
+| ----------------------------------------------------------- | ----------------------------------------------------------------- |
+| `npm run dev`                                               | Start the API and both Vite apps                                  |
+| `npm run dev:web` / `npm run dev:admin` / `npm run dev:api` | Start an individual app                                           |
+| `npm run build`                                             | Build the public site, admin, and API                             |
+| `npm run typecheck`                                         | Check workspace TypeScript types                                  |
+| `npm test`                                                  | Run API and integration-style route tests with Vitest             |
+| `npm run lint`                                              | Check JavaScript, TypeScript, and React Hooks rules               |
+| `npm run format:check`                                      | Verify formatting                                                 |
+| `npm run format`                                            | Apply Prettier formatting                                         |
+| `npm run db:migrate`                                        | Create development migrations and seed photos                     |
+| `npm run db:deploy`                                         | Apply committed migrations                                        |
+| `npm run db:seed:collection`                                | Add a sample collection (entries, songs, playlist, people, links) |
+| `npm run db:seed:analytics-demo`                            | Fill a database named `*demo*` with 60 days of sample statistics  |
+| `npm run db:studio`                                         | Open Prisma Studio                                                |
+| `bash docker/smoke-test.sh`                                 | Build and exercise the full container stack with disposable data  |
 
 ## Repository layout
 

@@ -4,6 +4,7 @@ import { CircleAlert, CircleCheck, TriangleAlert } from "lucide-react";
 
 import { api } from "../../lib/api";
 import { Card, number, PAGE_NAMES, useRange } from "./common";
+import { Tooltip } from "../ui/Tooltip";
 
 const VITALS: Record<string, { name: string; hint: string }> = {
   lcp: { name: "最大内容绘制 LCP", hint: "页面主要内容显示出来用的时间" },
@@ -74,20 +75,25 @@ export function HealthView() {
                   return (
                     <tr key={`${vital.path}|${vital.metric}`} className="border-t border-line-soft">
                       <td className="py-2 pr-3">{PAGE_NAMES[vital.path] ?? vital.path}</td>
-                      <td className="py-2 pr-3" title={VITALS[vital.metric]?.hint}>
-                        {VITALS[vital.metric]?.name ?? vital.metric}
+                      <td className="py-2 pr-3">
+                        <Tooltip content={VITALS[vital.metric]?.hint}>
+                          <span tabIndex={0} className="cursor-help">
+                            {VITALS[vital.metric]?.name ?? vital.metric}
+                          </span>
+                        </Tooltip>
                       </td>
                       <td className="py-2 text-right tabular-nums">
                         ≤ {vitalValue(vital.metric, vital.p75)}
                       </td>
-                      <td
-                        className={`py-2 pl-3 ${rating.className}`}
-                        title={`良好 ≤ ${vitalValue(vital.metric, limits.good)}，差 > ${vitalValue(vital.metric, limits.poor)}`}
-                      >
-                        <span className="inline-flex items-center gap-1">
-                          <Icon aria-hidden="true" className="size-3.5" />
-                          {rating.label}
-                        </span>
+                      <td className={`py-2 pl-3 ${rating.className}`}>
+                        <Tooltip
+                          content={`良好 ≤ ${vitalValue(vital.metric, limits.good)}，差 > ${vitalValue(vital.metric, limits.poor)}`}
+                        >
+                          <span tabIndex={0} className="inline-flex cursor-help items-center gap-1">
+                            <Icon aria-hidden="true" className="size-3.5" />
+                            {rating.label}
+                          </span>
+                        </Tooltip>
                       </td>
                       <td className="py-2 text-right text-muted tabular-nums">{vital.samples}</td>
                     </tr>
