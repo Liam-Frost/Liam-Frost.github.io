@@ -30,7 +30,14 @@ Requirements: Node.js 26.13 or newer, and a PostgreSQL database for photos, proj
    npm run db:seed
    ```
 
-   For sample collection entries (films, series, anime from TMDB / Bangumi with ratings and reviews; needs `TMDB_API_KEY` for films and series, and can be run again):
+   For a sample collection that shows every feature (can be run again; sources without credentials are skipped):
+
+   - films, series, anime, books, comics and games (TMDB, Bangumi, Open Library, AniList, IGDB) with ratings, reviews, progress and finished dates in 2025 and 2026 (回顾 can switch years); one hidden entry;
+   - six songs from iTunes (two on one album for the album view, all in the player) in the playlist 动画歌曲;
+   - people (Hayao Miyazaki and Bong Joon-ho from TMDB, others by name) credited on their works, songs linked as openings / endings / insert songs, anime linked to the manga they adapt, two related films;
+   - games with Steam-style playtime, last played and purchase dates.
+
+   Films, series and TMDB people need `TMDB_API_KEY`; games need `TWITCH_CLIENT_ID` / `TWITCH_CLIENT_SECRET`. Set `UPLOAD_DIR` to keep its images out of `apps/api/uploads`.
 
    ```bash
    npm run db:seed:collection

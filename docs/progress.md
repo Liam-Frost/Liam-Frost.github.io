@@ -369,6 +369,11 @@ Status: implementation complete.
 - Site collection page 回顾 tab: per year, how many films, series, anime, books, comics and games were finished, monthly bars, rating distribution and average, top genres, five-star works. Counts entries marked done with a finished date in that year.
 - Verified in the browser with the sample collection (desktop and 375 px wide).
 
+### Sample Collection Update
+
+- `npm run db:seed:collection` now shows every collection feature: six iTunes songs (two on one album) in a playlist, seven people with credits, soundtrack / adaptation / related links, Steam-style game data merged into IGDB's details, and finished dates in 2025 and 2026 for the year in review. Songs are matched by title, artist and album, skipping covers and other versions (the original 前前前世 is only in the US store). Reruns add nothing.
+- Verified with a temporary database: a first run added 50 items, a second none; the site showed the anime's soundtrack and source manga, the album view, the playlist and both years in 回顾.
+
 ### Stage 18b and 18c: Content, Audience, Experience and Health
 
 Status: implementation complete; Claude Code review complete and fixes applied.
