@@ -59,8 +59,9 @@ jobs:
           known="$RUNNER_TEMP/preview-known-hosts"
           trap 'rm -f "$key" "$known"' EXIT
           umask 077
-          printf '%s\n' "$SSH_KEY" > "$key"
-          printf '%s\n' "$SSH_KNOWN_HOSTS" > "$known"
+          printf '%s\n' "$SSH_KEY" | tr -d '\r' > "$key"
+          printf '%s\n' "$SSH_KNOWN_HOSTS" | tr -d '\r' > "$known"
+          ssh-keygen -y -f "$key" > /dev/null
           ssh_options=(-i "$key" -p "$SSH_PORT" -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o "UserKnownHostsFile=$known" -o ServerAliveInterval=30 -o ServerAliveCountMax=3)
           docker save "personal-home-preview:$REVISION" | gzip -1 | ssh "${ssh_options[@]}" "$SSH_USER@$SSH_HOST" "upload-image $REVISION"
           tar -C public -czf - . | ssh "${ssh_options[@]}" "$SSH_USER@$SSH_HOST" "upload-public $REVISION"
