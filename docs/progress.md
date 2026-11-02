@@ -369,6 +369,12 @@ Status: implementation complete.
 - Site collection page 回顾 tab: per year, how many films, series, anime, books, comics and games were finished, monthly bars, rating distribution and average, top genres, five-star works. Counts entries marked done with a finished date in that year.
 - Verified in the browser with the sample collection (desktop and 375 px wide).
 
+### Styled Tooltips and Selects
+
+- Site and admin selects keep the native element with the project's arrow, borders and focus ring; Chromium browsers also get the opened list in the project's style (`appearance: base-select`), others keep their own list.
+- Hover hints use a `Tooltip` component in each app instead of `title` (icon buttons, star rating, language and theme buttons, truncated names, Web Vitals, heatmap cells, 近 30 天 links); the 统计 metric explanations are ⓘ buttons. Shared placement in `@liam-frost/shared` (`tooltipPosition`, tested).
+- Verified in the browser: site filters closed and open in light and dark themes, keyboard navigation in the list, the language tooltip; in the admin a metric tooltip on hover and keyboard focus (announced as the description, Escape closes), the status select and the star tooltips in the editor.
+
 ### Sample Collection Update
 
 - `npm run db:seed:collection` now shows every collection feature: six iTunes songs (two on one album) in a playlist, seven people with credits, soundtrack / adaptation / related links, Steam-style game data merged into IGDB's details, and finished dates in 2025 and 2026 for the year in review. Songs are matched by title, artist and album, skipping covers and other versions (the original 前前前世 is only in the US store). Reruns add nothing.

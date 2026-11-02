@@ -162,6 +162,8 @@
 
 - The user asked for test statistics in the local database (testing only). The demo script gained `--force` for a database without "demo" in its name; it replaced the 2 test events, 1 visit and 7 job records there with 60 days of demo data built from the local content (301 entries, 40 photos).
 
+- The user asked to make tooltips and selects match the project's design without a new UI framework. Survey: 14 native `<select>` (site and admin) and about 15 `title` hover hints; no tooltip component existed. A first Tooltip version dropped its wrapper when the hint was empty, which would remount the child (losing focus) when the language menu toggled its hint; the wrapper now stays. The Spotify iframe's `title` stays (accessible name, not a hover hint).
+
 ## Notes
 
 - A direct Windows directory rename of `src` failed with `Permission denied`; the migration continued by moving source subdirectories individually.

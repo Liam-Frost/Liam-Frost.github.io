@@ -35,6 +35,9 @@
   --muted: rgba(234, 224, 207, 0.82);
   --faint: rgba(234, 224, 207, 0.62);
   --border: rgba(234, 224, 207, 0.22);
+  /* Opaque enough to read over anything: tooltips and opened select lists. */
+  --popover: rgba(27, 42, 62, 0.94);
+  --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23eae0cf' stroke-opacity='0.8' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
 
   --accent: var(--blue);
   --accent2: var(--mist);
@@ -86,6 +89,8 @@ html[data-theme="light"] {
   --muted: rgba(33, 52, 72, 0.78);
   --faint: rgba(33, 52, 72, 0.58);
   --border: rgba(33, 52, 72, 0.16);
+  --popover: rgba(250, 247, 241, 0.96);
+  --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23213448' stroke-opacity='0.7' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
 
   --fx-a: rgba(148, 180, 193, 0.26);
   --fx-b: rgba(84, 119, 146, 0.18);
@@ -108,6 +113,8 @@ html[data-theme="light"] {
     --muted: rgba(33, 52, 72, 0.78);
     --faint: rgba(33, 52, 72, 0.58);
     --border: rgba(33, 52, 72, 0.16);
+    --popover: rgba(250, 247, 241, 0.96);
+    --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23213448' stroke-opacity='0.7' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
 
     --fx-a: rgba(148, 180, 193, 0.26);
     --fx-b: rgba(84, 119, 146, 0.18);
@@ -274,17 +281,23 @@ html[data-theme="light"][data-perf-tier="0"] .siteHeader {
 html[data-perf-filters="off"] .photoCard,
 html[data-perf-filters="off"] .photoOverlay,
 html[data-perf-filters="off"] .metaItem,
-html[data-perf-filters="off"] .input,
-html[data-perf-filters="off"] .select {
+html[data-perf-filters="off"] .input {
   background: rgba(234, 224, 207, 0.12);
+}
+
+html[data-perf-filters="off"] .select {
+  background-color: rgba(234, 224, 207, 0.12);
 }
 
 html[data-theme="light"][data-perf-filters="off"] .photoCard,
 html[data-theme="light"][data-perf-filters="off"] .photoOverlay,
 html[data-theme="light"][data-perf-filters="off"] .metaItem,
-html[data-theme="light"][data-perf-filters="off"] .input,
-html[data-theme="light"][data-perf-filters="off"] .select {
+html[data-theme="light"][data-perf-filters="off"] .input {
   background: rgba(255, 255, 255, 0.82);
+}
+
+html[data-theme="light"][data-perf-filters="off"] .select {
+  background-color: rgba(255, 255, 255, 0.82);
 }
 
 html[data-perf-filters="off"] .bgFx::before {
@@ -1293,20 +1306,145 @@ html[data-theme="light"] .aboutSection {
   box-shadow: 0 0 0 3px rgba(148, 180, 193, 0.22);
 }
 
+/*
+ * Native <select> in the site's style: our own arrow and focus ring instead of the browser's, so the
+ * keyboard, screen reader and phone pickers stay native. Browsers with customizable selects
+ * (appearance: base-select) also get the opened list in the same glass style; others show their own.
+ */
 .select {
+  appearance: none;
+  -webkit-appearance: none;
   border-radius: 14px;
-  padding: 12px 12px;
+  padding: 12px 38px 12px 12px;
   border: 1px solid var(--border);
-  background: var(--card);
+  background-color: var(--card);
+  background-image: var(--select-chevron);
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 16px;
   color: var(--text);
+  font: inherit;
   backdrop-filter: blur(16px) saturate(1.2);
   -webkit-backdrop-filter: blur(16px) saturate(1.2);
   cursor: pointer;
+  outline: none;
+  transition:
+    border-color 160ms var(--ease),
+    box-shadow 160ms var(--ease);
+}
+
+.select:hover {
+  border-color: rgba(148, 180, 193, 0.42);
+}
+
+.select:focus-visible {
+  border-color: rgba(148, 180, 193, 0.5);
+  box-shadow: 0 0 0 3px rgba(148, 180, 193, 0.22);
+}
+
+.select option {
+  background-color: var(--bg2);
+  color: var(--text);
 }
 
 .selectSmall {
-  padding: 10px 12px;
+  padding: 10px 34px 10px 12px;
   border-radius: 12px;
+  background-position: right 10px center;
+}
+
+@supports (appearance: base-select) {
+  .select,
+  .select::picker(select) {
+    appearance: base-select;
+  }
+
+  .select {
+    display: inline-flex;
+    align-items: center;
+    background-image: none;
+  }
+
+  .select::picker-icon {
+    content: "";
+    width: 16px;
+    height: 16px;
+    margin-inline-start: auto;
+    background: var(--select-chevron) center / 16px no-repeat;
+    transition: rotate 180ms var(--ease);
+  }
+
+  .select:open::picker-icon {
+    rotate: 180deg;
+  }
+
+  .select::picker(select) {
+    margin-block: 6px;
+    padding: 5px;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: var(--popover);
+    color: var(--text);
+    box-shadow: var(--shadow);
+    backdrop-filter: blur(16px) saturate(1.2);
+  }
+
+  .select option {
+    padding: 8px 10px;
+    border-radius: 9px;
+    background: transparent;
+    cursor: pointer;
+  }
+
+  .select option:hover,
+  .select option:focus-visible {
+    background: rgba(148, 180, 193, 0.2);
+    outline: none;
+  }
+
+  .select option:checked {
+    font-weight: 650;
+  }
+
+  .select option::checkmark {
+    color: var(--accent2);
+  }
+}
+
+/* Tooltip (components/Tooltip.tsx): the site's styled replacement for title tooltips. */
+.tooltipAnchor {
+  display: inline-flex;
+}
+
+.tooltip {
+  position: fixed;
+  z-index: 80;
+  max-width: 260px;
+  padding: 7px 11px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--popover);
+  color: var(--text);
+  font-size: 12.5px;
+  line-height: 1.5;
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(16px) saturate(1.2);
+  -webkit-backdrop-filter: blur(16px) saturate(1.2);
+  pointer-events: none;
+  animation: tooltipIn 140ms var(--ease);
+}
+
+@keyframes tooltipIn {
+  from {
+    opacity: 0;
+    transform: translateY(2px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tooltip {
+    animation: none;
+  }
 }
 
 /* Masonry */

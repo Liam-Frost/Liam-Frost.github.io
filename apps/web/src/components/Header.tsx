@@ -5,6 +5,7 @@ import { cx } from "../lib/cx";
 import { useI18n, type Lang } from "../lib/i18n";
 import type { ThemeMode } from "../lib/useTheme";
 import AnimatedThemeToggler from "./AnimatedThemeToggler";
+import Tooltip from "./Tooltip";
 
 type Props = {
   theme: ThemeMode;
@@ -109,30 +110,31 @@ export default function Header({ theme, onCycleTheme }: Props) {
 
         <div className="navActions">
           <div ref={langWrapRef} className={cx("langWrap", langOpen && "langWrapOpen")}>
-            <button
-              className={cx("btn", "btnGhost", "langBtn")}
-              type="button"
-              aria-label={t("common.language")}
-              title={t("common.language")}
-              aria-expanded={langOpen}
-              onClick={() => setLangOpen((v) => !v)}
-            >
-              <svg
-                className="langIcon"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
+            <Tooltip content={langOpen ? "" : t("common.language")} describe={false}>
+              <button
+                className={cx("btn", "btnGhost", "langBtn")}
+                type="button"
+                aria-label={t("common.language")}
+                aria-expanded={langOpen}
+                onClick={() => setLangOpen((v) => !v)}
               >
-                <circle cx="12" cy="12" r="10"></circle>
-                <path d="M2 12h20"></path>
-                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
-              </svg>
-              <span className="srOnly">{t("common.language")}</span>
-            </button>
+                <svg
+                  className="langIcon"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <path d="M2 12h20"></path>
+                  <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                </svg>
+                <span className="srOnly">{t("common.language")}</span>
+              </button>
+            </Tooltip>
 
             <div className="langPanel" role="menu" aria-label={t("common.language")}>
               {(
@@ -165,7 +167,6 @@ export default function Header({ theme, onCycleTheme }: Props) {
             theme={theme}
             cycleTheme={onCycleTheme}
             aria-label={`${t("common.theme")} (${themeUi.label})`}
-            title={`${t("common.theme")} (${themeUi.label})`}
           />
         </div>
       </div>

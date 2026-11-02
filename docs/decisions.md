@@ -96,6 +96,12 @@ React and related dependencies should be upgraded to the latest versions. This u
 
 ## Model Decisions
 
+### 2026-11-02: Styled Tooltips and Selects Without a UI Library
+
+The user asked to remove the visual gap between browser-native hover tooltips / selects and the project's own UI, without a new UI framework. The model chose: keep the native `<select>` (keyboard, screen readers and phone pickers stay native) and restyle the existing `.select` (site) and `select.field` (admin) classes with the project's arrow, borders and focus ring; where the browser supports customizable selects (`appearance: base-select`, Chromium), the opened list is styled too, and other browsers show their own list. Native `title` hover hints became a small `Tooltip` component in each app (hover and keyboard focus, Escape, portal; inside a modal `<dialog>` it renders into the dialog's top layer), both positioned by `tooltipPosition` in `@liam-frost/shared`. The admin's metric explanations, which were invisible `title`s on headings and cards, became an ⓘ button (`InfoTip`).
+
+Reason: native controls keep their accessibility for free; a full custom select would re-implement keyboard and screen-reader behaviour. The two apps have different styling systems (CSS variables vs. Tailwind tokens) and no shared React package, so only the positioning logic is shared.
+
 ### 2026-11-02: Analytics Details for Stages 18b and 18c
 
 The model chose: a cached content catalog (five minutes, reloaded at most every 30 seconds on a miss) to reject content that does not exist or is not public, and hourly name snapshots instead of storing names on every event; small groups folded into 其他 for sources, countries and UTM values, and hidden heatmap cells, using `ANALYTICS_MIN_GROUP_SIZE`; a country ranking with flags rather than a map; Web Vitals measured only on the landing page of half of the visits, as fixed histogram buckets that include Google's limits so ratings are exact; public API timings kept in memory and written once a minute; the job and source log written through callbacks on the existing import and sync jobs and a wrapper around the media sources, with repeated successes noted at most every ten minutes; demo data allowed only in a database whose name or schema contains "demo".

@@ -18,6 +18,7 @@ import { BatchBar, SelectMark } from "../ui/BatchBar";
 import { Dialog } from "../ui/Dialog";
 import { Field, Switch } from "../ui/Field";
 import { useToast } from "../ui/Toast";
+import { Tooltip } from "../ui/Tooltip";
 
 /** One shared <audio> for preview buttons: starting a preview stops the previous one. */
 export function usePreview() {
@@ -61,19 +62,20 @@ export function PreviewButton({
   if (!url) return null;
   const active = preview.playing === url;
   return (
-    <button
-      type="button"
-      onClick={() => preview.toggle(url)}
-      aria-label={active ? "暂停试听" : "试听"}
-      title={active ? "暂停试听" : "试听"}
-      className={`flex size-8 shrink-0 items-center justify-center rounded-full transition-colors ${active ? "bg-brand text-white" : "bg-brand-secondary/12 text-brand hover:bg-brand-secondary/20"}`}
-    >
-      {active ? (
-        <Pause aria-hidden="true" className="size-3.5" />
-      ) : (
-        <Play aria-hidden="true" className="ml-0.5 size-3.5" />
-      )}
-    </button>
+    <Tooltip content={active ? "暂停试听" : "试听"} describe={false}>
+      <button
+        type="button"
+        onClick={() => preview.toggle(url)}
+        aria-label={active ? "暂停试听" : "试听"}
+        className={`flex size-8 shrink-0 items-center justify-center rounded-full transition-colors ${active ? "bg-brand text-white" : "bg-brand-secondary/12 text-brand hover:bg-brand-secondary/20"}`}
+      >
+        {active ? (
+          <Pause aria-hidden="true" className="size-3.5" />
+        ) : (
+          <Play aria-hidden="true" className="ml-0.5 size-3.5" />
+        )}
+      </button>
+    </Tooltip>
   );
 }
 

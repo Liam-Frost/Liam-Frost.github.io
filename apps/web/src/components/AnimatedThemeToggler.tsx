@@ -4,6 +4,7 @@ import { Monitor, Moon, Sun } from "lucide-react";
 
 import { cn } from "../lib/cn";
 import type { ThemeMode } from "../lib/useTheme";
+import Tooltip from "./Tooltip";
 
 type Props = {
   theme: ThemeMode;
@@ -110,16 +111,23 @@ export default function AnimatedThemeToggler({
   }, [cycleTheme, duration, theme]);
 
   return (
-    <button
-      ref={buttonRef}
-      type="button"
-      onClick={toggleTheme}
-      className={cn("btn btnGhost", "themeToggle", className)}
-      aria-label={ariaLabel ?? "Toggle theme"}
-      title={title ?? "Toggle theme"}
-    >
-      {theme === "system" ? <Monitor size={18} /> : uiDark ? <Sun size={18} /> : <Moon size={18} />}
-      <span className="srOnly">{ariaLabel ?? "Toggle theme"}</span>
-    </button>
+    <Tooltip content={title ?? ariaLabel ?? "Toggle theme"} describe={false}>
+      <button
+        ref={buttonRef}
+        type="button"
+        onClick={toggleTheme}
+        className={cn("btn btnGhost", "themeToggle", className)}
+        aria-label={ariaLabel ?? "Toggle theme"}
+      >
+        {theme === "system" ? (
+          <Monitor size={18} />
+        ) : uiDark ? (
+          <Sun size={18} />
+        ) : (
+          <Moon size={18} />
+        )}
+        <span className="srOnly">{ariaLabel ?? "Toggle theme"}</span>
+      </button>
+    </Tooltip>
   );
 }

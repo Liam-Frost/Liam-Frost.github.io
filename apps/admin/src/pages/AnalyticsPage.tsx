@@ -19,6 +19,7 @@ import { PageHeader } from "../components/layout/AdminLayout";
 import { DatabaseNotice } from "../components/ui/DatabaseNotice";
 import { useToast } from "../components/ui/Toast";
 import { api } from "../lib/api";
+import { InfoTip } from "../components/ui/Tooltip";
 
 export type AnalyticsView = "overview" | "content" | "detail" | "audience" | "health";
 
@@ -236,7 +237,7 @@ function ClearData() {
         <p className="text-muted">不可恢复。照片、项目、收藏等内容和设置不受影响。</p>
         <div role="radiogroup" aria-label="清除范围" className="flex flex-wrap gap-3">
           {SCOPES.map((option) => (
-            <label key={option.scope} className="flex items-center gap-1.5" title={option.hint}>
+            <label key={option.scope} className="flex items-center gap-1.5">
               <input
                 type="radio"
                 name="analytics-clear"
@@ -244,6 +245,7 @@ function ClearData() {
                 onChange={() => setScope(option.scope)}
               />
               {option.label}
+              <InfoTip text={option.hint} label={`${option.label}：包含什么`} />
             </label>
           ))}
         </div>
