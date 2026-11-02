@@ -39,7 +39,7 @@ model Photo {
   storageKey  String?
   /// Generated WebP sizes for uploaded photos: [{ "width": 640, "height": 427 }, ...], smallest first.
   variants    Json?
-  /// Where the image came from: { "type": "upload" | "server" | "flickr" | "url", "ref", "importedAt" }.
+  /// Where the image came from: { "type": "upload" | "server" | "gallery" | "url", "provider", "ref", "importedAt" }.
   source      Json?
   alt         Json
   width       Int

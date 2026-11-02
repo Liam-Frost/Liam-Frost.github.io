@@ -165,6 +165,7 @@
 - The user asked to make tooltips and selects match the project's design without a new UI framework. Survey: 14 native `<select>` (site and admin) and about 15 `title` hover hints; no tooltip component existed. A first Tooltip version dropped its wrapper when the hint was empty, which would remount the child (losing focus) when the language menu toggled its hint; the wrapper now stays. The Spotify iframe's `title` stays (accessible name, not a hover hint).
 
 - Stage 19: the plan was written to `docs/plan-photos.md` and implemented on branch `stage-19-photo-sources`. Testing the migration against photos stored the old way found two bugs the in-memory tests could not: `jsonb_build_object` with an untyped `NULL` fails in PostgreSQL (now `NULL::text`), and the storage enum's database values are `local` / `remote-url`, not the Prisma names. A Flickr short link (flic.kr) resolved through oEmbed with the user's network.
+- The user asked for one 图库 entry instead of a Flickr tab, and reported the photo card footer breaking with the new tags: 精选 / 引用 wrapped one character per line and buttons were pushed out. Cause: badges, a spacer and four icon buttons in one non-wrapping flex row, with shrinkable badges in a card about 200 px wide. Playwright is not set up in the repository, so the layout was checked in the in-app browser with a DOM measurement at eight widths.
 
 ## Notes
 

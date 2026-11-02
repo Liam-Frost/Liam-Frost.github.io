@@ -91,7 +91,8 @@ export function remotePhoto(overrides: Partial<PhotoRow> = {}): PhotoRow {
     storageKey: null,
     variants: null,
     source: {
-      type: "flickr",
+      type: "gallery",
+      provider: "flickr",
       ref: "https://live.staticflickr.com/1/2_abc_b.jpg",
       importedAt: null
     },

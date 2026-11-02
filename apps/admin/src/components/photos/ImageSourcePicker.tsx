@@ -1,17 +1,23 @@
-import type { AdminPhotoImport, PhotoImportMode, PhotoSourceType } from "@liam-frost/shared";
+import type {
+  AdminPhotoImport,
+  PhotoGalleryProvider,
+  PhotoImportMode,
+  PhotoSource,
+  PhotoSourceType
+} from "@liam-frost/shared";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronRight, Folder, HardDrive, Image, Link2, Upload } from "lucide-react";
+import { ChevronRight, Folder, HardDrive, Images, Link2, Upload } from "lucide-react";
 import { useRef, useState } from "react";
 
 import { api, serverPreviewUrl } from "../../lib/api";
 import { InfoTip } from "../ui/Tooltip";
 
-type Tab = "upload" | "server" | "flickr" | "url";
+type Tab = "upload" | "server" | "gallery" | "url";
 
 const TABS: { value: Tab; label: string; icon: typeof Upload }[] = [
   { value: "upload", label: "本机上传", icon: Upload },
   { value: "server", label: "服务器文件夹", icon: HardDrive },
-  { value: "flickr", label: "Flickr", icon: Image },
+  { value: "gallery", label: "图库", icon: Images },
   { value: "url", label: "图片链接", icon: Link2 }
 ];
 
@@ -19,9 +25,18 @@ const TABS: { value: Tab; label: string; icon: typeof Upload }[] = [
 export const SOURCE_LABELS: Record<PhotoSourceType, string> = {
   upload: "本机上传",
   server: "服务器文件",
-  flickr: "Flickr",
+  gallery: "图库",
   url: "图片链接"
 };
+
+const GALLERY_NAMES: Record<PhotoGalleryProvider, string> = { flickr: "Flickr" };
+
+/** A photo's source as a short label: the gallery's own name for gallery photos (“Flickr”). */
+export function sourceLabel(source: PhotoSource) {
+  return source.type === "gallery" && source.provider
+    ? GALLERY_NAMES[source.provider]
+    : SOURCE_LABELS[source.type];
+}
 
 export const PHOTO_ACCEPT = "image/jpeg,image/png,image/webp,image/avif,image/tiff";
 
@@ -33,7 +48,7 @@ const formatSize = (bytes: number | null) =>
       : `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 
 /**
- * Where a photo's image comes from: the device, a server import folder, a Flickr photo or an image link.
+ * Where a photo's image comes from: the device, a server import folder, a gallery site or an image link.
  * Used to add photos (several at once) and to replace one photo's image.
  */
 export function ImageSourcePicker({
@@ -201,7 +216,7 @@ function LinkPane({
   action,
   onImports
 }: {
-  type: "flickr" | "url";
+  type: "gallery" | "url";
   multiple: boolean;
   busy: boolean;
   action: string;
@@ -232,8 +247,8 @@ function LinkPane({
     <div className="space-y-3">
       <label className="block space-y-1.5 text-[13px]">
         <span className="text-muted">
-          {type === "flickr"
-            ? "Flickr 照片页链接（flickr.com/photos/… 或 flic.kr/p/…），也可以是 live.staticflickr.com 图片链接"
+          {type === "gallery"
+            ? "图库照片页链接，自动识别网站。目前支持 Flickr（flickr.com/photos/…、flic.kr/p/… 或 live.staticflickr.com 图片链接）"
             : "图片链接（https）：图床、R2 / S3 对象存储的公开链接等"}
           {multiple ? "，每行一个" : ""}
         </span>
@@ -241,7 +256,7 @@ function LinkPane({
           className="field min-h-[96px] font-mono !text-[12.5px]"
           value={text}
           placeholder={
-            type === "flickr"
+            type === "gallery"
               ? "https://www.flickr.com/photos/…/55042276542/"
               : "https://example.com/photos/IMG_0042.jpg"
           }

@@ -1,4 +1,9 @@
-import type { AdminServerFile, PhotoImportMode, PhotoSource } from "@liam-frost/shared";
+import type {
+  AdminServerFile,
+  PhotoGalleryProvider,
+  PhotoImportMode,
+  PhotoSource
+} from "@liam-frost/shared";
 import { randomBytes } from "node:crypto";
 import { readdir, readFile, realpath, stat } from "node:fs/promises";
 import { basename, extname, isAbsolute, join, relative, resolve, sep } from "node:path";
@@ -39,11 +44,19 @@ export function photoImageKey(photoId: string) {
   return `photos/${folder}/${randomBytes(6).toString("hex")}`;
 }
 
-const source = (type: PhotoSource["type"], ref: string | null, now: Date): PhotoSource => ({
-  type,
-  ref,
-  importedAt: now.toISOString()
-});
+const source = (
+  type: PhotoSource["type"],
+  ref: string | null,
+  now: Date,
+  provider: PhotoGalleryProvider | null = null
+): PhotoSource => ({ type, ...(provider ? { provider } : {}), ref, importedAt: now.toISOString() });
+
+/** The gallery site a link belongs to, or null when no supported gallery recognises it. */
+export function galleryProvider(link: string): PhotoGalleryProvider | null {
+  if (FLICKR_STATIC.test(link) || FLICKR_PAGE.test(link) || FLICKR_SHORT.test(link))
+    return "flickr";
+  return null;
+}
 
 /** Stores a processed image under a new key; callers remove the key if saving the photo fails. */
 export async function hostImage(
@@ -108,11 +121,10 @@ export class PhotoSources {
     photoId: string,
     url: string,
     mode: PhotoImportMode,
-    type: "url" | "flickr" = "url",
     title: string | null = null
   ): Promise<PhotoImage> {
     const { data } = await this.download(url);
-    const from = source(type, url, this.now());
+    const from = source("url", url, this.now());
     if (mode === "import")
       return hostImage(this.deps.store, photoId, await processImage(data), from, title);
     const { width, height, exif } = await inspectImage(data);
@@ -132,13 +144,30 @@ export class PhotoSources {
   }
 
   /**
+   * A photo on a gallery site, recognised from its link. One entry point for every gallery; Flickr is
+   * the only one so far.
+   */
+  async fromGallery(photoId: string, link: string, mode: PhotoImportMode): Promise<PhotoImage> {
+    const provider = galleryProvider(link);
+    if (!provider)
+      throw new PhotoSourceError(
+        "暂时只支持 Flickr 的照片链接（flickr.com/photos/…、flic.kr/p/…）"
+      );
+    const image = await this.fromFlickr(photoId, link, mode);
+    image.fields.source = source("gallery", link, this.now(), provider);
+    return image;
+  }
+
+  /**
    * A Flickr photo: a photo page (or flic.kr short link) is looked up with Flickr's oEmbed, which needs no
    * key, for its title and image address; a live.staticflickr.com image link is used as is.
    */
-  async fromFlickr(photoId: string, link: string, mode: PhotoImportMode): Promise<PhotoImage> {
-    if (FLICKR_STATIC.test(link)) return this.fromUrl(photoId, link, mode, "flickr");
-    if (!FLICKR_PAGE.test(link) && !FLICKR_SHORT.test(link))
-      throw new PhotoSourceError("请粘贴 Flickr 照片页链接（flickr.com/photos/…）或图片链接");
+  private async fromFlickr(
+    photoId: string,
+    link: string,
+    mode: PhotoImportMode
+  ): Promise<PhotoImage> {
+    if (FLICKR_STATIC.test(link)) return this.fromUrl(photoId, link, mode);
     const oembed = new URL("https://www.flickr.com/services/oembed/");
     oembed.search = new URLSearchParams({ url: link, format: "json", maxwidth: "4096" }).toString();
     const { data } = await this.download(oembed.toString());
@@ -150,10 +179,8 @@ export class PhotoSources {
     }
     if (info.type !== "photo" || !info.url || !FLICKR_STATIC.test(info.url))
       throw new PhotoSourceError("这个链接不是一张公开的 Flickr 照片");
-    const image = await this.fromUrl(photoId, info.url, mode, "flickr", info.title?.trim() || null);
-    // Keep the page as the reference; the image address is in src (or was downloaded).
-    image.fields.source = source("flickr", link, this.now());
-    return image;
+    // The page stays the reference (set by fromGallery); the image address is in src or was downloaded.
+    return this.fromUrl(photoId, info.url, mode, info.title?.trim() || null);
   }
 
   /** The configured import folders, by index. */

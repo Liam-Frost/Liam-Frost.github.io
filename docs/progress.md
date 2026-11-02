@@ -374,9 +374,9 @@ Status: implementation complete.
 Status: implementation complete; Claude Code review complete and fixes applied. 19c (R2) waits for Stage 10.
 
 - Photos record their image's source (migration `20261108090000_photo_sources`, which fills it for existing photos).
-- Add photos from the device, server import folders (`PHOTO_IMPORT_DIRS`, with previews), Flickr photo pages (oEmbed) or image links; links are imported (default) or referenced. Links are fetched over https only and never to private or local addresses.
+- Add photos from the device, server import folders (`PHOTO_IMPORT_DIRS`, with previews), gallery sites (one 图库 entry; Flickr via oEmbed for now) or image links; links are imported (default) or referenced. Links are fetched over https only and never to private or local addresses.
 - Editor: source and storage, 替换图片 from any source (keeping texts, optionally taking EXIF), 转为本站托管 for referenced images. Each hosted image gets its own folder, so replaced images get new URLs.
-- Admin: 添加照片 dialog with the four sources, source badges and filter.
+- Admin: 添加照片 dialog with the four sources, source badges and filter. Photo cards: metadata row (status badges, source tag) separate from the action row, which stays aligned and fully visible from four columns down to one (checked at 1440-320 px with every tag combination).
 - Tests: 192 passed.
 - Verified with a temporary database: the migration on photos stored the old way, a server folder import with previews and EXIF, a Flickr short link through oEmbed (referenced), an image link (imported), a refused local address, 转为本站托管 and 替换图片 from a server file with EXIF, the old image folder removed.
 

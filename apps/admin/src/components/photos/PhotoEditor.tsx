@@ -15,7 +15,7 @@ import { Field, Switch } from "../ui/Field";
 import { useToast } from "../ui/Toast";
 import { RecentStats } from "../analytics/RecentStats";
 import { Tooltip } from "../ui/Tooltip";
-import { ImageSourcePicker, SOURCE_LABELS } from "./ImageSourcePicker";
+import { ImageSourcePicker, sourceLabel } from "./ImageSourcePicker";
 
 type Draft = {
   title: LocalizedText;
@@ -190,7 +190,7 @@ export function PhotoEditor({
           >
             <p className="text-muted">
               来源：
-              <span className="text-ink">{source ? SOURCE_LABELS[source.type] : "未记录"}</span>
+              <span className="text-ink">{source ? sourceLabel(source) : "未记录"}</span>
               {source?.importedAt ? (
                 <span className="text-faint"> · {source.importedAt.slice(0, 10)}</span>
               ) : null}

@@ -186,14 +186,14 @@ export function registerAdminPhotoRoutes(
     id: string,
     from:
       | { type: "url"; url: string }
-      | { type: "flickr"; url: string }
+      | { type: "gallery"; url: string }
       | { type: "server"; root: number; path: string },
     mode: "import" | "reference"
   ) =>
     from.type === "server"
       ? sources.fromServer(id, from.root, from.path)
-      : from.type === "flickr"
-        ? sources.fromFlickr(id, from.url, mode)
+      : from.type === "gallery"
+        ? sources.fromGallery(id, from.url, mode)
         : sources.fromUrl(id, from.url, mode);
 
   /**
@@ -263,7 +263,7 @@ export function registerAdminPhotoRoutes(
     if (row.storage !== "remote-url" || !row.src)
       throw new HttpError(409, "ALREADY_HOSTED", "This photo is already hosted by the site");
     const image = await sources.fromUrl(row.id, row.src, "import").catch(sourceFailure);
-    // It is the same image: keep the recorded source (a Flickr page, the original link).
+    // It is the same image: keep the recorded source (a gallery page, the original link).
     image.fields.source = row.source ?? image.fields.source;
     return replaceImage(request, row, image, false);
   });

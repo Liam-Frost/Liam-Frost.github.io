@@ -100,7 +100,7 @@ const uuid = z
 export const projectIdSchema = z.object({ id: uuid });
 const photoImportFrom = z.discriminatedUnion("type", [
   z.object({ type: z.literal("url"), url: z.string().trim().url().max(2048) }).strict(),
-  z.object({ type: z.literal("flickr"), url: z.string().trim().url().max(2048) }).strict(),
+  z.object({ type: z.literal("gallery"), url: z.string().trim().url().max(2048) }).strict(),
   z
     .object({
       type: z.literal("server"),
@@ -110,7 +110,7 @@ const photoImportFrom = z.discriminatedUnion("type", [
     .strict()
 ]);
 
-/** Adding a photo from a link, a Flickr photo or a server file; server files are always hosted. */
+/** Adding a photo from a link, a gallery photo or a server file; server files are always hosted. */
 export const photoImportSchema = z
   .object({ from: photoImportFrom, mode: z.enum(["import", "reference"]).default("import") })
   .strict()

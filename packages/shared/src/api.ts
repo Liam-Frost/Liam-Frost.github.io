@@ -83,10 +83,18 @@ export type AdminPhotoUpdate = Partial<{
 
 /**
  * Where a photo's image came from: uploaded from the device (ref: file name), a file in a server import
- * folder (ref: "<folder index>:<relative path>"), a Flickr photo page or another image link (ref: the link).
+ * folder (ref: "<folder index>:<relative path>"), a photo on a gallery site (ref: its page; `provider`
+ * names the site) or another image link (ref: the link).
  */
-export type PhotoSourceType = "upload" | "server" | "flickr" | "url";
-export type PhotoSource = { type: PhotoSourceType; ref: string | null; importedAt: string | null };
+export type PhotoSourceType = "upload" | "server" | "gallery" | "url";
+/** Gallery sites photos can come from; Flickr for now. */
+export type PhotoGalleryProvider = "flickr";
+export type PhotoSource = {
+  type: PhotoSourceType;
+  provider?: PhotoGalleryProvider | null;
+  ref: string | null;
+  importedAt: string | null;
+};
 
 /** How a linked image is kept: copied and processed by the site, or shown from its own address. */
 export type PhotoImportMode = "import" | "reference";
@@ -95,7 +103,7 @@ export type PhotoImportMode = "import" | "reference";
 export type AdminPhotoImport = {
   from:
     | { type: "url"; url: string }
-    | { type: "flickr"; url: string }
+    | { type: "gallery"; url: string }
     | { type: "server"; root: number; path: string };
   mode: PhotoImportMode;
 };

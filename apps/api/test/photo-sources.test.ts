@@ -153,7 +153,7 @@ describe("photo sources", () => {
     expect(existsSync(join(uploadDir, "photos"))).toBe(false);
   });
 
-  it("adds a Flickr photo from its page, keeping the page as the source", async () => {
+  it("adds a gallery photo (Flickr) from its page, keeping the page as the source", async () => {
     const page = "https://www.flickr.com/photos/someone/55042276542/";
     const staticUrl = "https://live.staticflickr.com/65535/55042276542_8c2b03588c_b.jpg";
     const oembed = `https://www.flickr.com/services/oembed/?url=${encodeURIComponent(page)}&format=json&maxwidth=4096`;
@@ -172,7 +172,7 @@ describe("photo sources", () => {
     });
     const referenced = (
       await post("/api/admin/photos/import", {
-        from: { type: "flickr", url: page },
+        from: { type: "gallery", url: page },
         mode: "reference"
       })
     ).json().photo;
@@ -180,14 +180,17 @@ describe("photo sources", () => {
       storage: "remote-url",
       src: staticUrl,
       title: { zh: "Glico at night" },
-      source: { type: "flickr", ref: page }
+      source: { type: "gallery", provider: "flickr", ref: page }
     });
     const hosted = (
-      await post("/api/admin/photos/import", { from: { type: "flickr", url: page } })
+      await post("/api/admin/photos/import", { from: { type: "gallery", url: page } })
     ).json().photo;
-    expect(hosted).toMatchObject({ storage: "local", source: { type: "flickr", ref: page } });
+    expect(hosted).toMatchObject({
+      storage: "local",
+      source: { type: "gallery", provider: "flickr", ref: page }
+    });
     const notFlickr = await post("/api/admin/photos/import", {
-      from: { type: "flickr", url: "https://example.com/p/1" }
+      from: { type: "gallery", url: "https://example.com/p/1" }
     });
     expect(notFlickr.statusCode).toBe(400);
   });
@@ -329,7 +332,10 @@ describe("photo sources", () => {
     const { photos, post } = await setup({ routes: { [staticUrl]: image(jpeg) } });
     await photos.create(remotePhoto());
     const hosted = (await post("/api/admin/photos/remote-1/host", {})).json().photo;
-    expect(hosted).toMatchObject({ storage: "local", source: { type: "flickr", ref: staticUrl } });
+    expect(hosted).toMatchObject({
+      storage: "local",
+      source: { type: "gallery", provider: "flickr", ref: staticUrl }
+    });
     expect(hosted.variants.length).toBeGreaterThan(0);
     expect((await post("/api/admin/photos/remote-1/host", {})).statusCode).toBe(409);
   });
