@@ -98,6 +98,44 @@ const uuid = z
   .regex(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/, "Invalid id");
 
 export const projectIdSchema = z.object({ id: uuid });
+const photoImportFrom = z.discriminatedUnion("type", [
+  z.object({ type: z.literal("url"), url: z.string().trim().url().max(2048) }).strict(),
+  z.object({ type: z.literal("flickr"), url: z.string().trim().url().max(2048) }).strict(),
+  z
+    .object({
+      type: z.literal("server"),
+      root: z.number().int().min(0).max(50),
+      path: z.string().min(1).max(1024)
+    })
+    .strict()
+]);
+
+/** Adding a photo from a link, a Flickr photo or a server file; server files are always hosted. */
+export const photoImportSchema = z
+  .object({ from: photoImportFrom, mode: z.enum(["import", "reference"]).default("import") })
+  .strict()
+  .refine((value) => value.from.type !== "server" || value.mode === "import", {
+    message: "Server files are always hosted by the site"
+  });
+
+export const photoImageReplaceSchema = z
+  .object({
+    from: photoImportFrom,
+    mode: z.enum(["import", "reference"]).default("import"),
+    useExif: z.boolean().optional()
+  })
+  .strict()
+  .refine((value) => value.from.type !== "server" || value.mode === "import", {
+    message: "Server files are always hosted by the site"
+  });
+
+export const serverFileQuerySchema = z
+  .object({
+    root: z.coerce.number().int().min(0).max(50).default(0),
+    path: z.string().max(1024).optional()
+  })
+  .strict();
+
 export const projectImageParamsSchema = z.object({
   id: uuid,
   imageId: z.string().regex(/^[a-z0-9]{12}$/, "Invalid image id")

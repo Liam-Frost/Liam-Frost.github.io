@@ -28,6 +28,11 @@ async function main() {
       description: photo.description ?? Prisma.DbNull,
       tags: photo.tags,
       src: photo.src,
+      source: {
+        type: photo.src.startsWith("https://live.staticflickr.com/") ? "flickr" : "url",
+        ref: photo.src,
+        importedAt: null
+      },
       alt: photo.alt,
       width: photo.width,
       height: photo.height,

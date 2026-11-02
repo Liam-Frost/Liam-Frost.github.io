@@ -81,6 +81,10 @@ export type TestServerOptions = {
   trackPreview?: (trackId: string) => Promise<string | null>;
   /** Defaults to none (events are dropped). */
   analyticsStore?: AnalyticsStore | null;
+  /** Defaults to one that fails, so tests never fetch photo links. */
+  photoFetch?: typeof fetch;
+  /** Defaults to public addresses for every name. */
+  photoLookup?: (host: string) => Promise<string[]>;
   /** Defaults to the real time. */
   now?: () => Date;
 };
@@ -124,6 +128,8 @@ export async function buildTestServer(
     trackPreview: options.trackPreview ?? (async () => null),
     steamFetch: options.steamFetch ?? (() => Promise.reject(new Error("no network in tests"))),
     analyticsStore: options.analyticsStore ?? null,
+    photoFetch: options.photoFetch ?? (() => Promise.reject(new Error("no network in tests"))),
+    photoLookup: options.photoLookup ?? (async () => ["203.0.113.10"]),
     now: options.now
   });
 }

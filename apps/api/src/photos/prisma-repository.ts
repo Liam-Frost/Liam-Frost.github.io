@@ -20,6 +20,7 @@ function toRow(record: PrismaPhoto): PhotoRow {
     alt: record.alt as LocalizedText,
     storage: record.storage === "LOCAL" ? "local" : "remote-url",
     variants: record.variants as StoredVariant[] | null,
+    source: record.source as PhotoRow["source"],
     visibility: record.visibility === "PRIVATE" ? "private" : "public"
   };
 }
@@ -44,6 +45,14 @@ function toData(patch: PhotoPatch): Prisma.PhotoUpdateInput {
   if (patch.visibility !== undefined)
     data.visibility = patch.visibility === "private" ? "PRIVATE" : "PUBLIC";
   if (patch.featured !== undefined) data.featured = patch.featured;
+  if (patch.src !== undefined) data.src = patch.src;
+  if (patch.storage !== undefined)
+    data.storage = patch.storage === "local" ? "LOCAL" : "REMOTE_URL";
+  if (patch.storageKey !== undefined) data.storageKey = patch.storageKey;
+  if (patch.variants !== undefined) data.variants = json(patch.variants);
+  if (patch.source !== undefined) data.source = json(patch.source);
+  if (patch.width !== undefined) data.width = patch.width;
+  if (patch.height !== undefined) data.height = patch.height;
   return data;
 }
 
@@ -63,6 +72,11 @@ export class PrismaPhotoRepository implements PhotoRepository {
     return record ? toRow(record) : null;
   }
 
+  async findByStorageKey(key: string) {
+    const record = await this.prisma.photo.findFirst({ where: { storageKey: key } });
+    return record ? toRow(record) : null;
+  }
+
   async create(photo: NewPhoto) {
     const sortOrder =
       photo.sortOrder ??
@@ -74,6 +88,7 @@ export class PrismaPhotoRepository implements PhotoRepository {
         location: json(photo.location),
         description: json(photo.description),
         variants: json(photo.variants),
+        source: json(photo.source),
         storage: photo.storage === "local" ? "LOCAL" : "REMOTE_URL",
         visibility: photo.visibility === "private" ? "PRIVATE" : "PUBLIC"
       }

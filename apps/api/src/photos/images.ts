@@ -40,7 +40,8 @@ export type ProcessedImage = {
  * Validates an upload and renders WebP sizes. Outputs are auto-oriented and carry no metadata
  * (sharp drops EXIF, including GPS). The original is returned unchanged for private storage.
  */
-export async function processImage(input: Buffer): Promise<ProcessedImage> {
+/** Validates an image and reads its displayed size (after EXIF orientation) and EXIF suggestions. */
+async function readImage(input: Buffer) {
   let meta: ImageMetadata;
   try {
     meta = await sharp(input, { failOn: "error", limitInputPixels: MAX_PIXELS }).metadata();
@@ -50,11 +51,24 @@ export async function processImage(input: Buffer): Promise<ProcessedImage> {
   if (!meta.format || !ACCEPTED_FORMATS.has(meta.format) || !meta.width || !meta.height) {
     throw new InvalidImageError("仅支持 JPEG、PNG、WebP、AVIF 或 TIFF 图片");
   }
-
   // EXIF orientations 5-8 rotate by 90°, swapping the displayed width and height.
   const rotated = (meta.orientation ?? 1) >= 5;
-  const width = rotated ? meta.height : meta.width;
-  const height = rotated ? meta.width : meta.height;
+  return {
+    meta,
+    width: rotated ? meta.height : meta.width,
+    height: rotated ? meta.width : meta.height,
+    exif: readExif(meta.exif)
+  };
+}
+
+/** Size and EXIF of an image that is shown from its own address (not processed or stored). */
+export async function inspectImage(input: Buffer) {
+  const { width, height, exif } = await readImage(input);
+  return { width, height, exif };
+}
+
+export async function processImage(input: Buffer): Promise<ProcessedImage> {
+  const { meta, width, height, exif } = await readImage(input);
   const longest = Math.max(width, height);
 
   const sizes = [...new Set(VARIANT_SIZES.map((size) => Math.min(size, longest)))];
@@ -85,8 +99,8 @@ export async function processImage(input: Buffer): Promise<ProcessedImage> {
     width,
     height,
     variants,
-    original: { data: input, extension: ORIGINAL_EXTENSIONS[meta.format] },
-    exif: readExif(meta.exif)
+    original: { data: input, extension: ORIGINAL_EXTENSIONS[meta.format!]! },
+    exif
   };
 }
 

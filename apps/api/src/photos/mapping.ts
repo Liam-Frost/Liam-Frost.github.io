@@ -69,6 +69,7 @@ export function toAdminPhoto(row: PhotoRow, store: LocalImageStore): AdminPhoto 
     thumbnail: variants[0]?.url ?? remoteThumbnail(row.src),
     storage: row.storage,
     variants,
+    source: row.source,
     visibility: row.visibility,
     featured: row.featured,
     sortOrder: row.sortOrder,

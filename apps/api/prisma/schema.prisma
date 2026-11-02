@@ -35,10 +35,12 @@ model Photo {
   /// External URL for REMOTE_URL photos; empty for uploaded photos (URLs come from storageKey + variants).
   src         String
   storage     ImageStorage @default(REMOTE_URL)
-  /// Folder of the uploaded files, e.g. "photos/<id>".
+  /// Folder of the site-hosted files: "photos/<id>/<imageId>" (older photos: "photos/<id>").
   storageKey  String?
   /// Generated WebP sizes for uploaded photos: [{ "width": 640, "height": 427 }, ...], smallest first.
   variants    Json?
+  /// Where the image came from: { "type": "upload" | "server" | "flickr" | "url", "ref", "importedAt" }.
+  source      Json?
   alt         Json
   width       Int
   height      Int

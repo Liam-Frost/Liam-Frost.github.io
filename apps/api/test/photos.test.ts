@@ -140,7 +140,10 @@ describe("admin photo management", () => {
     expect(photo.src).toBe(photo.variants[3].url);
 
     // Generated sizes are served (to the admin while hidden); the original is stored but never served.
-    const files = readdirSync(join(uploadDir, "photos", photo.id));
+    // Each image has its own folder under the photo's: /uploads/photos/<folder>/<imageId>/640.webp.
+    const folder = photo.thumbnail.split("/").slice(2, 5);
+    expect(folder[1]).toBe(photo.id);
+    const files = readdirSync(join(uploadDir, ...folder));
     expect(files).toContain("original.jpg");
     expect((await app.inject(photo.thumbnail)).statusCode).toBe(404);
     const served = await app.inject({ url: photo.thumbnail, headers: { cookie } });
