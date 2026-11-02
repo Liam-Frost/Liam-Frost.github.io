@@ -2,6 +2,7 @@
 // admin's 统计 pages can be tried without real traffic. It refuses any database whose name or schema
 // does not contain "demo", replaces the analytics tables there, and marks the data as demo data.
 // Usage: DATABASE_URL=postgres://.../site_demo npm run db:seed:analytics-demo
+// A local test database with another name: npx tsx src/db/seed-analytics-demo.ts --force (in apps/api).
 import "dotenv/config";
 
 import { ANALYTICS_PATHS, type AnalyticsPath } from "@liam-frost/shared";
@@ -36,9 +37,10 @@ function random(seed: number) {
 
 async function main() {
   const url = process.env.DATABASE_URL ?? "";
-  if (!isDemoDatabase(url)) {
+  // --force: a local test database whose name does not say "demo"; its statistics are replaced.
+  if (!isDemoDatabase(url) && !process.argv.includes("--force")) {
     console.error(
-      'Refusing to write demo data: DATABASE_URL must point to a database (or ?schema=) whose name contains "demo".'
+      'Refusing to write demo data: DATABASE_URL must point to a database (or ?schema=) whose name contains "demo". For a local test database, run it with --force; its statistics will be replaced.'
     );
     process.exit(1);
   }

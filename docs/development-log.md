@@ -160,6 +160,8 @@
 - Stage 18b/18c: the Write tool turned a `\uFEFF` escape into a literal byte-order mark in the CSV code; ESLint caught it and the escape was restored. The demo songs first had non-UUID ids, which the admin's editor rejects, so the editor check used a movie. The browser pane reported no LCP entries (pages loaded off screen), only CLS.
 - The user asked to extend `db:seed:collection` for the newer features. iTunes' first search hit was often a cover or another release (前前前世 piano cover, an EP instead of the album), so songs are matched by title, artist and album; the Japanese store has no original 前前前世, so that song comes from the US store. During testing the user's own dev servers were running and changing `apps/api/uploads`; the seed runs wrote only to a temporary `UPLOAD_DIR`.
 
+- The user asked for test statistics in the local database (testing only). The demo script gained `--force` for a database without "demo" in its name; it replaced the 2 test events, 1 visit and 7 job records there with 60 days of demo data built from the local content (301 entries, 40 photos).
+
 ## Notes
 
 - A direct Windows directory rename of `src` failed with `Permission denied`; the migration continued by moving source subdirectories individually.
