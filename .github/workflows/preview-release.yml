@@ -68,9 +68,15 @@ jobs:
           tar -C public -czf release/public.tar.gz .
           export RELEASE_IMAGE_ID=$(docker image inspect --format '{{.Id}}' "personal-home-preview:$REVISION")
           python3 - <<'PY'
-          import hashlib, json, os, pathlib
+          import hashlib, json, os, pathlib, tarfile
           root = pathlib.Path('release')
-          manifest = {'revision': os.environ['REVISION'], 'image_id': os.environ['RELEASE_IMAGE_ID'], 'preview_run': int(os.environ['GITHUB_RUN_ID']), 'files': {name: hashlib.file_digest((root / name).open('rb'), 'sha256').hexdigest() for name in ['image.tar.gz', 'public.tar.gz']}}
+          with tarfile.open(root / 'image.tar.gz', 'r:gz') as archive:
+              images = json.load(archive.extractfile('manifest.json'))
+              assert len(images) == 1
+              config = archive.extractfile(images[0]['Config']).read()
+              assert json.loads(config)['config']['Labels']['org.opencontainers.image.revision'] == os.environ['REVISION']
+              image_id = 'sha256:' + hashlib.sha256(config).hexdigest()
+          manifest = {'revision': os.environ['REVISION'], 'image_id': image_id, 'source_image_id': os.environ['RELEASE_IMAGE_ID'], 'preview_run': int(os.environ['GITHUB_RUN_ID']), 'files': {name: hashlib.file_digest((root / name).open('rb'), 'sha256').hexdigest() for name in ['image.tar.gz', 'public.tar.gz']}}
           (root / 'manifest.json').write_text(json.dumps(manifest, indent=2))
           PY
           cat release/image.tar.gz | ssh "${ssh_options[@]}" "$SSH_USER@$SSH_HOST" "upload-image $REVISION"

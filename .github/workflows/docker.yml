@@ -38,3 +38,10 @@ jobs:
 
       - name: Smoke test
         run: bash docker/smoke-test.sh
+
+  smoke-gate:
+    name: smoke
+    needs: smoke
+    runs-on: ubuntu-24.04
+    steps:
+      - run: echo 'Both amd64 and arm64 stack smoke tests passed.'
