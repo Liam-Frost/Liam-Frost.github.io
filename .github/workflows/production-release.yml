@@ -1,11 +1,13 @@
 name: Production release
 
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
     inputs:
       preview_run:
-        description: Successful preview run approved by the local promotion tool
-        required: true
+        description: Optional successful preview run (normally selected automatically)
+        required: false
         type: string
 
 permissions:
@@ -22,33 +24,54 @@ jobs:
     runs-on: ubuntu-24.04
     outputs:
       revision: ${{ steps.candidate.outputs.revision }}
+      preview_run: ${{ steps.candidate.outputs.preview_run }}
     steps:
-      - name: Verify the successful preview run and main ancestry
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Select the exact preview candidate merged into main
         id: candidate
         env:
           GH_TOKEN: ${{ github.token }}
           PREVIEW_RUN: ${{ inputs.preview_run }}
         run: |
           set -euo pipefail
-          [[ "$PREVIEW_RUN" =~ ^[0-9]+$ ]]
-          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$PREVIEW_RUN" > "$RUNNER_TEMP/preview-run.json"
           python3 - <<'PY'
-          import json, os, re
-          run = json.load(open(os.environ['RUNNER_TEMP'] + '/preview-run.json'))
-          assert run['conclusion'] == 'success' and run['status'] == 'completed'
-          assert run['head_branch'] == 'dev' and run['event'] in ['push', 'workflow_dispatch']
-          assert run['path'] == '.github/workflows/preview-release.yml'
-          assert run['repository']['full_name'] == os.environ['GITHUB_REPOSITORY']
-          assert re.fullmatch('[a-f0-9]{40}', run['head_sha'])
-          with open(os.environ['GITHUB_OUTPUT'], 'a') as out: out.write('revision=' + run['head_sha'] + '\n')
+          import json, os, re, subprocess
+          repo = 'repos/' + os.environ['GITHUB_REPOSITORY']
+          def api(path):
+              return json.loads(subprocess.check_output(['gh', 'api', repo + path], text=True))
+          def git(*args):
+              return subprocess.check_output(['git', *args], text=True).strip()
+          requested = os.environ.get('PREVIEW_RUN', '')
+          assert not requested or re.fullmatch('[0-9]+', requested), 'Invalid preview run ID'
+          runs = [api('/actions/runs/' + requested)] if requested else api('/actions/workflows/preview-release.yml/runs?branch=dev&status=success&per_page=100')['workflow_runs']
+          tree = git('rev-parse', os.environ['GITHUB_SHA'] + '^{tree}')
+          candidate = None
+          for run in runs:
+              sha = run['head_sha']
+              if not (run['conclusion'] == 'success' and run['status'] == 'completed' and run['head_branch'] == 'dev' and run['event'] in ['push', 'workflow_dispatch'] and run['path'] == '.github/workflows/preview-release.yml' and run['repository']['full_name'] == os.environ['GITHUB_REPOSITORY'] and re.fullmatch('[a-f0-9]{40}', sha)):
+                  continue
+              if subprocess.run(['git', 'merge-base', '--is-ancestor', sha, os.environ['GITHUB_SHA']]).returncode:
+                  continue
+              if git('rev-parse', sha + '^{tree}') != tree:
+                  continue
+              artifacts = api('/actions/runs/' + str(run['id']) + '/artifacts')['artifacts']
+              if not any(a['name'] == 'personal-home-release-' + sha and not a['expired'] for a in artifacts):
+                  continue
+              candidate = run
+              break
+          assert candidate, 'No retained successful preview bundle exactly matches this main commit. Finish preview and merge dev without additional changes.'
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as out:
+              out.write('revision=' + candidate['head_sha'] + '\npreview_run=' + str(candidate['id']) + '\n')
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as out:
+              out.write('## Production approval\n\nCandidate: `' + candidate['head_sha'] + '`\n\n[Preview site](https://preview.twilightfrosty.com) · [Successful preview build](' + candidate['html_url'] + ')\n\nReview the preview, then choose **Review deployments → production → Approve and deploy**. This promotes the same immutable bundle; no rebuild.\n\nIf preview advances to another version before approval, deployment will stop safely.\n')
           PY
-          revision=$(python3 -c "import json,os; print(json.load(open(os.environ['RUNNER_TEMP']+'/preview-run.json'))['head_sha'])")
-          gh api "repos/$GITHUB_REPOSITORY/compare/$revision...main" --jq .status | grep -Ex 'ahead|identical'
 
   deploy:
     needs: validate
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 40
     environment:
       name: production
       url: https://www.twilightfrosty.com
@@ -58,12 +81,12 @@ jobs:
         with:
           name: personal-home-release-${{ needs.validate.outputs.revision }}
           path: release
-          run-id: ${{ inputs.preview_run }}
+          run-id: ${{ needs.validate.outputs.preview_run }}
           github-token: ${{ github.token }}
       - name: Verify immutable bundle hashes
         env:
           REVISION: ${{ needs.validate.outputs.revision }}
-          PREVIEW_RUN: ${{ inputs.preview_run }}
+          PREVIEW_RUN: ${{ needs.validate.outputs.preview_run }}
         run: |
           python3 - <<'PY'
           import hashlib, json, os, pathlib, re
@@ -78,14 +101,17 @@ jobs:
           PY
       - name: Publish through restricted production gateway
         env:
+          GH_TOKEN: ${{ github.token }}
           REVISION: ${{ needs.validate.outputs.revision }}
           SSH_HOST: ${{ secrets.PRODUCTION_SSH_HOST }}
           SSH_PORT: ${{ secrets.PRODUCTION_SSH_PORT }}
           SSH_USER: ${{ secrets.PRODUCTION_SSH_USER }}
           SSH_KEY: ${{ secrets.PRODUCTION_SSH_KEY }}
           SSH_KNOWN_HOSTS: ${{ secrets.PRODUCTION_SSH_KNOWN_HOSTS }}
+          PRODUCTION_RUN: ${{ github.run_id }}
         run: |
           set -euo pipefail
+          test "$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq .object.sha)" = "$GITHUB_SHA" || { echo 'main advanced while approval was pending; use its newer deployment.'; exit 1; }
           test -n "$SSH_HOST" && test -n "$SSH_PORT" && test -n "$SSH_USER"
           key="$RUNNER_TEMP/production-release-key"
           known="$RUNNER_TEMP/production-known-hosts"
@@ -95,6 +121,15 @@ jobs:
           printf '%s\n' "$SSH_KNOWN_HOSTS" | tr -d '\r' > "$known"
           ssh-keygen -y -f "$key" > /dev/null
           ssh_options=(-i "$key" -p "$SSH_PORT" -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o "UserKnownHostsFile=$known" -o ServerAliveInterval=30 -o ServerAliveCountMax=3)
+          python3 - <<'PY'
+          import json, os, pathlib
+          p = pathlib.Path('release/manifest.json')
+          manifest = json.loads(p.read_text())
+          manifest['production_run'] = int(os.environ['PRODUCTION_RUN'])
+          manifest['approval_source'] = 'github-environment:production'
+          p.write_text(json.dumps(manifest))
+          PY
+          cat release/manifest.json | ssh "${ssh_options[@]}" "$SSH_USER@$SSH_HOST" "authorize $REVISION"
           cat release/image.tar.gz | ssh "${ssh_options[@]}" "$SSH_USER@$SSH_HOST" "upload-image $REVISION"
           cat release/public.tar.gz | ssh "${ssh_options[@]}" "$SSH_USER@$SSH_HOST" "upload-public $REVISION"
           ssh "${ssh_options[@]}" "$SSH_USER@$SSH_HOST" "deploy $REVISION"
@@ -102,3 +137,10 @@ jobs:
         run: |
           curl --fail --silent --show-error --retry 3 https://www.twilightfrosty.com/api/health
           printf 'Production published: https://www.twilightfrosty.com\n' >> "$GITHUB_STEP_SUMMARY"
+      - name: Record deployment result
+        if: always()
+        env:
+          RESULT: ${{ job.status }}
+          REVISION: ${{ needs.validate.outputs.revision }}
+        run: |
+          printf '### Production deployment\n\nRevision: `%s`\n\nResult: **%s**\n\n[Open production](https://www.twilightfrosty.com)\n' "$REVISION" "$RESULT" >> "$GITHUB_STEP_SUMMARY"
