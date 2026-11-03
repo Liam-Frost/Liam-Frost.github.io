@@ -26,6 +26,9 @@ jobs:
     if: github.repository == 'Liam-Frost/Liam-Frost.github.io' && github.ref == 'refs/heads/dev'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
+    permissions:
+      contents: read
+      actions: write
     environment:
       name: preview
       url: https://preview.twilightfrosty.com
@@ -86,6 +89,28 @@ jobs:
         run: |
           curl --fail --silent --show-error --retry 3 https://preview.twilightfrosty.com/api/health
           printf 'Preview published: https://preview.twilightfrosty.com\n' >> "$GITHUB_STEP_SUMMARY"
+      - name: Remove superseded preview bundles when production is idle
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 - <<'PY'
+          import json, os, re, subprocess
+          repo = 'repos/' + os.environ['GITHUB_REPOSITORY']
+          def api(path, delete=False):
+              cmd = ['gh', 'api', *( ['--method', 'DELETE'] if delete else [] ), repo + path]
+              result = subprocess.check_output(cmd, text=True)
+              return json.loads(result) if result.strip() else None
+          active = [r for r in api('/actions/workflows/production-release.yml/runs?per_page=100')['workflow_runs'] if r['status'] != 'completed']
+          if active:
+              print('Production run active: preserve its artifact dependencies.')
+          else:
+              # The new preview is already deployed; old runs fail the promotion identity gate.
+              artifacts = api('/actions/artifacts?per_page=100')['artifacts']
+              for artifact in artifacts:
+                  if re.fullmatch(r'personal-home-(release|manifest)-[a-f0-9]{40}', artifact['name']) and artifact.get('workflow_run', {}).get('head_branch') == 'dev' and artifact['workflow_run']['id'] != int(os.environ['GITHUB_RUN_ID']):
+                      api('/actions/artifacts/' + str(artifact['id']), delete=True)
+                      print('Removed superseded project artifact ' + str(artifact['id']))
+          PY
       - name: Retain the exact validated release bundle
         uses: actions/upload-artifact@v7
         with:
