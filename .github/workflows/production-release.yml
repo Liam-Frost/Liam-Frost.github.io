@@ -73,7 +73,7 @@ jobs:
     timeout-minutes: 30
     environment:
       name: production
-      url: https://production-check.twilightfrosty.com
+      url: https://www.twilightfrosty.com
     steps:
       - uses: actions/checkout@v7
         with:
@@ -114,7 +114,7 @@ jobs:
           docker save "personal-home-production:$REVISION" | gzip -1 | ssh "${ssh_options[@]}" "$SSH_USER@$SSH_HOST" "upload-image $REVISION"
           tar -C public -czf - . | ssh "${ssh_options[@]}" "$SSH_USER@$SSH_HOST" "upload-public $REVISION"
           ssh "${ssh_options[@]}" "$SSH_USER@$SSH_HOST" "deploy $REVISION"
-      - name: Verify production acceptance HTTPS
+      - name: Verify production HTTPS
         run: |
-          curl --fail --silent --show-error --retry 3 https://production-check.twilightfrosty.com/api/health
-          printf 'Production candidate published; formal DNS is unchanged.\n' >> "$GITHUB_STEP_SUMMARY"
+          curl --fail --silent --show-error --retry 3 https://www.twilightfrosty.com/api/health
+          printf 'Production published: https://www.twilightfrosty.com\n' >> "$GITHUB_STEP_SUMMARY"
