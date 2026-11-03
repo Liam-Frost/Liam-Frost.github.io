@@ -66,7 +66,7 @@ export type TestServerOptions = {
   /** Defaults to none. */
   playlists?: PlaylistRepository | null;
   /** Defaults to sources that fail, so tests never reach TMDB or Bangumi. */
-  mediaSources?: MediaSources;
+  mediaSources?: MediaSources | null;
   /** Defaults to none (in-memory defaults). */
   settings?: SettingsRepository | null;
   /** Defaults to one that fails, so tests never reach Spotify. */
@@ -115,7 +115,8 @@ export async function buildTestServer(
     people: options.people ?? null,
     relations: options.relations ?? null,
     playlists: options.playlists ?? null,
-    mediaSources: options.mediaSources ?? offlineMediaSources,
+    mediaSources:
+      options.mediaSources === null ? undefined : (options.mediaSources ?? offlineMediaSources),
     settings: options.settings ?? null,
     fetchPlaylist:
       options.fetchPlaylist ?? (() => Promise.reject(new Error("no network in tests"))),

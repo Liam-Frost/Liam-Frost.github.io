@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   LogOut,
   Music,
+  KeyRound,
   UsersRound
 } from "lucide-react";
 import type { ReactNode } from "react";
@@ -22,7 +23,8 @@ const NAV = [
   { to: "/collection", label: "收藏", icon: Clapperboard, end: false },
   { to: "/people", label: "人物", icon: UsersRound, end: false },
   { to: "/music", label: "播放器", icon: Music, end: false },
-  { to: "/analytics", label: "统计", icon: ChartColumn, end: false }
+  { to: "/analytics", label: "统计", icon: ChartColumn, end: false },
+  { to: "/integrations", label: "API 配置", icon: KeyRound, end: false }
 ];
 
 export function AdminLayout({ user }: { user: AdminUser }) {

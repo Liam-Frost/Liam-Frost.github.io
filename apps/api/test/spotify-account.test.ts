@@ -79,6 +79,18 @@ function spotifyApi(options: { refreshFails?: boolean } = {}) {
 }
 
 describe("Spotify account", () => {
+  it("does not reuse a saved token under a different developer app", async () => {
+    const repo = new MemorySettingsRepository();
+    await new SpotifyAccount(APP, repo, SESSION_SECRET, spotifyApi()).complete("code-1");
+    const other = new SpotifyAccount(
+      { ...APP, clientId: "different-app" },
+      repo,
+      SESSION_SECRET,
+      spotifyApi()
+    );
+    expect((await other.status()).account).toBeNull();
+    await expect(other.likedTracks()).rejects.toThrow("还没有连接 Spotify 账号");
+  });
   it("builds the consent link and accepts each state once, before it expires", () => {
     let now = 1_000_000;
     const account = new SpotifyAccount(

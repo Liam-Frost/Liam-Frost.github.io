@@ -147,8 +147,11 @@ export function CollectionPage() {
 
       {settings && !settings.sources.tmdb && (kind === "movie" || kind === "tv") ? (
         <p className="mb-4 rounded-xl border border-status-warn/30 bg-status-warn/8 px-4 py-2.5 text-[12.5px] leading-relaxed text-status-warn">
-          未配置 TMDB：电影和剧集暂时只能手动添加。在 <code className="chip">apps/api/.env</code>{" "}
-          中设置 <code className="chip">TMDB_API_KEY</code> 后重启 API。
+          未配置 TMDB：电影和剧集暂时只能手动添加。请到{" "}
+          <Link to="/integrations" className="text-brand underline">
+            API 配置
+          </Link>{" "}
+          添加凭据，保存后即可搜索。
         </p>
       ) : null}
 
@@ -484,6 +487,9 @@ function AddMediaDialog({
               ? "TWITCH_CLIENT_ID / TWITCH_CLIENT_SECRET"
               : "GOOGLE_BOOKS_API_KEY"}
           ，暂时只能手动添加。
+          <Link to="/integrations" className="text-brand underline">
+            前往 API 配置
+          </Link>
         </p>
       ) : null}
       {error ? (
