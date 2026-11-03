@@ -1,56 +1,91 @@
-name: Deploy to GitHub Pages
+name: Static emergency Pages
 
 on:
-  push:
-    branches: ["main"]
   workflow_dispatch:
+    inputs:
+      snapshot_release:
+        description: Release tag containing the reviewed public emergency snapshot
+        required: true
+        type: string
+      snapshot_sha256:
+        description: SHA256 of personal-home-emergency.tar.gz
+        required: true
+        type: string
+      publish:
+        description: Publish the verified snapshot to Pages
+        required: true
+        default: false
+        type: boolean
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
   group: "pages"
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    if: github.repository == 'Liam-Frost/Liam-Frost.github.io' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
     steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-
-      - name: Setup Node
-        uses: actions/setup-node@v7
-        with:
-          node-version: 26
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Typecheck
-        run: npm run typecheck
-
-      - name: Test
-        run: npm test
-
-      - name: Build
+      - name: Download reviewed public snapshot
         env:
-          VITE_DISABLE_API_FETCH: "true"
-        run: npm run build:web
+          GH_TOKEN: ${{ github.token }}
+          SNAPSHOT_RELEASE: ${{ inputs.snapshot_release }}
+          SNAPSHOT_SHA256: ${{ inputs.snapshot_sha256 }}
+        run: |
+          set -euo pipefail
+          [[ "$SNAPSHOT_RELEASE" =~ ^emergency-[0-9]{8}T[0-9]{6}Z$ ]]
+          [[ "$SNAPSHOT_SHA256" =~ ^[a-f0-9]{64}$ ]]
+          gh release download "$SNAPSHOT_RELEASE" --repo "$GITHUB_REPOSITORY" --pattern personal-home-emergency.tar.gz --dir "$RUNNER_TEMP"
+          printf '%s  %s\n' "$SNAPSHOT_SHA256" "$RUNNER_TEMP/personal-home-emergency.tar.gz" | sha256sum --check --strict
+      - name: Validate and extract static files
+        run: |
+          python3 - <<'PY'
+          import hashlib, json, os, pathlib, tarfile
+          root = pathlib.Path(os.environ['RUNNER_TEMP'])
+          site = root / 'emergency-site'
+          site.mkdir()
+          with tarfile.open(root / 'personal-home-emergency.tar.gz', 'r:gz') as archive:
+              members = archive.getmembers()
+              assert len(members) <= 1000 and sum(m.size for m in members) <= 64 * 1024**2
+              for member in members:
+                  name = pathlib.PurePosixPath(member.name)
+                  assert not name.is_absolute() and '..' not in name.parts
+                  assert member.isfile() or member.isdir()
+                  assert not any(p.lower() in {'cname', '.env', 'admin', 'api', '.git'} for p in name.parts)
+                  assert name.suffix.lower() not in {'.pem', '.key', '.sql', '.dump', '.toml'}
+              archive.extractall(site, filter='data')
+          manifest = json.loads((site / 'emergency-manifest.json').read_text())
+          assert manifest['public_only'] is True
+          assert isinstance(manifest['photos'], int) and 0 <= manifest['photos'] <= 10000
+          assert manifest['display_photo_archives'] == manifest['photos']
+          actual = {p.relative_to(site).as_posix() for p in site.rglob('*') if p.is_file()}
+          assert actual == set(manifest['files']) | {'emergency-manifest.json'}
+          for name, expected in manifest['files'].items():
+              with (site / name).open('rb') as source:
+                  assert hashlib.file_digest(source, 'sha256').hexdigest() == expected
+          assert (site / 'index.html').is_file() and (site / 'emergency-data.js').is_file()
+          assert 'noindex' in (site / 'robots.txt').read_text() or 'Disallow: /' in (site / 'robots.txt').read_text()
+          print(f'Verified {len(actual)} public static files; no server credentials or custom domain file.')
+          PY
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v5
         with:
-          path: apps/web/dist
+          path: ${{ runner.temp }}/emergency-site
 
   deploy:
+    if: inputs.publish
+    permissions:
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: build
     steps:
       - name: Deploy to GitHub Pages

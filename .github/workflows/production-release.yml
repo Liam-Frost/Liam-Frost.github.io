@@ -1,0 +1,104 @@
+name: Production release
+
+on:
+  workflow_dispatch:
+    inputs:
+      preview_run:
+        description: Successful preview run approved by the local promotion tool
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: production-release
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    if: github.repository == 'Liam-Frost/Liam-Frost.github.io' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    outputs:
+      revision: ${{ steps.candidate.outputs.revision }}
+    steps:
+      - name: Verify the successful preview run and main ancestry
+        id: candidate
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PREVIEW_RUN: ${{ inputs.preview_run }}
+        run: |
+          set -euo pipefail
+          [[ "$PREVIEW_RUN" =~ ^[0-9]+$ ]]
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$PREVIEW_RUN" > "$RUNNER_TEMP/preview-run.json"
+          python3 - <<'PY'
+          import json, os, re
+          run = json.load(open(os.environ['RUNNER_TEMP'] + '/preview-run.json'))
+          assert run['conclusion'] == 'success' and run['status'] == 'completed'
+          assert run['head_branch'] == 'dev' and run['event'] in ['push', 'workflow_dispatch']
+          assert run['path'] == '.github/workflows/preview-release.yml'
+          assert run['repository']['full_name'] == os.environ['GITHUB_REPOSITORY']
+          assert re.fullmatch('[a-f0-9]{40}', run['head_sha'])
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as out: out.write('revision=' + run['head_sha'] + '\n')
+          PY
+          revision=$(python3 -c "import json,os; print(json.load(open(os.environ['RUNNER_TEMP']+'/preview-run.json'))['head_sha'])")
+          gh api "repos/$GITHUB_REPOSITORY/compare/$revision...main" --jq .status | grep -Ex 'ahead|identical'
+
+  deploy:
+    needs: validate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    environment:
+      name: production
+      url: https://www.twilightfrosty.com
+    steps:
+      - name: Download the exact validated preview bundle
+        uses: actions/download-artifact@v8
+        with:
+          name: personal-home-release-${{ needs.validate.outputs.revision }}
+          path: release
+          run-id: ${{ inputs.preview_run }}
+          github-token: ${{ github.token }}
+      - name: Verify immutable bundle hashes
+        env:
+          REVISION: ${{ needs.validate.outputs.revision }}
+          PREVIEW_RUN: ${{ inputs.preview_run }}
+        run: |
+          python3 - <<'PY'
+          import hashlib, json, os, pathlib, re
+          root = pathlib.Path('release')
+          manifest = json.loads((root / 'manifest.json').read_text())
+          assert manifest['revision'] == os.environ['REVISION']
+          assert manifest['preview_run'] == int(os.environ['PREVIEW_RUN'])
+          assert re.fullmatch('sha256:[a-f0-9]{64}', manifest['image_id'])
+          assert set(manifest['files']) == {'image.tar.gz', 'public.tar.gz'}
+          for name, expected in manifest['files'].items():
+              assert hashlib.file_digest((root / name).open('rb'), 'sha256').hexdigest() == expected
+          PY
+      - name: Publish through restricted production gateway
+        env:
+          REVISION: ${{ needs.validate.outputs.revision }}
+          SSH_HOST: ${{ secrets.PRODUCTION_SSH_HOST }}
+          SSH_PORT: ${{ secrets.PRODUCTION_SSH_PORT }}
+          SSH_USER: ${{ secrets.PRODUCTION_SSH_USER }}
+          SSH_KEY: ${{ secrets.PRODUCTION_SSH_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.PRODUCTION_SSH_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          test -n "$SSH_HOST" && test -n "$SSH_PORT" && test -n "$SSH_USER"
+          key="$RUNNER_TEMP/production-release-key"
+          known="$RUNNER_TEMP/production-known-hosts"
+          trap 'rm -f "$key" "$known"' EXIT
+          umask 077
+          printf '%s\n' "$SSH_KEY" | tr -d '\r' > "$key"
+          printf '%s\n' "$SSH_KNOWN_HOSTS" | tr -d '\r' > "$known"
+          ssh-keygen -y -f "$key" > /dev/null
+          ssh_options=(-i "$key" -p "$SSH_PORT" -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o "UserKnownHostsFile=$known" -o ServerAliveInterval=30 -o ServerAliveCountMax=3)
+          cat release/image.tar.gz | ssh "${ssh_options[@]}" "$SSH_USER@$SSH_HOST" "upload-image $REVISION"
+          cat release/public.tar.gz | ssh "${ssh_options[@]}" "$SSH_USER@$SSH_HOST" "upload-public $REVISION"
+          ssh "${ssh_options[@]}" "$SSH_USER@$SSH_HOST" "deploy $REVISION"
+      - name: Verify production HTTPS
+        run: |
+          curl --fail --silent --show-error --retry 3 https://www.twilightfrosty.com/api/health
+          printf 'Production published: https://www.twilightfrosty.com\n' >> "$GITHUB_STEP_SUMMARY"
