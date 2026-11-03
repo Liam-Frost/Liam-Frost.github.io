@@ -51,6 +51,9 @@ import {
   type AdminProjectUpdate,
   type AdminSessionResponse,
   type AdminSpotifyResponse,
+  type AdminIntegrationsResponse,
+  type IntegrationProvider,
+  type IntegrationUpdate,
   type ApiErrorBody,
   type CollectionSettings,
   type MediaKind,
@@ -199,6 +202,12 @@ const relationPath = (id: string) => `/api/admin/relations/${encodeURIComponent(
 const playlistPath = (id: string) => `/api/admin/playlists/${encodeURIComponent(id)}`;
 
 export const api = {
+  integrations: () => request<AdminIntegrationsResponse>("/api/admin/integrations"),
+  updateIntegration: (provider: IntegrationProvider, update: IntegrationUpdate) =>
+    request<AdminIntegrationsResponse>(`/api/admin/integrations/${provider}`, {
+      method: "PUT",
+      json: update
+    }),
   session: () => request<AdminSessionResponse>("/api/admin/session"),
   dashboard: () => request<AdminDashboard>("/api/admin/dashboard"),
   login: (username: string, password: string) =>

@@ -417,9 +417,11 @@ export function SpotifyAccountDialog({ onClose }: { onClose: () => void }) {
       {isPending ? <p className="text-[13px] text-subtle">加载中…</p> : null}
       {status && !status.configured ? (
         <p className="text-[13px] leading-relaxed text-muted">
-          还没有配置 Spotify 应用。在 <code className="chip">apps/api/.env</code> 中设置{" "}
-          <code className="chip">SPOTIFY_CLIENT_ID</code> 和{" "}
-          <code className="chip">SPOTIFY_CLIENT_SECRET</code> 后重启 API。
+          还没有配置 Spotify 应用。请到{" "}
+          <Link to="/integrations" className="text-brand underline">
+            API 配置
+          </Link>{" "}
+          填写 Client ID、Client Secret 和回调地址，保存后再连接账号。
         </p>
       ) : null}
       {status?.configured && !status.account ? (

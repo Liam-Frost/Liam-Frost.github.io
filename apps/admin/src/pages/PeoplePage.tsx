@@ -364,7 +364,10 @@ function AddPersonDialog({ tmdbReady, onClose }: { tmdbReady: boolean; onClose: 
       </form>
       {!tmdbReady ? (
         <p className="mt-3 text-[12.5px] text-status-warn">
-          未配置 TMDB_API_KEY，暂时只能手动添加。
+          未配置 TMDB，暂时只能手动添加。
+          <Link to="/integrations" className="text-brand underline">
+            前往 API 配置
+          </Link>
         </p>
       ) : null}
       <p className="mt-2 text-[11.5px] text-faint">

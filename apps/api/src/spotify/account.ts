@@ -1,5 +1,5 @@
 import type { SpotifyAccountStatus, SpotifyOwnPlaylist } from "@liam-frost/shared";
-import { randomBytes } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 
 import { SecretBox } from "../lib/secret-box";
 import { SourceError } from "../media/sources";
@@ -11,7 +11,13 @@ const STATE_TTL_MS = 10 * 60 * 1000;
 const TIMEOUT_MS = 15_000;
 const API = "https://api.spotify.com/v1";
 
-type StoredAccount = { refreshToken: string; id: string; displayName: string; connectedAt: string };
+type StoredAccount = {
+  refreshToken: string;
+  id: string;
+  displayName: string;
+  connectedAt: string;
+  appIdentity?: string;
+};
 
 /** A song read from the Spotify Web API (which no longer returns previews to new apps). */
 export type ApiTrack = {
@@ -70,6 +76,7 @@ export class SpotifyAccount {
   private readonly states = new Map<string, { returnTo: string; expires: number }>();
   private access: { token: string; expires: number } | null = null;
   private readonly box: SecretBox;
+  private readonly appIdentity: string;
 
   constructor(
     private readonly app: { clientId: string; clientSecret: string; redirectUri: string } | null,
@@ -79,11 +86,16 @@ export class SpotifyAccount {
     private readonly now: () => number = Date.now
   ) {
     this.box = new SecretBox(sessionSecret, "spotify-account");
+    this.appIdentity = createHash("sha256").update(JSON.stringify(app)).digest("hex");
   }
 
   private async stored(): Promise<StoredAccount | null> {
     const value = (await this.repo?.get(KEY)) as StoredAccount | null | undefined;
-    return value && typeof value.refreshToken === "string" ? value : null;
+    return value &&
+      typeof value.refreshToken === "string" &&
+      (!value.appIdentity || value.appIdentity === this.appIdentity)
+      ? value
+      : null;
   }
 
   async status(): Promise<SpotifyAccountStatus> {
@@ -174,6 +186,7 @@ export class SpotifyAccount {
     const me = await this.get<{ id?: string; display_name?: string | null }>("/me");
     await this.repo.set(KEY, {
       refreshToken: this.box.seal(data.refresh_token),
+      appIdentity: this.appIdentity,
       id: me.id ?? "",
       displayName: me.display_name || me.id || "Spotify",
       connectedAt: new Date(this.now()).toISOString()
