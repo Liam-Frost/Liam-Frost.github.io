@@ -4,7 +4,7 @@ import {
   type AnalyticsContentType,
   type AnalyticsExport
 } from "@liam-frost/shared";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Download } from "lucide-react";
 import { useState } from "react";
 import { NavLink, useParams } from "react-router";
@@ -44,6 +44,14 @@ export function AnalyticsPage({ view }: { view: AnalyticsView }) {
   const params = useParams();
   const meta = useQuery({ queryKey: ["admin", "analytics-meta"], queryFn: api.analyticsMeta });
   const overview = useOverview();
+  const client = useQueryClient();
+  const toggle = useMutation({
+    mutationFn: api.updateAnalyticsSettings,
+    onSuccess: async (data) => {
+      client.setQueryData(["admin", "analytics-meta"], data);
+      await client.invalidateQueries({ queryKey: ["admin"] });
+    }
+  });
 
   if (meta.error) {
     return (
@@ -63,6 +71,19 @@ export function AnalyticsPage({ view }: { view: AnalyticsView }) {
         description="个人主页的访问情况。不使用 Cookie、不保存 IP；只统计网站，不统计后台和登录后的你自己。"
         actions={
           <>
+            {meta.data ? (
+              <button
+                type="button"
+                role="switch"
+                aria-label="访问统计总开关"
+                aria-checked={meta.data.enabled}
+                disabled={toggle.isPending}
+                className="btn-secondary"
+                onClick={() => toggle.mutate(!meta.data!.enabled)}
+              >
+                {toggle.isPending ? "正在保存…" : meta.data.enabled ? "统计已开启" : "统计已关闭"}
+              </button>
+            ) : null}
             {overview.data ? (
               <span className="chip inline-flex items-center gap-1.5 self-center !text-[12px]">
                 <span aria-hidden="true" className="size-2 rounded-full bg-status-ok" />
@@ -75,6 +96,11 @@ export function AnalyticsPage({ view }: { view: AnalyticsView }) {
       />
 
       <div className="space-y-5">
+        {toggle.error ? (
+          <p role="alert" className="text-status-warn">
+            保存失败，请重试。{toggle.error.message}
+          </p>
+        ) : null}
         {meta.data?.demo ? (
           <p role="status" className="card border-status-warn/40 p-3 text-[13px] text-status-warn">
             这是演示数据（由 <code className="chip">npm run db:seed:analytics-demo</code>{" "}
@@ -83,8 +109,7 @@ export function AnalyticsPage({ view }: { view: AnalyticsView }) {
         ) : null}
         {meta.data && !meta.data.enabled ? (
           <p className="card p-4 text-[13px] text-muted">
-            统计已关闭（<code className="chip">ANALYTICS_ENABLED=false</code>
-            ），不再记录新的访问。
+            统计已关闭，不再记录新的访问、接口指标或运行事件。已有统计仍可查看，开启后立即生效。
           </p>
         ) : null}
 

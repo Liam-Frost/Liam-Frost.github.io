@@ -11,7 +11,8 @@ import type {
   AnalyticsMeta,
   AnalyticsOverview,
   AnalyticsRange,
-  AnalyticsRangeInfo
+  AnalyticsRangeInfo,
+  DashboardTraffic
 } from "@liam-frost/shared";
 import { createHash, randomBytes } from "node:crypto";
 
@@ -89,13 +90,18 @@ export class AnalyticsService {
     this.clock = new AnalyticsClock(config.timezone);
   }
 
-  get enabled() {
-    return this.config.enabled;
+  async isEnabled() {
+    return (await this.store.flag("collection-enabled")) !== "false";
+  }
+
+  async setEnabled(enabled: boolean): Promise<AnalyticsMeta> {
+    await this.store.setFlag("collection-enabled", String(enabled));
+    return this.meta();
   }
 
   async meta(): Promise<AnalyticsMeta> {
     return {
-      enabled: this.config.enabled,
+      enabled: await this.isEnabled(),
       timezone: this.config.timezone,
       retentionDays: this.config.retentionDays,
       minGroupSize: this.config.minGroupSize,
@@ -118,7 +124,7 @@ export class AnalyticsService {
 
   /** Stores a batch from the site. Returns how many events were kept; skipped requests keep none. */
   async ingest(body: unknown, request: IngestRequest) {
-    if (!this.config.enabled || request.isAdmin || isBot(request.userAgent)) return 0;
+    if (request.isAdmin || isBot(request.userAgent) || !(await this.isEnabled())) return 0;
     if (this.config.excludeIps.has(request.ip)) return 0;
     const parsed = batchSchema.safeParse(typeof body === "string" ? safeJson(body) : body);
     if (!parsed.success) return 0;
@@ -348,6 +354,30 @@ export class AnalyticsService {
       trend: { bucket: single ? "hour" : "day", points },
       topPages,
       online
+    };
+  }
+
+  /** For the admin's 概览: today against yesterday at the same time, and the last seven days. */
+  async dashboard(): Promise<DashboardTraffic> {
+    const [today, week] = await Promise.all([this.overview("today"), this.overview("7d")]);
+    return {
+      online: today.online,
+      today: today.current,
+      yesterday: today.previous,
+      week: week.trend.points.map(({ key, views, visitors }) => ({ day: key, views, visitors }))
+    };
+  }
+
+  /** The latest jobs and each external source's last answers, over the retention period. */
+  async system(jobs: number) {
+    const since = new Date(this.now().getTime() - this.config.retentionDays * DAY_MS);
+    const [recent, sources] = await Promise.all([
+      this.store.systemEvents({ since, kind: "job", limit: jobs }),
+      this.store.systemEvents({ since, kind: "source", limit: 2000 })
+    ]);
+    return {
+      jobs: recent.map((event) => ({ ...event, at: event.at.toISOString() })),
+      sources: sourceStatus(sources)
     };
   }
 

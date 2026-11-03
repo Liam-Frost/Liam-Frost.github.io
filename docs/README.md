@@ -11,6 +11,8 @@ This folder is the source of truth for the migration from a static portfolio to 
 - `plan-admin-projects-deploy.md`: execution plan for the admin app, projects module, local run, and VPS CI/CD (Chinese).
 - `plan-collection.md`: execution plan for the collection module, Stages 11-17 (Chinese).
 - `plan-analytics.md`: execution plan for visitor analytics, Stage 18 (Chinese).
+- `plan-photos.md`: execution plan for photo sources, Stage 19 (Chinese).
+- `plan-dashboard.md`: execution plan for the admin overview, Stage 20 (Chinese).
 - `progress.md`: migration progress by stage.
 - `development-log.md`: chronological development log.
 - `decisions.md`: user decisions and model-made implementation decisions.

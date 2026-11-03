@@ -58,6 +58,52 @@ describe("analytics", () => {
     return { app, store, send, overview };
   }
 
+  it("persists the admin collection switch, gates ingestion and preserves it when clearing data", async () => {
+    const { app, store, send } = await setup({ ANALYTICS_ENABLED: "false" });
+    await send([event(id("s"))]);
+    expect(store.events.size).toBe(1);
+    const body = { enabled: false };
+    const unauthorized = await app.inject({
+      method: "PUT",
+      url: "/api/admin/analytics/settings",
+      payload: body,
+      headers: { "x-admin-request": "1" }
+    });
+    expect(unauthorized.statusCode).toBe(401);
+    const cookie = await login(app);
+    const csrf = await app.inject({
+      method: "PUT",
+      url: "/api/admin/analytics/settings",
+      payload: body,
+      headers: { cookie }
+    });
+    expect(csrf.statusCode).toBe(403);
+    const update = (payload: unknown) =>
+      app.inject({
+        method: "PUT",
+        url: "/api/admin/analytics/settings",
+        payload: JSON.stringify(payload),
+        headers: { cookie, "x-admin-request": "1", "content-type": "application/json" }
+      });
+    expect((await update({ enabled: "false" })).statusCode).toBe(400);
+    expect((await update(body)).json().enabled).toBe(false);
+    await send([event(id("s"))]);
+    expect(store.events.size).toBe(1);
+    const second = await buildTestServer({}, { analyticsStore: store, now: () => clock });
+    apps.push(second);
+    const secondCookie = await login(second);
+    const meta = await second.inject({
+      url: "/api/admin/analytics/meta",
+      headers: { cookie: secondCookie }
+    });
+    expect(meta.json().enabled).toBe(false);
+    await store.clear("all");
+    expect(await store.flag("collection-enabled")).toBe("false");
+    expect((await update({ enabled: true })).json().enabled).toBe(true);
+    await send([event(id("s"))]);
+    expect(store.events.size).toBe(1);
+  });
+
   it("stores events with a daily visitor hash and session details, never the IP", async () => {
     const { store, send } = await setup();
     const session = id("s");
@@ -223,7 +269,6 @@ describe("analytics", () => {
           new AnalyticsService(
             memory,
             {
-              enabled: true,
               timezone: "Asia/Shanghai",
               retentionDays: 90,
               minGroupSize: 3,

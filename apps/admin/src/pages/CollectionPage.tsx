@@ -31,6 +31,7 @@ import {
   useMediaList,
   useUpdateCollectionSettings
 } from "../hooks/useMedia";
+import { useArrivalParams } from "../hooks/useArrivalParams";
 import { useSelection, type Selection } from "../hooks/useSelection";
 import { api, ApiError } from "../lib/api";
 import {
@@ -55,12 +56,14 @@ export function CollectionPage() {
   const [params, setParams] = useSearchParams();
   const kind: CollectionKind = COLLECTION_KINDS.find((k) => k === params.get("kind")) ?? "movie";
   const status = STATUSES.find((s) => s === params.get("status")) ?? null;
-  const [adding, setAdding] = useState(false);
+  // 概览 links here with ?open=add, steam or spotify.
+  const arrival = useArrivalParams("open").open;
+  const [adding, setAdding] = useState(arrival === "add");
   const [importing, setImporting] = useState(false);
-  const [spotifyOpen, setSpotifyOpen] = useState(false);
+  const [spotifyOpen, setSpotifyOpen] = useState(arrival === "spotify");
   const toast = useToast();
 
-  const [steamOpen, setSteamOpen] = useState(false);
+  const [steamOpen, setSteamOpen] = useState(arrival === "steam");
 
   // Back from Spotify's or Steam's sign-in page: report the result and open the account dialog.
   useEffect(() => {

@@ -1,4 +1,5 @@
 import { normalizeAdminPath } from "@liam-frost/shared";
+import { isAbsolute } from "node:path";
 import { z } from "zod";
 
 import { IpList } from "../lib/ip-list";
@@ -69,6 +70,7 @@ const envSchema = z.object({
 
   UPLOAD_DIR: optionalString,
   UPLOAD_MAX_MB: optionalNumber.pipe(z.number().int().min(1).max(200).default(40)),
+  PHOTO_IMPORT_DIRS: csv,
   TMDB_API_KEY: optionalString,
   GOOGLE_BOOKS_API_KEY: optionalString,
   STEAM_WEB_API_KEY: optionalString,
@@ -78,7 +80,6 @@ const envSchema = z.object({
   SPOTIFY_CLIENT_SECRET: optionalString,
   SPOTIFY_REDIRECT_URI: optionalString,
 
-  ANALYTICS_ENABLED: booleanFlag,
   ANALYTICS_TIMEZONE: optionalString,
   ANALYTICS_EVENT_RETENTION_DAYS: optionalNumber.pipe(z.number().int().min(7).max(730).default(90)),
   ANALYTICS_MIN_GROUP_SIZE: optionalNumber.pipe(z.number().int().min(1).max(50).default(3)),
@@ -107,7 +108,6 @@ export type AdminConfig = {
 };
 
 export type AnalyticsConfig = {
-  enabled: boolean;
   /** IANA time zone for days and hours. */
   timezone: string;
   retentionDays: number;
@@ -134,6 +134,8 @@ export type AppConfig = {
     /** Absolute or relative directory for uploaded images; defaults to apps/api/uploads. */
     dir?: string;
     maxBytes: number;
+    /** Server folders the admin may import photos from (absolute paths). */
+    importDirs: string[];
   };
   /** TMDB API key (v3) or read access token (v4) for collection searches; empty disables TMDB. */
   tmdbApiKey: string;
@@ -222,6 +224,9 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     issues.push(`ADMIN_ALLOWED_IPS: ${(error as Error).message}`);
   }
 
+  for (const dir of values.PHOTO_IMPORT_DIRS)
+    if (!isAbsolute(dir)) issues.push(`PHOTO_IMPORT_DIRS: "${dir}" must be an absolute path`);
+
   let analyticsExcludeIps = new IpList([]);
   try {
     analyticsExcludeIps = new IpList(values.ANALYTICS_EXCLUDE_IPS);
@@ -262,7 +267,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     },
     uploads: {
       dir: values.UPLOAD_DIR,
-      maxBytes: values.UPLOAD_MAX_MB * 1024 * 1024
+      maxBytes: values.UPLOAD_MAX_MB * 1024 * 1024,
+      importDirs: values.PHOTO_IMPORT_DIRS
     },
     tmdbApiKey: values.TMDB_API_KEY ?? "",
     googleBooksApiKey: values.GOOGLE_BOOKS_API_KEY ?? "",
@@ -276,7 +282,6 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
         ? { clientId: spotifyId, clientSecret: spotifySecret, redirectUri: spotifyRedirect }
         : null,
     analytics: {
-      enabled: values.ANALYTICS_ENABLED ?? true,
       timezone: analyticsTimezone,
       retentionDays: values.ANALYTICS_EVENT_RETENTION_DAYS,
       minGroupSize: values.ANALYTICS_MIN_GROUP_SIZE,

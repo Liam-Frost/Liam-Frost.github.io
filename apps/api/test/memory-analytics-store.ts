@@ -158,6 +158,10 @@ export class MemoryAnalyticsStore implements AnalyticsStore {
     return this.flags.get(key) ?? null;
   }
 
+  async setFlag(key: string, value: string) {
+    this.flags.set(key, value);
+  }
+
   async clear(scope: AnalyticsClearScope) {
     if (scope !== "health") {
       this.events.clear();
@@ -170,6 +174,8 @@ export class MemoryAnalyticsStore implements AnalyticsStore {
       this.requests.clear();
       this.system.splice(0);
     }
-    if (scope === "all") this.flags.clear();
+    if (scope === "all") {
+      for (const key of this.flags.keys()) if (key !== "collection-enabled") this.flags.delete(key);
+    }
   }
 }

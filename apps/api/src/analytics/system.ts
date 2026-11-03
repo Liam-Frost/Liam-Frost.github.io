@@ -16,10 +16,21 @@ export class SystemLog {
   constructor(
     private readonly store: AnalyticsStore,
     private readonly now: () => Date = () => new Date(),
-    private readonly onError: (error: unknown) => void = () => {}
+    private readonly onError: (error: unknown) => void = () => {},
+    private readonly enabled: () => Promise<boolean> = async () => true
   ) {}
 
   record(kind: SystemEvent["kind"], name: string, ok: boolean, message: string | null = null) {
+    void this.write(kind, name, ok, message).catch(this.onError);
+  }
+
+  private async write(
+    kind: SystemEvent["kind"],
+    name: string,
+    ok: boolean,
+    message: string | null
+  ) {
+    if (!(await this.enabled())) return;
     const at = this.now();
     if (ok && kind === "source") {
       const last = this.lastOk.get(name);
@@ -27,9 +38,13 @@ export class SystemLog {
       this.lastOk.set(name, at.getTime());
     }
     if (!ok && kind === "source") this.lastOk.delete(name);
-    void this.store
-      .addSystemEvent({ at, kind, name, ok, message: message?.slice(0, 500) ?? null })
-      .catch(this.onError);
+    await this.store.addSystemEvent({
+      at,
+      kind,
+      name,
+      ok,
+      message: message?.slice(0, 500) ?? null
+    });
   }
 }
 
@@ -70,7 +85,8 @@ export class RequestRecorder {
   constructor(
     private readonly store: AnalyticsStore,
     private readonly clock: AnalyticsClock,
-    private readonly now: () => Date = () => new Date()
+    private readonly now: () => Date = () => new Date(),
+    private readonly enabled: () => Promise<boolean> = async () => true
   ) {}
 
   record(route: string, status: number, ms: number) {
@@ -95,6 +111,10 @@ export class RequestRecorder {
   }
 
   async flush() {
+    if (!(await this.enabled())) {
+      this.pending.clear();
+      return;
+    }
     const rows = [...this.pending.values()];
     this.pending = new Map();
     for (const row of rows) await this.store.addRequestStats(row);

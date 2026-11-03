@@ -15,6 +15,7 @@ import {
   useProjects,
   useReorderProjects
 } from "../hooks/useProjects";
+import { useArrivalParams } from "../hooks/useArrivalParams";
 import { ApiError } from "../lib/api";
 import { pickText, STATUS_LABELS, suggestSlug } from "../lib/i18n";
 import { useRecentCounts } from "../components/analytics/RecentStats";
@@ -22,7 +23,8 @@ import { useRecentCounts } from "../components/analytics/RecentStats";
 export function ProjectsPage() {
   const { data: projects, isPending, error } = useProjects();
   const { data: views } = useRecentCounts("project");
-  const [creating, setCreating] = useState(false);
+  // 概览 links here with ?open=new.
+  const [creating, setCreating] = useState(useArrivalParams("open").open === "new");
   const [deleting, setDeleting] = useState<AdminProject | null>(null);
   const reorder = useReorderProjects();
   const remove = useDeleteProject();

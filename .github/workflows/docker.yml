@@ -2,11 +2,10 @@ name: Docker smoke test
 
 # Builds the production image and runs the full stack (PostgreSQL + app + Caddy) end to end.
 on:
-  push:
-    branches: ["dev"]
   pull_request:
     branches: ["main"]
   workflow_dispatch:
+  workflow_call:
 
 permissions:
   contents: read
@@ -17,7 +16,16 @@ concurrency:
 
 jobs:
   smoke:
-    runs-on: ubuntu-latest
+    name: Docker smoke (${{ matrix.arch }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            runner: ubuntu-24.04
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
     timeout-minutes: 30
     steps:
       - name: Checkout
@@ -30,3 +38,10 @@ jobs:
 
       - name: Smoke test
         run: bash docker/smoke-test.sh
+
+  smoke-gate:
+    name: smoke
+    needs: smoke
+    runs-on: ubuntu-24.04
+    steps:
+      - run: echo 'Both amd64 and arm64 stack smoke tests passed.'

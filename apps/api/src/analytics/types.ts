@@ -105,5 +105,6 @@ export interface AnalyticsStore {
   }): Promise<SystemEvent[]>;
   deleteSystemEventsBefore(at: Date): Promise<void>;
   flag(key: string): Promise<string | null>;
+  setFlag(key: string, value: string): Promise<void>;
   clear(scope: AnalyticsClearScope): Promise<void>;
 }

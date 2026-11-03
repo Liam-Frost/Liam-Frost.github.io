@@ -1,0 +1,103 @@
+name: Preview release
+
+on:
+  push:
+    branches: [dev]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# A release is never cancelled halfway through migrations or replica publication.
+concurrency:
+  group: preview-release
+  cancel-in-progress: false
+
+jobs:
+  quality:
+    uses: ./.github/workflows/ci.yml
+
+  smoke:
+    uses: ./.github/workflows/docker.yml
+
+  deploy:
+    name: Publish preview
+    needs: [quality, smoke]
+    if: github.repository == 'Liam-Frost/Liam-Frost.github.io' && github.ref == 'refs/heads/dev'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    environment:
+      name: preview
+      url: https://preview.twilightfrosty.com
+    steps:
+      - uses: actions/checkout@v7
+      - name: Build release image
+        env:
+          REVISION: ${{ github.sha }}
+        run: docker build --label "org.opencontainers.image.revision=$REVISION" -t "personal-home-preview:$REVISION" .
+      - name: Extract public frontend
+        env:
+          REVISION: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          container=$(docker create --entrypoint /bin/sh "personal-home-preview:$REVISION")
+          trap 'docker rm -v "$container" >/dev/null' EXIT
+          mkdir -p public
+          docker cp "$container:/app/apps/web/dist/." public/
+      - name: Upload and release through restricted SSH gateway
+        env:
+          REVISION: ${{ github.sha }}
+          SSH_HOST: ${{ secrets.PREVIEW_SSH_HOST }}
+          SSH_PORT: ${{ secrets.PREVIEW_SSH_PORT }}
+          SSH_USER: ${{ secrets.PREVIEW_SSH_USER }}
+          SSH_KEY: ${{ secrets.PREVIEW_SSH_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.PREVIEW_SSH_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          test -n "$SSH_HOST" && test -n "$SSH_PORT" && test -n "$SSH_USER"
+          key="$RUNNER_TEMP/preview-release-key"
+          known="$RUNNER_TEMP/preview-known-hosts"
+          trap 'rm -f "$key" "$known"' EXIT
+          umask 077
+          printf '%s\n' "$SSH_KEY" | tr -d '\r' > "$key"
+          printf '%s\n' "$SSH_KNOWN_HOSTS" | tr -d '\r' > "$known"
+          ssh-keygen -y -f "$key" > /dev/null
+          ssh_options=(-i "$key" -p "$SSH_PORT" -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o "UserKnownHostsFile=$known" -o ServerAliveInterval=30 -o ServerAliveCountMax=3)
+          mkdir -p release
+          docker save "personal-home-preview:$REVISION" | gzip -1 > release/image.tar.gz
+          tar -C public -czf release/public.tar.gz .
+          export RELEASE_IMAGE_ID=$(docker image inspect --format '{{.Id}}' "personal-home-preview:$REVISION")
+          python3 - <<'PY'
+          import hashlib, json, os, pathlib, tarfile
+          root = pathlib.Path('release')
+          with tarfile.open(root / 'image.tar.gz', 'r:gz') as archive:
+              images = json.load(archive.extractfile('manifest.json'))
+              assert len(images) == 1
+              config = archive.extractfile(images[0]['Config']).read()
+              assert json.loads(config)['config']['Labels']['org.opencontainers.image.revision'] == os.environ['REVISION']
+              image_id = 'sha256:' + hashlib.sha256(config).hexdigest()
+          manifest = {'revision': os.environ['REVISION'], 'image_id': image_id, 'source_image_id': os.environ['RELEASE_IMAGE_ID'], 'preview_run': int(os.environ['GITHUB_RUN_ID']), 'files': {name: hashlib.file_digest((root / name).open('rb'), 'sha256').hexdigest() for name in ['image.tar.gz', 'public.tar.gz']}}
+          (root / 'manifest.json').write_text(json.dumps(manifest, indent=2))
+          PY
+          cat release/image.tar.gz | ssh "${ssh_options[@]}" "$SSH_USER@$SSH_HOST" "upload-image $REVISION"
+          cat release/public.tar.gz | ssh "${ssh_options[@]}" "$SSH_USER@$SSH_HOST" "upload-public $REVISION"
+          ssh "${ssh_options[@]}" "$SSH_USER@$SSH_HOST" "deploy $REVISION"
+      - name: Verify public HTTPS
+        run: |
+          curl --fail --silent --show-error --retry 3 https://preview.twilightfrosty.com/api/health
+          printf 'Preview published: https://preview.twilightfrosty.com\n' >> "$GITHUB_STEP_SUMMARY"
+      - name: Retain the exact validated release bundle
+        uses: actions/upload-artifact@v7
+        with:
+          name: personal-home-release-${{ github.sha }}
+          path: release/
+          compression-level: 0
+          retention-days: 14
+          if-no-files-found: error
+      - name: Retain the small promotion manifest
+        uses: actions/upload-artifact@v7
+        with:
+          name: personal-home-manifest-${{ github.sha }}
+          path: release/manifest.json
+          retention-days: 14
+          if-no-files-found: error

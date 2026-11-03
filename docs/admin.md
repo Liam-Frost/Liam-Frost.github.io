@@ -13,6 +13,7 @@ Current admin features:
 - Reusable backend guard: `AdminAuthService.requireAdmin` (Fastify `preHandler`).
 - Standalone admin app `apps/admin` (Stage 6), served by the API at `ADMIN_PATH`: login, layout with Overview / Photos / Projects navigation, logout.
 - Photo management (Stage 7): upload, edit in five languages, publish/hide, home-page featured flag, drag-and-drop or button reordering, delete.
+- Overview (Stage 20): today's visits, things to fix, account and data source status, content counts and recent activity; see [Overview](#overview-概览).
 - Project management (Stage 8): create, edit (texts and Markdown body in five languages, slug, status, months, tech stack, links), cover and screenshots, publish/hide, home-page featured flag, reorder, delete.
 
 Photo CRUD, uploads, project management, and media collection management come in later stages.
@@ -78,17 +79,25 @@ Rate-limit counters and revoked sessions live in process memory, so the API must
 
 Requires `DATABASE_URL` (see `database.md`).
 
-- **Upload**: the button or drag-and-drop anywhere on the Photos page; files upload one at a time with progress. Accepted: JPEG, PNG, WebP, AVIF, TIFF up to `UPLOAD_MAX_MB` (default 40 MB) and 120 megapixels.
+- **Adding photos** (添加照片) from four sources, one at a time with progress:
+  - **本机上传**: files from the device (also drag-and-drop anywhere on the Photos page). Accepted: JPEG, PNG, WebP, AVIF, TIFF up to `UPLOAD_MAX_MB` (default 40 MB) and 120 megapixels.
+  - **服务器文件夹**: images in the folders listed in `PHOTO_IMPORT_DIRS` (absolute paths on the API's machine, e.g. a folder on the primary VPS filled with rsync or SFTP). Browse sub-folders with previews, pick images or a whole folder. Files are copied and processed; the originals stay where they are. Paths outside the folders (`..`, symlinks) are refused.
+  - **图库**: one entry for gallery sites; the site is recognised from the link. Flickr for now: a photo page (`flickr.com/photos/…`, `flic.kr/p/…`) is looked up with Flickr's oEmbed (no key) for its title and image; a `live.staticflickr.com` image link works too. Other sites get a clear “not supported yet” message.
+  - **图片链接**: any https image link (image hosts, public R2 / S3 objects).
+  - Links (图库 and 图片链接) are **imported** (downloaded and hosted by the site, the default) or **referenced** (shown from their own address: no copy and no generated sizes, and the photo breaks if the link goes away). Links are fetched over https only, never to private, local or link-local addresses (checked again on every redirect, at most 3), within `UPLOAD_MAX_MB`.
+- **Source**: each photo records where its image came from (本机上传 with the file name, 服务器文件 with the path, 图库 with the page (the card shows the site, e.g. Flickr), 图片链接 with the link) and when. The list shows it and can be filtered by it; photos added before Stage 19 got their source from how they were stored.
 - **Processing**: the image is auto-rotated from EXIF and rendered as WebP at 640, 1280, 2048 and 3072 px on the longest edge (never upscaled; smaller images get their own size instead). Generated files carry no metadata, so GPS and camera serial data are not published. The original file is kept next to them but is never served.
 - **New photos are hidden**: an upload becomes a private photo prefilled from EXIF (camera, lens, "1/200 · f/2.8 · ISO 400", capture date) with the file name as its title. Edit it, then switch on "公开显示". Nothing is left behind on failure, and deleting a photo removes its files.
 - **Editing**: title, category, location, description, alt text and tags per language (missing languages fall back on the site); date, camera, lens, settings; public and featured switches. A title in at least one language is required.
+- **Image** (in the editor): shows the source and whether the site hosts the image. 替换图片 puts a new image from any of the four sources on the photo, keeping its texts, order and visibility (optionally taking the new image's date and camera details); the old hosted files are removed. 转为本站托管 downloads a referenced image and hosts it, keeping its source.
 - **Featured**: the home page "featured" section shows photos with "首页精选" on, in gallery order.
 - **Order**: drag cards (or use the arrow buttons) in the "全部" view. The server only accepts the complete current list, so two tabs cannot silently overwrite each other's order.
-- **Existing Flickr photos** stay as remote URLs; their texts and flags are editable, their image is not replaced.
+- **Existing Flickr photos** stay as referenced links until replaced or hosted.
+- **Cards**: below the title and date, a metadata row holds the status badges (隐藏, 精选, 引用) and the source tag; badges never wrap inside and the row wraps whole badges when the card is narrow. The actions (上移, 下移, 编辑, 删除) have their own row under a divider, aligned along each grid row, so badges can never push them out of the card.
 
-Files live in `UPLOAD_DIR` (default `apps/api/uploads`) under `photos/<id>/` and are served from `/uploads/photos/<id>/<size>.webp`. Only generated sizes of existing photos are reachable: public photos with a one-year immutable cache, hidden photos only to a signed-in admin (`private, no-store`). Because public URLs are cached for a year, a photo that is later hidden or deleted can remain in browsers that already loaded it.
+Files live in `UPLOAD_DIR` (default `apps/api/uploads`): each hosted image in its own folder `photos/<photo folder>/<imageId>/`, served from `/uploads/photos/<photo folder>/<imageId>/<size>.webp`, so a replaced image gets new URLs (public ones are cached as immutable). Photos uploaded before Stage 19 keep `photos/<id>/` and `/uploads/photos/<id>/<size>.webp` until their image is replaced. Only generated sizes of existing photos are reachable: public photos with a one-year immutable cache, hidden photos only to a signed-in admin (`private, no-store`). Because public URLs are cached for a year, a photo that is later hidden or deleted can remain in browsers that already loaded it.
 
-API: `GET/POST /api/admin/photos`, `GET/PATCH/DELETE /api/admin/photos/:id`, `PUT /api/admin/photos/order`.
+API: `GET/POST /api/admin/photos` (upload), `POST /api/admin/photos/import` (`{ from: { type: "url" | "gallery", url } | { type: "server", root, path }, mode: "import" | "reference" }`), `GET/PATCH/DELETE /api/admin/photos/:id`, `POST /api/admin/photos/:id/image` (replace with an upload; `?exif=1`), `PUT /api/admin/photos/:id/image` (replace from a link, Flickr or server file; `useExif`), `POST /api/admin/photos/:id/host`, `GET /api/admin/photos/server?root&path`, `GET /api/admin/photos/server/preview?root&path`, `PUT /api/admin/photos/order`. Plan: `docs/plan-photos.md`.
 
 ## Project Management
 
@@ -161,6 +170,18 @@ Songs are collection entries (收藏 → 音乐; kind `track`). The player in th
 - Spotify playlists are read from Spotify's public embed page (the official Web API does not serve editorial playlists or previews to new apps). If Spotify changes that page, imports fail with a message; songs already imported are unaffected. Liked Songs and your own playlists come through the Spotify Web API with your account (above).
 
 API: `GET /api/admin/music/search?q&country`, `POST /api/admin/music/import`, `POST /api/admin/music/playlist-import`, `POST /api/admin/music/spotify-import` (`{source: "liked"}` or `{source: "playlist", playlistId}`), `GET /api/admin/music/jobs/:id`, `GET/PUT /api/admin/spotify` (player settings), `GET/DELETE /api/admin/spotify/account`, `POST /api/admin/spotify/connect`, `GET /api/admin/spotify/callback` (authorized by a one-time state, since Spotify's redirect carries no admin cookie), `GET /api/admin/spotify/playlists`, `GET/POST /api/admin/playlists`, `GET/PATCH/DELETE /api/admin/playlists/:id`, `POST /api/admin/playlists/:id/tracks` (`{ action: "add" | "remove", ids }`), `PUT /api/admin/playlists/:id/order`. Public: `GET /api/spotify/player`. Player settings are stored in the `Setting` table (`spotify`).
+
+## Overview (概览)
+
+The admin's home page (`GET /api/admin/dashboard`, one request, refreshed every minute) shows:
+
+- **Today**: sessions active in the last five minutes, and today's views, visitors and visits against yesterday at the same time, with the last seven days' views. Hidden when analytics is off.
+- **待处理**: checks with a count, a few examples and a link to fix them: photos still referencing links (opens the photo list filtered to them), public photos and projects without an English title, public projects without a cover, finished films / series / anime / books / comics / games without a rating, a Steam library not synced for 30 days, and an external source whose last request failed.
+- **账号与服务**: Steam and Spotify (connected account, last sync; buttons open their dialogs in 收藏), and each data source (TMDB, IGDB, Google Books need a key; Bangumi, AniList, Open Library do not) with its last success or failure from the job log. Only whether a key is set is returned, never the key.
+- **内容概况** (counts with hidden, featured, referenced, per kind, in progress) and **最近动态** (recently edited content, import and sync jobs).
+- Quick actions: 添加照片, 新建项目, 添加收藏, which open those dialogs.
+
+Each part loads on its own: if one fails (for example the database), it shows a short reason and the others still show; the details go to the server log. Other pages accept one-time links from here: `?open=add` (photos, collection), `?open=new` (projects), `?open=steam|spotify` (collection), `?show=referenced` (photos); the parameter is removed after use.
 
 ## Visitor Analytics (统计)
 

@@ -1,5 +1,12 @@
 # Progress
 
+## 2026-11-02: Analytics collection control
+
+- Added an authenticated total switch on the analytics page. Its value is stored in the database and survives application restarts and clearing statistics.
+- Removed the `ANALYTICS_ENABLED` environment toggle. Disabled collection stops visitor events, API metrics and job/source events while leaving historical reports available.
+- Regression coverage checks authorization, CSRF, input validation, persistence across application instances and discarding buffered metrics when collection is disabled.
+- Server configuration, credentials and operation guides are maintained outside this repository; only the CI/CD workflow definition is committed here.
+
 ## Repository maintenance (2026-11-01)
 
 Local implementation and checks complete: PR CI, grouped Dependabot configuration,
@@ -369,6 +376,27 @@ Status: implementation complete.
 - Site collection page 回顾 tab: per year, how many films, series, anime, books, comics and games were finished, monthly bars, rating distribution and average, top genres, five-star works. Counts entries marked done with a finished date in that year.
 - Verified in the browser with the sample collection (desktop and 375 px wide).
 
+### Stage 19a and 19b: Photo Sources
+
+Status: implementation complete; Claude Code review complete and fixes applied. 19c (R2) waits for Stage 10.
+
+- Photos record their image's source (migration `20261108090000_photo_sources`, which fills it for existing photos).
+- Add photos from the device, server import folders (`PHOTO_IMPORT_DIRS`, with previews), gallery sites (one 图库 entry; Flickr via oEmbed for now) or image links; links are imported (default) or referenced. Links are fetched over https only and never to private or local addresses.
+- Editor: source and storage, 替换图片 from any source (keeping texts, optionally taking EXIF), 转为本站托管 for referenced images. Each hosted image gets its own folder, so replaced images get new URLs.
+- Admin: 添加照片 dialog with the four sources, source badges and filter. Photo cards: metadata row (status badges, source tag) separate from the action row, which stays aligned and fully visible from four columns down to one (checked at 1440-320 px with every tag combination).
+- Tests: 192 passed.
+- Verified with a temporary database: the migration on photos stored the old way, a server folder import with previews and EXIF, a Flickr short link through oEmbed (referenced), an image link (imported), a refused local address, 转为本站托管 and 替换图片 from a server file with EXIF, the old image folder removed.
+
+### Stage 20: Admin Overview
+
+Status: implementation complete; Claude Code review complete and fixes applied.
+
+- 概览 replaced the four section links with: today's visits against yesterday, 待处理 checks with links, account and data source status, content counts, recent edits and jobs, and quick actions. Plan: `docs/plan-dashboard.md`.
+- API: `GET /api/admin/dashboard` (admin only, `no-store`); each part reports its own error. No database changes.
+- Photos page: 只看引用 filter. One-time `?open=` / `?show=` links from the overview.
+- Tests: 196 passed.
+- Verified in the browser with a temporary database (sample collection and demo statistics): all parts loaded; a failed database showed short messages per part; no horizontal overflow at 320, 375, 768 and 1280 px; the links opened 添加照片, 新建项目, 添加电影 and the Steam dialog, and filtered referenced photos.
+
 ### Styled Tooltips and Selects
 
 - Site and admin selects keep the native element with the project's arrow, borders and focus ring; Chromium browsers also get the opened list in the project's style (`appearance: base-select`), others keep their own list.
@@ -406,6 +434,8 @@ Status: implementation complete; Claude Code review complete and fixes applied.
 
 - `npm run db:deploy` applies the playlist and analytics migrations.
 - Connect Steam in the admin (收藏 → 游戏 → Steam 游戏库) and run a first sync.
+- `npm run db:deploy` applies the photo source migration; set `PHOTO_IMPORT_DIRS` to import from server folders.
+- Stage 19c (R2 storage) with Stage 10.
 - Stage 10: VPS deployment and CI/CD (needs the VPS and domain details).
 - Stage 10: VPS deployment and CI/CD (needs the VPS provider/OS/specs, DNS manager and domain from the user).
 - Stage 5: back-end foundation and admin auth refinement (`ADMIN_PATH`, IP allowlist, CSRF, Zod, tests). See `docs/plan-admin-projects-deploy.md`.

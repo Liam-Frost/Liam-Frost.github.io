@@ -13,6 +13,7 @@ import {
   type AdminBatchRequest,
   type AdminBatchResult,
   type AdminCollectionSettingsResponse,
+  type AdminDashboard,
   type AdminMediaBatchPatch,
   type AdminPersonUpdate as AdminPersonUpdateBody,
   type AdminPlaylistCreate,
@@ -38,7 +39,10 @@ import {
   type AdminRelationsResponse,
   type AdminRelationSuggestionsResponse,
   type AdminRelationUpdate,
+  type AdminPhotoImageReplace,
+  type AdminPhotoImport,
   type AdminPhotoResponse,
+  type AdminServerFolder,
   type AdminPhotosResponse,
   type AdminPhotoUpdate,
   type AdminProjectCreate,
@@ -167,6 +171,27 @@ export function uploadPhoto(file: File, onProgress: (fraction: number) => void) 
 }
 
 const photoPath = (id: string) => `/api/admin/photos/${encodeURIComponent(id)}`;
+
+/** Replaces a photo's image with an upload; `useExif` also takes its date and camera details. */
+export function uploadPhotoImage(
+  id: string,
+  file: File,
+  useExif: boolean,
+  onProgress?: (fraction: number) => void
+) {
+  return uploadFile<AdminPhotoResponse>(
+    `${photoPath(id)}/image${useExif ? "?exif=1" : ""}`,
+    file,
+    onProgress
+  );
+}
+
+const serverQuery = (root: number, path: string) =>
+  new URLSearchParams({ root: String(root), path });
+
+/** A small preview of a server import file, for <img src>. */
+export const serverPreviewUrl = (root: number, path: string) =>
+  `/api/admin/photos/server/preview?${serverQuery(root, path)}`;
 const projectPath = (id: string) => `/api/admin/projects/${encodeURIComponent(id)}`;
 const mediaPath = (id: string) => `/api/admin/media/${encodeURIComponent(id)}`;
 const personPath = (id: string) => `/api/admin/people/${encodeURIComponent(id)}`;
@@ -175,6 +200,7 @@ const playlistPath = (id: string) => `/api/admin/playlists/${encodeURIComponent(
 
 export const api = {
   session: () => request<AdminSessionResponse>("/api/admin/session"),
+  dashboard: () => request<AdminDashboard>("/api/admin/dashboard"),
   login: (username: string, password: string) =>
     request<AdminSessionResponse>("/api/admin/login", {
       method: "POST",
@@ -186,6 +212,14 @@ export const api = {
   updatePhoto: (id: string, update: AdminPhotoUpdate) =>
     request<AdminPhotoResponse>(photoPath(id), { method: "PATCH", json: update }),
   deletePhoto: (id: string) => request<void>(photoPath(id), { method: "DELETE" }),
+  importPhoto: (body: AdminPhotoImport) =>
+    request<AdminPhotoResponse>("/api/admin/photos/import", { method: "POST", json: body }),
+  replacePhotoImage: (id: string, body: AdminPhotoImageReplace) =>
+    request<AdminPhotoResponse>(`${photoPath(id)}/image`, { method: "PUT", json: body }),
+  hostPhoto: (id: string) =>
+    request<AdminPhotoResponse>(`${photoPath(id)}/host`, { method: "POST" }),
+  serverFolder: (root: number, path: string) =>
+    request<AdminServerFolder>(`/api/admin/photos/server?${serverQuery(root, path)}`),
   reorderPhotos: (ids: string[]) =>
     request<AdminPhotosResponse>("/api/admin/photos/order", { method: "PUT", json: { ids } }),
 
@@ -294,6 +328,8 @@ export const api = {
   reorderPlaylist: (id: string, ids: string[]) =>
     request<AdminPlaylistResponse>(`${playlistPath(id)}/order`, { method: "PUT", json: { ids } }),
   analyticsMeta: () => request<AnalyticsMeta>("/api/admin/analytics/meta"),
+  updateAnalyticsSettings: (enabled: boolean) =>
+    request<AnalyticsMeta>("/api/admin/analytics/settings", { method: "PUT", json: { enabled } }),
   analyticsOverview: (range: AnalyticsRange, from?: string, to?: string) =>
     request<AnalyticsOverview>(`/api/admin/analytics/overview?${rangeQuery(range, from, to)}`),
   analyticsContent: (range: AnalyticsRange, from?: string, to?: string) =>
