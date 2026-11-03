@@ -1,0 +1,120 @@
+name: Production release
+
+on:
+  workflow_dispatch:
+    inputs:
+      revision:
+        description: Full commit SHA already validated in preview and approved on the production host
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-release
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    if: github.repository == 'Liam-Frost/Liam-Frost.github.io' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Validate approved revision input
+        env:
+          REVISION: ${{ inputs.revision }}
+        run: '[[ "$REVISION" =~ ^[a-f0-9]{40}$ ]]'
+
+  quality:
+    needs: validate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.revision }}
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run format:check
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+
+  smoke:
+    needs: validate
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            runner: ubuntu-24.04
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.revision }}
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+      - run: bash docker/smoke-test.sh
+
+  deploy:
+    needs: [quality, smoke]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    environment:
+      name: production
+      url: https://www.twilightfrosty.com
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.revision }}
+          persist-credentials: false
+      - name: Build approved release image
+        env:
+          REVISION: ${{ inputs.revision }}
+        run: docker build --label "org.opencontainers.image.revision=$REVISION" -t "personal-home-production:$REVISION" .
+      - name: Extract public frontend
+        env:
+          REVISION: ${{ inputs.revision }}
+        run: |
+          set -euo pipefail
+          container=$(docker create --entrypoint /bin/sh "personal-home-production:$REVISION")
+          trap 'docker rm -v "$container" >/dev/null' EXIT
+          mkdir -p public
+          docker cp "$container:/app/apps/web/dist/." public/
+      - name: Publish through restricted production gateway
+        env:
+          REVISION: ${{ inputs.revision }}
+          SSH_HOST: ${{ secrets.PRODUCTION_SSH_HOST }}
+          SSH_PORT: ${{ secrets.PRODUCTION_SSH_PORT }}
+          SSH_USER: ${{ secrets.PRODUCTION_SSH_USER }}
+          SSH_KEY: ${{ secrets.PRODUCTION_SSH_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.PRODUCTION_SSH_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          test -n "$SSH_HOST" && test -n "$SSH_PORT" && test -n "$SSH_USER"
+          key="$RUNNER_TEMP/production-release-key"
+          known="$RUNNER_TEMP/production-known-hosts"
+          trap 'rm -f "$key" "$known"' EXIT
+          umask 077
+          printf '%s\n' "$SSH_KEY" | tr -d '\r' > "$key"
+          printf '%s\n' "$SSH_KNOWN_HOSTS" | tr -d '\r' > "$known"
+          ssh-keygen -y -f "$key" > /dev/null
+          ssh_options=(-i "$key" -p "$SSH_PORT" -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o "UserKnownHostsFile=$known" -o ServerAliveInterval=30 -o ServerAliveCountMax=3)
+          docker save "personal-home-production:$REVISION" | gzip -1 | ssh "${ssh_options[@]}" "$SSH_USER@$SSH_HOST" "upload-image $REVISION"
+          tar -C public -czf - . | ssh "${ssh_options[@]}" "$SSH_USER@$SSH_HOST" "upload-public $REVISION"
+          ssh "${ssh_options[@]}" "$SSH_USER@$SSH_HOST" "deploy $REVISION"
+      - name: Verify production HTTPS
+        run: |
+          curl --fail --silent --show-error --retry 3 https://www.twilightfrosty.com/api/health
+          printf 'Production published: https://www.twilightfrosty.com\n' >> "$GITHUB_STEP_SUMMARY"
