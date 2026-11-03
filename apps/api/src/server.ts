@@ -56,6 +56,9 @@ import { PrismaProjectRepository } from "./projects/prisma-repository";
 import type { ProjectRepository } from "./projects/types";
 import { PrismaSettingsRepository } from "./settings/prisma-repository";
 import { MemorySettingsRepository, type SettingsRepository } from "./settings/types";
+import { IntegrationSettings } from "./settings/integrations";
+import { liveService } from "./settings/live-service";
+import { registerIntegrationRoutes } from "./routes/integrations";
 import { createPlaylistFetcher, fetchTrackPreview, type PlaylistFetcher } from "./spotify/playlist";
 import { SpotifyService } from "./spotify/service";
 import { LocalImageStore } from "./storage/local";
@@ -176,11 +179,7 @@ export async function buildServer({
   playlists = defaultPlaylistRepository(),
   analyticsStore = defaultAnalyticsStore(),
   now,
-  mediaSources = createMediaSources({
-    tmdbKey: config.tmdbApiKey,
-    googleBooksKey: config.googleBooksApiKey,
-    twitch: config.twitch
-  }),
+  mediaSources,
   settings = defaultSettingsRepository(),
   fetchPlaylist = createPlaylistFetcher(),
   musicSource = createMusicSource(),
@@ -201,6 +200,23 @@ export async function buildServer({
   });
 
   const auth = new AdminAuthService(config.admin);
+  const integrations = new IntegrationSettings(settings, config);
+  await integrations.refresh();
+  const requireAdmin = auth.requireAdmin;
+  auth.requireAdmin = async (request) => {
+    await requireAdmin(request);
+    await integrations.refresh();
+  };
+  // OAuth callbacks are authorized by a one-time state rather than the admin session.
+  app.addHook("preHandler", async (request) => {
+    if (
+      ["/api/admin/spotify/callback", "/api/admin/steam/callback"].includes(
+        request.routeOptions.url ?? ""
+      )
+    )
+      await integrations.refresh();
+  });
+  const activeSources = mediaSources ?? liveService(() => integrations.media(), createMediaSources);
   const store = new LocalImageStore(config.uploads.dir ?? DEFAULT_UPLOAD_DIR);
   const collection = settings ? new CollectionSettingsStore(settings) : null;
   const spotify = new SpotifyService(
@@ -211,8 +227,17 @@ export async function buildServer({
     playlists
   );
   const account =
-    spotifyAccount ?? new SpotifyAccount(config.spotify, settings, config.admin.sessionSecret);
-  const steam = steamAccount ?? new SteamAccount(config.steamApiKey, settings, steamFetch);
+    spotifyAccount ??
+    liveService(
+      () => integrations.spotify(),
+      (app) => new SpotifyAccount(app, settings, config.admin.sessionSecret)
+    );
+  const steam =
+    steamAccount ??
+    liveService(
+      () => integrations.values("steam").apiKey ?? "",
+      (key) => new SteamAccount(key, settings, steamFetch)
+    );
   const geo = createCountryLookup(
     { header: config.analytics.countryHeader, geoipDb: config.analytics.geoipDb },
     (error) => app.log.warn({ err: error }, "Cannot open ANALYTICS_GEOIP_DB; countries are unknown")
@@ -237,7 +262,7 @@ export async function buildServer({
     analytics && analyticsStore
       ? new RequestRecorder(analyticsStore, analytics.clock, now, () => analytics.isEnabled())
       : null;
-  const sources = systemLog ? withSourceLog(mediaSources, systemLog) : mediaSources;
+  const sources = systemLog ? withSourceLog(activeSources, systemLog) : activeSources;
   if (analytics) {
     // Hourly: write the totals of finished days and delete raw data past the retention period.
     const maintain = () =>
@@ -333,6 +358,8 @@ export async function buildServer({
   });
 
   app.addHook("onSend", async (_request, reply, payload) => {
+    if (_request.routeOptions.url?.startsWith("/api/admin/") && !reply.hasHeader("cache-control"))
+      reply.header("cache-control", "no-store");
     reply.header("x-content-type-options", "nosniff");
     reply.header("referrer-policy", "strict-origin-when-cross-origin");
     reply.header("x-frame-options", "DENY");
@@ -379,6 +406,7 @@ export async function buildServer({
   }));
 
   registerAdminRoutes(app, auth);
+  registerIntegrationRoutes(app, auth, integrations);
   registerAdminApp(app, auth, adminDistDir);
   registerAdminPhotoRoutes(
     app,
@@ -435,7 +463,7 @@ export async function buildServer({
       people,
       playlists,
       analytics,
-      sources: mediaSources,
+      sources: activeSources,
       steam,
       spotify: account,
       now,

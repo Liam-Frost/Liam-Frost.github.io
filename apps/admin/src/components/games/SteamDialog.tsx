@@ -1,6 +1,7 @@
 import type { SteamSyncJob } from "@liam-frost/shared";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
+import { Link } from "react-router";
 
 import { mediaKey } from "../../hooks/useMedia";
 import { api } from "../../lib/api";
@@ -67,8 +68,11 @@ export function SteamDialog({ onClose }: { onClose: () => void }) {
       {isPending ? <p className="text-[13px] text-subtle">加载中…</p> : null}
       {status && !status.configured ? (
         <p className="text-[13px] leading-relaxed text-muted">
-          还没有配置 Steam。在 <code className="chip">apps/api/.env</code> 中设置{" "}
-          <code className="chip">STEAM_WEB_API_KEY</code> 后重启 API。
+          还没有配置 Steam。请到{" "}
+          <Link to="/integrations" className="text-brand underline">
+            API 配置
+          </Link>{" "}
+          添加 Steam Web API Key，保存后再连接账号。
         </p>
       ) : null}
       {status?.configured && !account ? (
