@@ -1,0 +1,50 @@
+name: Preview data
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: Refresh disposable data, or pause/resume daily refresh and preview deployments
+        type: choice
+        options: [refresh, refresh-pause, refresh-resume]
+        default: refresh
+        required: true
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: preview-data-control
+  cancel-in-progress: false
+
+jobs:
+  control:
+    if: github.repository == 'Liam-Frost/Liam-Frost.github.io' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    environment: preview
+    steps:
+      - name: Operate on the latest successfully deployed preview
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ACTION: ${{ inputs.action }}
+          SSH_HOST: ${{ secrets.PREVIEW_SSH_HOST }}
+          SSH_PORT: ${{ secrets.PREVIEW_SSH_PORT }}
+          SSH_USER: ${{ secrets.PREVIEW_SSH_USER }}
+          SSH_KEY: ${{ secrets.PREVIEW_SSH_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.PREVIEW_SSH_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          case "$ACTION" in refresh|refresh-pause|refresh-resume) ;; *) exit 1 ;; esac
+          revision=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/preview-release.yml/runs?branch=dev&status=success&per_page=1" --jq '.workflow_runs[0].head_sha')
+          [[ "$revision" =~ ^[a-f0-9]{40}$ ]]
+          umask 077
+          key="$RUNNER_TEMP/preview-data-key"
+          known="$RUNNER_TEMP/preview-data-hosts"
+          trap 'rm -f "$key" "$known"' EXIT
+          printf '%s\n' "$SSH_KEY" | tr -d '\r' > "$key"
+          printf '%s\n' "$SSH_KNOWN_HOSTS" | tr -d '\r' > "$known"
+          ssh -i "$key" -p "$SSH_PORT" -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o "UserKnownHostsFile=$known" -o ServerAliveInterval=30 -o ServerAliveCountMax=3 "$SSH_USER@$SSH_HOST" "$ACTION $revision" > preview-data-result.json
+          printf 'Preview action: **%s**\n\nCandidate: `%s`\n\nPreview data is disposable; production is read-only to this process.\n' "$ACTION" "$revision" >> "$GITHUB_STEP_SUMMARY"
+          cat preview-data-result.json >> "$GITHUB_STEP_SUMMARY"
