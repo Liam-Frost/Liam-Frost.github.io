@@ -172,6 +172,7 @@
 - The user asked why pages shift sideways when a scrollbar appears or a drawer opens, and how mature sites handle it. Fixed with `scrollbar-gutter: stable` on `html` in the site and the admin. A first check compared `document.documentElement.clientWidth`, which still changes while locked, and suggested the fix did nothing; measuring the header's position showed it works.
 - Codex reviewed PR 40 with two P2 findings (rotation skipping entries when the count is a multiple of 3; a songs-only collection hiding the section). Both were reproduced and fixed. The user asked for Codex's PR review to be checked after every PR from now on.
 - Stage 22 (admin overview and API settings layout) was planned in `docs/plan-admin-ux.md` and implemented on `stage-22-admin-ux`. Playwright is not in the repository, so layouts were measured with scripts in the in-app browser at eight widths (the pane's screenshots at emulated widths above its own size came out zoomed and were only used below it). The temporary API read the local `.env`, so every service showed 已配置 from the server; saving, disabling and restoring were tried with a dummy Google Books key on the temporary database only.
+- Codex reviewed PR 41 with one P2: drafts on API 配置 were lost on in-app navigation (`beforeunload` does not fire). The admin's `<BrowserRouter>` has no navigation blocker, so the drafts were moved to a memory store that outlives the page and is cleared on save, cancel, sign-out and reload. The user asked to merge after the fix.
 
 ## Notes
 

@@ -1,4 +1,4 @@
-import type { IntegrationProvider, IntegrationValues } from "@liam-frost/shared";
+import type { IntegrationProvider } from "@liam-frost/shared";
 import { useQuery } from "@tanstack/react-query";
 import { ShieldCheck } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -8,6 +8,7 @@ import {
   INTEGRATIONS_KEY,
   IntegrationItem
 } from "../components/integrations/IntegrationItem";
+import { useIntegrationDrafts } from "../components/integrations/drafts";
 import { PageHeader } from "../components/layout/AdminLayout";
 import { api } from "../lib/api";
 
@@ -23,8 +24,9 @@ export function IntegrationsPage() {
     queryFn: api.integrations
   });
   const [open, setOpen] = useState<IntegrationProvider | null>(null);
-  // Unsaved input per service: kept when another service is opened, cleared after saving.
-  const [drafts, setDrafts] = useState<Partial<Record<IntegrationProvider, IntegrationValues>>>({});
+  // Unsaved input per service: kept when another service is opened or the page is left, cleared after
+  // saving or cancelling.
+  const { drafts, setDraft } = useIntegrationDrafts();
   const unsaved = Object.values(drafts).some(hasDraft);
   // The last request of each source and the connected accounts, from the overview's data; only once
   // a service is opened.
@@ -82,7 +84,7 @@ export function IntegrationsPage() {
                       open={open === provider}
                       onToggle={() => setOpen(open === provider ? null : provider)}
                       draft={drafts[provider] ?? {}}
-                      onDraft={(values) => setDrafts((d) => ({ ...d, [provider]: values }))}
+                      onDraft={(values) => setDraft(provider, values)}
                       dashboard={dashboard}
                     />
                   ))}
@@ -92,7 +94,7 @@ export function IntegrationsPage() {
           </div>
           {unsaved ? (
             <p className="mt-4 text-[12px] text-status-warn">
-              有未保存的修改，离开页面前请先保存或取消。
+              有未保存的修改：保存后才会生效。在后台里切换页面会保留，刷新或关闭页面会丢失。
             </p>
           ) : null}
         </>

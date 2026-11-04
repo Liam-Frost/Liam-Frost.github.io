@@ -10,6 +10,10 @@ Scope: branch `stage-22-admin-ux`: `IntegrationsPage` and `components/integratio
 - Low: below 400 px the KPI cards stacked in one column, four tall cards before anything else; they are two columns down to 320 px (measured: no overflow in a 138 px card).
 - Low: the Redirect URI hint said an empty field uses the current address, which is wrong when one is saved (the server keeps it); the hint now depends on whether one is saved.
 
+## Codex Review on PR 41 (Fixed)
+
+- P2: unsaved API 配置 input was lost on in-app navigation. `beforeunload` only covers reloads and closing the tab; a sidebar link or 去连接 unmounted the page and dropped the drafts without asking. The admin uses `<BrowserRouter>`, which has no navigation blocker, so instead of switching routers the drafts are kept outside the page (`components/integrations/drafts.ts`, memory only): leaving and coming back restores them, still marked 未保存. They are dropped on save, 取消修改, sign-out (with the other cached admin data) and reload. Checked in the browser: a draft survived a sidebar round trip and browser Back, and was gone after signing out and in again without a reload.
+
 ## Checked
 
 - Secrets: fields stay `type="password"`, saved values are never shown, submitted values are deleted from the mutation after it settles, the field clears after saving; a dummy key never appeared in the page after saving.
