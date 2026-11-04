@@ -116,6 +116,8 @@ API: `GET/POST /api/admin/projects`, `GET/PATCH/DELETE /api/admin/projects/:id`,
 
 Use **API 配置** in the admin to configure TMDB, Spotify, Google Books, Twitch/IGDB and Steam. Changes apply to subsequent admin operations without restarting the API. A blank credential input keeps its current value; explicit **停用** disables the provider even if an environment credential exists. **恢复服务器配置** removes the admin override and uses the environment fallback again. Existing imported content is unaffected by disabling an integration.
 
+The page is one list in two groups (资料来源: TMDB, Google Books, Twitch / IGDB; 账号与同步: Spotify, Steam). Each row shows the service, what it is for and its credentials: 已配置, 未配置 or 已停用 (an admin override with no values). Opening a row (one at a time) shows where the credentials come from (服务器配置 or 后台配置), what the site last saw (the source's last request from the job log, or whether a Spotify / Steam account is connected; 未检测 when there is no record; the page itself tests nothing), the fields, 保存配置 / 取消修改, and 停用 / 恢复服务器配置 in a low-emphasis row with a confirmation that says what changes. Unsaved input is kept per service, marked 未保存 on its row, also when you go to another admin page and come back; it is dropped on save, 取消修改, sign-out and reload (reloading or closing the tab asks first).
+
 The API exposes `GET /api/admin/integrations` and `PUT /api/admin/integrations/:provider` (`save`, `disable`, `use-environment`). These require the admin session, allowed IP and CSRF protections; responses are `no-store` and contain presence/status only, never API keys, client IDs or secrets. Only provider-specific fields are editable. Application/database/security configuration is not editable here.
 
 Values are encrypted with the existing AES-256-GCM secret box under a separate purpose and stored in the existing Setting table, so no database migration is needed. The existing `ADMIN_SESSION_SECRET` must be preserved when restoring credentials. Missing persistence or an unreadable encrypted document fails closed. Preview and production databases keep their own independent credentials.
@@ -188,13 +190,16 @@ API: `GET /api/admin/music/search?q&country`, `POST /api/admin/music/import`, `P
 
 The admin's home page (`GET /api/admin/dashboard`, one request, refreshed every minute) shows:
 
-- **Today**: sessions active in the last five minutes, and today's views, visitors and visits against yesterday at the same time, with the last seven days' views. Hidden when analytics is off.
-- **待处理**: checks with a count, a few examples and a link to fix them: photos still referencing links (opens the photo list filtered to them), public photos and projects without an English title, public projects without a cover, finished films / series / anime / books / comics / games without a rating, a Steam library not synced for 30 days, and an external source whose last request failed.
-- **账号与服务**: Steam and Spotify (connected account, last sync; buttons open their dialogs in 收藏), and each data source (TMDB, IGDB, Google Books need a key; Bangumi, AniList, Open Library do not) with its last success or failure from the job log. Only whether a key is set is returned, never the key.
-- **内容概况** (counts with hidden, featured, referenced, per kind, in progress) and **最近动态** (recently edited content, import and sync jobs).
+Layout: four KPI cards, then a 12-column grid with 待处理 (7) beside 内容概况 (5) and 账号与服务 (5) beside 最近动态 (7); cards in a row share its height. Below 1024 px the grid is one column; the KPIs are two columns down to 320 px.
+
+- **Today**: sessions active in the last five minutes, and today's views, visitors and visits against yesterday at the same time (each with an ⓘ explaining how it is counted), with the last seven days' views (dates and a tooltip per day; hidden when there were none). Hidden when analytics is off.
+- **待处理**: checks with a count, a few examples and a link that opens the list already filtered: photos still referencing links (`/photos?show=referenced`), public photos without an English title (`/photos?show=missing-en`), public projects without an English title or a cover (`/projects?show=missing-en|no-cover`), finished films / series / anime / books / comics / games without a rating (`/collection?kind=<the kind with most>&status=done&rating=none`), a Steam library not synced for 30 days, and an external source whose last request failed.
+- **账号与服务**: 已授权账号 (Steam and Spotify: connected account, last sync; buttons open their dialogs in 收藏, or API 配置 when not set up) and 资料服务: failing sources first with their error, then one line each for 最近请求成功, 暂无请求记录 and 未配置. Green means the last request succeeded, not that the service is up now. Only whether a key is set is returned, never the key.
+- **内容概况**: one row per content type with hidden, featured and referenced counts; the collection's per-kind counts open under 收藏按类型.
+- **最近动态**: edits and import / sync jobs in one time line (icon, event, item or result, time), newest first.
 - Quick actions: 添加照片, 新建项目, 添加收藏, which open those dialogs.
 
-Each part loads on its own: if one fails (for example the database), it shows a short reason and the others still show; the details go to the server log. Other pages accept one-time links from here: `?open=add` (photos, collection), `?open=new` (projects), `?open=steam|spotify` (collection), `?show=referenced` (photos); the parameter is removed after use.
+Each part loads on its own: if one fails (for example the database), it shows a short reason and the others still show; the details go to the server log. Other pages accept one-time links from here: `?open=add` (photos, collection), `?open=new` (projects), `?open=steam|spotify` (collection), `?show=referenced|missing-en` (photos), `?show=missing-en|no-cover` (projects); the parameter is removed after use. The collection's `?rating=none` (未评分) is an ordinary filter that stays in the address.
 
 ## Visitor Analytics (统计)
 
