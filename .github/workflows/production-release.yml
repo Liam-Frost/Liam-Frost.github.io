@@ -121,6 +121,9 @@ jobs:
                   out.write('**没有待执行迁移**；沿用普通 production 审批。\n')
               for item in p['pending_sql']:
                   out.write('### `' + item['name'] + '`\n\n风险：**' + item['risk'] + '**。SHA256：`' + item['checksum'] + '`\n\n')
+                  for effect in item.get('effects', []):
+                      out.write('- ' + effect + '\n')
+                  out.write('\n')
                   out.write('````sql\n' + item['sql'] + '\n````\n\n')
               if risk:
                   out.write('**额外数据库审批**：此计划超出“新增可空、无默认值字段”的保守允许范围。可能删数据、改类型、锁表或与旧版本不兼容；请逐条审阅 SQL。先批准 production-database，再批准 production。\n')
