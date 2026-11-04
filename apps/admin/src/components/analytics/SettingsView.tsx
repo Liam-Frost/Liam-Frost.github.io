@@ -61,6 +61,11 @@ function SettingsForm({ data }: { data: AnalyticsPreferencesStatus }) {
           统计总开关在页面右上方。这里的设置只影响当前环境；未保存时沿用服务器默认值。
         </p>
       </div>
+      {data.error ? (
+        <p role="alert" className="text-status-error">
+          {data.error}
+        </p>
+      ) : null}
       <div className="grid gap-4 sm:grid-cols-2">
         <label>
           原始记录保留天数

@@ -50,6 +50,7 @@ export class AnalyticsSettings {
   readonly directory: string;
   private preferences: AnalyticsPreferences;
   private saved = false;
+  error: string | null = null;
   private queue: Promise<unknown> = Promise.resolve();
   private database: AnalyticsPreferencesStatus["database"] = null;
 
@@ -78,8 +79,15 @@ export class AnalyticsSettings {
   async load() {
     const stored = await this.repo?.get(KEY);
     if (stored != null) {
-      await this.apply(analyticsPreferencesSchema.parse(stored));
       this.saved = true;
+      try {
+        this.preferences = analyticsPreferencesSchema.parse(stored);
+        await this.apply(this.preferences);
+      } catch {
+        // Missing private files or a corrupt document must not take the site/admin offline,
+        // nor silently discard privacy exclusions and resume collection with defaults.
+        this.error = "统计设置或地理数据库不可用，采集已暂停。请修正设置或重新上传数据库后保存。";
+      }
     }
   }
 
@@ -88,6 +96,7 @@ export class AnalyticsSettings {
       values: structuredClone(this.preferences),
       editable: this.repo !== null,
       saved: this.saved,
+      error: this.error,
       revision: createHash("sha256").update(JSON.stringify(this.preferences)).digest("hex"),
       timezone: this.config.timezone,
       database: this.database,
@@ -176,6 +185,7 @@ export class AnalyticsSettings {
       await this.repo.set(KEY, values);
       await this.apply(values);
       this.saved = true;
+      this.error = null;
       return this.status();
     });
   }

@@ -256,6 +256,10 @@ export async function buildServer({
   const analytics = analyticsStore
     ? new AnalyticsService(analyticsStore, analyticsSettings.config, geo, now, catalog)
     : null;
+  if (analytics) {
+    const enabled = analytics.isEnabled.bind(analytics);
+    analytics.isEnabled = async () => analyticsSettings.error === null && (await enabled());
+  }
   // The job log, source status and API timings under 统计 → 体验与运行.
   const systemLog =
     analyticsStore && analytics
@@ -289,7 +293,7 @@ export async function buildServer({
   if (analytics) {
     // Hourly: write the totals of finished days and delete raw data past the retention period.
     const maintain = () =>
-      analytics.maintain().catch((error: unknown) => {
+      (analyticsSettings.error ? Promise.resolve() : analytics.maintain()).catch((error: unknown) => {
         app.log.warn({ err: error }, "Analytics maintenance failed");
       });
     const flush = () =>

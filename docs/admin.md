@@ -281,7 +281,7 @@ Codes used by admin routes: `VALIDATION`, `REQUEST_ERROR`, `CSRF`, `UNAUTHORIZED
 
 `npm test` runs the API tests (Vitest + Fastify `inject`) covering configuration validation, admin path rules, IP lists, login, CSRF, rate limiting, session revocation, cookie tampering, the IP allowlist, `TRUST_PROXY`, admin app hosting (path injection, asset allowlist, traversal attempts, IP hiding), photos (public visibility, seed fallback, upload processing with EXIF orientation, size limits, invalid files, edit/publish/delete, ordering, `/uploads` file allowlist), and projects (public listing, slugs, validation, cover replacement, screenshots, image visibility, delete with files, ordering).
 
-# 统计设置
+## 统计设置
 
 “统计 → 设置”可修改原始记录保留天数、分组最少访客数、每 IP 每分钟事件请求上限、IP/CIDR 排除规则和国家识别方式。API 配置页提供入口。这些设置独立保存在当前环境数据库中，保存后立即生效，无需改环境变量或重启；统计总开关仍在统计页面右上方。
 

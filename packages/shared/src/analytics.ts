@@ -258,6 +258,7 @@ export type AnalyticsPreferencesStatus = {
   values: AnalyticsPreferences;
   editable: boolean;
   saved: boolean;
+  error: string | null;
   revision: string;
   timezone: string;
   environmentCountrySource: "header" | "geoip" | "none";

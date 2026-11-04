@@ -178,4 +178,39 @@ describe("runtime analytics preferences", () => {
     expect(store.events.size).toBe(1);
     expect([...store.sessions.values()][0]?.country).toBe("JP");
   });
+
+  it("keeps the site reachable and collection paused when restored preferences reference a missing database", async () => {
+    const repo = new MemorySettingsRepository();
+    const defaults = new AnalyticsSettings(repo, loadConfig({}).analytics, "/unused").status();
+    await repo.set("analytics.preferences.v1", {
+      ...defaults.values,
+      countryMode: "database",
+      databaseId: "00000000-0000-4000-8000-000000000000"
+    });
+    const app = await buildTestServer(
+      {},
+      { settings: repo, analyticsStore: new MemoryAnalyticsStore() }
+    );
+    apps.push(app);
+    const headers = { ...csrf, cookie: await login(app) };
+    const current = (await app.inject({ url: "/api/admin/analytics/preferences", headers })).json();
+    expect(current.error).toContain("采集已暂停");
+    expect((await app.inject({ url: "/api/admin/analytics/meta", headers })).json().enabled).toBe(
+      false
+    );
+    const saved = await app.inject({
+      method: "PUT",
+      url: "/api/admin/analytics/preferences",
+      headers,
+      payload: {
+        revision: current.revision,
+        values: { ...current.values, countryMode: "header", countryHeader: "cf-ipcountry" }
+      }
+    });
+    expect(saved.statusCode).toBe(200);
+    expect(saved.json().error).toBeNull();
+    expect((await app.inject({ url: "/api/admin/analytics/meta", headers })).json().enabled).toBe(
+      true
+    );
+  });
 });
