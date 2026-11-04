@@ -293,9 +293,11 @@ export async function buildServer({
   if (analytics) {
     // Hourly: write the totals of finished days and delete raw data past the retention period.
     const maintain = () =>
-      (analyticsSettings.error ? Promise.resolve() : analytics.maintain()).catch((error: unknown) => {
-        app.log.warn({ err: error }, "Analytics maintenance failed");
-      });
+      (analyticsSettings.error ? Promise.resolve() : analytics.maintain()).catch(
+        (error: unknown) => {
+          app.log.warn({ err: error }, "Analytics maintenance failed");
+        }
+      );
     const flush = () =>
       requests?.flush().catch((error: unknown) => {
         app.log.warn({ err: error }, "Cannot write API request statistics");

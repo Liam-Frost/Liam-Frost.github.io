@@ -39,6 +39,9 @@ jobs:
     outputs:
       changed: ${{ steps.snapshot.outputs.changed }}
     steps:
+      # Provisioned outside the repository: production publish/rollback exports a validated,
+      # already-public frontend archive; Nginx serves only its descriptor and content hash URL.
+      # The regional Worker sends /__emergency/ directly to the primary. No SSH key is used.
       - name: Snapshot actually deployed frontend and anonymous public data
         id: snapshot
         env:
@@ -103,11 +106,11 @@ jobs:
                       target=ROOT/p;target.parent.mkdir(parents=True,exist_ok=True);target.write_bytes(archive.extractfile(member).read())
               paths=['/api/photos','/api/projects','/api/collection','/api/spotify/player']
               routes={path:get(path, database=path!='/api/spotify/player') for path in paths}
-              start=canonical(routes)
               for item in routes['/api/projects']:
                   ident=item['slug'];assert re.fullmatch('[A-Za-z0-9_-]{1,160}',ident)
                   path='/api/projects/'+ident;routes[path]=get(path)
-              for group,path in [('items','collection'),('people','people'),('playlists','playlists')]:
+              # Playlist metadata and track ids are already in /api/collection; no public detail route exists.
+              for group,path in [('items','collection'),('people','people')]:
                   for item in routes['/api/collection'].get(group,[]):
                       ident=item['id'];assert re.fullmatch('[A-Za-z0-9_-]{1,100}',ident)
                       url='/api/'+path+'/'+ident;routes[url]=get(url)
