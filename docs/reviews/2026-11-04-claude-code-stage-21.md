@@ -17,9 +17,14 @@ Scope: branch `stage-21-home-collection`: `featuredOrder` and its migration, `ho
 - Every page was wider than a 320 px screen. The header looked responsible (it was 349 px wide), but it only stretched with the page: hiding sections one at a time showed the contact email (24 px, no break opportunity) set the page width. It scales with the screen below 400 px and has `overflow-wrap: anywhere`.
 - The page moved 15 px sideways whenever scrolling was locked (`body { overflow: hidden }` for drawers, the lightbox and the fullscreen viewer) or a short page got a scrollbar. `html { scrollbar-gutter: stable }` in the site and the admin keeps the scrollbar's room. `clientWidth` still reports the larger width while locked, but laid-out content does not move (measured on the header).
 
+## Codex Review on PR 40 (Fixed)
+
+- P2: rotation could skip entries for good. The window moved by 3 each day; with six featured entries it only ever started at two places, and the kind spreading skipped the middle ones (movie, movie, movie, movie, book, game showed four of six). Reproduced with a test. The daily step is now the smallest number from 3 up that shares no factor with the count, so every entry leads (and is always picked) once every n days; tested for Codex's case and every count from 4 to 15.
+- P2: a collection with only songs hid the whole section, because the check for an empty section ignored the listening bar. Songs now count; checked in the browser with a stand-in API that returns only songs. The fallback subtitle, shown when nothing was finished this year, now reads as watching, reading, playing and listening instead of naming parts that may be missing.
+
 ## Checked
 
-- Rotation: the same picks all day, different the next day, every featured entry within a week, three different kinds when there are enough; only shown entries are picked (hidden entries, hidden kinds and hidden "want" entries never are).
+- Rotation: the same picks all day, different the next day, every featured entry within n days, three different kinds when there are enough; only shown entries are picked (hidden entries, hidden kinds and hidden "want" entries never are).
 - Fixed order: the saved order, never-ordered entries after it newest first; the order request must list every featured entry once (hidden ones too), and needs a signed-in admin and the CSRF header.
 - Excerpts: whole sentences when one ends within 90 characters, otherwise cut with "…"; emoji are never split. Only the three picks carry review text.
 - The site: each entry appears once across the parts; empty parts are hidden; an API without `home` (older server) gives no featured part instead of an error; static builds still hide the section.

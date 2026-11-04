@@ -68,6 +68,25 @@ describe("home featured picks", () => {
     expect(seen.size).toBe(rows.length);
   });
 
+  it("gives every featured entry a turn within as many days as there are entries", () => {
+    const days = (n: number) =>
+      Array.from({ length: n }, (_, d) =>
+        new Date(Date.UTC(2026, 10, 1 + d)).toISOString().slice(0, 10)
+      );
+    const check = (rows: MediaRow[]) => {
+      const seen = new Set<string>();
+      for (const day of days(rows.length))
+        pickHomeFeatured(rows, "rotate", day).forEach((r) => seen.add(r.id));
+      expect(seen.size, rows.map((r) => r.kind).join(",")).toBe(rows.length);
+    };
+    // Codex's case: six entries, so a window moving by three only ever started at two places, and the
+    // kind spreading skipped the middle movies for good.
+    check([row("movie"), row("movie"), row("movie"), row("movie"), row("book"), row("game")]);
+    // Every size from 4 to 15 with lopsided kinds.
+    const kinds: MediaKind[] = ["movie", "movie", "movie", "book", "movie", "game", "anime"];
+    for (let n = 4; n <= 15; n++) check(Array.from({ length: n }, (_, i) => row(kinds[i % 7]!)));
+  });
+
   it("fills with repeated kinds only when needed, and ignores entries not featured", () => {
     const rows = [
       row("movie"),

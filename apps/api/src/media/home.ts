@@ -13,8 +13,9 @@ const SENTENCE_END = /[。！？!?.…]/u;
 /**
  * The home page's featured entries among the shown ones.
  * - manual: the admin's fixed order (entries never ordered go last, newest first).
- * - rotate: a window that moves by `limit` each day over the featured entries (oldest first), so
- *   every visitor sees the same picks on a given day; kinds are spread before any kind repeats.
+ * - rotate: a window that moves each day over the featured entries (oldest first), so every visitor
+ *   sees the same picks on a given day and every entry comes up within n days; kinds are spread
+ *   before any kind repeats.
  */
 export function pickHomeFeatured(
   rows: MediaRow[],
@@ -38,7 +39,13 @@ export function pickHomeFeatured(
   const base = featured.sort(
     (a, b) => a.createdAt.getTime() - b.createdAt.getTime() || a.id.localeCompare(b.id)
   );
-  const offset = (Math.floor(Date.parse(`${day}T00:00:00Z`) / DAY_MS) * limit) % base.length;
+  // Each day starts `step` entries further on and its first entry is always picked. A step that
+  // shares no factor with the count reaches every start, so every entry leads once every n days
+  // (a step of `limit` with six entries only ever started at two places).
+  const n = base.length;
+  let step = limit;
+  while (gcd(step, n) !== 1) step++;
+  const offset = (Math.floor(Date.parse(`${day}T00:00:00Z`) / DAY_MS) * step) % n;
   const rotated = [...base.slice(offset), ...base.slice(0, offset)];
 
   const picked: MediaRow[] = [];
@@ -55,6 +62,8 @@ export function pickHomeFeatured(
   }
   return picked;
 }
+
+const gcd = (a: number, b: number): number => (b ? gcd(b, a % b) : a);
 
 /** The start of a text: whole sentences when one ends in time, otherwise cut with "…". */
 export function excerpt(text: string, max = EXCERPT_LENGTH) {

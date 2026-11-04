@@ -180,7 +180,9 @@ export default function HomeCollection({ collection }: { collection: PublicColle
   const limit = parts.featured.length ? RECENT : RECENT * 2;
   const recent = parts.done.filter(GROUPS[group]).slice(0, limit);
 
-  if (!parts.featured.length && !parts.ongoing.length && !parts.done.length) return null;
+  // Songs alone are enough: the listening bar can be the only part.
+  if (!parts.featured.length && !parts.ongoing.length && !parts.done.length && !parts.songs.length)
+    return null;
 
   return (
     <section className="section" id="watching">
