@@ -387,6 +387,17 @@ Status: implementation complete; Claude Code review complete and fixes applied. 
 - Tests: 192 passed.
 - Verified with a temporary database: the migration on photos stored the old way, a server folder import with previews and EXIF, a Flickr short link through oEmbed (referenced), an image link (imported), a refused local address, 转为本站托管 and 替换图片 from a server file with EXIF, the old image folder removed.
 
+### Stage 21: Home Page Collection
+
+Status: implementation complete; Claude Code review complete and fixes applied.
+
+- The home section 最近在看 (one row of films, series and anime) became 收藏近况: this year's counts, three featured entries with review excerpts, entries in progress with progress bars, recently finished entries of every kind with a 影视 / 阅读 / 游戏 switch, and a playlist with a play button. Each entry appears once; empty parts are hidden; phones get a sideways row of featured cards, two entries in progress and three recent ones. Plan: `docs/plan-home-collection.md`.
+- Featured picks are chosen by the API: rotating daily (different kinds first) or in a fixed order set in the admin (首页精选 dialog with drag and arrows), switched in 显示设置. Migration `20261109090000_media_featured_order`.
+- Tests: 213 passed.
+- Verified in the browser with a temporary database (sample collection, seven featured entries): rotation picked three kinds; after ordering and switching to 固定顺序 the site followed the order; reordering kept update times; desktop 1280 px and phones 375 and 320 px (featured row scrolls sideways, two in progress, three recent), English labels.
+- Narrow phones: at 320 px every page of the site was 334-349 px wide and scrolled sideways. The cause was the contact email at 24 px (an address has no place to break); it now scales down below 400 px and may wrap as a last resort. All pages are 320 px wide again.
+- Scrollbar shift: the site and the admin keep room for the scrollbar (`scrollbar-gutter: stable` on `html`), so the page no longer moves sideways when a drawer, lightbox or dialog locks scrolling or a short page grows a scrollbar. Checked: opening a lightbox moved the header 15 px before, 0 px after. Overlay scrollbars (macOS, phones) are unaffected.
+
 ### Stage 20: Admin Overview
 
 Status: implementation complete; Claude Code review complete and fixes applied.

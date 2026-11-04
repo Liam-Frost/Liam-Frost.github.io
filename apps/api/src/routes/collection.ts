@@ -12,6 +12,7 @@ import {
   DEFAULT_COLLECTION_SETTINGS,
   type CollectionSettingsStore
 } from "../media/collection-settings";
+import { pickHomeFeatured, toHomeFeatured } from "../media/home";
 import { toPublicMedia, toPublicMediaSummary } from "../media/mapping";
 import { isMediaPublic, type MediaRepository, type MediaRow } from "../media/types";
 import { toPublicLinks, toPublicPerson, toPublicPersonSummary } from "../people/mapping";
@@ -30,6 +31,13 @@ const PAGE_KINDS = [
   ["track", "music"]
 ] as const;
 const PAGE_KIND_NAMES: readonly string[] = PAGE_KINDS.map(([kind]) => kind);
+const EMPTY: PublicCollection = {
+  kinds: [],
+  items: [],
+  people: [],
+  playlists: [],
+  home: { featured: [] }
+};
 
 type Deps = {
   media: MediaRepository | null;
@@ -38,6 +46,8 @@ type Deps = {
   playlists?: PlaylistRepository | null;
   collection: CollectionSettingsStore | null;
   store: LocalImageStore;
+  /** Today in the site's time zone (YYYY-MM-DD), for rotating the home page's featured entries. */
+  today: () => string;
 };
 
 /** Everything the site shows: entries, and people with at least one shown entry (and their credits). */
@@ -92,7 +102,7 @@ export function registerCollectionRoutes(app: FastifyInstance, deps: Deps) {
   };
 
   app.get("/api/collection", async (request): Promise<PublicCollection> => {
-    if (!deps.media) return { kinds: [], items: [], people: [], playlists: [] };
+    if (!deps.media) return EMPTY;
     try {
       const shown = await visible();
       const kinds = PAGE_KINDS.filter(([, show]) => shown.settings.show[show]).map(
@@ -118,11 +128,18 @@ export function registerCollectionRoutes(app: FastifyInstance, deps: Deps) {
         people: [...shown.people.values()].map(({ row, credits }) =>
           toPublicPersonSummary(row, credits, deps.store)
         ),
-        playlists
+        playlists,
+        home: {
+          featured: pickHomeFeatured(
+            [...shown.media.values()],
+            shown.settings.homeFeatured,
+            deps.today()
+          ).map(toHomeFeatured)
+        }
       };
     } catch (error) {
       request.log.warn({ error }, "Collection unavailable");
-      return { kinds: [], items: [], people: [], playlists: [] };
+      return EMPTY;
     }
   });
 

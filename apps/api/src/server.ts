@@ -13,6 +13,7 @@ import { createCountryLookup } from "./analytics/geo";
 import { PrismaAnalyticsStore } from "./analytics/prisma-store";
 import { AnalyticsService } from "./analytics/service";
 import { RequestRecorder, SystemLog, withSourceLog } from "./analytics/system";
+import { AnalyticsClock } from "./analytics/time";
 import type { AnalyticsStore } from "./analytics/types";
 import { AdminAuthService } from "./auth/service";
 import { ConfigError, loadConfig, type AppConfig } from "./config/env";
@@ -448,7 +449,16 @@ export async function buildServer({
     maxUploadBytes: config.uploads.maxBytes
   });
   registerAdminPlaylistRoutes(app, auth, { media, playlists });
-  registerCollectionRoutes(app, { media, people, relations, playlists, collection, store });
+  const siteClock = new AnalyticsClock(config.analytics.timezone);
+  registerCollectionRoutes(app, {
+    media,
+    people,
+    relations,
+    playlists,
+    collection,
+    store,
+    today: () => siteClock.local(now ? now() : new Date()).day
+  });
   registerUploadRoutes(app, store, { photos, projects, media, people, collection }, auth);
   registerSpotifyRoutes(app, auth, spotify, account, settings !== null);
   registerSteamRoutes(app, auth, steam, steamSync);

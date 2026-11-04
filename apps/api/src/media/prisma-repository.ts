@@ -171,6 +171,17 @@ export class PrismaMediaRepository implements MediaRepository {
     }
   }
 
+  async setFeaturedOrder(ids: string[]) {
+    // Raw updates: Prisma's update would also set updatedAt, which the site sorts by.
+    await this.prisma.$transaction(
+      ids.map(
+        (id, index) =>
+          this.prisma
+            .$executeRaw`UPDATE "MediaItem" SET "featuredOrder" = ${index} WHERE "id" = ${id}`
+      )
+    );
+  }
+
   async delete(id: string) {
     try {
       return toRow(await this.prisma.mediaItem.delete({ where: { id } }));

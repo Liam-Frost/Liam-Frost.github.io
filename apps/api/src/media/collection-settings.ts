@@ -17,7 +17,8 @@ export const DEFAULT_COLLECTION_SETTINGS: CollectionSettings = {
     music: true,
     people: true
   },
-  showWant: true
+  showWant: true,
+  homeFeatured: "rotate"
 };
 
 /**

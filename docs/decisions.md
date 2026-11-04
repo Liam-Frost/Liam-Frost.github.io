@@ -2,6 +2,10 @@
 
 ## User Decisions
 
+### 2026-11-04: Home Page Collection (Stage 21)
+
+The user found the home page's one row of 最近在看 too little for the collection, and wanted featured entries before recent ones. Confirmed plan: `docs/plan-home-collection.md`. Both ways of choosing the featured entries were asked for: daily rotation and a fixed order dragged in the admin, switched in the collection's display settings.
+
 ### 2026-11-02: Admin Overview (Stage 20)
 
 The user wanted 概览 to show account connections and early statistics instead of links to the sections. Confirmed plan: `docs/plan-dashboard.md`: today's visits, things to fix, account and source status, content counts, recent activity and quick actions, from one admin request whose parts fail separately.

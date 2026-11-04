@@ -32,6 +32,8 @@ export type MediaRow = {
   extra: Record<string, unknown>;
   inPlayer: boolean;
   featured: boolean;
+  /** Position in the fixed home page order; null when never ordered. */
+  featuredOrder: number | null;
   visibility: PhotoVisibility;
   createdAt: Date;
   updatedAt: Date;
@@ -61,6 +63,8 @@ export interface MediaRepository {
   create(item: NewMedia): Promise<MediaRow>;
   update(id: string, patch: MediaPatch): Promise<MediaRow | null>;
   delete(id: string): Promise<MediaRow | null>;
+  /** Sets featuredOrder to each id's position, without changing updatedAt. */
+  setFeaturedOrder(ids: string[]): Promise<void>;
 }
 
 const MUSIC: MediaKind[] = ["track", "album"];
