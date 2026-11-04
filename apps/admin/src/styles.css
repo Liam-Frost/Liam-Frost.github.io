@@ -43,6 +43,10 @@
   }
   html {
     -webkit-text-size-adjust: 100%;
+    /* Always keep room for the scrollbar, so the page does not shift sideways when a long page gets one
+       or a drawer / dialog locks scrolling (body overflow: hidden). Overlay scrollbars (macOS, phones)
+       take no room, so nothing changes there. */
+    scrollbar-gutter: stable;
   }
   body {
     @apply bg-canvas text-ink font-sans antialiased;

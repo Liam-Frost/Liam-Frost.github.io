@@ -9,6 +9,7 @@ import { Clapperboard, EyeOff, Plus, Search, Settings2, Star } from "lucide-reac
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
 
+import { FeaturedOrderDialog } from "../components/collection/FeaturedOrderDialog";
 import { MediaBatchActions } from "../components/collection/MediaBatchActions";
 import { SteamDialog } from "../components/games/SteamDialog";
 import { PageHeader } from "../components/layout/AdminLayout";
@@ -56,6 +57,8 @@ export function CollectionPage() {
   const [params, setParams] = useSearchParams();
   const kind: CollectionKind = COLLECTION_KINDS.find((k) => k === params.get("kind")) ?? "movie";
   const status = STATUSES.find((s) => s === params.get("status")) ?? null;
+  // ?rating=none: entries without a rating (the overview's 未评分 task).
+  const unrated = params.get("rating") === "none";
   // 概览 links here with ?open=add, steam or spotify.
   const arrival = useArrivalParams("open").open;
   const [adding, setAdding] = useState(arrival === "add");
@@ -84,14 +87,20 @@ export function CollectionPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- only when returning from a sign-in page
   }, []);
   const [editingSettings, setEditingSettings] = useState(false);
+  const [orderingFeatured, setOrderingFeatured] = useState(false);
   const { data: items, isPending, error } = useMediaList();
   const { data: settings } = useCollectionSettings();
 
-  const select = (next: { kind?: CollectionKind; status?: MediaStatus | null }) => {
+  const select = (next: {
+    kind?: CollectionKind;
+    status?: MediaStatus | null;
+    unrated?: boolean;
+  }) => {
     const value = new URLSearchParams();
     value.set("kind", next.kind ?? kind);
     const nextStatus = next.status === undefined ? status : next.status;
     if (nextStatus) value.set("status", nextStatus);
+    if (next.unrated ?? (next.kind === undefined && unrated)) value.set("rating", "none");
     setParams(value, { replace: true });
   };
 
@@ -122,6 +131,14 @@ export function CollectionPage() {
             disabled={!settings}
           >
             <Settings2 aria-hidden="true" className="size-4" /> 显示设置
+          </button>
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={() => setOrderingFeatured(true)}
+            disabled={!items}
+          >
+            <Star aria-hidden="true" className="size-4" /> 首页精选
           </button>
           {kind === "game" ? (
             <button type="button" className="btn-secondary" onClick={() => setSteamOpen(true)}>
@@ -181,6 +198,8 @@ export function CollectionPage() {
           items={ofKind}
           status={status}
           onStatus={(s) => select({ status: s })}
+          unrated={unrated}
+          onUnrated={(on) => select({ unrated: on })}
         />
       )}
 
@@ -200,6 +219,9 @@ export function CollectionPage() {
       {editingSettings && settings ? (
         <SettingsDialog settings={settings.settings} onClose={() => setEditingSettings(false)} />
       ) : null}
+      {orderingFeatured && items ? (
+        <FeaturedOrderDialog items={items} onClose={() => setOrderingFeatured(false)} />
+      ) : null}
     </>
   );
 }
@@ -209,18 +231,23 @@ function WatchList({
   kind,
   items: ofKind,
   status,
-  onStatus
+  onStatus,
+  unrated,
+  onUnrated
 }: {
   kind: WatchKind;
   items: AdminMediaItem[];
   status: MediaStatus | null;
   onStatus: (status: MediaStatus | null) => void;
+  unrated: boolean;
+  onUnrated: (on: boolean) => void;
 }) {
   const [filter, setFilter] = useState("");
   const needle = filter.trim().toLowerCase();
   const visible = ofKind.filter(
     (item) =>
       (!status || item.status === status) &&
+      (!unrated || item.rating === null) &&
       (!needle ||
         [...Object.values(item.title), item.originalTitle ?? ""].some((text) =>
           text?.toLowerCase().includes(needle)
@@ -244,6 +271,18 @@ function WatchList({
             {s ? ofKind.filter((item) => item.status === s).length : ofKind.length}
           </button>
         ))}
+        <button
+          type="button"
+          aria-pressed={unrated}
+          onClick={() => onUnrated(!unrated)}
+          className={`chip ${unrated ? "border-brand bg-brand/10 text-brand" : ""}`}
+        >
+          未评分{" "}
+          {
+            ofKind.filter((item) => (!status || item.status === status) && item.rating === null)
+              .length
+          }
+        </button>
         <div className="ml-auto flex w-full items-center gap-2 sm:w-auto">
           <div className="relative flex-1 sm:w-60">
             <Search
@@ -675,6 +714,38 @@ function SettingsDialog({
             关闭后，所有“想看”条目都不在网站上显示；打开时，每个条目再按自己的“公开”设置决定。
           </p>
         </div>
+        <fieldset className="border-t border-line-soft pt-4">
+          {/* Floated so the legend sits below the divider instead of on it. */}
+          <legend className="float-left mb-2 w-full text-[12.5px] font-medium text-brand-dark">
+            首页精选
+          </legend>
+          <div className="clear-both space-y-2">
+            {(
+              [
+                ["rotate", "自动轮换", "每天换 3 个，尽量不同类型，同一天所有访客看到的一样。"],
+                ["manual", "固定顺序", "按“首页精选”里排好的顺序，显示前 3 个。"]
+              ] as const
+            ).map(([value, label, hint]) => (
+              <label
+                key={value}
+                className={`flex cursor-pointer gap-3 rounded-xl border p-3 ${draft.homeFeatured === value ? "border-brand bg-brand/5" : "border-line"}`}
+              >
+                <input
+                  type="radio"
+                  name="home-featured"
+                  value={value}
+                  checked={draft.homeFeatured === value}
+                  onChange={() => setDraft((d) => ({ ...d, homeFeatured: value }))}
+                  className="mt-1 accent-[var(--color-brand)]"
+                />
+                <span>
+                  <span className="block text-[13px] font-semibold text-brand-dark">{label}</span>
+                  <span className="block text-[12px] leading-relaxed text-subtle">{hint}</span>
+                </span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
       </div>
     </Dialog>
   );

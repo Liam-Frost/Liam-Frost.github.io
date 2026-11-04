@@ -263,14 +263,19 @@ export class DashboardService {
       publicProjects.filter((row) => !row.cover),
       project
     );
-    add(
-      "media-unrated",
-      "info",
-      rows.media.filter(
-        (row) => RATED.includes(row.kind) && row.status === "done" && row.rating === null
-      ),
-      (row) => ({ id: row.id, name: nameOf(row.title, row.id), to: paths.media(row.id) })
+    const unrated = rows.media.filter(
+      (row) => RATED.includes(row.kind) && row.status === "done" && row.rating === null
     );
+    add("media-unrated", "info", unrated, (row) => ({
+      id: row.id,
+      name: nameOf(row.title, row.id),
+      to: paths.media(row.id)
+    }));
+    if (unrated.length) {
+      const counts = new Map<MediaKind, number>();
+      for (const row of unrated) counts.set(row.kind, (counts.get(row.kind) ?? 0) + 1);
+      tasks[tasks.length - 1]!.kind = [...counts].sort((a, b) => b[1] - a[1])[0]![0];
+    }
 
     if (this.steamStale(steam))
       tasks.push({ id: "steam-stale", severity: "warning", count: 1, examples: [] });

@@ -359,10 +359,15 @@ export type AdminMediaItem = {
   /** Songs: plays in the site's player. */
   inPlayer: boolean;
   featured: boolean;
+  /** Position in the fixed home page order; null when never ordered. */
+  featuredOrder: number | null;
   visibility: PhotoVisibility;
   createdAt: string;
   updatedAt: string;
 };
+
+/** Every featured entry's id, in the fixed home page order. */
+export type AdminMediaFeaturedOrder = { ids: string[] };
 
 /** Manual entry without a source. */
 export type AdminMediaCreate = { kind: MediaKind; title: LocalizedText };
@@ -441,6 +446,8 @@ export type CollectionSettings = {
   };
   /** Off: "want" entries never appear on the site, whatever their own visibility. */
   showWant: boolean;
+  /** Home page featured entries: rotate daily, or the fixed order set in the admin. */
+  homeFeatured: "rotate" | "manual";
 };
 
 /** A song from the iTunes search, for adding to the collection or as a preview source. */
@@ -583,7 +590,12 @@ export type PublicCollection = {
   people: PublicPersonSummary[];
   /** Public playlists with at least one song the site shows. */
   playlists: PublicPlaylist[];
+  /** The home page's featured entries (at most 3, chosen by the collection settings). */
+  home: { featured: PublicHomeFeatured[] };
 };
+
+/** A featured entry on the home page, with the start of its review. */
+export type PublicHomeFeatured = { id: string; excerpt: LocalizedText };
 
 /** How two entries, or a person and an entry, are linked. */
 export type RelationType = "soundtrack" | "adaptation" | "sequel" | "related" | "credit";

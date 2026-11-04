@@ -22,6 +22,7 @@ import {
   type AdminPlaylistTracks,
   type AdminPlaylistUpdate,
   type AdminMediaCreate,
+  type AdminMediaFeaturedOrder,
   type AdminMediaImport,
   type AdminMediaListResponse,
   type AdminMediaResponse,
@@ -257,6 +258,11 @@ export const api = {
     request<AdminSpotifyResponse>("/api/admin/spotify", { method: "PUT", json: settings }),
 
   media: () => request<AdminMediaListResponse>("/api/admin/media"),
+  setFeaturedOrder: (ids: string[]) =>
+    request<AdminMediaListResponse>("/api/admin/media/featured-order", {
+      method: "PUT",
+      json: { ids } satisfies AdminMediaFeaturedOrder
+    }),
   mediaItem: (id: string) => request<AdminMediaResponse>(mediaPath(id)),
   searchMedia: (kind: MediaKind, source: MediaSearchSource, q: string) =>
     request<AdminMediaSearchResponse>(

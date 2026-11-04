@@ -16,6 +16,7 @@ import {
   collectionSettingsSchema,
   mediaBatchSchema,
   mediaCreateSchema,
+  mediaFeaturedOrderSchema,
   mediaIdSchema,
   mediaImportSchema,
   mediaListQuerySchema,
@@ -270,6 +271,27 @@ export function registerAdminMediaRoutes(
           );
       reply.code(201);
       return respond(result.updated);
+    }
+  );
+
+  /** The fixed home page order: every featured entry, in order. */
+  app.put(
+    "/api/admin/media/featured-order",
+    admin,
+    async (request): Promise<AdminMediaListResponse> => {
+      const { ids } = parseInput(mediaFeaturedOrderSchema, request.body);
+      const { media } = repo();
+      const featured = (await media.list({ includePrivate: true })).filter((row) => row.featured);
+      const expected = new Set(featured.map((row) => row.id));
+      if (ids.length !== expected.size || ids.some((id) => !expected.has(id)))
+        throw badRequest("The order must list every featured entry exactly once");
+      await media.setFeaturedOrder(ids);
+      const byId = new Map(featured.map((row) => [row.id, row]));
+      return {
+        items: ids.map((id, index) =>
+          toAdminMedia({ ...byId.get(id)!, featuredOrder: index }, store)
+        )
+      };
     }
   );
 

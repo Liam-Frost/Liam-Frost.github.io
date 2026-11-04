@@ -1,5 +1,6 @@
 import { hashKey, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
+import { clearIntegrationDrafts } from "../components/integrations/drafts";
 import { api } from "../lib/api";
 
 export const sessionKey = ["admin", "session"] as const;
@@ -26,6 +27,7 @@ export function useLogout() {
       // query itself is updated in place: clear() would detach the mounted observer and the UI would not
       // notice the logout.
       qc.removeQueries({ predicate: (query) => query.queryHash !== hashKey(sessionKey) });
+      clearIntegrationDrafts();
       qc.setQueryData(sessionKey, { authenticated: false, configured: true, user: null });
     }
   });

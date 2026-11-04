@@ -250,6 +250,10 @@ const SOURCE_IDS: Record<z.infer<typeof searchSource>, RegExp> = {
 
 export const mediaIdSchema = projectIdSchema;
 export const mediaListQuerySchema = z.object({ kind: mediaKind.optional() });
+export const mediaFeaturedOrderSchema = z
+  .object({ ids: z.array(uuid).max(1000) })
+  .strict()
+  .refine((value) => new Set(value.ids).size === value.ids.length, "Duplicate ids in order");
 
 export const mediaCreateSchema = z
   .object({
@@ -528,7 +532,9 @@ export const collectionSettingsSchema = z
         people: z.boolean().default(true)
       })
       .strict(),
-    showWant: z.boolean()
+    showWant: z.boolean(),
+    // Settings saved before Stage 21 have no choice; they rotate.
+    homeFeatured: z.enum(["rotate", "manual"]).default("rotate")
   })
   .strict();
 

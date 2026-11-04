@@ -48,6 +48,17 @@ const SOURCE_TAG = `${BADGE} text-subtle ring-1 ring-line ring-inset`;
 
 type SourceFilter = "all" | PhotoSourceType | "unknown";
 
+/** Quick filters for the overview's tasks; the same rules as the tasks. */
+const SHOWS = [
+  { value: "referenced", label: "只看引用", test: (p: AdminPhoto) => p.storage === "remote-url" },
+  {
+    value: "missing-en",
+    label: "公开但缺英文标题",
+    test: (p: AdminPhoto) => p.visibility === "public" && !p.title.en?.trim()
+  }
+] as const;
+type Show = (typeof SHOWS)[number]["value"];
+
 export function PhotosPage() {
   const { data: photos, isPending, error } = usePhotos();
   const [filter, setFilter] = useState<Filter>("all");
@@ -56,11 +67,13 @@ export function PhotosPage() {
   const [uploads, setUploads] = useState<UploadItem[]>([]);
   const [dragId, setDragId] = useState<string | null>(null);
   const [dropActive, setDropActive] = useState(false);
-  // 概览 links here to add a photo (?open=add) or to the photos still referencing links (?show=referenced).
+  // 概览 links here to add a photo (?open=add) or to a task's photos (?show=referenced | missing-en).
   const arrival = useArrivalParams("open", "show");
   const [adding, setAdding] = useState(arrival.open === "add");
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>("all");
-  const [referencedOnly, setReferencedOnly] = useState(arrival.show === "referenced");
+  const [show, setShow] = useState<Show | null>(
+    SHOWS.find((s) => s.value === arrival.show)?.value ?? null
+  );
 
   const setPhoto = useSetPhoto();
   const reorder = useReorderPhotos();
@@ -156,11 +169,10 @@ export function PhotosPage() {
     (p) =>
       (filter === "all" || p.visibility === filter) &&
       (sourceFilter === "all" || (p.source?.type ?? "unknown") === sourceFilter) &&
-      (!referencedOnly || p.storage === "remote-url")
+      (!show || SHOWS.find((s) => s.value === show)!.test(p))
   );
-  const filtered = filter !== "all" || sourceFilter !== "all" || referencedOnly;
+  const filtered = filter !== "all" || sourceFilter !== "all" || show !== null;
   const canReorder = !filtered && !reorder.isPending;
-  const referenced = all.filter((p) => p.storage === "remote-url").length;
   const counts = {
     all: all.length,
     public: all.filter((p) => p.visibility === "public").length,
@@ -239,20 +251,25 @@ export function PhotosPage() {
           ))}
           <option value="unknown">未记录来源</option>
         </select>
-        {referenced || referencedOnly ? (
-          <button
-            type="button"
-            aria-pressed={referencedOnly}
-            onClick={() => setReferencedOnly(!referencedOnly)}
-            className={`rounded-full px-3.5 py-1.5 text-[12.5px] transition-colors ${
-              referencedOnly
-                ? "bg-brand text-white"
-                : "bg-surface text-brand ring-1 ring-line hover:bg-brand-secondary/10"
-            }`}
-          >
-            只看引用 <span className="opacity-70">{referenced}</span>
-          </button>
-        ) : null}
+        {SHOWS.map(({ value, label, test }) => {
+          const count = all.filter(test).length;
+          if (!count && show !== value) return null;
+          return (
+            <button
+              key={value}
+              type="button"
+              aria-pressed={show === value}
+              onClick={() => setShow(show === value ? null : value)}
+              className={`rounded-full px-3.5 py-1.5 text-[12.5px] transition-colors ${
+                show === value
+                  ? "bg-brand text-white"
+                  : "bg-surface text-brand ring-1 ring-line hover:bg-brand-secondary/10"
+              }`}
+            >
+              {label} <span className="opacity-70">{count}</span>
+            </button>
+          );
+        })}
         {filtered ? (
           <span className="text-[12px] text-faint">在“全部”且不筛选时可以调整顺序</span>
         ) : null}

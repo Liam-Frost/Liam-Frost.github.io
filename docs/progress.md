@@ -387,6 +387,26 @@ Status: implementation complete; Claude Code review complete and fixes applied. 
 - Tests: 192 passed.
 - Verified with a temporary database: the migration on photos stored the old way, a server folder import with previews and EXIF, a Flickr short link through oEmbed (referenced), an image link (imported), a refused local address, 转为本站托管 and 替换图片 from a server file with EXIF, the old image folder removed.
 
+### Stage 22: Admin Overview and API Settings Layout
+
+Status: implementation complete; Claude Code review complete and fixes applied.
+
+- API 配置: grouped single-column list with one service open at a time; credential state (已配置 / 未配置 / 已停用), source and last known connection result kept apart; drafts kept per service; 停用 / 恢复服务器配置 in a low-emphasis row with confirmations that say what changes; a one-line security note instead of the long box. Behaviour and API unchanged.
+- 概览: four KPI cards with explanations and a dated 7-day chart, then one 12-column grid (待处理 + 内容概况, 账号与服务 + 最近动态). Tasks open filtered lists (new filters: photos 缺英文标题, projects 缺英文标题 / 没有封面, collection 未评分). Content rows instead of nested tiles; services split into accounts and data sources with failures first; one activity time line; skeleton while loading. API: the 未评分 task carries the kind with the most entries.
+- Tests: 214 passed.
+- Verified in the browser with a temporary database (sample collection, demo statistics, extra tasks created for the check) at 320, 375, 390, 430, 768, 1024, 1280 and 1440 px: no horizontal overflow, no clipped buttons, aligned card rows, equal KPI heights; every task link opened its filtered list; on API 配置 a draft survived switching services, and save, disable and restore matched the server's state each time without the entered value appearing in the page. Playwright is not installed; the in-app browser and DOM measurements were used instead.
+
+### Stage 21: Home Page Collection
+
+Status: implementation complete; Claude Code review complete and fixes applied.
+
+- The home section 最近在看 (one row of films, series and anime) became 收藏近况: this year's counts, three featured entries with review excerpts, entries in progress with progress bars, recently finished entries of every kind with a 影视 / 阅读 / 游戏 switch, and a playlist with a play button. Each entry appears once; empty parts are hidden; phones get a sideways row of featured cards, two entries in progress and three recent ones. Plan: `docs/plan-home-collection.md`.
+- Featured picks are chosen by the API: rotating daily (different kinds first) or in a fixed order set in the admin (首页精选 dialog with drag and arrows), switched in 显示设置. Migration `20261109090000_media_featured_order`.
+- Tests: 213 passed.
+- Verified in the browser with a temporary database (sample collection, seven featured entries): rotation picked three kinds; after ordering and switching to 固定顺序 the site followed the order; reordering kept update times; desktop 1280 px and phones 375 and 320 px (featured row scrolls sideways, two in progress, three recent), English labels.
+- Narrow phones: at 320 px every page of the site was 334-349 px wide and scrolled sideways. The cause was the contact email at 24 px (an address has no place to break); it now scales down below 400 px and may wrap as a last resort. All pages are 320 px wide again.
+- Scrollbar shift: the site and the admin keep room for the scrollbar (`scrollbar-gutter: stable` on `html`), so the page no longer moves sideways when a drawer, lightbox or dialog locks scrolling or a short page grows a scrollbar. Checked: opening a lightbox moved the header 15 px before, 0 px after. Overlay scrollbars (macOS, phones) are unaffected.
+
 ### Stage 20: Admin Overview
 
 Status: implementation complete; Claude Code review complete and fixes applied.

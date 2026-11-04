@@ -109,7 +109,8 @@ describe("collection visibility rules", () => {
       music: true,
       people: true
     },
-    showWant: false
+    showWant: false,
+    homeFeatured: "rotate" as const
   };
   it("combines the entry, its kind and the want switch", () => {
     expect(isMediaPublic({ kind: "movie", status: "done", visibility: "public" }, settings)).toBe(
@@ -352,7 +353,8 @@ describe("admin collection", () => {
           music: true,
           people: true
         },
-        showWant: true
+        showWant: true,
+        homeFeatured: "rotate"
       },
       sources: {
         tmdb: true,
@@ -436,7 +438,8 @@ describe("public collection", () => {
       kinds: [],
       items: [],
       people: [],
-      playlists: []
+      playlists: [],
+      home: { featured: [] }
     });
   });
 
@@ -497,7 +500,8 @@ describe("public collection", () => {
       kinds: [],
       items: [],
       people: [],
-      playlists: []
+      playlists: [],
+      home: { featured: [] }
     });
     expect((await app.inject(`/api/collection/${item.id}`)).statusCode).toBe(503);
   });

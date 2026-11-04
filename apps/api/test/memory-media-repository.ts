@@ -70,6 +70,7 @@ export class MemoryMediaRepository implements MediaRepository {
       extra: {},
       inPlayer: false,
       featured: false,
+      featuredOrder: null,
       visibility: "public",
       ...item,
       createdAt: now,
@@ -85,6 +86,13 @@ export class MemoryMediaRepository implements MediaRepository {
     const next = { ...row, ...structuredClone(patch), updatedAt: new Date() };
     this.rows.set(id, next);
     return structuredClone(next);
+  }
+
+  async setFeaturedOrder(ids: string[]) {
+    ids.forEach((id, index) => {
+      const row = this.rows.get(id);
+      if (row) row.featuredOrder = index;
+    });
   }
 
   async delete(id: string) {

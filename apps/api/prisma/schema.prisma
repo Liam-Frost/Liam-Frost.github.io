@@ -152,6 +152,8 @@ model MediaItem {
   /// Music: plays in the site's player.
   inPlayer      Boolean      @default(false)
   featured      Boolean      @default(false)
+  /// Position among home-page featured entries in the fixed order; null when never ordered.
+  featuredOrder Int?
   visibility    Visibility   @default(PUBLIC)
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt

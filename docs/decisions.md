@@ -2,6 +2,14 @@
 
 ## User Decisions
 
+### 2026-11-04: Admin Overview and API Settings Layout (Stage 22)
+
+The user asked for a structural UI/UX pass on 概览 and API 配置 within the existing design language: a grouped accordion list for API settings, and an operations dashboard on one grid. Confirmed plan: `docs/plan-admin-ux.md`. The model chose: Spotify and Steam grouped as 账号与同步 (they also need an account connected); connection status only from existing records (job log, connected accounts), since nothing tests connections and no new third-party requests were wanted; drafts kept per service rather than confirming on switch.
+
+### 2026-11-04: Home Page Collection (Stage 21)
+
+The user found the home page's one row of 最近在看 too little for the collection, and wanted featured entries before recent ones. Confirmed plan: `docs/plan-home-collection.md`. Both ways of choosing the featured entries were asked for: daily rotation and a fixed order dragged in the admin, switched in the collection's display settings.
+
 ### 2026-11-02: Admin Overview (Stage 20)
 
 The user wanted 概览 to show account connections and early statistics instead of links to the sections. Confirmed plan: `docs/plan-dashboard.md`: today's visits, things to fix, account and source status, content counts, recent activity and quick actions, from one admin request whose parts fail separately.

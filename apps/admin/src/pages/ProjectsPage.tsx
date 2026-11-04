@@ -20,11 +20,30 @@ import { ApiError } from "../lib/api";
 import { pickText, STATUS_LABELS, suggestSlug } from "../lib/i18n";
 import { useRecentCounts } from "../components/analytics/RecentStats";
 
+/** Quick filters for the overview's tasks; the same rules as the tasks (public projects only). */
+const SHOWS = [
+  {
+    value: "missing-en",
+    label: "公开但缺英文标题",
+    test: (p: AdminProject) => p.visibility === "public" && !p.title.en?.trim()
+  },
+  {
+    value: "no-cover",
+    label: "公开但没有封面",
+    test: (p: AdminProject) => p.visibility === "public" && !p.cover
+  }
+] as const;
+type Show = (typeof SHOWS)[number]["value"];
+
 export function ProjectsPage() {
   const { data: projects, isPending, error } = useProjects();
   const { data: views } = useRecentCounts("project");
-  // 概览 links here with ?open=new.
-  const [creating, setCreating] = useState(useArrivalParams("open").open === "new");
+  // 概览 links here with ?open=new, or to a task's projects (?show=missing-en | no-cover).
+  const arrival = useArrivalParams("open", "show");
+  const [creating, setCreating] = useState(arrival.open === "new");
+  const [show, setShow] = useState<Show | null>(
+    SHOWS.find((s) => s.value === arrival.show)?.value ?? null
+  );
   const [deleting, setDeleting] = useState<AdminProject | null>(null);
   const reorder = useReorderProjects();
   const remove = useDeleteProject();
@@ -40,8 +59,9 @@ export function ProjectsPage() {
     );
   }
 
-  const list = projects ?? [];
-  const ids = list.map((p) => p.id);
+  const all = projects ?? [];
+  const ids = all.map((p) => p.id);
+  const list = show ? all.filter(SHOWS.find((s) => s.value === show)!.test) : all;
   const move = (from: number, to: number) => {
     if (to < 0 || to >= ids.length) return;
     const next = [...ids];
@@ -62,9 +82,30 @@ export function ProjectsPage() {
         </button>
       </div>
 
+      {all.length ? (
+        <div className="mb-4 flex flex-wrap items-center gap-2">
+          {SHOWS.map(({ value, label, test }) => {
+            const count = all.filter(test).length;
+            if (!count && show !== value) return null;
+            return (
+              <button
+                key={value}
+                type="button"
+                aria-pressed={show === value}
+                onClick={() => setShow(show === value ? null : value)}
+                className={`chip ${show === value ? "border-brand bg-brand/10 text-brand" : ""}`}
+              >
+                {label} {count}
+              </button>
+            );
+          })}
+          {show ? <span className="text-[12px] text-faint">取消筛选后可以调整顺序</span> : null}
+        </div>
+      ) : null}
+
       {list.length === 0 ? (
         <div className="card p-10 text-center text-[13.5px] text-muted">
-          还没有项目，点击“新建项目”开始
+          {all.length ? "没有符合条件的项目" : "还没有项目，点击“新建项目”开始"}
         </div>
       ) : (
         <ul className="space-y-3">
@@ -117,14 +158,14 @@ export function ProjectsPage() {
                 <div className="flex shrink-0 items-center">
                   <IconButton
                     label={`上移 ${title}`}
-                    disabled={index === 0 || reorder.isPending}
+                    disabled={show !== null || index === 0 || reorder.isPending}
                     onClick={() => move(index, index - 1)}
                   >
                     <ArrowUp aria-hidden="true" className="size-4" />
                   </IconButton>
                   <IconButton
                     label={`下移 ${title}`}
-                    disabled={index === list.length - 1 || reorder.isPending}
+                    disabled={show !== null || index === list.length - 1 || reorder.isPending}
                     onClick={() => move(index, index + 1)}
                   >
                     <ArrowDown aria-hidden="true" className="size-4" />
