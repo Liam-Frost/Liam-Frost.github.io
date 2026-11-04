@@ -340,12 +340,15 @@ function SettingsForm({ data }: { data: AnalyticsPreferencesStatus }) {
         </p>
       ) : null}
       <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line pt-4">
-        <p className={`text-[12px] ${dirty ? "text-status-warn" : "text-faint"}`} role="status">
-          {dirty ? "有未保存的修改" : "当前设置已同步"}
+        <p
+          className={`text-[12px] ${dirty || data.error ? "text-status-warn" : "text-faint"}`}
+          role="status"
+        >
+          {data.error ? "修正后保存，可恢复统计采集" : dirty ? "有未保存的修改" : "当前设置已同步"}
         </p>
         <button
           className="btn-primary"
-          disabled={pending || !data.editable || !dirty}
+          disabled={pending || !data.editable || (!dirty && !data.error)}
           type="submit"
         >
           {save.isPending ? (
