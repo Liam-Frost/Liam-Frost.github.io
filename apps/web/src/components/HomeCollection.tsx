@@ -1,11 +1,12 @@
 import type { PublicCollection, PublicMediaSummary } from "@liam-frost/shared";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Link } from "react-router";
 
 import { pickLocalized, useI18n, type Key } from "../lib/i18n";
 import { cx } from "../lib/cx";
 import { compareCompleted } from "../lib/completed-order";
-import MediaCard, { isReadKind, mediaTitle, Stars, statusKey } from "./MediaCard";
+import MediaCard, { isReadKind, mediaTitle, statusKey } from "./MediaCard";
+import FeaturedQuiltWall from "./FeaturedQuiltWall";
 import { PlayAllButton } from "./PlayButton";
 import { imageSrcSet } from "./ProjectCard";
 import Reveal from "./Reveal";
@@ -68,26 +69,6 @@ function Cover({ item, sizes }: { item: PublicMediaSummary; sizes: string }) {
   );
 }
 
-function FeaturedCard({ item, excerpt }: { item: PublicMediaSummary; excerpt: string }) {
-  const { lang, t } = useI18n();
-  const title = mediaTitle(item, lang);
-  return (
-    <Link className="homeFeatured" to={itemLink(item)} aria-label={t("collection.open", { title })}>
-      <div className={cx("homeFeaturedPoster", item.kind === "track" && "isSquare")}>
-        <Cover item={item} sizes="(max-width: 640px) 34vw, 140px" />
-      </div>
-      <div className="homeFeaturedBody">
-        <p className="homeEyebrow">
-          {[t(`collection.kind.${item.kind}` as Key), item.year].filter(Boolean).join(" · ")}
-        </p>
-        <h3 className="homeFeaturedTitle">{title}</h3>
-        {item.rating ? <Stars rating={item.rating} /> : null}
-        {excerpt ? <p className="homeExcerpt">{excerpt}</p> : null}
-      </div>
-    </Link>
-  );
-}
-
 function OngoingCard({ item }: { item: PublicMediaSummary }) {
   const { lang, t } = useI18n();
   const title = mediaTitle(item, lang);
@@ -124,15 +105,23 @@ export default function HomeCollection({ collection }: { collection: PublicColle
   const { lang, t } = useI18n();
   const [group, setGroup] = useState<Group>("all");
   const { items, playlists, home } = collection;
+  const [visibleFeatured, setVisibleFeatured] = useState<string[] | null>(null);
+  const onVisibleItems = useCallback(
+    (ids: string[]) =>
+      setVisibleFeatured((old) => (old?.join("\n") === ids.join("\n") ? old : ids)),
+    []
+  );
+  const featured = useMemo(() => {
+    const byId = new Map(items.map((item) => [item.id, item]));
+    return (home.wall?.items ?? home.featured)
+      .map((pick) => byId.get(pick.id))
+      .filter((item): item is PublicMediaSummary => Boolean(item));
+  }, [items, home]);
 
   const parts = useMemo(() => {
     const byId = new Map(items.map((item) => [item.id, item]));
-    const featured = home.featured
-      .map((pick) => ({ item: byId.get(pick.id), excerpt: pick.excerpt }))
-      .filter((pick): pick is { item: PublicMediaSummary; excerpt: typeof pick.excerpt } =>
-        Boolean(pick.item)
-      );
-    const shown = new Set(featured.map(({ item }) => item.id));
+    // Exclude only covers actually visible in the wall, not every candidate beyond its row limit.
+    const shown = new Set(visibleFeatured ?? home.featured.map((pick) => pick.id));
     const ongoing = items
       .filter(
         (item) =>
@@ -170,7 +159,7 @@ export default function HomeCollection({ collection }: { collection: PublicColle
           .slice(0, 12);
 
     return { featured, ongoing, done, year, stats, playlist, songs };
-  }, [items, playlists, home]);
+  }, [items, playlists, home, featured, visibleFeatured]);
 
   const groups = (Object.keys(GROUPS) as Group[]).filter(
     (key) => key === "all" || parts.done.some(GROUPS[key])
@@ -202,13 +191,11 @@ export default function HomeCollection({ collection }: { collection: PublicColle
         {parts.featured.length ? (
           <div className="homeBlock">
             <h3 className="homeBlockTitle">{t("collection.home.featured")}</h3>
-            <div className={cx("homeFeaturedRow", `count-${parts.featured.length}`)}>
-              {parts.featured.map(({ item, excerpt }, idx) => (
-                <Reveal key={item.id} delayMs={idx * 60}>
-                  <FeaturedCard item={item} excerpt={pickLocalized(excerpt, lang)} />
-                </Reveal>
-              ))}
-            </div>
+            <FeaturedQuiltWall
+              items={parts.featured}
+              settings={home.wall?.settings}
+              onVisibleItems={onVisibleItems}
+            />
           </div>
         ) : null}
 

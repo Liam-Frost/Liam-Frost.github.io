@@ -1,3 +1,5 @@
+import type { FeaturedWallSettings } from "./featured-wall";
+
 /** Header every admin write request must carry; cross-site forms cannot set it (CSRF defense). */
 export const ADMIN_REQUEST_HEADER = "x-admin-request";
 
@@ -448,6 +450,8 @@ export type CollectionSettings = {
   showWant: boolean;
   /** Home page featured entries: rotate daily, or the fixed order set in the admin. */
   homeFeatured: "rotate" | "manual";
+  /** Optional in legacy clients; the API fills defaults on read/save. */
+  featuredWall?: FeaturedWallSettings;
 };
 
 /** A song from the iTunes search, for adding to the collection or as a preview source. */
@@ -591,7 +595,11 @@ export type PublicCollection = {
   /** Public playlists with at least one song the site shows. */
   playlists: PublicPlaylist[];
   /** The home page's featured entries (at most 3, chosen by the collection settings). */
-  home: { featured: PublicHomeFeatured[] };
+  home: {
+    featured: PublicHomeFeatured[];
+    /** Full ordered candidates; the client lays out a prefix, limited to complete visible rows. */
+    wall?: { items: PublicHomeFeatured[]; settings: FeaturedWallSettings };
+  };
 };
 
 /** A featured entry on the home page, with the start of its review. */

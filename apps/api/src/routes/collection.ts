@@ -12,7 +12,8 @@ import {
   DEFAULT_COLLECTION_SETTINGS,
   type CollectionSettingsStore
 } from "../media/collection-settings";
-import { pickHomeFeatured, toHomeFeatured } from "../media/home";
+import { pickHomeFeatured, pickHomeWall, toHomeFeatured } from "../media/home";
+import { resolveFeaturedWall } from "@liam-frost/shared";
 import { toPublicMedia, toPublicMediaSummary } from "../media/mapping";
 import { isMediaPublic, type MediaRepository, type MediaRow } from "../media/types";
 import { toPublicLinks, toPublicPerson, toPublicPersonSummary } from "../people/mapping";
@@ -135,7 +136,15 @@ export function registerCollectionRoutes(app: FastifyInstance, deps: Deps) {
             [...shown.media.values()],
             shown.settings.homeFeatured,
             deps.today()
-          ).map(toHomeFeatured)
+          ).map(toHomeFeatured),
+          wall: {
+            items: pickHomeWall(
+              [...shown.media.values()],
+              shown.settings.homeFeatured,
+              deps.today()
+            ).map(toHomeFeatured),
+            settings: resolveFeaturedWall(shown.settings.featuredWall)
+          }
         }
       };
     } catch (error) {

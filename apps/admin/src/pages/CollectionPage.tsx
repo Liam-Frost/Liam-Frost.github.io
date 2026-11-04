@@ -5,6 +5,7 @@ import type {
   MediaSearchSource,
   MediaStatus
 } from "@liam-frost/shared";
+import { resolveFeaturedWall } from "@liam-frost/shared";
 import { Clapperboard, EyeOff, Plus, Search, Settings2, Star } from "lucide-react";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
@@ -653,7 +654,10 @@ function SettingsDialog({
   settings: CollectionSettings;
   onClose: () => void;
 }) {
-  const [draft, setDraft] = useState(settings);
+  const [draft, setDraft] = useState(() => ({
+    ...settings,
+    featuredWall: resolveFeaturedWall(settings.featuredWall)
+  }));
   const update = useUpdateCollectionSettings();
   const toast = useToast();
   const kinds = [
@@ -662,7 +666,19 @@ function SettingsDialog({
     ["people", "人物"] as const
   ];
 
-  const save = () =>
+  const save = () => {
+    const wall = draft.featuredWall;
+    if (
+      !Number.isInteger(wall.visibleRows) ||
+      wall.visibleRows < 1 ||
+      wall.visibleRows > 8 ||
+      !Number.isInteger(wall.targetRowHeight) ||
+      wall.targetRowHeight < 100 ||
+      wall.targetRowHeight > 360
+    ) {
+      toast("展示行数须为 1–8 的整数；目标行高须为 100–360px 的整数。", "error");
+      return;
+    }
     update.mutate(draft, {
       onSuccess: () => {
         toast("已保存");
@@ -670,6 +686,7 @@ function SettingsDialog({
       },
       onError: (e) => toast(e.message, "error")
     });
+  };
 
   return (
     <Dialog
@@ -722,8 +739,12 @@ function SettingsDialog({
           <div className="clear-both space-y-2">
             {(
               [
-                ["rotate", "自动轮换", "每天换 3 个，尽量不同类型，同一天所有访客看到的一样。"],
-                ["manual", "固定顺序", "按“首页精选”里排好的顺序，显示前 3 个。"]
+                [
+                  "rotate",
+                  "自动轮换",
+                  "每天稳定轮换并混排音乐与其他收藏，同一天所有访客看到的一样。"
+                ],
+                ["manual", "固定顺序", "严格按“首页精选”里的顺序分行，不自动混排或打乱。"]
               ] as const
             ).map(([value, label, hint]) => (
               <label
@@ -746,6 +767,59 @@ function SettingsDialog({
             ))}
           </div>
         </fieldset>
+        <div className="space-y-3.5 border-t border-line-soft pt-4">
+          <p className="text-[12.5px] font-medium text-brand-dark">精选拼布墙</p>
+          <Field
+            label="展示行数 · Visible Rows"
+            htmlFor="featured-wall-rows"
+            hint="控制精选海报墙最多展示的行数。实际展示数量随页面宽度和图片比例自动调整。"
+          >
+            <input
+              id="featured-wall-rows"
+              className="field"
+              type="number"
+              min={1}
+              max={8}
+              step={1}
+              value={draft.featuredWall.visibleRows}
+              onChange={(event) =>
+                setDraft((old) => ({
+                  ...old,
+                  featuredWall: { ...old.featuredWall, visibleRows: Number(event.target.value) }
+                }))
+              }
+            />
+          </Field>
+          <Field
+            label="目标行高 · Target Row Height（px）"
+            htmlFor="featured-wall-height"
+            hint="用于计算每行图片的理想高度。实际行高可能略有调整，以保证所有图片完整展示且无缝拼接。"
+          >
+            <input
+              id="featured-wall-height"
+              className="field"
+              type="number"
+              min={100}
+              max={360}
+              step={10}
+              value={draft.featuredWall.targetRowHeight}
+              onChange={(event) =>
+                setDraft((old) => ({
+                  ...old,
+                  featuredWall: { ...old.featuredWall, targetRowHeight: Number(event.target.value) }
+                }))
+              }
+            />
+          </Field>
+          <a
+            className="inline-flex text-[12px] font-medium text-brand hover:underline"
+            href="/#/#watching"
+            target="_blank"
+            rel="noreferrer"
+          >
+            打开主页收藏近况 ↗
+          </a>
+        </div>
       </div>
     </Dialog>
   );

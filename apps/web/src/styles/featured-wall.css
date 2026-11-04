@@ -1,0 +1,174 @@
+.featuredWallHost {
+  width: 100%;
+  min-width: 0;
+}
+.featuredWall {
+  max-width: 100%;
+  overflow: hidden;
+  border-radius: 24px;
+  background: #dbd0c0;
+  box-shadow: 0 14px 42px rgb(53 62 77 / 11%);
+  isolation: isolate;
+}
+.featuredWallRow {
+  display: flex;
+  width: 100%;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  align-items: stretch;
+  line-height: 0;
+}
+.featuredWallTile {
+  position: relative;
+  display: block;
+  flex-basis: 0;
+  flex-shrink: 1;
+  min-width: 0;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  overflow: hidden;
+  background: transparent;
+  color: white;
+  cursor: pointer;
+  text-align: left;
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+.featuredWallTile img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  object-fit: contain;
+  pointer-events: none;
+}
+.featuredWallShade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(rgb(6 15 23 / 12%), rgb(6 15 23 / 12%) 35%, rgb(6 15 23 / 82%));
+  opacity: 0;
+  transition: opacity 200ms ease;
+}
+.featuredWallInfo {
+  position: absolute;
+  z-index: 1;
+  bottom: 13px;
+  left: 14px;
+  right: 12px;
+  display: grid;
+  gap: 5px;
+  opacity: 0;
+  transition: opacity 200ms ease;
+  pointer-events: none;
+  line-height: 1.35;
+}
+.featuredWallInfo small {
+  font-size: 10px;
+  opacity: 0.85;
+}
+.featuredWallInfo strong {
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+.featuredWallAction {
+  position: absolute;
+  z-index: 2;
+  right: 10px;
+  top: 10px;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #fffcf1eb;
+  color: #2d4a5a;
+  opacity: 0;
+  transition: opacity 200ms ease;
+  pointer-events: none;
+}
+.featuredWallAction svg {
+  width: 16px;
+  height: 16px;
+}
+.featuredWallTile:hover .featuredWallShade,
+.featuredWallTile:hover .featuredWallInfo,
+.featuredWallTile:hover .featuredWallAction,
+.featuredWallTile:focus-visible .featuredWallShade,
+.featuredWallTile:focus-visible .featuredWallInfo,
+.featuredWallTile:focus-visible .featuredWallAction,
+.featuredWallTile.isPlaying .featuredWallAction,
+.featuredWallTile.isSelected .featuredWallAction {
+  opacity: 1;
+}
+.featuredWallTile:focus-visible {
+  outline: 3px solid #aac5d0;
+  outline-offset: -3px;
+  z-index: 3;
+}
+.featuredWallTile.isPlaying::after,
+.featuredWallTile.isSelected::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  box-shadow: inset 0 0 0 3px #aac5d0;
+  pointer-events: none;
+}
+.featuredWallMissing {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  background: #d8cdbd;
+  color: #7c7267;
+  font: 500 30px/1.2 var(--font-sans, sans-serif);
+}
+@media (max-width: 600px) {
+  .featuredWall {
+    border-radius: 20px;
+  }
+  .featuredWallInfo {
+    bottom: 7px;
+    left: 7px;
+    right: 5px;
+    gap: 3px;
+  }
+  .featuredWallInfo strong {
+    font-size: 11px;
+  }
+  .featuredWallInfo small {
+    font-size: 9px;
+  }
+  .featuredWallAction {
+    right: 6px;
+    top: 6px;
+    width: 26px;
+    height: 26px;
+    opacity: 1;
+  }
+  .featuredWallAction svg {
+    width: 13px;
+    height: 13px;
+  }
+}
+@media (hover: none) {
+  .featuredWallAction {
+    opacity: 1;
+  }
+  .featuredWallTile:active .featuredWallShade {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .featuredWallShade,
+  .featuredWallInfo,
+  .featuredWallAction {
+    transition: none;
+  }
+}
