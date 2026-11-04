@@ -139,6 +139,10 @@ body {
 html {
   scroll-behavior: smooth;
   color-scheme: dark;
+  /* Always keep room for the scrollbar, so the page does not shift sideways when a long page gets one
+     or a drawer / dialog locks scrolling (body overflow: hidden). Overlay scrollbars (macOS, phones)
+     take no room, so nothing changes there. */
+  scrollbar-gutter: stable;
 }
 
 /* View Transitions (theme toggle)
@@ -1197,6 +1201,14 @@ html[data-theme="light"] .aboutSection {
   font-weight: 900;
   letter-spacing: -0.03em;
   line-height: 1.12;
+  /* An address has no spaces; at 24px it is wider than a 320px screen and would widen the page. */
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 400px) {
+  .contactEmail {
+    font-size: 6vw;
+  }
 }
 
 .contactEmail:hover {

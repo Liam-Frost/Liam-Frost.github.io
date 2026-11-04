@@ -12,6 +12,11 @@ Scope: branch `stage-21-home-collection`: `featuredOrder` and its migration, `ho
 - Low: on tablets the hidden recent cards would have been shown again with `display: block`, breaking the card layout; the rule now only hides.
 - Low: in 显示设置 the divider ran through the 首页精选 heading (a fieldset legend sits on the border).
 
+## Follow-Up Fixes
+
+- Every page was wider than a 320 px screen. The header looked responsible (it was 349 px wide), but it only stretched with the page: hiding sections one at a time showed the contact email (24 px, no break opportunity) set the page width. It scales with the screen below 400 px and has `overflow-wrap: anywhere`.
+- The page moved 15 px sideways whenever scrolling was locked (`body { overflow: hidden }` for drawers, the lightbox and the fullscreen viewer) or a short page got a scrollbar. `html { scrollbar-gutter: stable }` in the site and the admin keeps the scrollbar's room. `clientWidth` still reports the larger width while locked, but laid-out content does not move (measured on the header).
+
 ## Checked
 
 - Rotation: the same picks all day, different the next day, every featured entry within a week, three different kinds when there are enough; only shown entries are picked (hidden entries, hidden kinds and hidden "want" entries never are).
@@ -21,7 +26,6 @@ Scope: branch `stage-21-home-collection`: `featuredOrder` and its migration, `ho
 
 ## Not Changed
 
-- The site header is 349 px wide at 320 px (all pages); separate from this stage.
 - Rotation is by day in `ANALYTICS_TIMEZONE`, like the site's statistics; picks change at midnight there.
 - Songs can be featured; their card has no play button (it links to the song, which has one).
 
