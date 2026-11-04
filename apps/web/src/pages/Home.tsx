@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router";
 
-import MediaCard, { isReadKind } from "../components/MediaCard";
+import HomeCollection from "../components/HomeCollection";
 import PhotoCard from "../components/PhotoCard";
 import ProjectCard from "../components/ProjectCard";
 import Reveal from "../components/Reveal";
@@ -39,27 +39,8 @@ export default function HomePage() {
     () => projects.filter((p) => p.featured).slice(0, 4),
     [projects]
   );
-  // After the projects: the latest finished or ongoing films, series and anime (not "want to watch", and
-  // not books, comics or games, which are read or played); hidden when empty.
-  const { items: collection } = useCollection();
-  const recentMedia = useMemo(
-    () =>
-      collection
-        .filter(
-          (item) =>
-            (item.status === "done" || item.status === "watching") &&
-            !isReadKind(item.kind) &&
-            item.kind !== "game"
-        )
-        .sort(
-          (a, b) =>
-            (b.watchedOn ?? b.updatedAt.slice(0, 10)).localeCompare(
-              a.watchedOn ?? a.updatedAt.slice(0, 10)
-            ) || b.updatedAt.localeCompare(a.updatedAt)
-        )
-        .slice(0, 6),
-    [collection]
-  );
+  // After the projects: featured, in progress and recent entries (hidden when the collection is empty).
+  const collection = useCollection();
 
   const navigate = useNavigate();
 
@@ -276,30 +257,7 @@ export default function HomePage() {
         </section>
       ) : null}
 
-      {recentMedia.length ? (
-        <section className="section" id="watching">
-          <div className="container">
-            <Reveal>
-              <h2 className="sectionTitle">{t("collection.home.title")}</h2>
-              <p className="sectionSubtitle">{t("collection.home.subtitle")}</p>
-            </Reveal>
-
-            <div className="mediaGrid mediaGridHome">
-              {recentMedia.map((item, idx) => (
-                <Reveal key={item.id} delayMs={idx * 50}>
-                  <MediaCard item={item} to={`/collection?kind=${item.kind}&item=${item.id}`} />
-                </Reveal>
-              ))}
-            </div>
-
-            <div style={{ marginTop: 14, display: "flex", gap: 12, flexWrap: "wrap" }}>
-              <Link className="btn btnPrimary" to="/collection">
-                {t("collection.cta.all")}
-              </Link>
-            </div>
-          </div>
-        </section>
-      ) : null}
+      <HomeCollection collection={collection} />
 
       <section className="section" id="featured">
         <div className="container">

@@ -2570,9 +2570,336 @@ html[data-theme="light"] .aboutSection {
   grid-template-columns: repeat(6, minmax(0, 1fr));
 }
 
+/* Home: one row of recent entries (two when nothing is featured); narrower screens show fewer. */
 @media (max-width: 960px) {
   .mediaGridHome {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .mediaGridHome:not(.isTall) > :nth-child(n + 4) {
+    display: none;
+  }
+
+  .mediaGridHome.isTall > :nth-child(n + 7) {
+    display: none;
+  }
+}
+
+/* ---- Home collection: featured, in progress, recent, listening ---- */
+
+.homeStats {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-color: var(--border);
+  text-underline-offset: 4px;
+}
+
+.homeStats:hover,
+.homeStats:focus-visible {
+  color: var(--text);
+  text-decoration-color: currentColor;
+}
+
+.homeBlock {
+  margin-top: 26px;
+}
+
+.homeBlockHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 16px;
+}
+
+.homeBlockTitle {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+
+.homeBlockHead + .mediaGrid,
+.homeBlockTitle + * {
+  margin-top: 12px;
+}
+
+.homeEyebrow {
+  margin: 0;
+  font-size: 12px;
+  color: var(--faint);
+}
+
+.homeFeaturedRow {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+/* Fewer picks get wider cards instead of empty columns. */
+.homeFeaturedRow.count-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.homeFeaturedRow.count-1 {
+  grid-template-columns: minmax(0, 1fr);
+  max-width: 640px;
+}
+
+.homeFeatured {
+  display: flex;
+  gap: 14px;
+  height: 100%;
+  padding: 12px;
+  color: inherit;
+  text-decoration: none;
+  border: 1px solid var(--border);
+  background: var(--card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(20px) saturate(1.25);
+  -webkit-backdrop-filter: blur(20px) saturate(1.25);
+  transition:
+    transform 180ms var(--ease),
+    border-color 180ms var(--ease);
+}
+
+.homeFeatured:hover,
+.homeFeatured:focus-visible {
+  transform: translateY(-2px);
+  border-color: var(--mist);
+}
+
+.homeFeaturedPoster {
+  position: relative;
+  flex: 0 0 34%;
+  max-width: 140px;
+  aspect-ratio: 2 / 3;
+  border-radius: 10px;
+  overflow: hidden;
+  background: rgba(148, 180, 193, 0.18);
+}
+
+.homeFeaturedPoster.isSquare {
+  aspect-ratio: 1;
+  align-self: flex-start;
+}
+
+.homeFeaturedPoster img,
+.homeOngoingPoster img,
+.homeListeningCovers img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.homeFeaturedBody {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.homeFeaturedTitle {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.35;
+  text-wrap: balance;
+}
+
+.homeExcerpt {
+  margin: 2px 0 0;
+  font-size: 13px;
+  line-height: 1.65;
+  color: var(--muted);
+  display: -webkit-box;
+  -webkit-line-clamp: 5;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.homeOngoingRow {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.homeOngoing {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 100%;
+  padding: 10px;
+  color: inherit;
+  text-decoration: none;
+  border: 1px solid var(--border);
+  background: var(--card);
+  border-radius: 14px;
+  transition: border-color 180ms var(--ease);
+}
+
+.homeOngoing:hover,
+.homeOngoing:focus-visible {
+  border-color: var(--mist);
+}
+
+.homeOngoingPoster {
+  flex: 0 0 44px;
+  height: 64px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: rgba(148, 180, 193, 0.18);
+}
+
+.homeOngoingBody {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  flex: 1;
+}
+
+.homeOngoingTitle {
+  margin: 0;
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.homeOngoingMeta {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  font-size: 12px;
+  color: var(--faint);
+}
+
+.homeProgress {
+  display: block;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--border);
+  overflow: hidden;
+}
+
+.homeProgress > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--mist);
+}
+
+.homeListening {
+  margin-top: 26px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  border-radius: 14px;
+}
+
+.homeListeningCovers {
+  display: flex;
+  flex-shrink: 0;
+}
+
+.homeListeningCovers > span {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 2px solid var(--bg);
+  background: rgba(148, 180, 193, 0.18);
+}
+
+.homeListeningCovers > span + span {
+  margin-left: -14px;
+}
+
+.homeListeningText {
+  display: grid;
+  min-width: 0;
+  flex: 1;
+}
+
+.homeListeningName {
+  color: inherit;
+  font-weight: 650;
+  text-decoration: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.homeListeningName:hover,
+.homeListeningName:focus-visible {
+  text-decoration: underline;
+}
+
+.homeListeningCount {
+  font-size: 12px;
+  color: var(--faint);
+}
+
+@media (max-width: 960px) {
+  .homeOngoingRow {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Phones: featured cards scroll sideways (the next one peeks in); two entries in progress. */
+@media (max-width: 640px) {
+  .homeFeaturedRow,
+  .homeFeaturedRow.count-1,
+  .homeFeaturedRow.count-2 {
+    display: flex;
+    max-width: none;
+    gap: 12px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    /* Edge to edge, lined up with the container's 20px padding. */
+    margin-inline: -20px;
+    padding: 4px 20px 10px;
+    scroll-padding-inline: 20px;
+    scrollbar-width: none;
+  }
+
+  .homeFeaturedRow::-webkit-scrollbar {
+    display: none;
+  }
+
+  .homeFeaturedRow > * {
+    flex: 0 0 84%;
+    scroll-snap-align: start;
+  }
+
+  .homeFeaturedRow.count-1 > * {
+    flex-basis: 100%;
+  }
+
+  .homeOngoingRow {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .homeOngoingRow > :nth-child(n + 3) {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .homeFeatured {
+    transition: none;
+  }
+
+  .homeFeatured:hover {
+    transform: none;
   }
 }
 
@@ -2580,6 +2907,12 @@ html[data-theme="light"] .aboutSection {
   .mediaGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 12px;
+  }
+
+  /* Home: still three small covers in a row. */
+  .mediaGridHome {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
   }
 
   .collectionSelects {

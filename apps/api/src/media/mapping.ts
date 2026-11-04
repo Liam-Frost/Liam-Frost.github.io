@@ -93,6 +93,7 @@ export function toAdminMedia(row: MediaRow, store: LocalImageStore): AdminMediaI
     game: gameOf(row),
     inPlayer: row.inPlayer,
     featured: row.featured,
+    featuredOrder: row.featuredOrder,
     visibility: row.visibility,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString()

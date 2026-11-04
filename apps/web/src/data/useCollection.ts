@@ -3,7 +3,13 @@ import { useEffect, useState } from "react";
 
 import { apiFetchEnabled, apiUrl } from "../lib/api";
 
-const EMPTY: PublicCollection = { kinds: [], items: [], people: [], playlists: [] };
+const EMPTY: PublicCollection = {
+  kinds: [],
+  items: [],
+  people: [],
+  playlists: [],
+  home: { featured: [] }
+};
 
 /**
  * The public collection. It only exists in the database, so without the API (static builds) or when it
@@ -29,7 +35,9 @@ export function useCollection() {
             ? {
                 ...data,
                 people: Array.isArray(data.people) ? data.people : [],
-                playlists: Array.isArray(data.playlists) ? data.playlists : []
+                playlists: Array.isArray(data.playlists) ? data.playlists : [],
+                // An API from before Stage 21 sends no home picks.
+                home: Array.isArray(data.home?.featured) ? data.home : { featured: [] }
               }
             : EMPTY
         );

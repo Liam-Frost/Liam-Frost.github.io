@@ -13,6 +13,7 @@ This folder is the source of truth for the migration from a static portfolio to 
 - `plan-analytics.md`: execution plan for visitor analytics, Stage 18 (Chinese).
 - `plan-photos.md`: execution plan for photo sources, Stage 19 (Chinese).
 - `plan-dashboard.md`: execution plan for the admin overview, Stage 20 (Chinese).
+- `plan-home-collection.md`: execution plan for the home page collection section, Stage 21 (Chinese).
 - `progress.md`: migration progress by stage.
 - `development-log.md`: chronological development log.
 - `decisions.md`: user decisions and model-made implementation decisions.
