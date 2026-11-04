@@ -1,4 +1,5 @@
 name: Static emergency Pages
+run-name: "Static emergency Pages${{ inputs.dry_run && ' [validation only]' || '' }}"
 
 on:
   workflow_run:
