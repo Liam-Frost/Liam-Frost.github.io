@@ -190,7 +190,9 @@ function RelationRow({
       <div className="min-w-0 flex-1">
         <p className="truncate text-[13px] font-semibold text-brand-dark">
           <Link
-            to={other.type === "media" ? `/collection/${other.id}` : `/people/${other.id}`}
+            to={
+              other.type === "media" ? `/collection/${other.id}` : `/collection/people/${other.id}`
+            }
             className="hover:text-brand hover:underline"
           >
             {name}
@@ -810,13 +812,26 @@ function SuggestionsDialog({
           suggestion.kind === "tmdb-person" && suggestion.character
             ? { en: suggestion.character }
             : {};
-        await api.createRelation({
+        const body: AdminRelationCreate = {
           from: { type: "person", id: personId },
           toId: mediaId,
           type: "credit",
           role: suggestion.role,
           note
-        });
+        };
+        try {
+          await api.createRelation(body);
+        } catch (error) {
+          // Importing a person may already have linked this work by the same source identity/role.
+          if (!(error instanceof ApiError) || error.code !== "RELATION_EXISTS") throw error;
+          const { relations } = await api.relations({ type: "media", id: mediaId });
+          const existing = relations.find(
+            (r) => r.type === "credit" && r.role === suggestion.role && r.other.id === personId
+          );
+          if (!existing) throw error;
+          if (Object.keys(note).length && !Object.keys(existing.note).length)
+            await api.updateRelation(existing.id, { note });
+        }
       }
       setDone((d) => new Set(d).add(key));
       void qc.invalidateQueries({ queryKey: peopleKey });
@@ -840,8 +855,9 @@ function SuggestionsDialog({
     <Dialog open title="关联建议" onClose={onClose}>
       <p className="mb-3 text-[12px] leading-relaxed text-faint">
         来自 TMDB 的演职员、歌曲的歌手、图书和漫画的作者、游戏的开发商，以及 AniList
-        上和这部作品有关、并且已在收藏里的作品（动漫、漫画、轻小说）。只有你点“添加”才会建立关联；从
-        TMDB 添加的人物会一起导入资料和照片。
+        上和这部作品有关、并且已在收藏里的作品（动漫、漫画、轻小说）。从 TMDB
+        添加人物时会导入资料和照片， 并按人物 ID
+        自动关联收藏里已有的作品；后续新增作品也会自动匹配已有人物。其他作品关系仍由你选择添加。
       </p>
       {isPending ? <p className="text-[13px] text-subtle">查找中…</p> : null}
       {error ? <p className="text-[13px] text-status-error">{error.message}</p> : null}

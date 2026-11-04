@@ -28,6 +28,11 @@ import { registerAdminPhotoRoutes } from "./routes/admin-photos";
 import { registerAdminMediaRoutes } from "./routes/admin-media";
 import { registerAdminMusicRoutes } from "./routes/admin-music";
 import { registerAdminPeopleRoutes } from "./routes/admin-people";
+import {
+  AutomaticRelations,
+  withAutomaticMedia,
+  withAutomaticPeople
+} from "./people/automatic-relations";
 import { registerAdminPlaylistRoutes } from "./routes/admin-playlists";
 import { registerAdminProjectRoutes } from "./routes/admin-projects";
 import { registerCollectionRoutes } from "./routes/collection";
@@ -220,13 +225,6 @@ export async function buildServer({
   const activeSources = mediaSources ?? liveService(() => integrations.media(), createMediaSources);
   const store = new LocalImageStore(config.uploads.dir ?? DEFAULT_UPLOAD_DIR);
   const collection = settings ? new CollectionSettingsStore(settings) : null;
-  const spotify = new SpotifyService(
-    settings ?? new MemorySettingsRepository(),
-    media,
-    collection,
-    store,
-    playlists
-  );
   const account =
     spotifyAccount ??
     liveService(
@@ -264,6 +262,21 @@ export async function buildServer({
       ? new RequestRecorder(analyticsStore, analytics.clock, now, () => analytics.isEnabled())
       : null;
   const sources = systemLog ? withSourceLog(activeSources, systemLog) : activeSources;
+  const automaticRelations =
+    media && people && relations ? new AutomaticRelations(media, people, relations, sources) : null;
+  const automaticRelationError = (error: unknown) =>
+    app.log.warn({ err: error }, "Automatic credits unavailable; retry from the person's links");
+  if (automaticRelations && media && people) {
+    media = withAutomaticMedia(media, automaticRelations, automaticRelationError);
+    people = withAutomaticPeople(people, automaticRelations, automaticRelationError);
+  }
+  const spotify = new SpotifyService(
+    settings ?? new MemorySettingsRepository(),
+    media,
+    collection,
+    store,
+    playlists
+  );
   if (analytics) {
     // Hourly: write the totals of finished days and delete raw data past the retention period.
     const maintain = () =>
@@ -444,6 +457,7 @@ export async function buildServer({
     media,
     people,
     relations,
+    automaticRelations,
     sources,
     store,
     maxUploadBytes: config.uploads.maxBytes

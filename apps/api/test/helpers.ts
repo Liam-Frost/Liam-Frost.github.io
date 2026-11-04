@@ -46,6 +46,7 @@ export const offlineMediaSources: MediaSources = {
   searchPeople: offline,
   person: offline,
   credits: offline,
+  personCredits: async () => [],
   relations: async () => [],
   steamGames: offline
 };

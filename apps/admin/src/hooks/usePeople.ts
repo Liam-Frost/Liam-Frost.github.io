@@ -25,6 +25,7 @@ export function usePerson(id: string) {
 export function useSetPerson() {
   const qc = useQueryClient();
   return (person: AdminPerson) => {
+    void qc.invalidateQueries({ queryKey: ["admin", "relations"] });
     qc.setQueryData(personKey(person.id), { person });
     if (!qc.getQueryData(peopleKey)) return;
     qc.setQueryData<AdminPeopleResponse>(peopleKey, (data) => {

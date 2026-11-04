@@ -32,6 +32,7 @@ import {
   relationUpdateSchema
 } from "../lib/validation";
 import { storePoster } from "../media/import";
+import type { AutomaticRelations } from "../people/automatic-relations";
 import { SourceError, titleKey, type MediaSources } from "../media/sources";
 import type { MediaRepository, MediaRow } from "../media/types";
 import { mediaEnd, personEnd, sides, toAdminPerson, toAdminRelation } from "../people/mapping";
@@ -102,6 +103,7 @@ export function registerAdminPeopleRoutes(
     media: MediaRepository | null;
     people: PersonRepository | null;
     relations: RelationRepository | null;
+    automaticRelations: AutomaticRelations | null;
     sources: MediaSources;
     store: LocalImageStore;
     maxUploadBytes: number;
@@ -248,6 +250,14 @@ export function registerAdminPeopleRoutes(
     respond(await getPerson(personId(request)))
   );
 
+  app.post("/api/admin/people/:id/sync-relations", admin, async (request) => {
+    const person = await getPerson(personId(request));
+    if (person.source === "tmdb" && !sources.available().tmdb)
+      throw badRequest("请先在 API 配置中添加有效的 TMDB 凭据", "SOURCE_NOT_CONFIGURED");
+    const added = await deps.automaticRelations!.personAdded(person).catch(sourceFailure);
+    return { added, ...(await respond(person)) };
+  });
+
   app.patch("/api/admin/people/:id", admin, async (request): Promise<AdminPersonResponse> => {
     const id = personId(request);
     const patch = parseInput(personUpdateSchema, request.body);
@@ -385,6 +395,13 @@ export function registerAdminPeopleRoutes(
           note: input.note,
           key: relationKey(ends)
         });
+        if (ends.fromPersonId && deps.automaticRelations) {
+          await deps.automaticRelations
+            .personAdded(await getPerson(ends.fromPersonId))
+            .catch((error) =>
+              request.log.warn({ err: error }, "Cannot complete automatic credits")
+            );
+        }
         reply.code(201);
         return { relation: toAdminRelation(relation, "from", mediaEnd(to, store)) };
       } catch (error) {

@@ -4,8 +4,8 @@ import type {
   AdminPersonUpdate,
   PersonSearchResult
 } from "@liam-frost/shared";
-import { useQueryClient } from "@tanstack/react-query";
-import { EyeOff, Plus, Search, Star, Trash2, UserRound } from "lucide-react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { EyeOff, Plus, RefreshCw, Search, Star, Trash2, UserRound } from "lucide-react";
 import { useMemo, useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router";
 
@@ -28,6 +28,36 @@ export function PeoplePage() {
   const { data: settings } = useCollectionSettings();
   const [adding, setAdding] = useState(false);
   const [filter, setFilter] = useState("");
+  const [processed, setProcessed] = useState(0);
+  const qc = useQueryClient();
+  const toast = useToast();
+  const sync = useMutation({
+    mutationFn: async () => {
+      setProcessed(0);
+      let added = 0;
+      let failed = 0;
+      // One person at a time avoids bursts of external API requests and lets partial failures retry.
+      for (const person of people ?? []) {
+        try {
+          added += (await api.syncPersonRelations(person.id)).added;
+        } catch {
+          failed++;
+        }
+        setProcessed((n) => n + 1);
+      }
+      return { added, failed };
+    },
+    onSuccess: ({ added, failed }) => {
+      toast(
+        failed
+          ? `新增 ${added} 个关联；${failed} 个人物未完成，可进入人物详情重试`
+          : `已补齐，共新增 ${added} 个关联`,
+        failed ? "error" : undefined
+      );
+      void qc.invalidateQueries({ queryKey: peopleKey });
+      void qc.invalidateQueries({ queryKey: ["admin", "relations"] });
+    }
+  });
 
   const needle = filter.trim().toLowerCase();
   const visible = (people ?? []).filter(
@@ -44,11 +74,22 @@ export function PeoplePage() {
     <>
       <PageHeader
         title="人物"
-        description="演员、导演、歌手、作家、制作公司……在条目的“关联”里把人物和作品连起来；网站只显示参与了公开条目的公开人物。"
+        description="TMDB 人物会按来源 ID 自动关联已有影视，新增作品也会匹配已有人物。手动添加的歌手、作者或工作室，先关联一部作品并选择角色，之后按唯一名字补齐。来源暂不可用时可在人物内重试。"
         actions={
-          <button type="button" className="btn-primary" onClick={() => setAdding(true)}>
-            <Plus aria-hidden="true" className="size-4" /> 添加人物
-          </button>
+          <>
+            <button
+              type="button"
+              className="btn-secondary"
+              disabled={sync.isPending || !people?.length}
+              onClick={() => sync.mutate()}
+            >
+              <RefreshCw aria-hidden="true" className="size-4" />
+              {sync.isPending ? `补齐中 ${processed}/${people?.length ?? 0}` : "补齐全部作品关联"}
+            </button>
+            <button type="button" className="btn-primary" onClick={() => setAdding(true)}>
+              <Plus aria-hidden="true" className="size-4" /> 添加人物
+            </button>
+          </>
         }
       />
 
@@ -166,7 +207,7 @@ function PersonCard({ person, selection }: { person: AdminPerson; selection: Sel
       {body}
     </button>
   ) : (
-    <Link to={`/people/${person.id}`} className={className}>
+    <Link to={`/collection/people/${person.id}`} className={className}>
       {body}
     </Link>
   );
@@ -311,7 +352,7 @@ function AddPersonDialog({ tmdbReady, onClose }: { tmdbReady: boolean; onClose: 
     try {
       const { person } = await api.importPerson(result.sourceId);
       setPerson(person);
-      navigate(`/people/${person.id}`);
+      navigate(`/collection/people/${person.id}`);
     } catch (e) {
       setError(
         e instanceof ApiError && e.code === "PERSON_EXISTS"
@@ -332,7 +373,7 @@ function AddPersonDialog({ tmdbReady, onClose }: { tmdbReady: boolean; onClose: 
     try {
       const { person } = await api.createPerson({ name: { [guessLang(name)]: name } });
       setPerson(person);
-      navigate(`/people/${person.id}`);
+      navigate(`/collection/people/${person.id}`);
     } catch (e) {
       setError(e instanceof Error ? e.message : "创建失败");
     }
@@ -404,7 +445,10 @@ function AddPersonDialog({ tmdbReady, onClose }: { tmdbReady: boolean; onClose: 
                   </p>
                 </div>
                 {result.existingId ? (
-                  <Link to={`/people/${result.existingId}`} className="btn-secondary shrink-0">
+                  <Link
+                    to={`/collection/people/${result.existingId}`}
+                    className="btn-secondary shrink-0"
+                  >
                     已添加，打开
                   </Link>
                 ) : (

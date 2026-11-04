@@ -4,6 +4,7 @@ import { Link } from "react-router";
 
 import { pickLocalized, useI18n, type Key } from "../lib/i18n";
 import { cx } from "../lib/cx";
+import { compareCompleted } from "../lib/completed-order";
 import MediaCard, { isReadKind, mediaTitle, Stars, statusKey } from "./MediaCard";
 import { PlayAllButton } from "./PlayButton";
 import { imageSrcSet } from "./ProjectCard";
@@ -23,7 +24,6 @@ const ONGOING = 4;
 const RECENT = 6;
 
 const itemLink = (item: PublicMediaSummary) => `/collection?kind=${item.kind}&item=${item.id}`;
-const finished = (item: PublicMediaSummary) => item.watchedOn ?? item.updatedAt.slice(0, 10);
 
 /** Episodes, a comic's volumes or a book's pages, or a game's hours; null when nothing is known. */
 export function progressOf(
@@ -146,9 +146,7 @@ export default function HomeCollection({ collection }: { collection: PublicColle
     ongoing.forEach((item) => shown.add(item.id));
     const done = items
       .filter((item) => item.status === "done" && item.kind !== "track" && !shown.has(item.id))
-      .sort(
-        (a, b) => finished(b).localeCompare(finished(a)) || b.updatedAt.localeCompare(a.updatedAt)
-      );
+      .sort(compareCompleted);
 
     const year = String(new Date().getFullYear());
     const thisYear = items.filter(

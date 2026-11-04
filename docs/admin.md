@@ -221,6 +221,33 @@ Each part loads on its own: if one fails (for example the database), it shows a 
 
 API: `POST /api/analytics/events`; admin: `GET /api/admin/analytics/meta`, `GET /api/admin/analytics/overview|content|audience|health?range=today|7d|30d|90d|custom&from&to`, `GET /api/admin/analytics/content/:type/:id`, `GET /api/admin/analytics/counts?type=`, `GET /api/admin/analytics/export?dataset=trend|pages|content|referrers|countries|health&format=csv|json`, `DELETE /api/admin/analytics/data?scope=events|health|all`.
 
+## Collection people and automatic credits
+
+People live under **收藏 → 人物**, alongside **作品**. Existing `/people` and `/people/:id`
+bookmarks redirect to their collection routes. The sidebar mark and favicon use the public site's LF
+artwork. Recently completed works on the home page sort by the explicit completion date, descending;
+undated works come last, with edit time and ID used only to break ties.
+
+Importing a TMDB person automatically links their movie/TV credits to works already in the collection,
+by TMDB source IDs, including private entries. It does not import any additional works or people.
+Later movie/TV imports match existing TMDB people using full cast/crew (aggregate credits for series),
+not only the eight people shown as suggestions. A person can have several supported roles in a work.
+Existing links and handwritten notes are kept; repeated backfills do not create duplicates.
+
+For music, books/comics and games, automatic name matches need a unique exact normalized name and an
+existing explicit credit in the same role (singer, author or studio). First link a manual person to one
+work and select the role; related existing works are then backfilled, and future imports are observed,
+including playlist imports and Steam sync. Ambiguous names and cross-source film identities are not
+guessed. Unsupported roles/sources can still be linked manually.
+
+The people list offers **补齐全部作品关联**, and each person offers **补齐作品关联**. These are useful
+for pre-existing data and source outages. Requests run one person at a time and report partial failures.
+An unavailable credit source does not undo a successful import; explicit retry reports the source error.
+Backfill is additive: it does not remove stale links, and a manually deleted source-backed link can be
+recreated by a later backfill. No schema migration or production data rewrite is required to install
+this feature. Explicit backfill uses authenticated, CSRF-protected
+`POST /api/admin/people/:id/sync-relations`.
+
 ## Running the Admin App
 
 Development (API, web and admin dev servers):
