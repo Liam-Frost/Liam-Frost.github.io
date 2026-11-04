@@ -1,5 +1,6 @@
 import type { AdminPerson, LocalizedText } from "@liam-frost/shared";
-import { ArrowLeft, ExternalLink, ImagePlus, Trash2, UserRound, X } from "lucide-react";
+import { ArrowLeft, ExternalLink, ImagePlus, RefreshCw, Trash2, UserRound, X } from "lucide-react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 
@@ -14,7 +15,7 @@ import {
   useUpdatePerson,
   useUploadPersonPhoto
 } from "../hooks/usePeople";
-import { ApiError } from "../lib/api";
+import { api, ApiError } from "../lib/api";
 import { LANG_LABELS, LANGS, pickText, type Lang } from "../lib/i18n";
 import { RecentStats } from "../components/analytics/RecentStats";
 
@@ -51,7 +52,7 @@ export function PersonEditPage() {
             ? "人物不存在"
             : (error?.message ?? "无法加载人物")}
         </p>
-        <Link to="/people" className="btn-secondary">
+        <Link to="/collection/people" className="btn-secondary">
           返回人物
         </Link>
       </div>
@@ -72,6 +73,16 @@ function PersonEditor({ person }: { person: AdminPerson }) {
   const remove = useDeletePerson();
   const navigate = useNavigate();
   const toast = useToast();
+  const qc = useQueryClient();
+  const sync = useMutation({
+    mutationFn: () => api.syncPersonRelations(person.id),
+    onSuccess: ({ added }) => {
+      toast(added ? `已补齐 ${added} 个关联` : "关联已完整，没有新增关联");
+      void qc.invalidateQueries({ queryKey: ["admin", "people"] });
+      void qc.invalidateQueries({ queryKey: ["admin", "relations"] });
+    },
+    onError: (error) => toast(error.message, "error")
+  });
 
   useEffect(() => {
     if (!dirty) return;
@@ -127,7 +138,7 @@ function PersonEditor({ person }: { person: AdminPerson }) {
     <form onSubmit={submit} noValidate>
       <div className="mb-6 flex flex-wrap items-center gap-3">
         <Link
-          to="/people"
+          to="/collection/people"
           className="rounded-full p-1.5 text-subtle hover:bg-brand-secondary/12 hover:text-brand"
           aria-label="返回人物"
           onClick={(e) => {
@@ -140,6 +151,15 @@ function PersonEditor({ person }: { person: AdminPerson }) {
           {name}
         </h1>
         <RecentStats type="person" id={person.id} />
+        <button
+          type="button"
+          className="btn-secondary"
+          disabled={sync.isPending}
+          onClick={() => sync.mutate()}
+        >
+          <RefreshCw aria-hidden="true" className="size-4" />
+          {sync.isPending ? "补齐中…" : "补齐作品关联"}
+        </button>
         {dirty ? (
           <span className="text-[12.5px] text-status-warn" role="status">
             有未保存的修改
@@ -325,7 +345,7 @@ function PersonEditor({ person }: { person: AdminPerson }) {
                 remove.mutate(person.id, {
                   onSuccess: () => {
                     toast("已删除");
-                    navigate("/people");
+                    navigate("/collection/people");
                   },
                   onError: (e) => toast(e.message, "error")
                 })

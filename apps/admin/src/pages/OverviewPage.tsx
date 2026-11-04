@@ -371,7 +371,7 @@ function Content({ data, className }: { data: DashboardContent; className: strin
       detail: `隐藏 ${data.media.hidden} · 进行中 ${data.media.watching}`
     },
     {
-      to: "/people",
+      to: "/collection/people",
       label: "人物",
       total: data.people.total,
       detail: `隐藏 ${data.people.hidden}`

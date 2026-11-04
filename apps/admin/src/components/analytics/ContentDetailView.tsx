@@ -10,7 +10,7 @@ import { itemLabel } from "./ContentView";
 /** Where to edit a piece of content, for the types whose editor is addressed by the same id. */
 const EDIT: Partial<Record<AnalyticsContentType, (id: string) => string>> = {
   media: (id) => `/collection/${encodeURIComponent(id)}`,
-  person: (id) => `/people/${encodeURIComponent(id)}`
+  person: (id) => `/collection/people/${encodeURIComponent(id)}`
 };
 
 export function ContentDetailView({ type, id }: { type: AnalyticsContentType; id: string }) {
