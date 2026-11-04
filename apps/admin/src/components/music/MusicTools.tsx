@@ -5,7 +5,7 @@ import type {
   MusicSearchResult
 } from "@liam-frost/shared";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Music, Pause, Play, Search } from "lucide-react";
+import { MessageSquare, Music, Pause, Play, Search, Star } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { Link } from "react-router";
 
@@ -19,6 +19,7 @@ import { Dialog } from "../ui/Dialog";
 import { Field, Switch } from "../ui/Field";
 import { useToast } from "../ui/Toast";
 import { Tooltip } from "../ui/Tooltip";
+import { SongReviewDialog } from "./SongReviewDialog";
 
 /** One shared <audio> for preview buttons: starting a preview stops the previous one. */
 export function usePreview() {
@@ -515,17 +516,20 @@ export function SpotifyAccountDialog({ onClose }: { onClose: () => void }) {
   );
 }
 
-type MusicFilter = "all" | "player" | "notPlayer" | "noPreview";
+type MusicFilter = "all" | "featured" | "player" | "notPlayer" | "noPreview";
 
 /** The collection's songs: preview, player switch and a preview search for songs without one. */
 export function MusicList({ items }: { items: AdminMediaItem[] }) {
   const [filter, setFilter] = useState<MusicFilter>("all");
   const [needle, setNeedle] = useState("");
   const [fixing, setFixing] = useState<AdminMediaItem | null>(null);
+  const [reviewingId, setReviewingId] = useState<string | null>(null);
+  const reviewing = items.find((item) => item.id === reviewingId);
   const preview = usePreview();
 
   const counts = {
     all: items.length,
+    featured: items.filter((i) => i.featured).length,
     player: items.filter((i) => i.inPlayer).length,
     notPlayer: items.filter((i) => !i.inPlayer).length,
     noPreview: items.filter((i) => !i.music?.previewUrl).length
@@ -534,11 +538,13 @@ export function MusicList({ items }: { items: AdminMediaItem[] }) {
   const visible = items.filter(
     (item) =>
       (filter === "all" ||
-        (filter === "player"
-          ? item.inPlayer
-          : filter === "notPlayer"
-            ? !item.inPlayer
-            : !item.music?.previewUrl)) &&
+        (filter === "featured"
+          ? item.featured
+          : filter === "player"
+            ? item.inPlayer
+            : filter === "notPlayer"
+              ? !item.inPlayer
+              : !item.music?.previewUrl)) &&
       (!q ||
         [pickText(item.title), ...item.credits, item.music?.album ?? ""].some((text) =>
           text.toLowerCase().includes(q)
@@ -546,6 +552,7 @@ export function MusicList({ items }: { items: AdminMediaItem[] }) {
   );
   const labels: Record<MusicFilter, string> = {
     all: "全部",
+    featured: "精选歌曲",
     player: "在播放器中",
     notPlayer: "不在播放器中",
     noPreview: "没有试听"
@@ -603,6 +610,7 @@ export function MusicList({ items }: { items: AdminMediaItem[] }) {
               item={item}
               preview={preview}
               onFix={() => setFixing(item)}
+              onReview={() => setReviewingId(item.id)}
               selection={selection}
             />
           ))}
@@ -614,6 +622,9 @@ export function MusicList({ items }: { items: AdminMediaItem[] }) {
       </BatchBar>
 
       {fixing ? <FixPreviewDialog item={fixing} onClose={() => setFixing(null)} /> : null}
+      {reviewing ? (
+        <SongReviewDialog item={reviewing} onClose={() => setReviewingId(null)} />
+      ) : null}
     </>
   );
 }
@@ -622,11 +633,13 @@ function MusicRow({
   item,
   preview,
   onFix,
+  onReview,
   selection
 }: {
   item: AdminMediaItem;
   preview: ReturnType<typeof usePreview>;
   onFix: () => void;
+  onReview: () => void;
   selection: Selection;
 }) {
   const update = useUpdateMedia(item.id);
@@ -636,7 +649,7 @@ function MusicRow({
   const selected = selection.isSelected(item.id);
 
   return (
-    <li className={`flex items-center gap-3 px-3 py-2.5 ${selected ? "bg-brand/6" : ""}`}>
+    <li className={`flex flex-wrap items-center gap-3 px-4 py-3 ${selected ? "bg-brand/6" : ""}`}>
       {selection.active ? (
         <button
           type="button"
@@ -650,36 +663,86 @@ function MusicRow({
       ) : null}
       <Cover src={item.poster?.variants[0].url} />
       <div className="min-w-0 flex-1">
-        <Link
-          to={`/collection/${item.id}`}
-          className="block truncate text-[13.5px] font-semibold text-brand-dark hover:text-brand"
-        >
-          {title}
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link
+            to={`/collection/${item.id}`}
+            className="block truncate text-[13.5px] font-semibold text-brand-dark hover:text-brand"
+          >
+            {title}
+          </Link>
+          {item.featured ? (
+            <span className="chip inline-flex shrink-0 items-center gap-1">
+              <Star aria-hidden="true" className="size-3 fill-current" />
+              精选
+            </span>
+          ) : null}
+        </div>
         <p className="truncate text-[12px] text-subtle">
           {[item.credits.join(", "), item.music?.album].filter(Boolean).join(" · ")}
         </p>
+        {item.rating || pickText(item.review) ? (
+          <div className="mt-1 flex items-center gap-2 text-[11.5px] text-muted">
+            {item.rating ? (
+              <span className="inline-flex shrink-0 items-center gap-1 text-rating">
+                <Star aria-hidden="true" className="size-3 fill-current" />
+                {item.rating} / 5
+              </span>
+            ) : null}
+            {pickText(item.review) ? (
+              <span className="truncate">{pickText(item.review)}</span>
+            ) : null}
+          </div>
+        ) : null}
       </div>
       {item.visibility === "private" ? <span className="chip">隐藏</span> : null}
-      {previewUrl ? (
-        <PreviewButton url={previewUrl} preview={preview} />
-      ) : (
-        <button type="button" className="btn-secondary shrink-0" onClick={onFix}>
-          找试听
+      <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto">
+        <Tooltip content={item.featured ? "取消这首歌的精选" : "将这首歌设为精选"} describe={false}>
+          <button
+            type="button"
+            aria-label={`${item.featured ? "取消精选" : "设为精选"}：${title}`}
+            aria-pressed={item.featured}
+            disabled={update.isPending}
+            className={`rounded-full border p-2 transition-colors disabled:opacity-50 ${item.featured ? "border-rating/25 bg-rating/10 text-rating" : "border-line text-faint hover:border-brand-secondary hover:text-brand"}`}
+            onClick={() =>
+              update.mutate(
+                { featured: !item.featured },
+                { onError: (e) => toast(e.message, "error") }
+              )
+            }
+          >
+            <Star aria-hidden="true" className={`size-4 ${item.featured ? "fill-current" : ""}`} />
+          </button>
+        </Tooltip>
+        <button
+          type="button"
+          className="btn-secondary !px-3 !py-2"
+          aria-label={`评分与短评：${title}`}
+          onClick={onReview}
+        >
+          <MessageSquare aria-hidden="true" className="size-3.5" />
+          <span>评分 / 短评</span>
         </button>
-      )}
-      <Switch
-        id={`player-${item.id}`}
-        checked={item.inPlayer}
-        onChange={(on) => {
-          if (on && !previewUrl) {
-            toast("先为这首歌找到试听，才能加入播放器", "error");
-            return;
-          }
-          update.mutate({ inPlayer: on }, { onError: (e) => toast(e.message, "error") });
-        }}
-        label={<span className="hidden text-[12px] text-subtle sm:inline">播放器</span>}
-      />
+        {previewUrl ? (
+          <PreviewButton url={previewUrl} preview={preview} />
+        ) : (
+          <button type="button" className="btn-secondary shrink-0" onClick={onFix}>
+            找试听
+          </button>
+        )}
+        <Switch
+          id={`player-${item.id}`}
+          checked={item.inPlayer}
+          onChange={(on) => {
+            if (update.isPending) return;
+            if (on && !previewUrl) {
+              toast("先为这首歌找到试听，才能加入播放器", "error");
+              return;
+            }
+            update.mutate({ inPlayer: on }, { onError: (e) => toast(e.message, "error") });
+          }}
+          label={<span className="text-[12px] text-subtle">播放器</span>}
+        />
+      </div>
     </li>
   );
 }

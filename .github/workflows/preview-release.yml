@@ -126,3 +126,32 @@ jobs:
           path: release/manifest.json
           retention-days: 14
           if-no-files-found: error
+      - name: Summarize runner queue and execution times
+        if: always()
+        continue-on-error: true
+        timeout-minutes: 1
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 - <<'PY'
+          import datetime, json, os, urllib.request
+          now = datetime.datetime.now(datetime.timezone.utc)
+          url = f"https://api.github.com/repos/{os.environ['GITHUB_REPOSITORY']}/actions/runs/{os.environ['GITHUB_RUN_ID']}/jobs?per_page=100"
+          request = urllib.request.Request(url, headers={'Authorization': 'Bearer ' + os.environ['GH_TOKEN'], 'Accept': 'application/vnd.github+json'})
+          with urllib.request.urlopen(request, timeout=25) as response:
+              jobs = json.load(response)['jobs']
+          def stamp(value):
+              return datetime.datetime.fromisoformat(value.replace('Z', '+00:00')) if value else None
+          def duration(seconds):
+              seconds = max(0, int(seconds))
+              return f'{seconds // 60}m {seconds % 60}s'
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as summary:
+              summary.write('## Runner queue and execution\n\nRunner queue is separate from build/deployment time. GitHub final status propagation is not included.\n\n| Job | Waiting for runner | Execution |\n| --- | ---: | ---: |\n')
+              for job in jobs:
+                  created, started = stamp(job.get('created_at')), stamp(job.get('started_at'))
+                  if not created or not started:
+                      continue
+                  finished = stamp(job.get('completed_at')) or now
+                  name = job['name'].replace('|', '/')
+                  summary.write(f"| {name} | {duration((started-created).total_seconds())} | {duration((finished-started).total_seconds())} |\n")
+          PY
