@@ -306,6 +306,10 @@ export const api = {
   musicJob: (id: string) =>
     request<{ job: MusicImportJob }>(`/api/admin/music/jobs/${encodeURIComponent(id)}`),
   people: () => request<AdminPeopleResponse>("/api/admin/people"),
+  syncPersonRelations: (id: string) =>
+    request<AdminPersonResponse & { added: number }>(`${personPath(id)}/sync-relations`, {
+      method: "POST"
+    }),
   person: (id: string) => request<AdminPersonResponse>(personPath(id)),
   searchPeople: (q: string) =>
     request<AdminPersonSearchResponse>(`/api/admin/people/search?${new URLSearchParams({ q })}`),

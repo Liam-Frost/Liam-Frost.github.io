@@ -58,6 +58,23 @@ export type CreditHit = {
   photoUrl: string | null;
 };
 
+export type PersonWorkCredit = {
+  sourceId: string;
+  role: PersonRole;
+  character: string | null;
+};
+
+const TMDB_JOB_ROLES: Record<string, PersonRole> = {
+  Director: "director",
+  Creator: "creator",
+  Writer: "screenwriter",
+  Screenplay: "screenwriter",
+  Producer: "producer",
+  "Executive Producer": "producer",
+  "Original Music Composer": "composer"
+};
+const tmdbJobRole = (job: string): PersonRole | null => TMDB_JOB_ROLES[job] ?? null;
+
 /** An AniList relation: how the other work relates to this one, which kind it is, and its titles. */
 export type AniListRelation = {
   relationType: string;
@@ -82,7 +99,9 @@ export interface MediaSources {
   /** One TMDB person. */
   person(sourceId: string): Promise<PersonDetails>;
   /** Directors / creators, writers and the main cast of a TMDB film or series ("movie:123"). */
-  credits(sourceId: string, kind: MediaKind): Promise<CreditHit[]>;
+  credits(sourceId: string, kind: MediaKind, options?: { all?: boolean }): Promise<CreditHit[]>;
+  /** One person's movie/TV credits, identified by source id rather than title or name. */
+  personCredits(sourceId: string): Promise<PersonWorkCredit[]>;
   /** IGDB games for Steam app ids (Steam's id as text → IGDB's id); missing ones are not on IGDB. */
   steamGames(appIds: string[]): Promise<Map<string, string>>;
   /** AniList relations of an anime, comic or (light) novel matched by its Japanese title; empty when not found or unreachable. */
@@ -1360,19 +1379,86 @@ export function createMediaSources(options: {
       };
     },
 
-    async credits(sourceId, kind) {
+    async personCredits(sourceId) {
+      if (!/^\d{1,12}$/.test(sourceId)) throw new SourceError("无效的 TMDB 人物");
+      type Work = { id: number; media_type: string; character?: string; job?: string };
+      const data = await tmdb<{ cast?: Work[]; crew?: Work[] }>(
+        `/person/${sourceId}/combined_credits`
+      );
+      const out: PersonWorkCredit[] = [];
+      const seen = new Set<string>();
+      for (const [works, cast] of [
+        [data.cast ?? [], true],
+        [data.crew ?? [], false]
+      ] as const) {
+        for (const work of works) {
+          if (
+            !["movie", "tv"].includes(work.media_type) ||
+            !Number.isSafeInteger(work.id) ||
+            work.id <= 0
+          )
+            continue;
+          const character = clean(work.character);
+          const role = cast
+            ? /\(voice\)$/i.test(character)
+              ? "voice"
+              : "actor"
+            : tmdbJobRole(work.job ?? "");
+          if (!role) continue;
+          const id = `${work.media_type}:${work.id}`;
+          const key = `${id}:${role}`;
+          if (seen.has(key)) continue;
+          seen.add(key);
+          out.push({
+            sourceId: id,
+            role,
+            character: character.replace(/\s*\(voice\)$/i, "") || null
+          });
+        }
+      }
+      return out;
+    },
+
+    async credits(sourceId, kind, options) {
       const match = /^(movie|tv):(\d+)$/.exec(sourceId);
       if (!match) throw new SourceError("无效的 TMDB 条目");
       const type = match[1] as TmdbType;
       const details = await tmdb<{
         created_by?: { id: number; name: string; profile_path?: string | null }[];
         credits?: TmdbCredits;
+        aggregate_credits?: {
+          cast?: {
+            id: number;
+            name: string;
+            profile_path?: string | null;
+            order?: number;
+            roles?: { character: string }[];
+          }[];
+          crew?: {
+            id: number;
+            name: string;
+            profile_path?: string | null;
+            jobs?: { job: string }[];
+          }[];
+        };
       }>(`/${type}/${match[2]}`, {
-        append_to_response: "credits"
+        append_to_response: options?.all && type === "tv" ? "credits,aggregate_credits" : "credits"
       });
       const photo = (path: string | null | undefined) =>
         path ? `${TMDB_IMAGE}/w185${path}` : null;
-      const crew = details.credits?.crew ?? [];
+      const crew =
+        details.aggregate_credits?.crew?.flatMap((member) =>
+          (member.jobs ?? []).map(({ job }) => ({ ...member, job }))
+        ) ??
+        details.credits?.crew ??
+        [];
+      const cast =
+        details.aggregate_credits?.cast?.map((member) => ({
+          ...member,
+          character: [...new Set((member.roles ?? []).map((role) => role.character))].join(" / ")
+        })) ??
+        details.credits?.cast ??
+        [];
       const hits: CreditHit[] = [
         ...(type === "tv"
           ? (details.created_by ?? []).map((person) => ({
@@ -1387,9 +1473,15 @@ export function createMediaSources(options: {
         ...crew
           .filter((member) => member.job === "Screenplay" || member.job === "Writer")
           .map((member) => ({ ...member, role: "screenwriter" as const })),
-        ...(details.credits?.cast ?? [])
+        ...(options?.all
+          ? crew.flatMap((member) => {
+              const role = tmdbJobRole(member.job);
+              return role ? [{ ...member, role }] : [];
+            })
+          : []),
+        ...cast
           .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
-          .slice(0, CAST_LIMIT)
+          .slice(0, options?.all ? undefined : CAST_LIMIT)
           .map((member) => ({
             ...member,
             role: kind === "anime" ? ("voice" as const) : ("actor" as const)

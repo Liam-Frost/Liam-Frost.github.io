@@ -1,7 +1,8 @@
 import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes } from "react-router";
+import { BrowserRouter, Navigate, Route, Routes, useParams } from "react-router";
 
 import { AdminLayout } from "./components/layout/AdminLayout";
+import { CollectionLayout } from "./components/collection/CollectionLayout";
 import { ToastProvider } from "./components/ui/Toast";
 import { sessionKey, useSession } from "./hooks/useSession";
 import { ApiError } from "./lib/api";
@@ -79,10 +80,14 @@ function SessionGate() {
         <Route path="photos" element={<PhotosPage />} />
         <Route path="projects" element={<ProjectsPage />} />
         <Route path="projects/:id" element={<ProjectEditPage />} />
-        <Route path="collection" element={<CollectionPage />} />
-        <Route path="collection/:id" element={<MediaEditPage />} />
-        <Route path="people" element={<PeoplePage />} />
-        <Route path="people/:id" element={<PersonEditPage />} />
+        <Route path="collection" element={<CollectionLayout />}>
+          <Route index element={<CollectionPage />} />
+          <Route path="people" element={<PeoplePage />} />
+          <Route path="people/:id" element={<PersonEditPage />} />
+          <Route path=":id" element={<MediaEditPage />} />
+        </Route>
+        <Route path="people" element={<LegacyPersonRedirect />} />
+        <Route path="people/:id" element={<LegacyPersonRedirect />} />
         <Route path="music" element={<MusicPage />} />
         <Route path="integrations" element={<IntegrationsPage />} />
         <Route path="analytics" element={<AnalyticsPage view="overview" />} />
@@ -94,4 +99,9 @@ function SessionGate() {
       </Route>
     </Routes>
   );
+}
+
+function LegacyPersonRedirect() {
+  const { id } = useParams();
+  return <Navigate replace to={`/collection/people${id ? `/${encodeURIComponent(id)}` : ""}`} />;
 }

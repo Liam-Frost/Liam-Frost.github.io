@@ -28,6 +28,8 @@ export function useMediaItem(id: string) {
 export function useSetMediaItem() {
   const qc = useQueryClient();
   return (item: AdminMediaItem) => {
+    void qc.invalidateQueries({ queryKey: ["admin", "people"] });
+    void qc.invalidateQueries({ queryKey: ["admin", "relations"] });
     qc.setQueryData(mediaItemKey(item.id), { item });
     if (!qc.getQueryData(mediaKey)) return;
     qc.setQueryData<AdminMediaListResponse>(mediaKey, (data) => {

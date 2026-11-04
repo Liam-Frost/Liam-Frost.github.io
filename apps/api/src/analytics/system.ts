@@ -72,6 +72,7 @@ export function withSourceLog(sources: MediaSources, log: SystemLog): MediaSourc
     romaji: (...args) => sources.romaji(...args),
     searchPeople: (query) => watch("tmdb", () => sources.searchPeople(query)),
     person: (id) => watch("tmdb", () => sources.person(id)),
+    personCredits: (id) => watch("tmdb", () => sources.personCredits(id)),
     credits: (...args) => watch("tmdb", () => sources.credits(...args)),
     relations: (...args) => sources.relations(...args),
     steamGames: (ids) => watch("igdb", () => sources.steamGames(ids))

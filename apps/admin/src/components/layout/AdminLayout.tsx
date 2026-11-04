@@ -7,8 +7,7 @@ import {
   LayoutDashboard,
   LogOut,
   Music,
-  KeyRound,
-  UsersRound
+  KeyRound
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { NavLink, Outlet } from "react-router";
@@ -21,7 +20,6 @@ const NAV = [
   { to: "/photos", label: "照片", icon: Images, end: false },
   { to: "/projects", label: "项目", icon: FolderKanban, end: false },
   { to: "/collection", label: "收藏", icon: Clapperboard, end: false },
-  { to: "/people", label: "人物", icon: UsersRound, end: false },
   { to: "/music", label: "播放器", icon: Music, end: false },
   { to: "/analytics", label: "统计", icon: ChartColumn, end: false },
   { to: "/integrations", label: "API 配置", icon: KeyRound, end: false }
@@ -40,7 +38,14 @@ export function AdminLayout({ user }: { user: AdminUser }) {
     <div className="min-h-dvh md:grid md:grid-cols-[220px_1fr]">
       <aside className="flex items-center gap-3 border-b border-line bg-brand-dark px-4 py-3 text-white md:sticky md:top-0 md:h-dvh md:flex-col md:items-stretch md:gap-6 md:border-r md:border-b-0 md:px-4 md:py-6">
         <div className="flex items-center gap-2.5 md:px-2">
-          <img src="./favicon.svg" alt="" className="size-7 rounded-md bg-white/90 p-0.5" />
+          <span
+            aria-hidden="true"
+            className="size-7 shrink-0 bg-linear-to-br from-[#547792] to-[#94b4c1] shadow-[0_0_0_6px_rgba(148,180,193,0.2)]"
+            style={{
+              mask: 'url("./favicon.svg?v=lf") center / contain no-repeat',
+              WebkitMask: 'url("./favicon.svg?v=lf") center / contain no-repeat'
+            }}
+          />
           <span className="text-[15px] font-semibold">管理后台</span>
         </div>
 
