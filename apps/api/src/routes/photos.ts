@@ -17,10 +17,12 @@ export function registerPhotoRoutes(
   photos: PhotoRepository | null,
   store: LocalImageStore
 ) {
-  app.get("/api/photos", async (request) => {
+  app.get("/api/photos", async (request, reply) => {
     if (!photos) return seedPhotos;
     try {
-      return (await photos.list()).map((row) => toPublicPhoto(row, store));
+      const result = (await photos.list()).map((row) => toPublicPhoto(row, store));
+      reply.header("x-snapshot-data-source", "database");
+      return result;
     } catch (error) {
       request.log.warn({ error }, "Photo database unavailable; using seed photo data");
       return seedPhotos;

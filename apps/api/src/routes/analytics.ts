@@ -20,6 +20,11 @@ import type { CountryLookup } from "../analytics/geo";
 import type { AdminAuthService } from "../auth/service";
 import { HttpError, notFound } from "../lib/errors";
 import { parseInput } from "../lib/validation";
+import {
+  AnalyticsSettings,
+  analyticsPreferencesSchema,
+  GEOIP_MAX_BYTES
+} from "../settings/analytics";
 
 const day = z.string().refine(isDay, "Invalid day");
 const rangeFields = {
@@ -64,7 +69,8 @@ export function registerAnalyticsRoutes(
   auth: AdminAuthService,
   analytics: AnalyticsService | null,
   geo: CountryLookup,
-  rateLimitPerMinute: number
+  rateLimitPerMinute: number | (() => number),
+  preferences?: AnalyticsSettings
 ) {
   const admin = { preHandler: auth.requireAdmin };
   const requireAnalytics = () => {
@@ -76,6 +82,45 @@ export function registerAnalyticsRoutes(
       );
     return analytics;
   };
+
+  if (preferences) {
+    app.get("/api/admin/analytics/preferences", admin, async (_request, reply) => {
+      reply.header("cache-control", "no-store");
+      return preferences.status();
+    });
+    app.put("/api/admin/analytics/preferences", admin, async (request, reply) => {
+      const input = parseInput(
+        z
+          .object({
+            values: analyticsPreferencesSchema,
+            revision: z.string().length(64),
+            confirmRetention: z.boolean().default(false)
+          })
+          .strict(),
+        request.body
+      );
+      reply.header("cache-control", "no-store");
+      return preferences.update(input.values, input.revision, input.confirmRetention);
+    });
+    app.post(
+      "/api/admin/analytics/geoip",
+      {
+        ...admin,
+        bodyLimit: GEOIP_MAX_BYTES + 1024 * 1024,
+        config: { rateLimit: { max: 3, timeWindow: "1 minute" } }
+      },
+      async (request, reply) => {
+        const file = await request.file({
+          limits: { files: 1, fields: 0, fileSize: GEOIP_MAX_BYTES }
+        });
+        if (!file) throw new HttpError(400, "FILE_REQUIRED", "请选择 Country MMDB 文件");
+        const bytes = await file.toBuffer();
+        if (file.file.truncated) throw new HttpError(413, "FILE_TOO_LARGE", "最大 32 MiB");
+        reply.header("cache-control", "no-store");
+        return preferences.upload(bytes);
+      }
+    );
+  }
 
   // Sent with sendBeacon as text/plain, which needs no CORS preflight; JSON is accepted too.
   app.post(

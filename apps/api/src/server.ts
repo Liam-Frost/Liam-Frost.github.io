@@ -63,6 +63,7 @@ import type { ProjectRepository } from "./projects/types";
 import { PrismaSettingsRepository } from "./settings/prisma-repository";
 import { MemorySettingsRepository, type SettingsRepository } from "./settings/types";
 import { IntegrationSettings } from "./settings/integrations";
+import { AnalyticsSettings } from "./settings/analytics";
 import { liveService } from "./settings/live-service";
 import { registerIntegrationRoutes } from "./routes/integrations";
 import { createPlaylistFetcher, fetchTrackPreview, type PlaylistFetcher } from "./spotify/playlist";
@@ -237,16 +238,28 @@ export async function buildServer({
       () => integrations.values("steam").apiKey ?? "",
       (key) => new SteamAccount(key, settings, steamFetch)
     );
-  const geo = createCountryLookup(
-    { header: config.analytics.countryHeader, geoipDb: config.analytics.geoipDb },
-    (error) => app.log.warn({ err: error }, "Cannot open ANALYTICS_GEOIP_DB; countries are unknown")
+  const analyticsSettings = new AnalyticsSettings(settings, config.analytics, store.root);
+  await analyticsSettings.load();
+  const geo = liveService(
+    () => ({
+      header: analyticsSettings.config.countryHeader,
+      geoipDb: analyticsSettings.config.geoipDb
+    }),
+    (options) =>
+      createCountryLookup(options, (error) =>
+        app.log.warn({ err: error }, "Cannot open analytics country database")
+      )
   );
   const catalog = new ContentCatalog({ projects, photos, media, people, playlists }, () =>
     (now ? now() : new Date()).getTime()
   );
   const analytics = analyticsStore
-    ? new AnalyticsService(analyticsStore, config.analytics, geo, now, catalog)
+    ? new AnalyticsService(analyticsStore, analyticsSettings.config, geo, now, catalog)
     : null;
+  if (analytics) {
+    const enabled = analytics.isEnabled.bind(analytics);
+    analytics.isEnabled = async () => analyticsSettings.error === null && (await enabled());
+  }
   // The job log, source status and API timings under 统计 → 体验与运行.
   const systemLog =
     analyticsStore && analytics
@@ -280,9 +293,11 @@ export async function buildServer({
   if (analytics) {
     // Hourly: write the totals of finished days and delete raw data past the retention period.
     const maintain = () =>
-      analytics.maintain().catch((error: unknown) => {
-        app.log.warn({ err: error }, "Analytics maintenance failed");
-      });
+      (analyticsSettings.error ? Promise.resolve() : analytics.maintain()).catch(
+        (error: unknown) => {
+          app.log.warn({ err: error }, "Analytics maintenance failed");
+        }
+      );
     const flush = () =>
       requests?.flush().catch((error: unknown) => {
         app.log.warn({ err: error }, "Cannot write API request statistics");
@@ -476,7 +491,14 @@ export async function buildServer({
   registerUploadRoutes(app, store, { photos, projects, media, people, collection }, auth);
   registerSpotifyRoutes(app, auth, spotify, account, settings !== null);
   registerSteamRoutes(app, auth, steam, steamSync);
-  registerAnalyticsRoutes(app, auth, analytics, geo, config.analytics.rateLimitPerMinute);
+  registerAnalyticsRoutes(
+    app,
+    auth,
+    analytics,
+    geo,
+    () => analyticsSettings.config.rateLimitPerMinute,
+    analyticsSettings
+  );
   registerAdminDashboardRoutes(
     app,
     auth,

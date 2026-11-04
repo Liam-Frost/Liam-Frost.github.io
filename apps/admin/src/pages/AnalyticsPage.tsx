@@ -14,6 +14,7 @@ import { RangePicker, useRange } from "../components/analytics/common";
 import { ContentDetailView } from "../components/analytics/ContentDetailView";
 import { ContentView } from "../components/analytics/ContentView";
 import { HealthView } from "../components/analytics/HealthView";
+import { SettingsView } from "../components/analytics/SettingsView";
 import { OverviewView, useOverview } from "../components/analytics/OverviewView";
 import { PageHeader } from "../components/layout/AdminLayout";
 import { DatabaseNotice } from "../components/ui/DatabaseNotice";
@@ -21,13 +22,14 @@ import { useToast } from "../components/ui/Toast";
 import { api } from "../lib/api";
 import { InfoTip } from "../components/ui/Tooltip";
 
-export type AnalyticsView = "overview" | "content" | "detail" | "audience" | "health";
+export type AnalyticsView = "overview" | "content" | "detail" | "audience" | "health" | "settings";
 
 const TABS: { view: AnalyticsView; to: string; label: string }[] = [
   { view: "overview", to: "/analytics", label: "总览" },
   { view: "content", to: "/analytics/content", label: "内容" },
   { view: "audience", to: "/analytics/audience", label: "来源与受众" },
-  { view: "health", to: "/analytics/health", label: "体验与运行" }
+  { view: "health", to: "/analytics/health", label: "体验与运行" },
+  { view: "settings", to: "/analytics/settings", label: "设置" }
 ];
 
 const EXPORTS: { dataset: AnalyticsExport; label: string }[] = [
@@ -133,9 +135,11 @@ export function AnalyticsPage({ view }: { view: AnalyticsView }) {
           ))}
         </nav>
 
-        <RangePicker firstDay={meta.data?.firstDay ?? null} />
+        {view !== "settings" ? <RangePicker firstDay={meta.data?.firstDay ?? null} /> : null}
 
-        {empty && view !== "health" ? (
+        {view === "settings" ? (
+          <SettingsView />
+        ) : empty && view !== "health" ? (
           <p className="card p-6 text-[13.5px] leading-relaxed text-muted">
             还没有统计数据。网站有人访问后，这里会显示浏览量、访客、内容和来源。
           </p>
@@ -165,7 +169,7 @@ export function AnalyticsPage({ view }: { view: AnalyticsView }) {
               ? "代理请求头"
               : meta.data.countrySource === "geoip"
                 ? "GeoLite2 数据库"
-                : "未配置（ANALYTICS_COUNTRY_HEADER 或 ANALYTICS_GEOIP_DB）"}
+                : "未配置（可在统计设置中配置）"}
             。
           </p>
         ) : null}
