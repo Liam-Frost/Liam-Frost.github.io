@@ -101,7 +101,7 @@ export function registerCollectionRoutes(app: FastifyInstance, deps: Deps) {
     }
   };
 
-  app.get("/api/collection", async (request): Promise<PublicCollection> => {
+  app.get("/api/collection", async (request, reply): Promise<PublicCollection> => {
     if (!deps.media) return EMPTY;
     try {
       const shown = await visible();
@@ -122,6 +122,7 @@ export function registerCollectionRoutes(app: FastifyInstance, deps: Deps) {
           trackIds,
           sourceUrl: row.sourceUrl
         }));
+      reply.header("x-snapshot-data-source", "database");
       return {
         kinds,
         items: [...shown.media.values()].map((row) => toPublicMediaSummary(row, deps.store)),

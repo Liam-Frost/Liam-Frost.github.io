@@ -280,3 +280,11 @@ Codes used by admin routes: `VALIDATION`, `REQUEST_ERROR`, `CSRF`, `UNAUTHORIZED
 ## Tests
 
 `npm test` runs the API tests (Vitest + Fastify `inject`) covering configuration validation, admin path rules, IP lists, login, CSRF, rate limiting, session revocation, cookie tampering, the IP allowlist, `TRUST_PROXY`, admin app hosting (path injection, asset allowlist, traversal attempts, IP hiding), photos (public visibility, seed fallback, upload processing with EXIF orientation, size limits, invalid files, edit/publish/delete, ordering, `/uploads` file allowlist), and projects (public listing, slugs, validation, cover replacement, screenshots, image visibility, delete with files, ordering).
+
+# 统计设置
+
+“统计 → 设置”可修改原始记录保留天数、分组最少访客数、每 IP 每分钟事件请求上限、IP/CIDR 排除规则和国家识别方式。API 配置页提供入口。这些设置独立保存在当前环境数据库中，保存后立即生效，无需改环境变量或重启；统计总开关仍在统计页面右上方。
+
+未保存时沿用 `ANALYTICS_*` 默认值。国别识别可选择服务器默认、关闭、可信代理请求头（Cloudflare 使用 `cf-ipcountry`）或上传 Country MMDB。上传最大 32 MiB，校验格式后保存为随机文件名，不接受服务器路径或远程下载地址；上传后还需保存设置才能启用。私有目录为 `UPLOAD_DIR/.analytics-geoip`，公开上传路由不提供下载。保留当前文件和最近两个上传草稿；该目录应随加密上传文件备份保存，预发布数据刷新必须保留预发布自身的目录，不能从生产复制。
+
+缩短保留期需要明确确认，下一次维护会永久删除过期原始记录，按天汇总保留。统计时区显示但不允许在线修改：历史日期桶不能直接转换，运维须先评估历史数据处理，再修改 `ANALYTICS_TIMEZONE`。代理信任范围、源站防火墙和备份策略仍属运维配置；填写国家请求头不会自动信任代理。只在可信代理覆盖该请求头且源站受保护时使用。MMDB 的数据许可和更新由管理员负责。

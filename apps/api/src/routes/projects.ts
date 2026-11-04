@@ -16,10 +16,12 @@ export function registerProjectRoutes(
   projects: ProjectRepository | null,
   store: LocalImageStore
 ) {
-  app.get("/api/projects", async (request): Promise<PublicProjectSummary[]> => {
+  app.get("/api/projects", async (request, reply): Promise<PublicProjectSummary[]> => {
     if (!projects) return [];
     try {
-      return (await projects.list()).map((row) => toPublicProjectSummary(row, store));
+      const result = (await projects.list()).map((row) => toPublicProjectSummary(row, store));
+      reply.header("x-snapshot-data-source", "database");
+      return result;
     } catch (error) {
       request.log.warn({ error }, "Project database unavailable");
       return [];

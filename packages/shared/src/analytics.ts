@@ -244,3 +244,22 @@ export type AnalyticsExport = (typeof ANALYTICS_EXPORTS)[number];
 
 export const ANALYTICS_CLEAR_SCOPES = ["events", "health", "all"] as const;
 export type AnalyticsClearScope = (typeof ANALYTICS_CLEAR_SCOPES)[number];
+/** Runtime analytics preferences. Paths and database credentials are never exposed. */
+export type AnalyticsPreferences = {
+  retentionDays: number;
+  minGroupSize: number;
+  rateLimitPerMinute: number;
+  excludeIps: string[];
+  countryMode: "environment" | "none" | "header" | "database";
+  countryHeader: string;
+  databaseId: string | null;
+};
+export type AnalyticsPreferencesStatus = {
+  values: AnalyticsPreferences;
+  editable: boolean;
+  saved: boolean;
+  revision: string;
+  timezone: string;
+  environmentCountrySource: "header" | "geoip" | "none";
+  database: { id: string; type: string; builtAt: string; bytes: number } | null;
+};
