@@ -154,8 +154,11 @@ export function withAutomaticMedia(
     setFeaturedOrder: repo.setFeaturedOrder.bind(repo),
     create: async (input) => synchronize(await repo.create(input)),
     update: async (id, patch) => {
+      const before = patch.credits !== undefined ? await repo.get(id) : null;
       const row = await repo.update(id, patch);
-      return row && patch.credits !== undefined ? synchronize(row) : row;
+      return row && before && JSON.stringify(before.credits) !== JSON.stringify(row.credits)
+        ? synchronize(row)
+        : row;
     }
   };
 }
@@ -176,8 +179,13 @@ export function withAutomaticPeople(
     delete: repo.delete.bind(repo),
     create: async (input) => synchronize(await repo.create(input)),
     update: async (id, patch) => {
+      const before =
+        patch.name !== undefined || patch.originalName !== undefined ? await repo.get(id) : null;
       const row = await repo.update(id, patch);
-      return row && (patch.name !== undefined || patch.originalName !== undefined)
+      return row &&
+        before &&
+        (JSON.stringify(before.name) !== JSON.stringify(row.name) ||
+          before.originalName !== row.originalName)
         ? synchronize(row)
         : row;
     }

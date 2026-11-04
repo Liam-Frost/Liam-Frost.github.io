@@ -87,6 +87,47 @@ async function setup() {
 }
 
 describe("automatic person/work credits", () => {
+  it("does not call external sources for ordinary editor saves with unchanged names/credits", async () => {
+    const { app, people, sources, post, headers, film } = await setup();
+    await people.create({
+      id: randomUUID(),
+      source: "tmdb",
+      sourceId: "42",
+      name: { en: "Same Name" }
+    });
+    const person = (
+      await post("/api/admin/people/import", { source: "tmdb", sourceId: "43" })
+    ).json().person;
+    vi.mocked(sources.credits).mockClear();
+    vi.mocked(sources.personCredits).mockClear();
+    expect(
+      (
+        await app.inject({
+          method: "PATCH",
+          url: `/api/admin/media/${film.id}`,
+          headers,
+          payload: { credits: film.credits, rating: 4 }
+        })
+      ).statusCode
+    ).toBe(200);
+    expect(
+      (
+        await app.inject({
+          method: "PATCH",
+          url: `/api/admin/people/${person.id}`,
+          headers,
+          payload: {
+            name: person.name,
+            originalName: person.originalName,
+            bio: { en: "Edited biography" }
+          }
+        })
+      ).statusCode
+    ).toBe(200);
+    expect(sources.credits).not.toHaveBeenCalled();
+    expect(sources.personCredits).not.toHaveBeenCalled();
+    await app.close();
+  });
   it("backfills imported people by source id, including private works, without importing new works", async () => {
     const { app, media, relations, post, film, second, tv } = await setup();
     const result = await post("/api/admin/people/import", { source: "tmdb", sourceId: "42" });
