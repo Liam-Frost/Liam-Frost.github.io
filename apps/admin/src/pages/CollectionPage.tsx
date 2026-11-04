@@ -57,6 +57,8 @@ export function CollectionPage() {
   const [params, setParams] = useSearchParams();
   const kind: CollectionKind = COLLECTION_KINDS.find((k) => k === params.get("kind")) ?? "movie";
   const status = STATUSES.find((s) => s === params.get("status")) ?? null;
+  // ?rating=none: entries without a rating (the overview's 未评分 task).
+  const unrated = params.get("rating") === "none";
   // 概览 links here with ?open=add, steam or spotify.
   const arrival = useArrivalParams("open").open;
   const [adding, setAdding] = useState(arrival === "add");
@@ -89,11 +91,16 @@ export function CollectionPage() {
   const { data: items, isPending, error } = useMediaList();
   const { data: settings } = useCollectionSettings();
 
-  const select = (next: { kind?: CollectionKind; status?: MediaStatus | null }) => {
+  const select = (next: {
+    kind?: CollectionKind;
+    status?: MediaStatus | null;
+    unrated?: boolean;
+  }) => {
     const value = new URLSearchParams();
     value.set("kind", next.kind ?? kind);
     const nextStatus = next.status === undefined ? status : next.status;
     if (nextStatus) value.set("status", nextStatus);
+    if (next.unrated ?? (next.kind === undefined && unrated)) value.set("rating", "none");
     setParams(value, { replace: true });
   };
 
@@ -191,6 +198,8 @@ export function CollectionPage() {
           items={ofKind}
           status={status}
           onStatus={(s) => select({ status: s })}
+          unrated={unrated}
+          onUnrated={(on) => select({ unrated: on })}
         />
       )}
 
@@ -222,18 +231,23 @@ function WatchList({
   kind,
   items: ofKind,
   status,
-  onStatus
+  onStatus,
+  unrated,
+  onUnrated
 }: {
   kind: WatchKind;
   items: AdminMediaItem[];
   status: MediaStatus | null;
   onStatus: (status: MediaStatus | null) => void;
+  unrated: boolean;
+  onUnrated: (on: boolean) => void;
 }) {
   const [filter, setFilter] = useState("");
   const needle = filter.trim().toLowerCase();
   const visible = ofKind.filter(
     (item) =>
       (!status || item.status === status) &&
+      (!unrated || item.rating === null) &&
       (!needle ||
         [...Object.values(item.title), item.originalTitle ?? ""].some((text) =>
           text?.toLowerCase().includes(needle)
@@ -257,6 +271,18 @@ function WatchList({
             {s ? ofKind.filter((item) => item.status === s).length : ofKind.length}
           </button>
         ))}
+        <button
+          type="button"
+          aria-pressed={unrated}
+          onClick={() => onUnrated(!unrated)}
+          className={`chip ${unrated ? "border-brand bg-brand/10 text-brand" : ""}`}
+        >
+          未评分{" "}
+          {
+            ofKind.filter((item) => (!status || item.status === status) && item.rating === null)
+              .length
+          }
+        </button>
         <div className="ml-auto flex w-full items-center gap-2 sm:w-auto">
           <div className="relative flex-1 sm:w-60">
             <Search

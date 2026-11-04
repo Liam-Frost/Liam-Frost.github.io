@@ -41,6 +41,8 @@ export type DashboardTask = {
   id: DashboardTaskId;
   /** For "source-failing": the source; otherwise absent. */
   subject?: string;
+  /** For "media-unrated": the kind with the most such entries, so the link opens that tab. */
+  kind?: MediaKind;
   severity: "warning" | "info";
   count: number;
   /** A few of the items, each with its own admin path when it has one. */

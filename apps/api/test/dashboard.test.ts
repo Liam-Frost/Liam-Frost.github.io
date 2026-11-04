@@ -174,6 +174,7 @@ describe("admin dashboard", () => {
     // Songs are not rated.
     expect(tasks["media-unrated"]).toMatchObject({
       count: 1,
+      kind: "movie",
       examples: [{ id: "m1", to: "/collection/m1" }]
     });
     expect(tasks["steam-stale"]).toBeDefined();

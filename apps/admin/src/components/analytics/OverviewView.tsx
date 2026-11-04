@@ -14,7 +14,7 @@ import {
 import { InfoTip } from "../ui/Tooltip";
 
 type KpiKey = keyof AnalyticsKpis;
-const KPIS: { key: KpiKey; label: string; hint: string }[] = [
+export const KPIS: { key: KpiKey; label: string; hint: string }[] = [
   {
     key: "views",
     label: "浏览量",
