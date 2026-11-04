@@ -68,14 +68,93 @@ jobs:
               out.write('## Production approval\n\nCandidate: `' + candidate['head_sha'] + '`\n\n[Preview site](https://preview.twilightfrosty.com) · [Successful preview build](' + candidate['html_url'] + ')\n\nReview the preview, then choose **Review deployments → production → Approve and deploy**. This promotes the same immutable bundle; no rebuild.\n\nIf preview advances to another version before approval, deployment will stop safely.\n')
           PY
 
-  deploy:
+  migration-plan:
+    name: Rehearse and describe database changes before approval
     needs: validate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    environment: preview
+    outputs:
+      database_approval_required: ${{ steps.plan.outputs.database_approval_required }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.validate.outputs.revision }}
+      - name: Rehearse against production content and freeze preview acceptance
+        id: plan
+        env:
+          REVISION: ${{ needs.validate.outputs.revision }}
+          SSH_HOST: ${{ secrets.PREVIEW_SSH_HOST }}
+          SSH_PORT: ${{ secrets.PREVIEW_SSH_PORT }}
+          SSH_USER: ${{ secrets.PREVIEW_SSH_USER }}
+          SSH_KEY: ${{ secrets.PREVIEW_SSH_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.PREVIEW_SSH_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          umask 077
+          key="$RUNNER_TEMP/preview-plan-key"
+          known="$RUNNER_TEMP/preview-plan-hosts"
+          trap 'rm -f "$key" "$known"' EXIT
+          printf '%s\n' "$SSH_KEY" | tr -d '\r' > "$key"
+          printf '%s\n' "$SSH_KNOWN_HOSTS" | tr -d '\r' > "$known"
+          python3 - <<'PY' > migration-input.json
+          import json, os, pathlib
+          root = pathlib.Path('apps/api/prisma/migrations')
+          migrations = [{'name': p.name, 'sql': (p / 'migration.sql').read_text()} for p in sorted(root.iterdir()) if p.is_dir()]
+          print(json.dumps({'revision': os.environ['REVISION'], 'migrations': migrations}))
+          PY
+          ssh -i "$key" -p "$SSH_PORT" -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o "UserKnownHostsFile=$known" -o ServerAliveInterval=30 -o ServerAliveCountMax=3 "$SSH_USER@$SSH_HOST" "migration-plan $REVISION" < migration-input.json > migration-plan.json
+          python3 - <<'PY'
+          import json, os, pathlib
+          p = json.loads(pathlib.Path('migration-plan.json').read_text())
+          assert p['ok'] and p['rehearsal_passed'] and p['approval']['revision'] == os.environ['REVISION']
+          risk = p['approval']['database_approval_required']
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as out:
+              out.write('database_approval_required=' + str(risk).lower() + '\n')
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as out:
+              out.write('## 数据库迁移审批计划\n\n生产内容临时副本迁移演练：**通过**。生产数据库尚未修改。\n\n')
+              out.write('计划 SHA256：`' + p['sha256'] + '`\n\n')
+              out.write('预发布刷新及部署暂停至 `' + p['preview_freeze_expires_at'] + '`；发布结束后自动恢复。超过此时间请重新生成计划。\n\n')
+              out.write('批准后：验证生产历史与本计划一致 → 配对备份、R2 回读及加拿大副本 → 暂停 API 写入 → Prisma migrate deploy → 发布同一镜像及区域前端。\n\n')
+              out.write('迁移期间动态 API 短暂不可用。数据库不会自动回滚；恢复备份可能丢失备份后的写入。迁移失败或高风险迁移后发布失败会停住服务并要求人工恢复。\n\n')
+              if not p['pending_sql']:
+                  out.write('**没有待执行迁移**；沿用普通 production 审批。\n')
+              for item in p['pending_sql']:
+                  out.write('### `' + item['name'] + '`\n\n风险：**' + item['risk'] + '**。SHA256：`' + item['checksum'] + '`\n\n')
+                  out.write('````sql\n' + item['sql'] + '\n````\n\n')
+              if risk:
+                  out.write('**额外数据库审批**：此计划超出“新增可空、无默认值字段”的保守允许范围。可能删数据、改类型、锁表或与旧版本不兼容；请逐条审阅 SQL。先批准 production-database，再批准 production。\n')
+          PY
+      - uses: actions/upload-artifact@v7
+        with:
+          name: production-migration-plan-${{ github.run_id }}
+          path: migration-plan.json
+          retention-days: 14
+          if-no-files-found: error
+
+  database-review:
+    name: Additional review of potentially destructive database changes
+    needs: migration-plan
+    if: needs.migration-plan.outputs.database_approval_required == 'true'
+    runs-on: ubuntu-24.04
+    environment: production-database
+    steps:
+      - run: printf 'Database risk approved. Production approval is still required.\n' >> "$GITHUB_STEP_SUMMARY"
+
+  deploy:
+    needs: [validate, migration-plan, database-review]
+    if: always() && needs.validate.result == 'success' && needs.migration-plan.result == 'success' && (needs.database-review.result == 'success' || needs.database-review.result == 'skipped')
     runs-on: ubuntu-24.04
     timeout-minutes: 40
     environment:
       name: production
       url: https://www.twilightfrosty.com
     steps:
+      - name: Download reviewed migration plan
+        uses: actions/download-artifact@v8
+        with:
+          name: production-migration-plan-${{ github.run_id }}
+          path: database-plan
       - name: Download the exact validated preview bundle
         uses: actions/download-artifact@v8
         with:
@@ -109,6 +188,7 @@ jobs:
           SSH_KEY: ${{ secrets.PRODUCTION_SSH_KEY }}
           SSH_KNOWN_HOSTS: ${{ secrets.PRODUCTION_SSH_KNOWN_HOSTS }}
           PRODUCTION_RUN: ${{ github.run_id }}
+          DATABASE_REVIEW: ${{ needs.database-review.result }}
         run: |
           set -euo pipefail
           test "$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq .object.sha)" = "$GITHUB_SHA" || { echo 'main advanced while approval was pending; use its newer deployment.'; exit 1; }
@@ -127,6 +207,12 @@ jobs:
           manifest = json.loads(p.read_text())
           manifest['production_run'] = int(os.environ['PRODUCTION_RUN'])
           manifest['approval_source'] = 'github-environment:production'
+          plan = json.loads(pathlib.Path('database-plan/migration-plan.json').read_text())
+          assert plan['ok'] and plan['approval']['revision'] == manifest['revision']
+          manifest['migration_plan'] = {'approval': plan['approval'], 'sha256': plan['sha256'], 'expires_at': plan['preview_freeze_expires_at']}
+          if plan['approval']['database_approval_required']:
+              assert os.environ['DATABASE_REVIEW'] == 'success'
+              manifest['database_approval_source'] = 'github-environment:production-database'
           p.write_text(json.dumps(manifest))
           PY
           cat release/manifest.json | ssh "${ssh_options[@]}" "$SSH_USER@$SSH_HOST" "authorize $REVISION"
@@ -144,3 +230,28 @@ jobs:
           REVISION: ${{ needs.validate.outputs.revision }}
         run: |
           printf '### Production deployment\n\nRevision: `%s`\n\nResult: **%s**\n\n[Open production](https://www.twilightfrosty.com)\n' "$REVISION" "$RESULT" >> "$GITHUB_STEP_SUMMARY"
+
+  resume-preview:
+    name: Resume disposable preview after release
+    needs: [validate, migration-plan, database-review, deploy]
+    if: always() && needs.migration-plan.result == 'success'
+    runs-on: ubuntu-24.04
+    environment: preview
+    steps:
+      - name: Release this candidate's acceptance pause
+        env:
+          REVISION: ${{ needs.validate.outputs.revision }}
+          SSH_HOST: ${{ secrets.PREVIEW_SSH_HOST }}
+          SSH_PORT: ${{ secrets.PREVIEW_SSH_PORT }}
+          SSH_USER: ${{ secrets.PREVIEW_SSH_USER }}
+          SSH_KEY: ${{ secrets.PREVIEW_SSH_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.PREVIEW_SSH_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          umask 077
+          key="$RUNNER_TEMP/preview-resume-key"
+          known="$RUNNER_TEMP/preview-resume-hosts"
+          trap 'rm -f "$key" "$known"' EXIT
+          printf '%s\n' "$SSH_KEY" | tr -d '\r' > "$key"
+          printf '%s\n' "$SSH_KNOWN_HOSTS" | tr -d '\r' > "$known"
+          ssh -i "$key" -p "$SSH_PORT" -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o "UserKnownHostsFile=$known" "$SSH_USER@$SSH_HOST" "refresh-resume $REVISION"
