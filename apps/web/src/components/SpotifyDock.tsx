@@ -2,10 +2,11 @@ import type { PublicSpotifyPlayer } from "@liam-frost/shared";
 import { useCallback, useEffect, useRef, useState, type FocusEvent } from "react";
 
 import { onPlayerCommand, setNowPlaying, type PlayRequest } from "../data/playerBus";
-import { createAudioTap, observeSpotifyEmbed } from "../data/audio-visualization";
+import { createAudioTap } from "../data/audio-visualization";
 import { useSpotifyPlayer } from "../data/useSpotifyPlayer";
 import { track as trackEvent } from "../lib/analytics";
 import { SpotifyCard } from "./spotify-card";
+import { SpotifyEmbedFrame } from "./SpotifyEmbedFrame";
 
 /** Previews that fail to load are skipped; after this many in a row, playback stops. */
 const MAX_FAILED_IN_A_ROW = 3;
@@ -40,8 +41,7 @@ function embedSrc(link: string) {
 }
 
 /**
- * Spotify's own embedded player in the dock. It plays inside its iframe, so the page cannot tell whether
- * it is playing; the iframe stays mounted while collapsed so music keeps going.
+ * Spotify's embedded player stays mounted while collapsed; the official API supplies playback state.
  */
 function EmbedDock({ player, src }: { player: PublicSpotifyPlayer; src: string }) {
   const [isExpanded, setIsExpanded] = useState(true);
@@ -50,7 +50,6 @@ function EmbedDock({ player, src }: { player: PublicSpotifyPlayer; src: string }
   // A song chosen on the page replaces the configured link. Spotify's iframe cannot be started from the
   // page, so the visitor presses play in it.
   const [shown, setShown] = useState(src);
-  useEffect(() => observeSpotifyEmbed(), []);
 
   useEffect(
     () =>
@@ -106,14 +105,7 @@ function EmbedDock({ player, src }: { player: PublicSpotifyPlayer; src: string }
       onMouseLeave={() => setIsHovering(false)}
     >
       <div className="spotifyDockPanel">
-        <iframe
-          title="Spotify"
-          src={shown}
-          width="100%"
-          height="152"
-          allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-          loading="lazy"
-        />
+        <SpotifyEmbedFrame src={shown} />
       </div>
 
       <button

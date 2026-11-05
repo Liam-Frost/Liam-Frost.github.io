@@ -7,7 +7,8 @@ export function useWaveMotion(
   svg: RefObject<SVGSVGElement | null>,
   maxScroll: RefObject<number>,
   enabled: boolean,
-  audioEnabled: boolean
+  audioEnabled: boolean,
+  fpsCap: number
 ) {
   const pointer = useRef<number | null>(null);
   const wake = useRef(() => {});
@@ -19,6 +20,7 @@ export function useWaveMotion(
     const levels = new Float32Array(SEGMENTS);
     let frame = 0,
       previous = 0,
+      lastDraw = 0,
       pointerLevel = 0,
       pointerPosition = 0,
       quietSince = 0;
@@ -26,6 +28,11 @@ export function useWaveMotion(
     const tick = (now: number) => {
       frame = 0;
       if (document.hidden) return;
+      if (pointer.current === null && now - lastDraw < 1000 / fpsCap) {
+        frame = requestAnimationFrame(tick);
+        return;
+      }
+      lastDraw = now;
       const dt = previous ? Math.min(0.06, (now - previous) / 1000) : 0.016;
       previous = now;
       const reduced = motion.matches;
@@ -72,7 +79,7 @@ export function useWaveMotion(
             (raw - levels[index]!) * Math.min(1, dt * (raw > levels[index]! ? 9 : 4));
         if (levels[index]! > 0.005) settling = true;
         const hover = gaussian(index - pointerPosition) * pointerLevel;
-        const width = 12 + 44 * hover + 8 * levels[index]! * (1 - hover);
+        const width = 12 + 35.2 * hover + 8 * levels[index]! * (1 - hover);
         line.setAttribute("x2", String(width));
         line.setAttribute(
           "class",
@@ -104,6 +111,6 @@ export function useWaveMotion(
       motion.removeEventListener("change", start);
       wake.current = () => {};
     };
-  }, [svg, maxScroll, enabled, audioEnabled]);
+  }, [svg, maxScroll, enabled, audioEnabled, fpsCap]);
   return { pointer, wake };
 }

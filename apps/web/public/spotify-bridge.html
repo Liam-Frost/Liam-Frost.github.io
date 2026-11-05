@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="referrer" content="no-referrer" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; script-src 'unsafe-inline' 'unsafe-eval' https://open.spotify.com/embed/iframe-api/v1 https://embed-cdn.spotifycdn.com/_next/static/; style-src 'unsafe-inline'; frame-src https://open.spotify.com; base-uri 'none'; form-action 'none'"
+    />
+    <style>
+      html,
+      body {
+        margin: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+      }
+      iframe {
+        display: block;
+        border: 0;
+        width: 100%;
+        height: 152px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="embed"></div>
+    <script id="runtime" type="text/plain">
+      (() => {
+        let api = null,
+          config = null,
+          controller = null;
+        const send = (type, data) => {
+          if (config)
+            parent.postMessage(
+              { channel: "lf-spotify-bridge", token: config.token, type, data },
+              config.origin
+            );
+        };
+        const create = () => {
+          if (!api || !config || controller) return;
+          try {
+            api.createController(
+              document.getElementById("embed"),
+              { url: config.url, width: "100%", height: 152 },
+              (instance) => {
+                controller = instance;
+                instance.addListener("playback_update", (event) =>
+                  send("update", {
+                    isPaused: event.data?.isPaused,
+                    isBuffering: event.data?.isBuffering
+                  })
+                );
+                instance.addListener("playback_started", () => send("started"));
+                send("ready");
+              }
+            );
+          } catch {
+            send("error");
+          }
+        };
+        window.onSpotifyIframeApiReady = (value) => {
+          api = value;
+          create();
+        };
+        window.addEventListener("message", (event) => {
+          if (event.source !== parent || config || event.data?.channel !== "lf-spotify-bridge-init")
+            return;
+          const { url, token } = event.data;
+          if (
+            typeof url !== "string" ||
+            !/^https:\/\/open\.spotify\.com\/(playlist|album|track|artist)\/[A-Za-z0-9]+(?:\?[^#]*)?$/.test(
+              url
+            ) ||
+            typeof token !== "string"
+          )
+            return;
+          config = { url, token, origin: event.origin };
+          create();
+        });
+        const loader = document.createElement("script");
+        loader.src = "https://open.spotify.com/embed/iframe-api/v1";
+        loader.onerror = () => send("error");
+        document.head.append(loader);
+        parent.postMessage({ channel: "lf-spotify-bridge", type: "hello" }, "*");
+      })();
+    </script>
+    <script>
+      // The intermediate data document has an opaque origin even with allow-same-origin; this
+      // lets the nested Spotify iframe use its own origin without exposing the host page.
+      const runtime = document.getElementById("runtime").textContent;
+      const html =
+        '<!doctype html><meta name="referrer" content="no-referrer"><style>html,body{margin:0;overflow:hidden}iframe{border:0;width:100%;height:152px}</style><div id="embed"></div><script>' +
+        runtime +
+        "<" +
+        "/script>";
+      location.replace("data:text/html;charset=utf-8," + encodeURIComponent(html));
+    </script>
+  </body>
+</html>

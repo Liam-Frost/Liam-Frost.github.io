@@ -1,6 +1,6 @@
-export const SEGMENTS = 32;
+export const SEGMENTS = 18;
 export const clamp = (n: number, low = 0, high = 1) => Math.max(low, Math.min(high, n));
-export function gaussian(distance: number, sigma = 3.1) {
+export function gaussian(distance: number, sigma = 1.7) {
   return Math.exp(-(distance * distance) / (2 * sigma * sigma));
 }
 export function syntheticEnergy(time: number, index: number) {

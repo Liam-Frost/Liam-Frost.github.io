@@ -3,7 +3,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   audioVisualization,
   createAudioTap,
-  observeSpotifyEmbed
+  observeSpotifyEmbed,
+  setSpotifyPlayback
 } from "../../web/src/data/audio-visualization";
 import { gaussian, sectionAt, syntheticEnergy } from "../../web/src/components/waveform/model";
 
@@ -41,6 +42,23 @@ describe("audio capture tap", () => {
     });
     dispose();
     expect(audioVisualization.get()).toMatchObject({ source: "none", playback: "stopped" });
+    setSpotifyPlayback("playing");
+    expect(audioVisualization.get().source).toBe("none");
+  });
+  it("uses Spotify playback events for synthetic motion without an audio analyser", () => {
+    const dispose = observeSpotifyEmbed();
+    setSpotifyPlayback("playing");
+    expect(audioVisualization.get()).toMatchObject({
+      source: "spotify",
+      playback: "playing",
+      playing: true,
+      analyser: null
+    });
+    setSpotifyPlayback("paused");
+    expect(audioVisualization.get()).toMatchObject({ playback: "paused", playing: false });
+    setSpotifyPlayback("unknown");
+    expect(audioVisualization.get()).toMatchObject({ playback: "unknown", playing: false });
+    dispose();
   });
   it("analyses captured audio without connecting any node to the speaker", () => {
     const audio = new EventTarget() as HTMLAudioElement & { captureStream: () => MediaStream };
