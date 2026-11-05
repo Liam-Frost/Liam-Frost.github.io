@@ -11,10 +11,12 @@ function family(ip: string) {
 
 /** A set of IP addresses and CIDR ranges (IPv4 and IPv6). An empty list allows nothing on its own; callers decide. */
 export class IpList {
+  readonly entries: readonly string[];
   private readonly list = new BlockList();
   readonly size: number;
 
   constructor(entries: string[]) {
+    this.entries = [...entries];
     for (const entry of entries) {
       const [address, bits, extra] = entry.split("/");
       const base = normalize(address ?? "");

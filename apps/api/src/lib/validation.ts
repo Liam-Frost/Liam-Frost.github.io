@@ -534,7 +534,14 @@ export const collectionSettingsSchema = z
       .strict(),
     showWant: z.boolean(),
     // Settings saved before Stage 21 have no choice; they rotate.
-    homeFeatured: z.enum(["rotate", "manual"]).default("rotate")
+    homeFeatured: z.enum(["rotate", "manual"]).default("rotate"),
+    featuredWall: z
+      .object({
+        visibleRows: z.number().int().min(1).max(8).default(3),
+        targetRowHeight: z.number().int().min(100).max(360).default(180)
+      })
+      .strict()
+      .default({ visibleRows: 3, targetRowHeight: 180 })
   })
   .strict();
 

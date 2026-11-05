@@ -65,6 +65,40 @@ export function pickHomeFeatured(
 
 const gcd = (a: number, b: number): number => (b ? gcd(b, a % b) : a);
 
+/** Full wall candidates. Manual means exact order; rotation mixes stable music/nonmusic queues. */
+export function pickHomeWall(
+  rows: MediaRow[],
+  mode: CollectionSettings["homeFeatured"],
+  day: string
+): MediaRow[] {
+  if (mode === "manual") return pickHomeFeatured(rows, mode, day, rows.length);
+  const base = rows
+    .filter((row) => row.featured)
+    .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime() || a.id.localeCompare(b.id));
+  if (!base.length) return [];
+  const offset =
+    ((Math.floor(Date.parse(`${day}T00:00:00Z`) / DAY_MS) % base.length) + base.length) %
+    base.length;
+  const ordered = [...base.slice(offset), ...base.slice(0, offset)];
+  const music = ordered.filter((row) => row.kind === "track" || row.kind === "album");
+  const other = ordered.filter((row) => row.kind !== "track" && row.kind !== "album");
+  // Merge normalized positions: predictable proportional mixing, preserving each queue's order.
+  const out: MediaRow[] = [];
+  let m = 0,
+    o = 0;
+  while (m < music.length || o < other.length) {
+    if (
+      o === other.length ||
+      (m < music.length && (m + 0.5) / music.length <= (o + 0.5) / other.length)
+    )
+      out.push(music[m++]!);
+    else out.push(other[o++]!);
+  }
+  // Preserve the day's first candidate, so every entry gets a turn at the front within n days.
+  const first = out.findIndex((row) => row.id === ordered[0]!.id);
+  return [...out.slice(first), ...out.slice(0, first)];
+}
+
 /** The start of a text: whole sentences when one ends in time, otherwise cut with "…". */
 export function excerpt(text: string, max = EXCERPT_LENGTH) {
   const chars = Array.from(text.replace(/\s+/g, " ").trim());

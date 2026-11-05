@@ -387,6 +387,15 @@ Status: implementation complete; Claude Code review complete and fixes applied. 
 - Tests: 192 passed.
 - Verified with a temporary database: the migration on photos stored the old way, a server folder import with previews and EXIF, a Flickr short link through oEmbed (referenced), an image link (imported), a refused local address, 转为本站托管 and 替换图片 from a server file with EXIF, the old image folder removed.
 
+### Stage 23: Featured Collection Wall
+
+Status: implementation complete (Codex, PR 48); Claude Code review and browser check complete, fixes applied.
+
+- The home page's three featured cards became a wall of covers in their own shapes, edge to edge, in up to 展示行数 rows of about 目标行高 (both in 收藏 → 显示设置, default 3 / 180 px, stored in the `collection` setting). 固定顺序 keeps the admin's order exactly; 自动轮换 starts somewhere else each day and mixes music with other entries. Songs play in the corner player, other entries open their details.
+- Fixed in review: a single portrait cover left a third of its row empty; the wall could not shrink when the window got narrower (horizontal scroll until reload); the shelves below could change right after appearing; `home.wall` carried every featured entry's review excerpt although only ids are used.
+- Tests: 248 passed.
+- Browser: see `featured-quilt-wall.md` (Verification).
+
 ### Stage 22: Admin Overview and API Settings Layout
 
 Status: implementation complete; Claude Code review complete and fixes applied.

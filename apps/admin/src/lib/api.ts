@@ -8,6 +8,8 @@ import {
   type AnalyticsContentType,
   type AnalyticsHealth,
   type AnalyticsMeta,
+  type AnalyticsPreferences,
+  type AnalyticsPreferencesStatus,
   type AnalyticsOverview,
   type AnalyticsRange,
   type AdminBatchRequest,
@@ -347,6 +349,22 @@ export const api = {
   reorderPlaylist: (id: string, ids: string[]) =>
     request<AdminPlaylistResponse>(`${playlistPath(id)}/order`, { method: "PUT", json: { ids } }),
   analyticsMeta: () => request<AnalyticsMeta>("/api/admin/analytics/meta"),
+  analyticsPreferences: () =>
+    request<AnalyticsPreferencesStatus>("/api/admin/analytics/preferences"),
+  saveAnalyticsPreferences: (body: {
+    values: AnalyticsPreferences;
+    revision: string;
+    confirmRetention: boolean;
+  }) =>
+    request<AnalyticsPreferencesStatus>("/api/admin/analytics/preferences", {
+      method: "PUT",
+      json: body
+    }),
+  uploadAnalyticsDatabase: (file: File) =>
+    uploadFile<NonNullable<AnalyticsPreferencesStatus["database"]>>(
+      "/api/admin/analytics/geoip",
+      file
+    ),
   updateAnalyticsSettings: (enabled: boolean) =>
     request<AnalyticsMeta>("/api/admin/analytics/settings", { method: "PUT", json: { enabled } }),
   analyticsOverview: (range: AnalyticsRange, from?: string, to?: string) =>

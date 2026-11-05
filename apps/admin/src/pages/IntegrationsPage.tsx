@@ -2,6 +2,7 @@ import type { IntegrationProvider } from "@liam-frost/shared";
 import { useQuery } from "@tanstack/react-query";
 import { ShieldCheck } from "lucide-react";
 import { useEffect, useState } from "react";
+import { Link } from "react-router";
 
 import {
   hasDraft,
@@ -47,6 +48,13 @@ export function IntegrationsPage() {
   return (
     <div className="max-w-[840px]">
       <PageHeader title="API 配置" description="第三方服务的访问凭据，保存后立即生效。" />
+      <p className="mb-4 text-[13px] text-muted">
+        地理识别、请求频率、保留时间和 IP 排除规则在{" "}
+        <Link className="text-brand underline" to="/analytics/settings">
+          统计 → 设置
+        </Link>{" "}
+        中管理。
+      </p>
       <p className="mb-6 flex items-start gap-2 text-[12.5px] leading-relaxed text-muted">
         <ShieldCheck aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-brand-secondary" />
         凭据加密保存，只在服务器上使用，保存后不再显示原值。预发布和正式环境分别保存。

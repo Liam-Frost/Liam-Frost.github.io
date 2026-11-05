@@ -12,7 +12,8 @@ import {
   DEFAULT_COLLECTION_SETTINGS,
   type CollectionSettingsStore
 } from "../media/collection-settings";
-import { pickHomeFeatured, toHomeFeatured } from "../media/home";
+import { pickHomeFeatured, pickHomeWall, toHomeFeatured } from "../media/home";
+import { resolveFeaturedWall } from "@liam-frost/shared";
 import { toPublicMedia, toPublicMediaSummary } from "../media/mapping";
 import { isMediaPublic, type MediaRepository, type MediaRow } from "../media/types";
 import { toPublicLinks, toPublicPerson, toPublicPersonSummary } from "../people/mapping";
@@ -101,7 +102,7 @@ export function registerCollectionRoutes(app: FastifyInstance, deps: Deps) {
     }
   };
 
-  app.get("/api/collection", async (request): Promise<PublicCollection> => {
+  app.get("/api/collection", async (request, reply): Promise<PublicCollection> => {
     if (!deps.media) return EMPTY;
     try {
       const shown = await visible();
@@ -122,6 +123,7 @@ export function registerCollectionRoutes(app: FastifyInstance, deps: Deps) {
           trackIds,
           sourceUrl: row.sourceUrl
         }));
+      reply.header("x-snapshot-data-source", "database");
       return {
         kinds,
         items: [...shown.media.values()].map((row) => toPublicMediaSummary(row, deps.store)),
@@ -134,7 +136,15 @@ export function registerCollectionRoutes(app: FastifyInstance, deps: Deps) {
             [...shown.media.values()],
             shown.settings.homeFeatured,
             deps.today()
-          ).map(toHomeFeatured)
+          ).map(toHomeFeatured),
+          wall: {
+            items: pickHomeWall(
+              [...shown.media.values()],
+              shown.settings.homeFeatured,
+              deps.today()
+            ).map((row) => ({ id: row.id })),
+            settings: resolveFeaturedWall(shown.settings.featuredWall)
+          }
         }
       };
     } catch (error) {

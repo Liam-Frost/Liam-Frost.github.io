@@ -95,6 +95,7 @@ function SessionGate() {
         <Route path="analytics/content/:type/:id" element={<AnalyticsPage view="detail" />} />
         <Route path="analytics/audience" element={<AnalyticsPage view="audience" />} />
         <Route path="analytics/health" element={<AnalyticsPage view="health" />} />
+        <Route path="analytics/settings" element={<AnalyticsPage view="settings" />} />
         <Route path="*" element={<SectionNotFound />} />
       </Route>
     </Routes>

@@ -4,3 +4,4 @@ export * from "./analytics";
 export * from "./tooltip";
 export * from "./dashboard";
 export * from "./integrations";
+export * from "./featured-wall";
