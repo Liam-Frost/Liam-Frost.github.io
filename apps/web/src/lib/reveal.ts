@@ -1,8 +1,10 @@
 /**
  * One IntersectionObserver for every <Reveal>. An element is revealed once, when its top passes a
- * line 8% above the viewport's bottom (threshold 0, so an element of any height qualifies), or when
- * it is already above the viewport (after an anchor jump or a restored scroll), so scrolling back up
- * never meets hidden content.
+ * line 8% above the viewport's bottom (threshold 0, so an element of any height qualifies). The
+ * observed area reaches far above the viewport, so an element already above it counts too: after an
+ * anchor jump, a restored scroll, or a fast smooth scroll that carries it from below the viewport to
+ * above it between two frames (it never "intersects" the viewport itself, so a viewport-sized area
+ * would never report it). Scrolling back up never meets hidden content.
  *
  * Elements that asked to be staggered and are revealed together get their order on screen (top to
  * bottom, then left to right), which the CSS turns into a delay; see `--reveal-order`.
@@ -12,7 +14,7 @@
  */
 type Waiting = { onVisible: (order: number) => void; stagger: boolean };
 
-const ROOT_MARGIN = "0px 0px -8% 0px";
+const ROOT_MARGIN = "1000000px 0px -8% 0px";
 const READY_CLASS = "revealReady";
 
 const waiting = new WeakMap<Element, Waiting>();

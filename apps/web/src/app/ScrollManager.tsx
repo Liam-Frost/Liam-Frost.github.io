@@ -1,6 +1,11 @@
 import { useEffect } from "react";
 import { useLocation } from "react-router";
 
+import { scrollToElement, scrollToTop } from "../lib/smoothScroll";
+
+/** How long an anchor is followed while the page above it is still loading. */
+const FOLLOW_MS = 5000;
+
 export default function ScrollManager() {
   const location = useLocation();
 
@@ -10,12 +15,30 @@ export default function ScrollManager() {
     if (hash) {
       let observer: MutationObserver | null = null;
       let timeout = 0;
+      let stopFollowing = () => {};
+
+      // The projects, collection and tech stack above an anchor arrive from the API after the jump
+      // and push it down: keep going to it while the page grows, until the visitor scrolls themselves.
+      const follow = (el: HTMLElement) => {
+        const layout = new ResizeObserver(() => scrollToElement(el));
+        layout.observe(document.body);
+        const stop = () => {
+          layout.disconnect();
+          clearTimeout(limit);
+          for (const type of ["wheel", "touchstart", "keydown", "pointerdown"])
+            window.removeEventListener(type, stop);
+        };
+        const limit = window.setTimeout(stop, FOLLOW_MS);
+        for (const type of ["wheel", "touchstart", "keydown", "pointerdown"])
+          window.addEventListener(type, stop, { passive: true });
+        stopFollowing = stop;
+      };
+
       const scroll = () => {
         const el = document.getElementById(hash);
         if (el) {
-          const prefersReduced =
-            window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches ?? false;
-          el.scrollIntoView({ behavior: prefersReduced ? "auto" : "smooth", block: "start" });
+          scrollToElement(el);
+          follow(el);
           observer?.disconnect();
           clearTimeout(timeout);
           return true;
@@ -36,10 +59,11 @@ export default function ScrollManager() {
         cancelAnimationFrame(frame);
         observer?.disconnect();
         clearTimeout(timeout);
+        stopFollowing();
       };
     }
 
-    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+    scrollToTop(false);
   }, [location.pathname, location.hash]);
 
   return null;

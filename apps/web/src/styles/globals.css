@@ -185,6 +185,12 @@ html {
   }
 }
 
+/* Lenis (lib/smoothScroll.ts) scrolls the page frame by frame; the browser must not animate each
+   step again. */
+html.lenis {
+  scroll-behavior: auto;
+}
+
 body {
   margin: 0;
   font-family: var(--font-sans);

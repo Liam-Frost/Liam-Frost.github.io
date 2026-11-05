@@ -9,8 +9,8 @@ Chosen by the user after an audit of the site and of a reference site (scroll-li
 - One shared motion language: reveal distance, opacity, duration, stagger and reduced-motion rules come from tokens.
 - Content is revealed once, when it scrolls into view, and then stays still and fully visible.
 - The tech stack moves with the scroll like the reference site's: its categories and technologies appear one by one as the page scrolls down, disappear one by one when scrolling back up, and the section fades out as it leaves (behind a switch that can be turned off). It is the only section with an exit fade.
-- No smooth-scrolling library. Projects, photos and the other sections keep the one-time reveal (phases 3–5), following the rules below.
-- Existing CSS and IntersectionObserver for the reveal; GSAP ScrollTrigger for the tech stack only (the user chose it over a hand-written version that did not feel the same), loaded only when the stack mounts. No smooth-scrolling library so far (see below).
+- Smooth scrolling for the whole site with Lenis, as on the reference site (added at the user's request after a recorded comparison). Projects, photos and the other sections keep the one-time reveal (phases 3–5), following the rules below.
+- Existing CSS and IntersectionObserver for the reveal; GSAP ScrollTrigger for the tech stack only (the user chose it over a hand-written version that did not feel the same), loaded only when the stack mounts.
 
 ## Tokens
 
@@ -64,9 +64,19 @@ Ported from the reference site's own code (github.com/Tajmirul/portfolio-2.0, `a
 - **Entrance**: one ScrollTrigger timeline for the whole section, from its top at 80% of the viewport to its bottom at 80%, `scrub: 0.5`; `.from(items, { opacity: 0, y: 40, ease: "none", stagger: 0.4 })` over the category headings and technologies in document order. They appear one by one (at most two moving) and go back one by one when scrolling up.
 - **Exit**: a second timeline from the section's bottom at 50% to 10% of the viewport, `scrub: 1`, `.to(section, { y: -150, opacity: 0 })`.
 - **Our additions**: GSAP and ScrollTrigger are separate chunks (about 45 KB gzipped) loaded when the stack mounts; reduced motion turns the motion off (`gsap.matchMedia`, also live); print shows everything (`globals.css`); finished elements get their inline transform and opacity removed (GSAP leaves `translate(0px, 0px)` and puts it back on every recalculation, so it is swept after each update and refresh); ScrollTrigger recalculates when the page above changes height (the hero title re-wraps, the collection loads). If GSAP fails to load, the stack stays as it is.
-- **Smooth scrolling**: the reference also runs Lenis (`lerp: 0.1`) on the whole page, so a wheel notch glides for about 600ms (measured: 0 → 39 → 63 → 77 → 86 → 92 → 95px) instead of jumping, and its scrubbed animations move continuously. Our page scrolls natively. Lenis changes scrolling for the whole site and is not added unless the user decides so.
+- **Smooth scrolling**: the reference also runs Lenis on the whole page; so do we now (see below). With native scrolling a wheel notch jumped and the scrubbed motion moved in steps.
 - Off switch: `STACK_SCROLL_MOTION` in `apps/web/src/lib/motion.ts` (false: the stack goes back to the one-time reveal). For one visit, `?stackMotion=off` or `?stackMotion=on` before the `#` (e.g. `/?stackMotion=off#/`) overrides it, to compare.
 - History: a CSS view timeline per item (up to eleven moving at once), then a hand-written single-progress version modelled on the reference; the user found neither close enough and chose GSAP.
+
+## Smooth scrolling
+
+Lenis 1.3 for the whole public site (`lib/smoothScroll.ts`, started in `App`), with the reference's `lerp: 0.1`: a wheel notch glides for about 600ms (measured after one notch: 45 → 70 → 83 → 91 → 95 → 97px; the reference 39 → 63 → 77 → 86 → 92 → 95px) instead of jumping.
+
+- Touch scrolling stays native (Lenis' default); reduced motion turns Lenis off (`respectReducedMotion`, its default); `html.lenis` sets `scroll-behavior: auto` so the browser does not animate each of Lenis' steps again.
+- Everything that scrolls the page goes through `scrollToTop` / `scrollToElement` (route changes, anchors, back to top), which fall back to native scrolling without Lenis. Anchors are measured from layout (`offsetTop`), not `getBoundingClientRect`, so a section moved by an animation (the tech stack's exit) does not move its anchor; Lenis re-measures the page first (it does so on a delay, and an anchor near the end was clamped to an old page height).
+- Dialogs and drawers stop Lenis while open (`useScrollLock`, counted); drawers, lists and horizontal rows keep scrolling on their own (`allowNestedScroll`). Lenis disables iframes (the Spotify dock) only while a smooth scroll is running.
+- Anchors opened directly (e.g. the admin's preview links) are followed while the content above them loads, for up to 5s or until the visitor scrolls: before, a fresh load of `/#/#contact` stopped thousands of pixels short as the projects and collection arrived (with or without Lenis).
+- The reveal observer's area reaches far above the viewport: a long smooth scroll can carry a block from below the viewport to above it between two frames, which a viewport-sized area never reports, so the block stayed hidden.
 
 ## Hero title
 
@@ -78,6 +88,6 @@ The page column (`.site`) is `minmax(0, 1fr)`: the page is as wide as the viewpo
 
 ## Checks
 
-`tests/motion.spec.ts` in the Playwright folder (`D:\Tools\Playwright`, phase 5), at eight sizes: every page's revealed blocks settle fully visible with no transform or filter left and no sideways scroll (home, projects, a project, portfolio, collection, privacy); reduced motion and print show everything; the tech stack appears one by one in document order (at most two moving), goes back on the way up, fades out as it leaves and comes back, and `?stackMotion=off` brings the one-time reveal back; an anchor jump and going back never meet content still waiting; portfolio filter results appear at once; the photo viewer and collection details open on screen. `tests/tech-stack.spec.ts` covers the stack's layout and details panel.
+`tests/motion.spec.ts` in the Playwright folder (`D:\Tools\Playwright`, phase 5), at eight sizes: every page's revealed blocks settle fully visible with no transform or filter left and no sideways scroll (home, projects, a project, portfolio, collection, privacy); reduced motion and print show everything; the tech stack appears one by one in document order (at most two moving), goes back on the way up, fades out as it leaves and comes back, and `?stackMotion=off` brings the one-time reveal back; an anchor jump and going back never meet content still waiting; anchors opened directly land below the header, a wheel notch glides (desktop), and an open photo viewer holds the page; portfolio filter results appear at once; the photo viewer and collection details open on screen. `tests/tech-stack.spec.ts` covers the stack's layout and details panel.
 
 Also one-off Playwright scripts (Stage 26 log) against production builds served by `vite preview`, with a temporary database: CLS (largest session window), leftover transforms and filters after reveal, hidden content after scrolling, reduced motion (also switched on live), print, no IntersectionObserver, anchor jumps, stagger order, the technology details panel, the photo viewer, the collection drawer, theme switching, tooltips and the music dock.
