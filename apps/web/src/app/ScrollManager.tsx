@@ -1,23 +1,47 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useLocation, useNavigationType } from "react-router";
+import { isQueryOnlyNavigation, restoreScroll } from "./restoreScroll";
 
 const positions = new Map<string, number>();
 
 export default function ScrollManager() {
   const location = useLocation();
   const navigationType = useNavigationType();
+  const previous = useRef<{ key: string; pathname: string; hash: string } | null>(null);
 
   useEffect(() => {
     const key = location.key;
+    const before = previous.current;
+    previous.current = { key, pathname: location.pathname, hash: location.hash };
+    // The next route may already have shortened the document by effect cleanup time.
+    let lastScroll = window.scrollY;
+    const record = () => {
+      lastScroll = window.scrollY;
+    };
+    window.addEventListener("scroll", record, { passive: true });
+    // Capture the final position before a click or keyboard navigation changes the DOM.
+    window.addEventListener("pointerdown", record, true);
+    window.addEventListener("keydown", record, true);
     const save = () => {
+      window.removeEventListener("scroll", record);
+      window.removeEventListener("pointerdown", record, true);
+      window.removeEventListener("keydown", record, true);
       positions.delete(key);
-      positions.set(key, window.scrollY);
+      positions.set(key, lastScroll);
       if (positions.size > 100) positions.delete(positions.keys().next().value!);
     };
-    const restored = navigationType === "POP" ? positions.get(key) : undefined;
-    if (restored !== undefined) {
-      window.scrollTo({ top: restored, left: 0, behavior: "instant" });
+    // Query-only changes open panels, switch filters or move through photos on the same page.
+    if (isQueryOnlyNavigation(before, { key, pathname: location.pathname, hash: location.hash }))
       return save;
+    // Strict Mode repeats mount effects for the same entry; do not mistake that for Back/Forward.
+    const restored =
+      navigationType === "POP" && before?.key !== key ? positions.get(key) : undefined;
+    if (restored !== undefined) {
+      const cancel = restoreScroll(restored, location.hash?.replace(/^#/, ""));
+      return () => {
+        cancel();
+        save();
+      };
     }
     const hash = location.hash?.replace(/^#/, "");
 
