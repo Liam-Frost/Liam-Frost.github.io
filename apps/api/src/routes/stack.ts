@@ -8,6 +8,7 @@ import { randomBytes, randomUUID } from "node:crypto";
 
 import type { AdminAuthService } from "../auth/service";
 import { HttpError, notFound } from "../lib/errors";
+import { withLinkWrites } from "../projects/link-lock";
 import { KeyedLock } from "../lib/keyed-lock";
 import {
   MAX_PROJECT_TECHNOLOGIES,
@@ -274,24 +275,26 @@ export function registerStackRoutes(
   app.post("/api/admin/stack/technologies", admin, async (request, reply) => {
     const { icon, projectIds, ...input } = parseInput(stackTechnologyCreateSchema, request.body);
     checkIcon(icon);
-    await checkProjects(projectIds);
-    const result = await serialized(async () => {
-      const rows = await repo().list();
-      const category = findCategory(rows, input.categoryId);
-      if (rows.reduce((n, c) => n + c.technologies.length, 0) >= MAX_TECHNOLOGIES)
-        throw new HttpError(400, "TOO_MANY", `At most ${MAX_TECHNOLOGIES} technologies`);
-      if (category.technologies.some((t) => sameName(t.name, input.name)))
-        throw duplicateName(input.name);
-      const id = randomUUID();
-      await repo().createTechnology({
-        id,
-        ...input,
-        iconProvider: icon.provider,
-        iconKey: icon.provider === "none" ? null : icon.key
-      });
-      if (projectIds?.length) await repo().updateTechnology(id, { projectIds });
-      return respond();
-    });
+    const result = await serialized(() =>
+      withLinkWrites(!!projectIds?.length, async () => {
+        await checkProjects(projectIds);
+        const rows = await repo().list();
+        const category = findCategory(rows, input.categoryId);
+        if (rows.reduce((n, c) => n + c.technologies.length, 0) >= MAX_TECHNOLOGIES)
+          throw new HttpError(400, "TOO_MANY", `At most ${MAX_TECHNOLOGIES} technologies`);
+        if (category.technologies.some((t) => sameName(t.name, input.name)))
+          throw duplicateName(input.name);
+        const id = randomUUID();
+        await repo().createTechnology({
+          id,
+          ...input,
+          iconProvider: icon.provider,
+          iconKey: icon.provider === "none" ? null : icon.key
+        });
+        if (projectIds?.length) await repo().updateTechnology(id, { projectIds });
+        return respond();
+      })
+    );
     reply.code(201);
     return result;
   });
@@ -300,28 +303,30 @@ export function registerStackRoutes(
     const id = idOf(request);
     const { icon, ...input } = parseInput(stackTechnologyUpdateSchema, request.body);
     if (icon) checkIcon(icon);
-    await checkProjects(input.projectIds, id);
     let dropped: StoredImage | null = null;
-    const result = await serialized(async () => {
-      const rows = await repo().list();
-      const current = findTechnology(rows, id);
-      const categoryId = input.categoryId ?? current.categoryId;
-      const category = findCategory(rows, categoryId);
-      const name = input.name ?? current.name;
-      if (category.technologies.some((t) => t.id !== id && sameName(t.name, name)))
-        throw duplicateName(name);
+    const result = await serialized(() =>
+      withLinkWrites(input.projectIds !== undefined, async () => {
+        await checkProjects(input.projectIds, id);
+        const rows = await repo().list();
+        const current = findTechnology(rows, id);
+        const categoryId = input.categoryId ?? current.categoryId;
+        const category = findCategory(rows, categoryId);
+        const name = input.name ?? current.name;
+        if (category.technologies.some((t) => t.id !== id && sameName(t.name, name)))
+          throw duplicateName(name);
 
-      const patch: StackTechnologyPatch = { ...input };
-      if (icon) {
-        // A library icon (or none) replaces an uploaded logo, whose files are then removed.
-        patch.iconProvider = icon.provider;
-        patch.iconKey = icon.provider === "none" ? null : icon.key;
-        patch.customIcon = null;
-        dropped = current.customIcon;
-      }
-      if (!(await repo().updateTechnology(id, patch))) throw notFound("Technology not found");
-      return respond();
-    });
+        const patch: StackTechnologyPatch = { ...input };
+        if (icon) {
+          // A library icon (or none) replaces an uploaded logo, whose files are then removed.
+          patch.iconProvider = icon.provider;
+          patch.iconKey = icon.provider === "none" ? null : icon.key;
+          patch.customIcon = null;
+          dropped = current.customIcon;
+        }
+        if (!(await repo().updateTechnology(id, patch))) throw notFound("Technology not found");
+        return respond();
+      })
+    );
     await removeIcon(request, dropped);
     return result;
   });

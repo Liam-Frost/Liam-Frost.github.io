@@ -2,6 +2,16 @@ import { stackInitials } from "@liam-frost/shared";
 import { useEffect, useState } from "react";
 
 /**
+ * Logos come from the API (a path on this site or an https URL) or are a local file's preview
+ * (a blob: URL from URL.createObjectURL). Anything else is not used as an image source.
+ */
+const IMAGE_SOURCE = /^(?:https?:\/\/|blob:|\/(?![/\\]))/i;
+function imageSource(url: string | null) {
+  if (url === null || !IMAGE_SOURCE.test(url)) return null;
+  return url;
+}
+
+/**
  * A technology's logo in a fixed square, never stretched; its initials when there is no logo or it
  * fails to load (same box, so nothing moves).
  */
@@ -16,6 +26,7 @@ export function TechIcon({
 }) {
   const [failed, setFailed] = useState(false);
   useEffect(() => setFailed(false), [url]);
+  const src = imageSource(url);
   const box =
     size === "lg"
       ? "size-14 rounded-xl p-2"
@@ -28,9 +39,9 @@ export function TechIcon({
       aria-hidden="true"
       className={`flex shrink-0 items-center justify-center bg-canvas ring-1 ring-line-soft ${box}`}
     >
-      {url && !failed ? (
+      {src && !failed ? (
         <img
-          src={url}
+          src={src}
           alt=""
           className="size-full object-contain"
           loading="lazy"

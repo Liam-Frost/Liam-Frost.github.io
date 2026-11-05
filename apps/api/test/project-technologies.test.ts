@@ -64,6 +64,7 @@ async function setup() {
   return {
     app,
     stack,
+    projects,
     call,
     category,
     technology,
@@ -159,6 +160,47 @@ describe("project ↔ technology links", () => {
       technologyIds: [busy.id]
     });
     expect(tooMany.json().error.code).toBe("TOO_MANY_PROJECTS");
+  });
+
+  it("keeps the limit when requests race from both sides", async () => {
+    const { call, stack, projects, technology, project, adminProject } = await setup();
+    const site = await project("site");
+    const many = await Promise.all(
+      Array.from({ length: MAX_PROJECT_TECHNOLOGIES - 1 }, (_, i) => technology(`T${i}`))
+    );
+    const base = many.map((t) => t.id);
+    await call("PATCH", `/api/admin/projects/${site}`, { technologyIds: base });
+    const [a, b, c] = [await technology("A"), await technology("B"), await technology("C")];
+    // Slow reads, like a real database: without one lock around check and write, both requests
+    // would read 39 links before either writes.
+    const slow = <T extends object, K extends keyof T>(repo: T, key: K) => {
+      const read = (repo[key] as (...args: unknown[]) => Promise<unknown>).bind(repo);
+      (repo as Record<K, unknown>)[key] = async (...args: unknown[]) => {
+        const value = await read(...args);
+        await new Promise((resolve) => setTimeout(resolve, 10));
+        return value;
+      };
+    };
+    slow(projects, "list");
+    slow(stack, "list");
+
+    // One slot left: two technologies race for it; only one may take it.
+    const stackSide = await Promise.all([
+      call("PATCH", `/api/admin/stack/technologies/${a.id}`, { projectIds: [site] }),
+      call("PATCH", `/api/admin/stack/technologies/${b.id}`, { projectIds: [site] })
+    ]);
+    expect(stackSide.map((r) => r.statusCode).sort()).toEqual([200, 400]);
+    expect((await adminProject(site)).technologyIds).toHaveLength(MAX_PROJECT_TECHNOLOGIES);
+
+    // The project form (a whole list) racing a technology dialog never leaves more than the limit.
+    await call("PATCH", `/api/admin/projects/${site}`, { technologyIds: base });
+    await Promise.all([
+      call("PATCH", `/api/admin/projects/${site}`, { technologyIds: [...base, c.id] }),
+      call("PATCH", `/api/admin/stack/technologies/${a.id}`, { projectIds: [site] })
+    ]);
+    expect((await adminProject(site)).technologyIds.length).toBeLessThanOrEqual(
+      MAX_PROJECT_TECHNOLOGIES
+    );
   });
 
   it("refuses unknown or repeated ids and needs a signed-in admin", async () => {

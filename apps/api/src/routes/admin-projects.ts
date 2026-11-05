@@ -5,6 +5,7 @@ import { randomBytes, randomUUID } from "node:crypto";
 import type { AdminAuthService } from "../auth/service";
 import { badRequest, HttpError, notFound } from "../lib/errors";
 import { KeyedLock } from "../lib/keyed-lock";
+import { withLinkWrites } from "../projects/link-lock";
 import {
   MAX_TECHNOLOGY_PROJECTS,
   parseInput,
@@ -135,39 +136,41 @@ export function registerAdminProjectRoutes(
       otherTechnologies,
       ...patch
     } = parseInput(projectUpdateSchema, request.body);
-    await checkTechnologies(patch.technologyIds, id);
-    return lock.run(id, async () => {
-      const row = await get(id);
-      const startedAt = patch.startedAt !== undefined ? patch.startedAt : row.startedAt;
-      const endedAt = patch.endedAt !== undefined ? patch.endedAt : row.endedAt;
-      if (startedAt && endedAt && endedAt < startedAt)
-        throw badRequest("The end month is before the start month", "VALIDATION");
+    return lock.run(id, () =>
+      withLinkWrites(patch.technologyIds !== undefined, async () => {
+        await checkTechnologies(patch.technologyIds, id);
+        const row = await get(id);
+        const startedAt = patch.startedAt !== undefined ? patch.startedAt : row.startedAt;
+        const endedAt = patch.endedAt !== undefined ? patch.endedAt : row.endedAt;
+        if (startedAt && endedAt && endedAt < startedAt)
+          throw badRequest("The end month is before the start month", "VALIDATION");
 
-      let gallery: StoredImage[] | undefined;
-      if (galleryOrder) {
-        // A new order of the existing screenshots; adding and removing go through the image routes.
-        const byId = new Map(row.gallery.map((image) => [image.id, image]));
-        if (
-          galleryOrder.length !== byId.size ||
-          galleryOrder.some((imageId) => !byId.has(imageId))
-        ) {
-          throw new HttpError(
-            409,
-            "GALLERY_OUT_OF_DATE",
-            "The screenshots changed; reload and try again"
-          );
+        let gallery: StoredImage[] | undefined;
+        if (galleryOrder) {
+          // A new order of the existing screenshots; adding and removing go through the image routes.
+          const byId = new Map(row.gallery.map((image) => [image.id, image]));
+          if (
+            galleryOrder.length !== byId.size ||
+            galleryOrder.some((imageId) => !byId.has(imageId))
+          ) {
+            throw new HttpError(
+              409,
+              "GALLERY_OUT_OF_DATE",
+              "The screenshots changed; reload and try again"
+            );
+          }
+          gallery = galleryOrder.map((imageId) => byId.get(imageId)!);
         }
-        gallery = galleryOrder.map((imageId) => byId.get(imageId)!);
-      }
 
-      return respond(
-        await save(row.id, {
-          ...patch,
-          ...(otherTechnologies ? { techStack: otherTechnologies } : {}),
-          ...(gallery ? { gallery } : {})
-        })
-      );
-    });
+        return respond(
+          await save(row.id, {
+            ...patch,
+            ...(otherTechnologies ? { techStack: otherTechnologies } : {}),
+            ...(gallery ? { gallery } : {})
+          })
+        );
+      })
+    );
   });
 
   app.delete("/api/admin/projects/:id", admin, async (request, reply) => {
