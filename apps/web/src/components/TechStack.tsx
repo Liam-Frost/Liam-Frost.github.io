@@ -201,7 +201,7 @@ function TechnologyDetail({
  * the admin (GET /api/stack). A technology used by public projects opens its details on click.
  */
 /**
- * The home page's tech stack. With `scrollMotion` (Stage 26, see lib/motion.ts and useStackScrub)
+ * The home page's tech stack. With `scrollMotion` (Stage 26, GSAP ScrollTrigger; see lib/motion.ts and useStackScrub)
  * categories and technologies rise in one by one as the page scrolls, go back one by one when
  * scrolling up, and the section fades out as it leaves; otherwise the caller wraps it in a one-time
  * <Reveal>.

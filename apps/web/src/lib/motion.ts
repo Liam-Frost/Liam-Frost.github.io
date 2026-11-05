@@ -1,7 +1,7 @@
 /**
  * Stage 26: the tech stack's categories and technologies rise in one by one as the page scrolls, go
  * back one by one when scrolling up, and the section fades out as it leaves (components/
- * useStackScrub.ts, modelled on a GSAP ScrollTrigger timeline).
+ * useStackScrub.ts: GSAP ScrollTrigger, ported from the reference site's code).
  *
  * Turn it off by setting this to false: the stack goes back to the one-time reveal used by the rest
  * of the site. For one visit, `?stackMotion=off` (or `=on`) in the address, before the `#`,
