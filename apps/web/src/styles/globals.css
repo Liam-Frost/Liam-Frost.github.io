@@ -75,8 +75,11 @@
   --motion-stagger-max: 6;
   /* Scroll-linked motion (tech stack pilot): how much of an element's pass through the viewport
      ("cover", 0% = its top at the viewport's bottom) the rise takes, and each column's head start. */
-  --motion-scroll-range: 20%;
-  --motion-scroll-stagger: 4%;
+  --motion-scroll-range: 35%;
+  --motion-scroll-stagger: 7%;
+  /* How far headings and items rise from (times --motion-scale). */
+  --motion-scroll-distance-heading: 20px;
+  --motion-scroll-distance: 40px;
   /* Phones move less. */
   --motion-scale: 1;
 }
@@ -1603,7 +1606,7 @@ html[data-theme="light"] .stackDetail {
   @supports (animation-timeline: view()) {
     .stackScroll .stackGroupHead,
     .stackScroll .stackItems > li {
-      --stack-rise: var(--motion-distance-expressive);
+      --stack-rise: var(--motion-scroll-distance);
       animation-name: stackRise;
       animation-duration: auto;
       animation-timing-function: linear;
@@ -1614,7 +1617,7 @@ html[data-theme="light"] .stackDetail {
     }
 
     .stackScroll .stackGroupHead {
-      --stack-rise: var(--motion-distance-standard);
+      --stack-rise: var(--motion-scroll-distance-heading);
     }
 
     .stackScroll .stackItems > li {
