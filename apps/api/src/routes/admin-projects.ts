@@ -6,6 +6,7 @@ import type { AdminAuthService } from "../auth/service";
 import { badRequest, HttpError, notFound } from "../lib/errors";
 import { KeyedLock } from "../lib/keyed-lock";
 import {
+  MAX_TECHNOLOGY_PROJECTS,
   parseInput,
   projectCreateSchema,
   projectIdSchema,
@@ -41,14 +42,30 @@ export function registerAdminProjectRoutes(
   maxUploadBytes: number,
   stack: StackRepository | null
 ) {
-  /** Linked technologies must exist in the stack (hidden ones included). */
-  const checkTechnologies = async (ids: string[] | undefined) => {
+  /**
+   * Linked technologies must exist in the stack (hidden ones included), and one linked anew must have
+   * room for one more project: the technology dialog refuses more than MAX_TECHNOLOGY_PROJECTS.
+   */
+  const checkTechnologies = async (ids: string[] | undefined, projectId: string) => {
     if (!ids?.length) return;
-    const known = new Set(
-      stack ? (await stack.list()).flatMap((c) => c.technologies.map((t) => t.id)) : []
+    const byId = new Map(
+      (stack ? await stack.list() : []).flatMap((c) =>
+        c.technologies.map((t) => [t.id, t] as const)
+      )
     );
-    if (ids.some((id) => !known.has(id)))
+    if (ids.some((id) => !byId.has(id)))
       throw new HttpError(400, "UNKNOWN_TECHNOLOGY", "A linked technology is not in the stack");
+    const full = ids
+      .map((id) => byId.get(id)!)
+      .find(
+        (t) => !t.projectIds.includes(projectId) && t.projectIds.length >= MAX_TECHNOLOGY_PROJECTS
+      );
+    if (full)
+      throw new HttpError(
+        400,
+        "TOO_MANY_PROJECTS",
+        `“${full.name}” already has ${MAX_TECHNOLOGY_PROJECTS} projects`
+      );
   };
 
   const repo = () => {
@@ -118,7 +135,7 @@ export function registerAdminProjectRoutes(
       otherTechnologies,
       ...patch
     } = parseInput(projectUpdateSchema, request.body);
-    await checkTechnologies(patch.technologyIds);
+    await checkTechnologies(patch.technologyIds, id);
     return lock.run(id, async () => {
       const row = await get(id);
       const startedAt = patch.startedAt !== undefined ? patch.startedAt : row.startedAt;

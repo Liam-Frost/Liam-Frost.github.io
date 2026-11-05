@@ -47,6 +47,9 @@ const techKey = (name: string) =>
     .toLowerCase()
     .replace(/[\s._-]+/g, "");
 
+const sameList = (a: string[], b: string[]) =>
+  a.length === b.length && a.every((value, index) => value === b[index]);
+
 function toDraft(project: AdminProject): Draft {
   return {
     slug: project.slug,
@@ -96,6 +99,16 @@ function ProjectEditor({ project }: { project: AdminProject }) {
   // Last saved state; texts are saved explicitly, so unsaved edits are tracked against it.
   const [saved, setSaved] = useState(draft);
   const dirty = JSON.stringify(draft) !== JSON.stringify(saved);
+
+  // The project can change elsewhere (its links, from the stack page) and arrive after the editor
+  // opened with a cached copy: follow it while nothing is edited here.
+  useEffect(() => {
+    if (dirty) return;
+    const next = toDraft(project);
+    setDraft(next);
+    setSaved(next);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only when the project data changes
+  }, [project]);
   const [lang, setLang] = useState<Lang>("zh");
   const [error, setError] = useState("");
   const [techInput, setTechInput] = useState("");
@@ -169,10 +182,15 @@ function ProjectEditor({ project }: { project: AdminProject }) {
       return;
     }
     setError("");
+    const { technologyIds, otherTechnologies, ...fields } = draft;
     const body: AdminProjectUpdate = {
-      ...draft,
+      ...fields,
       startedAt: draft.startedAt || null,
-      endedAt: draft.endedAt || null
+      endedAt: draft.endedAt || null,
+      // Links are also edited from the stack page: send them only when changed here, so an
+      // unrelated save never writes back an older list.
+      ...(sameList(technologyIds, saved.technologyIds) ? {} : { technologyIds }),
+      ...(sameList(otherTechnologies, saved.otherTechnologies) ? {} : { otherTechnologies })
     };
     update.mutate(body, {
       onSuccess: ({ project: next }) => {
@@ -186,7 +204,11 @@ function ProjectEditor({ project }: { project: AdminProject }) {
         setError(
           e instanceof ApiError && e.code === "SLUG_TAKEN"
             ? "这个网址名已被其它项目使用"
-            : e.message
+            : e instanceof ApiError && e.code === "UNKNOWN_TECHNOLOGY"
+              ? "有关联的技术已从技术栈删除，请刷新后重试"
+              : e instanceof ApiError && e.code === "TOO_MANY_PROJECTS"
+                ? `有技术关联的项目已达上限：${e.message}`
+                : e.message
         )
     });
   };

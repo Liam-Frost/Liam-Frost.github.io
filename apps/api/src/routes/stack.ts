@@ -10,6 +10,7 @@ import type { AdminAuthService } from "../auth/service";
 import { HttpError, notFound } from "../lib/errors";
 import { KeyedLock } from "../lib/keyed-lock";
 import {
+  MAX_PROJECT_TECHNOLOGIES,
   parseInput,
   stackCategoryCreateSchema,
   stackCategoryDeleteSchema,
@@ -139,14 +140,30 @@ export function registerStackRoutes(
     const rows = await repo().list();
     return { categories: toAdminStack(rows, store, await opticsOf(rows)) };
   };
-  /** Linked projects must exist (hidden ones included). */
-  const checkProjects = async (ids: string[] | undefined) => {
+  /**
+   * Linked projects must exist (hidden ones included), and a project linked anew must have room for
+   * one more technology: the project form refuses to save more than MAX_PROJECT_TECHNOLOGIES.
+   */
+  const checkProjects = async (ids: string[] | undefined, technologyId?: string) => {
     if (!ids?.length) return;
-    const known = new Set(
-      projects ? (await projects.list({ includePrivate: true })).map((p) => p.id) : []
+    const byId = new Map(
+      (projects ? await projects.list({ includePrivate: true }) : []).map((p) => [p.id, p])
     );
-    if (ids.some((id) => !known.has(id)))
+    if (ids.some((id) => !byId.has(id)))
       throw new HttpError(400, "UNKNOWN_PROJECT", "A linked project does not exist");
+    const full = ids
+      .map((id) => byId.get(id)!)
+      .find(
+        (p) =>
+          !p.technologies.some((t) => t.id === technologyId) &&
+          p.technologies.length >= MAX_PROJECT_TECHNOLOGIES
+      );
+    if (full)
+      throw new HttpError(
+        400,
+        "TOO_MANY_TECHNOLOGIES",
+        `“${full.slug}” already uses ${MAX_PROJECT_TECHNOLOGIES} technologies`
+      );
   };
   const idOf = (request: FastifyRequest) => parseInput(stackIdSchema, request.params).id;
 
@@ -283,7 +300,7 @@ export function registerStackRoutes(
     const id = idOf(request);
     const { icon, ...input } = parseInput(stackTechnologyUpdateSchema, request.body);
     if (icon) checkIcon(icon);
-    await checkProjects(input.projectIds);
+    await checkProjects(input.projectIds, id);
     let dropped: StoredImage | null = null;
     const result = await serialized(async () => {
       const rows = await repo().list();

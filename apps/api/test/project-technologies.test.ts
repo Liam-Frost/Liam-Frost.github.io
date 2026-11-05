@@ -6,6 +6,7 @@ import {
   technologyKey,
   TECHNOLOGY_ALIASES
 } from "../src/projects/technology-matching";
+import { MAX_PROJECT_TECHNOLOGIES, MAX_TECHNOLOGY_PROJECTS } from "../src/lib/validation";
 import { measureIcon } from "../src/stack/optics";
 import { buildTestServer, csrf, login } from "./helpers";
 import { MemoryProjectRepository } from "./memory-project-repository";
@@ -62,6 +63,7 @@ async function setup() {
     ).flatMap((c) => c.technologies);
   return {
     app,
+    stack,
     call,
     category,
     technology,
@@ -113,6 +115,50 @@ describe("project ↔ technology links", () => {
     const css = await technology("CSS", { projectIds: [site] });
     expect(css.projectIds).toEqual([site]);
     expect((await adminProject(site)).technologyIds).toEqual([vite.id, css.id]);
+  });
+
+  it("keeps the per-project and per-technology limits from either side", async () => {
+    const { call, stack, category, technology, project, adminProject } = await setup();
+    const site = await project("site");
+    // A project with the most technologies the project form accepts.
+    const many = await Promise.all(
+      Array.from({ length: MAX_PROJECT_TECHNOLOGIES }, (_, i) => technology(`T${i}`))
+    );
+    const full = await call("PATCH", `/api/admin/projects/${site}`, {
+      technologyIds: many.map((t) => t.id)
+    });
+    expect(full.statusCode).toBe(200);
+
+    // The stack side cannot push it past that, on update or on create…
+    const extra = await technology("Extra");
+    const refused = await call("PATCH", `/api/admin/stack/technologies/${extra.id}`, {
+      projectIds: [site]
+    });
+    expect(refused.statusCode).toBe(400);
+    expect(refused.json().error.code).toBe("TOO_MANY_TECHNOLOGIES");
+    const created = await call("POST", "/api/admin/stack/technologies", {
+      categoryId: category.id,
+      name: "Never",
+      projectIds: [site]
+    });
+    expect(created.json().error.code).toBe("TOO_MANY_TECHNOLOGIES");
+    // …but a technology already linked to it can still be saved with it.
+    const kept = await call("PATCH", `/api/admin/stack/technologies/${many[0]!.id}`, {
+      projectIds: [site],
+      name: "T0 renamed"
+    });
+    expect(kept.statusCode).toBe(200);
+    expect((await adminProject(site)).technologyIds).toHaveLength(MAX_PROJECT_TECHNOLOGIES);
+
+    // And the project side cannot push a technology past its number of projects.
+    const busy = await technology("Busy");
+    for (let i = 0; i < MAX_TECHNOLOGY_PROJECTS; i++)
+      stack.links.push({ projectId: `p${i}`, technologyId: busy.id, sortOrder: 0 });
+    const other = await project("other");
+    const tooMany = await call("PATCH", `/api/admin/projects/${other}`, {
+      technologyIds: [busy.id]
+    });
+    expect(tooMany.json().error.code).toBe("TOO_MANY_PROJECTS");
   });
 
   it("refuses unknown or repeated ids and needs a signed-in admin", async () => {

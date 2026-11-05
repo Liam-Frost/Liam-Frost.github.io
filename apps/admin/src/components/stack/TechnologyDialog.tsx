@@ -47,6 +47,8 @@ const sameIds = (a: string[], b: string[]) =>
 function errorText(error: unknown) {
   if (error instanceof ApiError) {
     if (error.code === "UNKNOWN_PROJECT") return "有关联的项目已被删除，请刷新后重试";
+    if (error.code === "TOO_MANY_TECHNOLOGIES")
+      return `有项目已关联 40 项技术，不能再添加：${error.message}`;
     if (error.code === "NAME_TAKEN") return "这个分类里已经有同名的技术";
     if (error.code === "UNKNOWN_ICON") return "图标库里找不到这个图标，请重新选择";
     if (error.code === "INVALID_IMAGE" || error.code === "FILE_TOO_LARGE") return error.message;
