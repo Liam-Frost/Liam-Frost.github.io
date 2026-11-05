@@ -2,6 +2,7 @@ import type { PublicSpotifyPlayer } from "@liam-frost/shared";
 import { useCallback, useEffect, useRef, useState, type FocusEvent } from "react";
 
 import { onPlayerCommand, setNowPlaying, type PlayRequest } from "../data/playerBus";
+import { createAudioTap, observeSpotifyEmbed } from "../data/audio-visualization";
 import { useSpotifyPlayer } from "../data/useSpotifyPlayer";
 import { track as trackEvent } from "../lib/analytics";
 import { SpotifyCard } from "./spotify-card";
@@ -49,6 +50,7 @@ function EmbedDock({ player, src }: { player: PublicSpotifyPlayer; src: string }
   // A song chosen on the page replaces the configured link. Spotify's iframe cannot be started from the
   // page, so the visitor presses play in it.
   const [shown, setShown] = useState(src);
+  useEffect(() => observeSpotifyEmbed(), []);
 
   useEffect(
     () =>
@@ -146,6 +148,7 @@ function Dock({ player }: { player: PublicSpotifyPlayer }) {
   const [isHovering, setIsHovering] = useState(false);
   const [hasAutoCollapsed, setHasAutoCollapsed] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const tapRef = useRef<ReturnType<typeof createAudioTap> | null>(null);
   const failuresRef = useRef(0);
 
   const track = tracks[order[position]] ?? tracks[0];
@@ -232,7 +235,10 @@ function Dock({ player }: { player: PublicSpotifyPlayer }) {
   }, [tracks.length]);
 
   const ensureAudio = () => {
-    if (audioRef.current) return audioRef.current;
+    if (audioRef.current) {
+      tapRef.current?.resume();
+      return audioRef.current;
+    }
     const audio = new Audio();
     audio.preload = "none";
     audio.volume = player.volume / 100;
@@ -253,6 +259,7 @@ function Dock({ player }: { player: PublicSpotifyPlayer }) {
     });
     audio.addEventListener("play", () => setIsPlaying(true));
     audioRef.current = audio;
+    tapRef.current = createAudioTap(audio);
     return audio;
   };
 
@@ -289,6 +296,8 @@ function Dock({ player }: { player: PublicSpotifyPlayer }) {
   useEffect(
     () => () => {
       audioRef.current?.pause();
+      tapRef.current?.dispose();
+      tapRef.current = null;
       if ("mediaSession" in navigator) {
         navigator.mediaSession.metadata = null;
         navigator.mediaSession.setActionHandler("nexttrack", null);

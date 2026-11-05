@@ -1,10 +1,24 @@
 import { useEffect } from "react";
-import { useLocation } from "react-router";
+import { useLocation, useNavigationType } from "react-router";
+
+const positions = new Map<string, number>();
 
 export default function ScrollManager() {
   const location = useLocation();
+  const navigationType = useNavigationType();
 
   useEffect(() => {
+    const key = location.key;
+    const save = () => {
+      positions.delete(key);
+      positions.set(key, window.scrollY);
+      if (positions.size > 100) positions.delete(positions.keys().next().value!);
+    };
+    const restored = navigationType === "POP" ? positions.get(key) : undefined;
+    if (restored !== undefined) {
+      window.scrollTo({ top: restored, left: 0, behavior: "instant" });
+      return save;
+    }
     const hash = location.hash?.replace(/^#/, "");
 
     if (hash) {
@@ -36,11 +50,13 @@ export default function ScrollManager() {
         cancelAnimationFrame(frame);
         observer?.disconnect();
         clearTimeout(timeout);
+        save();
       };
     }
 
     window.scrollTo({ top: 0, left: 0, behavior: "auto" });
-  }, [location.pathname, location.hash]);
+    return save;
+  }, [location.pathname, location.hash, location.key, navigationType]);
 
   return null;
 }
