@@ -1064,23 +1064,40 @@ html[data-theme="light"] .aboutSection {
 }
 
 /* Tech stack: an editorial list. Category name on the left, logos and names in a grid on the right. */
+.stackList,
+.stackDetail {
+  /* Logo slot: every logo takes the same square, whatever its own proportions. */
+  --stack-logo: 44px;
+  /* Single-colour dark marks in the dark theme get the page's ink; light ones in the light theme. */
+  --stack-logo-dark-filter: brightness(0) invert(0.9) sepia(0.12);
+  --stack-logo-light-filter: none;
+  --stack-logo-contrast-filter: drop-shadow(0 0 0.8px rgba(242, 236, 226, 0.9))
+    drop-shadow(0 0 0.6px rgba(242, 236, 226, 0.55));
+}
+
 .stackList {
-  /* Logos sit on a light tile in both themes, so dark logos (Adobe's, GitHub's) stay visible. */
-  --stack-tile: rgba(242, 236, 226, 0.94);
-  --stack-tile-border: rgba(234, 224, 207, 0.32);
   margin-top: clamp(18px, 2.4vw, 28px);
   border-top: 1px solid var(--border);
 }
 
-html[data-theme="light"] .stackList {
-  --stack-tile: rgba(255, 255, 255, 0.82);
-  --stack-tile-border: rgba(33, 52, 72, 0.12);
+.stackDetail {
+  display: grid;
+  gap: 16px;
+}
+
+html[data-theme="light"] .stackList,
+html[data-theme="light"] .stackDetail {
+  --stack-logo-dark-filter: none;
+  --stack-logo-light-filter: brightness(0) opacity(0.78);
+  --stack-logo-contrast-filter: none;
 }
 
 @media (prefers-color-scheme: light) {
-  html[data-theme="system"] .stackList {
-    --stack-tile: rgba(255, 255, 255, 0.82);
-    --stack-tile-border: rgba(33, 52, 72, 0.12);
+  html[data-theme="system"] .stackList,
+  html[data-theme="system"] .stackDetail {
+    --stack-logo-dark-filter: none;
+    --stack-logo-light-filter: brightness(0) opacity(0.78);
+    --stack-logo-contrast-filter: none;
   }
 }
 
@@ -1127,7 +1144,7 @@ html[data-theme="light"] .stackList {
 .stackItems {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(176px, 1fr));
-  gap: 8px 18px;
+  gap: 6px 18px;
   align-content: start;
   margin: 0;
   padding: 0;
@@ -1142,24 +1159,26 @@ html[data-theme="light"] .stackList {
   position: relative;
   display: flex;
   align-items: center;
-  gap: 12px;
-  min-height: 52px;
-  padding: 6px 8px;
-  border-radius: 12px;
+  gap: 14px;
+  width: 100%;
+  min-height: 60px;
+  padding: 8px 10px 8px 6px;
+  border: 0;
+  border-radius: 14px;
+  background: none;
   color: var(--text);
+  font: inherit;
+  text-align: left;
   text-decoration: none;
 }
 
+/* No tile: the logo itself, centred in its slot, scaled by its measured optical size. */
 .stackLogo {
   display: grid;
   flex: none;
   place-items: center;
-  width: 40px;
-  height: 40px;
-  padding: 7px;
-  border: 1px solid var(--stack-tile-border);
-  border-radius: 11px;
-  background: var(--stack-tile);
+  width: var(--stack-logo);
+  height: var(--stack-logo);
   transition: transform 180ms var(--ease);
 }
 
@@ -1168,10 +1187,30 @@ html[data-theme="light"] .stackList {
   width: 100%;
   height: 100%;
   object-fit: contain;
+  transform: scale(var(--logo-scale, 1));
 }
 
+.stackLogoTone-dark img {
+  filter: var(--stack-logo-dark-filter);
+}
+
+.stackLogoTone-light img {
+  filter: var(--stack-logo-light-filter);
+}
+
+.stackLogoTone-contrast img {
+  filter: var(--stack-logo-contrast-filter);
+}
+
+/* Fallback for a technology without a logo: a quiet monogram, not a tile. */
 .stackLogoInitials {
-  color: #3d5a73;
+  display: grid;
+  place-items: center;
+  width: 82%;
+  height: 82%;
+  border: 1.5px solid var(--border);
+  border-radius: 50%;
+  color: var(--muted);
   font-size: 13px;
   font-weight: 750;
   letter-spacing: 0.02em;
@@ -1180,52 +1219,68 @@ html[data-theme="light"] .stackList {
 
 .stackName {
   min-width: 0;
-  font-size: 15px;
-  font-weight: 550;
+  font-size: 15.5px;
+  font-weight: 560;
   line-height: 1.3;
   overflow-wrap: anywhere;
 }
 
-/* A slight emphasis only: every technology keeps the same size and tile. */
+/* A slight emphasis only: every technology keeps the same size. */
 .stackItemPrimary .stackName {
   font-weight: 720;
 }
 
 .stackItemArrow {
   flex: none;
-  width: 14px;
-  height: 14px;
+  width: 15px;
+  height: 15px;
   margin-left: auto;
   color: var(--faint);
   opacity: 0;
-  transition: opacity 180ms var(--ease);
+  transition:
+    opacity 180ms var(--ease),
+    transform 180ms var(--ease);
 }
 
-.stackItemLink {
-  transition: background 180ms var(--ease);
+/* Technologies that open something: details (a button) or their website (a link). */
+.stackItemAction {
+  cursor: pointer;
+  transition:
+    background 180ms var(--ease),
+    transform 120ms var(--ease);
 }
 
-.stackItemLink:hover,
-.stackItemLink:focus-visible {
+.stackItemAction:hover,
+.stackItemAction:focus-visible,
+.stackItemAction[aria-expanded="true"] {
   background: var(--card);
 }
 
-.stackItemLink:hover .stackLogo,
-.stackItemLink:focus-visible .stackLogo {
+.stackItemAction:hover .stackLogo,
+.stackItemAction:focus-visible .stackLogo {
   transform: translateY(-1px);
 }
 
-.stackItemLink:hover .stackItemArrow,
-.stackItemLink:focus-visible .stackItemArrow {
+.stackItemAction:hover .stackItemArrow,
+.stackItemAction:focus-visible .stackItemArrow,
+.stackItemAction[aria-expanded="true"] .stackItemArrow {
   opacity: 1;
 }
 
-.stackItemLink:focus-visible {
+.stackItemAction:hover .stackItemArrow {
+  transform: translateX(2px);
+}
+
+.stackItemAction:active {
+  transform: scale(0.985);
+}
+
+.stackItemAction:focus-visible {
   outline: 2px solid var(--accent2);
   outline-offset: 1px;
 }
 
-/* Touch screens have no hover: show that a technology opens its website. */
+/* Touch screens have no hover: show which technologies open something. */
 @media (hover: none) {
   .stackItemArrow {
     opacity: 0.7;
@@ -1256,8 +1311,7 @@ html[data-theme="light"] .stackList {
 }
 
 .stackLogo.stackSkeleton {
-  border-color: transparent;
-  border-radius: 11px;
+  border-radius: 12px;
 }
 
 .stackSkeletonTitle {
@@ -1276,6 +1330,169 @@ html[data-theme="light"] .stackList {
   }
 }
 
+/* A technology's details (compact detail panel; a bottom sheet on phones). */
+.mediaDrawer.isCompact {
+  width: min(440px, 100vw);
+  /* Opaque: the panel covers a busy grid of logos, which must not show through. */
+  background: linear-gradient(var(--card), var(--card)), var(--bg);
+}
+
+.stackDetailHead {
+  --stack-logo: 52px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px 16px;
+}
+
+.stackDetailHeading {
+  flex: 1 1 140px;
+  min-width: 0;
+}
+
+.stackDetailCategory {
+  margin: 0 0 2px;
+  color: var(--faint);
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.stackDetailTitle {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 750;
+  line-height: 1.2;
+  letter-spacing: -0.015em;
+  overflow-wrap: anywhere;
+}
+
+.stackDetailWebsite {
+  flex: none;
+  gap: 6px;
+}
+
+.stackDetailWebsite svg {
+  width: 14px;
+  height: 14px;
+}
+
+.stackDetailSection {
+  display: grid;
+  gap: 10px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+.stackDetailSection h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: var(--faint);
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.stackDetailCount {
+  min-width: 20px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--muted);
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.stackRelated {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.stackRelatedItem {
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding: 8px;
+  border-radius: 14px;
+  color: var(--text);
+  text-decoration: none;
+  transition: background 180ms var(--ease);
+}
+
+.stackRelatedItem:hover,
+.stackRelatedItem:focus-visible {
+  background: var(--card);
+}
+
+.stackRelatedItem:focus-visible {
+  outline: 2px solid var(--accent2);
+  outline-offset: 1px;
+}
+
+.stackRelatedThumb {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  border-radius: 10px;
+  background: rgba(148, 180, 193, 0.14);
+  color: var(--muted);
+  font-size: 15px;
+  font-weight: 750;
+}
+
+.stackRelatedThumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.stackRelatedText {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.stackRelatedTitle {
+  font-size: 15px;
+  font-weight: 650;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.stackRelatedSummary {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.stackRelatedMeta {
+  color: var(--faint);
+  font-size: 12px;
+}
+
+.stackRelatedArrow {
+  width: 16px;
+  height: 16px;
+  color: var(--faint);
+}
+
+.stackDetailMore {
+  justify-self: start;
+}
+
 @media (max-width: 1020px) {
   .stackGroup {
     grid-template-columns: minmax(150px, 26%) minmax(0, 1fr);
@@ -1283,11 +1500,15 @@ html[data-theme="light"] .stackList {
   }
 
   .stackItems {
-    grid-template-columns: repeat(auto-fill, minmax(156px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
   }
 }
 
 @media (max-width: 760px) {
+  .stackList {
+    --stack-logo: 36px;
+  }
+
   .stackGroup {
     grid-template-columns: minmax(0, 1fr);
     gap: 14px;
@@ -1299,37 +1520,75 @@ html[data-theme="light"] .stackList {
   }
 
   .stackItems {
-    grid-template-columns: repeat(auto-fill, minmax(128px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
     gap: 4px 10px;
   }
 
   .stackItem {
-    gap: 10px;
-    min-height: 46px;
-    padding: 5px 4px;
-  }
-
-  .stackLogo {
-    width: 36px;
-    height: 36px;
-    padding: 6px;
-    border-radius: 10px;
+    gap: 11px;
+    min-height: 52px;
+    padding: 6px 6px 6px 4px;
   }
 
   .stackName {
     font-size: 14px;
+  }
+
+  .stackLogoInitials {
+    font-size: 12px;
+  }
+}
+
+/* Phones: the details rise from the bottom instead of covering the whole screen. */
+@media (max-width: 560px) {
+  .mediaDrawerBackdrop.isCompact {
+    place-items: end stretch;
+  }
+
+  .mediaDrawer.isCompact {
+    width: 100%;
+    height: auto;
+    max-height: min(86dvh, 640px);
+    border-radius: 20px 20px 0 0;
+    padding-bottom: max(24px, env(safe-area-inset-bottom));
+  }
+
+  .stackRelatedItem {
+    grid-template-columns: 64px minmax(0, 1fr) auto;
+    gap: 12px;
+    padding: 8px 4px;
+  }
+}
+
+@media (max-width: 560px) and (prefers-reduced-motion: no-preference) {
+  .mediaDrawer.isCompact {
+    animation-name: stackSheetIn;
+  }
+
+  @keyframes stackSheetIn {
+    from {
+      transform: translateY(24px);
+      opacity: 0;
+    }
+    to {
+      transform: none;
+      opacity: 1;
+    }
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .stackLogo,
   .stackItemArrow,
-  .stackItemLink {
+  .stackItemAction,
+  .stackRelatedItem {
     transition: none;
   }
 
-  .stackItemLink:hover .stackLogo,
-  .stackItemLink:focus-visible .stackLogo {
+  .stackItemAction:hover .stackLogo,
+  .stackItemAction:focus-visible .stackLogo,
+  .stackItemAction:hover .stackItemArrow,
+  .stackItemAction:active {
     transform: none;
   }
 

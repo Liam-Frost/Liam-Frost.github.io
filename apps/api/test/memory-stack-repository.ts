@@ -10,15 +10,27 @@ import type {
 } from "../src/stack/types";
 
 type Category = Omit<StackCategoryRow, "technologies">;
+type Technology = Omit<StackTechnologyRow, "projectIds">;
 
-/** In-memory StackRepository with the Prisma one's rules (ordering, restrict on delete). */
+/** ProjectTechnology rows, shared by a MemoryStackRepository and a MemoryProjectRepository. */
+export type MemoryLink = { projectId: string; technologyId: string; sortOrder: number };
+
+/** In-memory StackRepository with the Prisma one's rules (ordering, restrict on delete, cascades). */
 export class MemoryStackRepository implements StackRepository {
   categories = new Map<string, Category>();
-  technologies = new Map<string, StackTechnologyRow>();
+  technologies = new Map<string, Technology>();
   private clock = 0;
+
+  /** Pass the repository to a MemoryProjectRepository to share these links. */
+  constructor(public links: MemoryLink[] = []) {}
+
   private now() {
     // Strictly increasing, so ties in sortOrder still sort by creation like the database does.
     return new Date(Date.UTC(2026, 0, 1) + ++this.clock);
+  }
+
+  private setLinks(links: MemoryLink[]) {
+    this.links.splice(0, this.links.length, ...links);
   }
 
   async list(): Promise<StackCategoryRow[]> {
@@ -29,6 +41,10 @@ export class MemoryStackRepository implements StackRepository {
       technologies: [...this.technologies.values()]
         .filter((t) => t.categoryId === category.id)
         .sort(order)
+        .map((t) => ({
+          ...t,
+          projectIds: this.links.filter((l) => l.technologyId === t.id).map((l) => l.projectId)
+        }))
     }));
   }
 
@@ -76,9 +92,24 @@ export class MemoryStackRepository implements StackRepository {
     });
   }
 
-  async updateTechnology(id: string, patch: StackTechnologyPatch) {
+  async updateTechnology(id: string, { projectIds, ...patch }: StackTechnologyPatch) {
     const row = this.technologies.get(id);
     if (!row) return false;
+    if (projectIds) {
+      // Replaces its links; a project linked anew gets it at the end of its own list.
+      const kept = this.links.filter(
+        (l) => l.technologyId !== id || projectIds.includes(l.projectId)
+      );
+      for (const projectId of projectIds) {
+        if (kept.some((l) => l.technologyId === id && l.projectId === projectId)) continue;
+        const last = Math.max(
+          -1,
+          ...kept.filter((l) => l.projectId === projectId).map((l) => l.sortOrder)
+        );
+        kept.push({ projectId, technologyId: id, sortOrder: last + 1 });
+      }
+      this.setLinks(kept);
+    }
     const moved = patch.categoryId !== undefined && patch.categoryId !== row.categoryId;
     this.technologies.set(id, {
       ...row,
@@ -90,12 +121,16 @@ export class MemoryStackRepository implements StackRepository {
   }
 
   async deleteTechnology(id: string) {
+    // Cascades to its project links, like the foreign key.
+    this.setLinks(this.links.filter((l) => l.technologyId !== id));
     return this.technologies.delete(id);
   }
 
   async moveTechnologies(fromId: string, toId: string) {
     const start = this.nextOrder(toId);
-    const moving = (await this.list()).find((c) => c.id === fromId)?.technologies ?? [];
+    const moving = [...this.technologies.values()]
+      .filter((t) => t.categoryId === fromId)
+      .sort((a, b) => a.sortOrder - b.sortOrder || a.createdAt.getTime() - b.createdAt.getTime());
     moving.forEach((t, index) =>
       this.technologies.set(t.id, { ...t, categoryId: toId, sortOrder: start + index })
     );

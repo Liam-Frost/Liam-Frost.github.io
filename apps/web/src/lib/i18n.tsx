@@ -72,6 +72,10 @@ const zh = {
   "skills.retry": "重试",
   "skills.empty": "技术栈暂时还没有内容。",
   "skills.website": "打开官网",
+  "skills.details": "查看 {name} 的相关项目",
+  "skills.related": "相关项目",
+  "skills.showAll": "查看全部 {count} 个项目",
+  "skills.officialSite": "官网",
 
   // Featured
   "featured.title": "精选照片",
@@ -361,6 +365,10 @@ const en: Record<Key, string> = {
   "skills.retry": "Try again",
   "skills.empty": "Nothing in the tech stack yet.",
   "skills.website": "open the official website",
+  "skills.details": "Projects built with {name}",
+  "skills.related": "Related projects",
+  "skills.showAll": "Show all {count} projects",
+  "skills.officialSite": "Website",
 
   "featured.title": "Featured Photos",
   "featured.subtitle": "Click to open the lightbox. Keyboard navigation supported.",
@@ -646,6 +654,10 @@ const fr: Record<Key, string> = {
   "skills.retry": "Réessayer",
   "skills.empty": "Aucune techno pour le moment.",
   "skills.website": "ouvrir le site officiel",
+  "skills.details": "Projets réalisés avec {name}",
+  "skills.related": "Projets associés",
+  "skills.showAll": "Voir les {count} projets",
+  "skills.officialSite": "Site officiel",
 
   "featured.title": "Photos sélectionnées",
   "featured.subtitle": "Clique pour ouvrir la lightbox. Navigation clavier supportée.",
@@ -932,6 +944,10 @@ const ja: Record<Key, string> = {
   "skills.retry": "再試行",
   "skills.empty": "技術スタックはまだありません。",
   "skills.website": "公式サイトを開く",
+  "skills.details": "{name} を使ったプロジェクト",
+  "skills.related": "関連プロジェクト",
+  "skills.showAll": "{count} 件のプロジェクトをすべて表示",
+  "skills.officialSite": "公式サイト",
 
   "featured.title": "おすすめ写真",
   "featured.subtitle": "クリックでライトボックス。キーボード操作対応。",
@@ -1220,6 +1236,10 @@ const zhHant: Record<Key, string> = {
   "skills.retry": "重試",
   "skills.empty": "技術棧暫時還沒有內容。",
   "skills.website": "開啟官網",
+  "skills.details": "查看 {name} 的相關專案",
+  "skills.related": "相關專案",
+  "skills.showAll": "查看全部 {count} 個專案",
+  "skills.officialSite": "官網",
 
   // Featured
   "featured.title": "精選照片",

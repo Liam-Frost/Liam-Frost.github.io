@@ -11,12 +11,15 @@ export default function DetailDrawer({
   id,
   labelledBy,
   onClose,
-  children
+  children,
+  variant
 }: {
   id: string;
   labelledBy: string;
   onClose: () => void;
   children: ReactNode;
+  /** "compact": a narrower panel, a bottom sheet on phones (short details such as a technology's). */
+  variant?: "compact";
 }) {
   const { t } = useI18n();
   const closeRef = useRef<HTMLButtonElement | null>(null);
@@ -60,13 +63,15 @@ export default function DetailDrawer({
 
   return (
     <div
-      className="backdrop mediaDrawerBackdrop"
+      className={
+        variant ? "backdrop mediaDrawerBackdrop isCompact" : "backdrop mediaDrawerBackdrop"
+      }
       role="presentation"
       onMouseDown={(event) => event.target === event.currentTarget && onClose()}
     >
       <aside
         ref={panelRef}
-        className="card mediaDrawer"
+        className={variant ? "card mediaDrawer isCompact" : "card mediaDrawer"}
         role="dialog"
         aria-modal="true"
         aria-labelledby={labelledBy}

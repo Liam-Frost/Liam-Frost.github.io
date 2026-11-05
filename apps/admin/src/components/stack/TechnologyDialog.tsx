@@ -12,14 +12,17 @@ import { useQueryClient } from "@tanstack/react-query";
 import { ImageUp, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 
+import { projectsKey, useProjects } from "../../hooks/useProjects";
 import { stackKey } from "../../hooks/useStack";
 import { api, ApiError } from "../../lib/api";
 import { pickText } from "../../lib/i18n";
 import { Dialog } from "../ui/Dialog";
 import { Field, Switch } from "../ui/Field";
+import { MultiCombobox } from "../ui/MultiCombobox";
 import { useToast } from "../ui/Toast";
 import { DiscardBar } from "./DiscardBar";
 import { IconCombobox } from "./IconCombobox";
+import { projectOptions } from "./linkOptions";
 import { TechIcon } from "./TechIcon";
 
 type IconDraft = { provider: StackIconProvider; key: string | null; url: string | null };
@@ -31,13 +34,19 @@ type Draft = {
   websiteUrl: string;
   prominence: StackProminence;
   visible: boolean;
+  projectIds: string[];
 };
 
 const ICON_TYPES = ["image/svg+xml", "image/png", "image/webp"];
 const MAX_ICON_BYTES = 2 * 1024 * 1024;
 
+/** Same ids, in any order. */
+const sameIds = (a: string[], b: string[]) =>
+  a.length === b.length && a.every((id) => b.includes(id));
+
 function errorText(error: unknown) {
   if (error instanceof ApiError) {
+    if (error.code === "UNKNOWN_PROJECT") return "有关联的项目已被删除，请刷新后重试";
     if (error.code === "NAME_TAKEN") return "这个分类里已经有同名的技术";
     if (error.code === "UNKNOWN_ICON") return "图标库里找不到这个图标，请重新选择";
     if (error.code === "INVALID_IMAGE" || error.code === "FILE_TOO_LARGE") return error.message;
@@ -71,7 +80,8 @@ export function TechnologyDialog({
         : { provider: "none", key: null, url: null },
       websiteUrl: technology?.websiteUrl ?? "",
       prominence: technology?.prominence ?? "standard",
-      visible: technology?.visible ?? true
+      visible: technology?.visible ?? true,
+      projectIds: technology?.projectIds ?? []
     }),
     [technology, defaultCategoryId, categories]
   );
@@ -85,6 +95,8 @@ export function TechnologyDialog({
   const fileInput = useRef<HTMLInputElement>(null);
   const qc = useQueryClient();
   const toast = useToast();
+  const projects = useProjects();
+  const options = useMemo(() => projectOptions(projects.data ?? []), [projects.data]);
 
   useEffect(() => {
     if (!file) return setPreview(null);
@@ -103,7 +115,8 @@ export function TechnologyDialog({
     draft.categoryId !== initial.categoryId ||
     draft.websiteUrl.trim() !== initial.websiteUrl ||
     draft.prominence !== initial.prominence ||
-    draft.visible !== initial.visible;
+    draft.visible !== initial.visible ||
+    !sameIds(draft.projectIds, initial.projectIds);
 
   const set = <K extends keyof Draft>(key: K, value: Draft[K]) =>
     setDraft((d) => ({ ...d, [key]: value }));
@@ -145,6 +158,7 @@ export function TechnologyDialog({
         if (website !== initial.websiteUrl) update.websiteUrl = website || null;
         if (draft.prominence !== initial.prominence) update.prominence = draft.prominence;
         if (draft.visible !== initial.visible) update.visible = draft.visible;
+        if (!sameIds(draft.projectIds, initial.projectIds)) update.projectIds = draft.projectIds;
         if (
           icon &&
           (draft.icon.provider !== initial.icon.provider || draft.icon.key !== initial.icon.key)
@@ -160,13 +174,17 @@ export function TechnologyDialog({
           icon: icon ?? { provider: "none" },
           websiteUrl: website || null,
           prominence: draft.prominence,
-          visible: draft.visible
+          visible: draft.visible,
+          ...(draft.projectIds.length ? { projectIds: draft.projectIds } : {})
         });
         id = result.categories
           .find((c) => c.id === draft.categoryId)
           ?.technologies.find((t) => t.name === name)?.id;
       }
       qc.setQueryData(stackKey, result);
+      // Projects show their technologies: refresh them when the links changed.
+      if (!sameIds(draft.projectIds, initial.projectIds))
+        void qc.invalidateQueries({ queryKey: projectsKey });
       if (file && id) {
         try {
           qc.setQueryData(stackKey, await api.uploadStackIcon(id, file));
@@ -348,7 +366,7 @@ export function TechnologyDialog({
         <Field
           label="官方网站（可选）"
           htmlFor="tech-website"
-          hint="填写后，网站上点击这项技术会打开官网"
+          hint="网站上的技术详情里会给出官网链接；没有关联项目时，点击这项技术直接打开官网"
         >
           <input
             id="tech-website"
@@ -360,6 +378,28 @@ export function TechnologyDialog({
             maxLength={2048}
             onChange={(e) => set("websiteUrl", e.target.value)}
           />
+        </Field>
+
+        <Field
+          label="关联项目（Related Projects）"
+          htmlFor="tech-projects"
+          hint="网站上点击这项技术时列出这些项目；未公开的项目只在后台可见"
+        >
+          {projects.isError ? (
+            <p role="alert" className="text-[12.5px] text-status-error">
+              无法加载项目列表
+            </p>
+          ) : (
+            <MultiCombobox
+              id="tech-projects"
+              options={options}
+              value={draft.projectIds}
+              onChange={(ids) => set("projectIds", ids)}
+              placeholder={projects.isPending ? "加载项目中…" : "搜索项目名称"}
+              listLabel="项目"
+              emptyText={options.length ? "没有匹配的项目" : "还没有项目"}
+            />
+          )}
         </Field>
 
         <fieldset>

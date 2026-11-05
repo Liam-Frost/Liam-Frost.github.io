@@ -2,6 +2,16 @@
 
 ## User Decisions
 
+### 2026-11-05: Tech Stack Logos and Projects (Stage 25)
+
+The user asked for logos without tiles and for technologies to be linked to projects, editable from both sides, with the site showing a technology's projects on click. The model chose:
+
+- One link table (`ProjectTechnology`, cascading on both sides). The project's old `techStack` column now only holds names that are not in the stack ("other technologies"), so there is one record per link and no two lists to keep in step.
+- The migration links names that are equal ignoring case, spaces and `.`, `-`, `_`, plus a short alias list (React.js, Node, Premiere Pro, …); a name shared by namesakes in two categories is not linked. `npm run db:link-project-technologies` reports what is left and links names that match later.
+- Optical size and theme fixes are measured from each logo's pixels on the server (scale, and a tone for logos that would vanish in a theme), with a small override table for exceptions; no logo is cropped or redrawn.
+- Hidden technologies stay hidden everywhere on the site, project pages included. Only public projects are listed.
+- Details reuse the site's detail panel (narrower; a bottom sheet on phones). A technology with no public project keeps its old behaviour (website link or plain text).
+
 ### 2026-11-05: Tech Stack (Stage 24)
 
 The user asked for the tech stack to come from the database with an admin page, logos from Devicon and Simple Icons or uploads, and an editorial layout instead of cards of tags. The model chose:

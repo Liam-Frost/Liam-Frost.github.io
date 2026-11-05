@@ -36,9 +36,12 @@ const PROMINENCE_FROM_DB: Record<PrismaTechnology["prominence"], StackProminence
   STANDARD: "standard"
 };
 
-function toTechnology(record: PrismaTechnology): StackTechnologyRow {
+type TechnologyRecord = PrismaTechnology & { projects: { projectId: string }[] };
+
+function toTechnology({ projects, ...record }: TechnologyRecord): StackTechnologyRow {
   return {
     ...record,
+    projectIds: projects.map((link) => link.projectId),
     iconProvider: PROVIDER_FROM_DB[record.iconProvider],
     customIcon: record.customIcon as StoredImage | null,
     prominence: PROMINENCE_FROM_DB[record.prominence]
@@ -46,7 +49,7 @@ function toTechnology(record: PrismaTechnology): StackTechnologyRow {
 }
 
 function toCategory(
-  record: PrismaCategory & { technologies: PrismaTechnology[] }
+  record: PrismaCategory & { technologies: TechnologyRecord[] }
 ): StackCategoryRow {
   return {
     ...record,
@@ -57,7 +60,8 @@ function toCategory(
 }
 
 function technologyData(patch: StackTechnologyPatch): Prisma.StackTechnologyUncheckedUpdateInput {
-  const { iconProvider, prominence, customIcon, ...rest } = patch;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- links are written separately
+  const { iconProvider, prominence, customIcon, projectIds, ...rest } = patch;
   const data: Prisma.StackTechnologyUncheckedUpdateInput = { ...rest };
   if (iconProvider !== undefined) data.iconProvider = PROVIDER_TO_DB[iconProvider];
   if (prominence !== undefined) data.prominence = PROMINENCE_TO_DB[prominence];
@@ -76,7 +80,12 @@ export class PrismaStackRepository implements StackRepository {
   async list() {
     const records = await this.prisma.stackCategory.findMany({
       orderBy: [...ORDER],
-      include: { technologies: { orderBy: [...ORDER] } }
+      include: {
+        technologies: {
+          orderBy: [...ORDER],
+          include: { projects: { select: { projectId: true } } }
+        }
+      }
     });
     return records.map(toCategory);
   }
@@ -140,12 +149,47 @@ export class PrismaStackRepository implements StackRepository {
             data.sortOrder = await this.nextTechnologyOrder(patch.categoryId, tx);
         }
         await tx.stackTechnology.update({ where: { id }, data });
+        if (patch.projectIds) await this.linkProjects(tx, id, patch.projectIds);
       });
       return true;
     } catch (error) {
       if (isMissing(error)) return false;
       throw error;
     }
+  }
+
+  /** Replaces a technology's projects; a project linked anew gets it at the end of its own list. */
+  private async linkProjects(tx: Prisma.TransactionClient, id: string, projectIds: string[]) {
+    await tx.projectTechnology.deleteMany({
+      where: { technologyId: id, projectId: { notIn: projectIds } }
+    });
+    const existing = new Set(
+      (
+        await tx.projectTechnology.findMany({
+          where: { technologyId: id },
+          select: { projectId: true }
+        })
+      ).map((link) => link.projectId)
+    );
+    const added = projectIds.filter((projectId) => !existing.has(projectId));
+    if (!added.length) return;
+    const last = new Map(
+      (
+        await tx.projectTechnology.groupBy({
+          by: ["projectId"],
+          where: { projectId: { in: added } },
+          _max: { sortOrder: true }
+        })
+      ).map((row) => [row.projectId, row._max.sortOrder ?? -1])
+    );
+    await tx.projectTechnology.createMany({
+      data: added.map((projectId) => ({
+        projectId,
+        technologyId: id,
+        sortOrder: (last.get(projectId) ?? -1) + 1
+      })),
+      skipDuplicates: true
+    });
   }
 
   async deleteTechnology(id: string) {

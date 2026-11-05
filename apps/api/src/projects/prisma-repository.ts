@@ -30,9 +30,28 @@ const STATUS_FROM_DB: Record<PrismaProject["status"], ProjectStatus> = {
   ARCHIVED: "archived"
 };
 
-function toRow(record: PrismaProject): ProjectRow {
+/** The linked technologies, with what the public site needs to know about them. */
+const WITH_TECHNOLOGIES = {
+  technologies: {
+    orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+    select: {
+      technology: {
+        select: { id: true, name: true, visible: true, category: { select: { visible: true } } }
+      }
+    }
+  }
+} satisfies Prisma.ProjectInclude;
+
+type ProjectRecord = Prisma.ProjectGetPayload<{ include: typeof WITH_TECHNOLOGIES }>;
+
+function toRow({ technologies, ...record }: ProjectRecord): ProjectRow {
   return {
     ...record,
+    technologies: technologies.map(({ technology }) => ({
+      id: technology.id,
+      name: technology.name,
+      public: technology.visible && technology.category.visible
+    })),
     title: record.title as LocalizedText,
     summary: record.summary as LocalizedText,
     body: record.body as LocalizedText,
@@ -46,7 +65,8 @@ function toRow(record: PrismaProject): ProjectRow {
 }
 
 function toData(patch: ProjectPatch): Prisma.ProjectUpdateInput {
-  const { cover, status, visibility, ...rest } = patch;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- links are written separately
+  const { cover, status, visibility, technologyIds, ...rest } = patch;
   const data: Prisma.ProjectUpdateInput = { ...rest };
   if (cover !== undefined) data.cover = cover === null ? Prisma.DbNull : cover;
   if (status !== undefined) data.status = STATUS_TO_DB[status];
@@ -68,13 +88,17 @@ export class PrismaProjectRepository implements ProjectRepository {
   async list({ includePrivate = false } = {}) {
     const records = await this.prisma.project.findMany({
       where: includePrivate ? undefined : { visibility: "PUBLIC" },
-      orderBy: ORDER
+      orderBy: ORDER,
+      include: WITH_TECHNOLOGIES
     });
     return records.map(toRow);
   }
 
   async get(id: string) {
-    const record = await this.prisma.project.findUnique({ where: { id } });
+    const record = await this.prisma.project.findUnique({
+      where: { id },
+      include: WITH_TECHNOLOGIES
+    });
     return record ? toRow(record) : null;
   }
 
@@ -92,7 +116,10 @@ export class PrismaProjectRepository implements ProjectRepository {
   }
 
   async getBySlug(slug: string) {
-    const record = await this.prisma.project.findUnique({ where: { slug } });
+    const record = await this.prisma.project.findUnique({
+      where: { slug },
+      include: WITH_TECHNOLOGIES
+    });
     return record ? toRow(record) : null;
   }
 
@@ -110,7 +137,8 @@ export class PrismaProjectRepository implements ProjectRepository {
           links: {},
           visibility: "PRIVATE",
           sortOrder: min - 1
-        }
+        },
+        include: WITH_TECHNOLOGIES
       });
       return toRow(record);
     } catch (error) {
@@ -121,7 +149,29 @@ export class PrismaProjectRepository implements ProjectRepository {
 
   async update(id: string, patch: ProjectPatch) {
     try {
-      return toRow(await this.prisma.project.update({ where: { id }, data: toData(patch) }));
+      return toRow(
+        await this.prisma.$transaction(async (tx) => {
+          const { technologyIds } = patch;
+          if (technologyIds) {
+            await tx.projectTechnology.deleteMany({
+              where: { projectId: id, technologyId: { notIn: technologyIds } }
+            });
+            // Kept links keep their creation time; every link gets its position in the new list.
+            for (const [sortOrder, technologyId] of technologyIds.entries()) {
+              await tx.projectTechnology.upsert({
+                where: { projectId_technologyId: { projectId: id, technologyId } },
+                create: { projectId: id, technologyId, sortOrder },
+                update: { sortOrder }
+              });
+            }
+          }
+          return tx.project.update({
+            where: { id },
+            data: toData(patch),
+            include: WITH_TECHNOLOGIES
+          });
+        })
+      );
     } catch (error) {
       if (isMissing(error)) return null;
       if (isSlugConflict(error)) throw new SlugTakenError(patch.slug ?? "");
@@ -131,7 +181,7 @@ export class PrismaProjectRepository implements ProjectRepository {
 
   async delete(id: string) {
     try {
-      return toRow(await this.prisma.project.delete({ where: { id } }));
+      return toRow(await this.prisma.project.delete({ where: { id }, include: WITH_TECHNOLOGIES }));
     } catch (error) {
       if (isMissing(error)) return null;
       throw error;

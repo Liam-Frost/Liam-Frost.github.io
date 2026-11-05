@@ -503,6 +503,7 @@ function TechnologyRow({
         <span className="block truncate text-[11.5px] text-faint">
           {source}
           {technology.websiteUrl ? ` · ${host(technology.websiteUrl)}` : ""}
+          {technology.projectIds.length ? ` · ${technology.projectIds.length} 个项目` : ""}
         </span>
       </button>
       <div className="flex shrink-0 items-center">

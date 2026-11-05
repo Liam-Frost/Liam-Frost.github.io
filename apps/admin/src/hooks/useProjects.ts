@@ -2,6 +2,7 @@ import type { AdminProject, AdminProjectsResponse, AdminProjectUpdate } from "@l
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { api } from "../lib/api";
+import { stackKey } from "./useStack";
 
 export const projectsKey = ["admin", "projects"] as const;
 export const projectKey = (id: string) => ["admin", "projects", id] as const;
@@ -50,9 +51,14 @@ export function useCreateProject() {
 
 export function useUpdateProject(id: string) {
   const setProject = useSetProject();
+  const qc = useQueryClient();
   return useMutation({
     mutationFn: (update: AdminProjectUpdate) => api.updateProject(id, update),
-    onSuccess: ({ project }) => setProject(project)
+    onSuccess: ({ project }, update) => {
+      setProject(project);
+      // The stack lists each technology's projects: refresh it when the links changed.
+      if (update.technologyIds) void qc.invalidateQueries({ queryKey: stackKey });
+    }
   });
 }
 
@@ -62,6 +68,8 @@ export function useDeleteProject() {
     mutationFn: (id: string) => api.deleteProject(id),
     onSuccess: (_data, id) => {
       qc.removeQueries({ queryKey: projectKey(id) });
+      // Its links to technologies are gone too.
+      void qc.invalidateQueries({ queryKey: stackKey });
       qc.setQueryData<AdminProjectsResponse>(
         projectsKey,
         (data) => data && { projects: data.projects.filter((p) => p.id !== id) }

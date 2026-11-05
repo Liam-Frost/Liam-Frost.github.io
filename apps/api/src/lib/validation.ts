@@ -98,6 +98,17 @@ const uuid = z
   .regex(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/, "Invalid id");
 
 export const projectIdSchema = z.object({ id: uuid });
+
+/** Ids of linked records (projects ↔ technologies of the stack), each once. */
+const linkIds = (max: number, what: string) =>
+  z
+    .array(uuid)
+    .max(max, `At most ${max} ${what}`)
+    .refine((ids) => new Set(ids).size === ids.length, `Duplicate ${what}`);
+
+/** Most technologies a project links, and most projects a technology links. */
+export const MAX_PROJECT_TECHNOLOGIES = 40;
+export const MAX_TECHNOLOGY_PROJECTS = 500;
 const photoImportFrom = z.discriminatedUnion("type", [
   z.object({ type: z.literal("url"), url: z.string().trim().url().max(2048) }).strict(),
   z.object({ type: z.literal("gallery"), url: z.string().trim().url().max(2048) }).strict(),
@@ -190,9 +201,10 @@ export const projectUpdateSchema = z
     title: requiredText(120, "Title is required in at least one language"),
     summary: localizedText(300),
     body: localizedText(20_000),
-    techStack: z
+    technologyIds: linkIds(MAX_PROJECT_TECHNOLOGIES, "technologies"),
+    otherTechnologies: z
       .array(z.string().trim().min(1).max(30))
-      .max(20, "At most 20 technologies")
+      .max(20, "At most 20 other technologies")
       .refine(
         (list) => new Set(list.map((t) => t.toLowerCase())).size === list.length,
         "Duplicate technology"
@@ -704,7 +716,8 @@ export const stackTechnologyCreateSchema = z
     icon: stackIcon.default({ provider: "none" }),
     websiteUrl: stackWebsite.default(null),
     prominence: z.enum(["primary", "standard"]).default("standard"),
-    visible: z.boolean().default(true)
+    visible: z.boolean().default(true),
+    projectIds: linkIds(MAX_TECHNOLOGY_PROJECTS, "projects").optional()
   })
   .strict();
 
@@ -715,7 +728,8 @@ export const stackTechnologyUpdateSchema = z
     icon: stackIcon,
     websiteUrl: stackWebsite,
     prominence: z.enum(["primary", "standard"]),
-    visible: z.boolean()
+    visible: z.boolean(),
+    projectIds: linkIds(MAX_TECHNOLOGY_PROJECTS, "projects")
   })
   .partial()
   .strict();

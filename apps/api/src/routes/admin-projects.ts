@@ -23,6 +23,7 @@ import {
   type ProjectRow,
   type StoredImage
 } from "../projects/types";
+import type { StackRepository } from "../stack/types";
 import type { LocalImageStore } from "../storage/local";
 import { readUploadedImage } from "./read-upload";
 
@@ -37,8 +38,19 @@ export function registerAdminProjectRoutes(
   auth: AdminAuthService,
   projects: ProjectRepository | null,
   store: LocalImageStore,
-  maxUploadBytes: number
+  maxUploadBytes: number,
+  stack: StackRepository | null
 ) {
+  /** Linked technologies must exist in the stack (hidden ones included). */
+  const checkTechnologies = async (ids: string[] | undefined) => {
+    if (!ids?.length) return;
+    const known = new Set(
+      stack ? (await stack.list()).flatMap((c) => c.technologies.map((t) => t.id)) : []
+    );
+    if (ids.some((id) => !known.has(id)))
+      throw new HttpError(400, "UNKNOWN_TECHNOLOGY", "A linked technology is not in the stack");
+  };
+
   const repo = () => {
     if (!projects) {
       throw new HttpError(
@@ -101,7 +113,12 @@ export function registerAdminProjectRoutes(
 
   app.patch("/api/admin/projects/:id", admin, async (request): Promise<AdminProjectResponse> => {
     const id = projectId(request);
-    const { gallery: galleryOrder, ...patch } = parseInput(projectUpdateSchema, request.body);
+    const {
+      gallery: galleryOrder,
+      otherTechnologies,
+      ...patch
+    } = parseInput(projectUpdateSchema, request.body);
+    await checkTechnologies(patch.technologyIds);
     return lock.run(id, async () => {
       const row = await get(id);
       const startedAt = patch.startedAt !== undefined ? patch.startedAt : row.startedAt;
@@ -126,7 +143,13 @@ export function registerAdminProjectRoutes(
         gallery = galleryOrder.map((imageId) => byId.get(imageId)!);
       }
 
-      return respond(await save(row.id, { ...patch, ...(gallery ? { gallery } : {}) }));
+      return respond(
+        await save(row.id, {
+          ...patch,
+          ...(otherTechnologies ? { techStack: otherTechnologies } : {}),
+          ...(gallery ? { gallery } : {})
+        })
+      );
     });
   });
 

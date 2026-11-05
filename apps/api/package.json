@@ -13,6 +13,7 @@
     "db:seed:collection": "tsx src/db/seed-collection.ts",
     "db:seed:analytics-demo": "tsx src/db/seed-analytics-demo.ts",
     "db:backfill:romaji": "tsx src/db/backfill-romaji.ts",
+    "db:link-project-technologies": "tsx src/db/link-project-technologies.ts",
     "db:studio": "prisma studio",
     "dev": "prisma generate && tsx watch src/server.ts",
     "build": "prisma generate && tsc --noEmit && node scripts/build.mjs",

@@ -463,10 +463,10 @@ export async function buildServer({
       lookup: photoLookup
     })
   );
-  registerAdminProjectRoutes(app, auth, projects, store, config.uploads.maxBytes);
+  registerAdminProjectRoutes(app, auth, projects, store, config.uploads.maxBytes, stack);
   registerPhotoRoutes(app, photos, store);
   registerProjectRoutes(app, projects, store);
-  registerStackRoutes(app, auth, stack, store);
+  registerStackRoutes(app, auth, stack, store, projects);
   registerAdminMediaRoutes(app, auth, {
     media,
     collection,

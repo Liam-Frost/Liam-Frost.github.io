@@ -105,6 +105,8 @@ Collection entries (migration `20261031150000_media`; `book` and `comic` added b
 
 The home page's tech stack (migration `20261110090000_stack`, which also inserts the stack the site used to hard-code): `StackCategory` (localized `name` and `description`, `visible`, `sortOrder`) and `StackTechnology` (`categoryId` with `ON DELETE RESTRICT`, `name` unique per category, `iconProvider` + `iconKey` or an uploaded `customIcon`, `websiteUrl`, `prominence`, `visible`, `sortOrder`). See `tech-stack.md`.
 
+`ProjectTechnology` (migration `20261111090000_project_technologies`) links projects and technologies: primary key `(projectId, technologyId)`, an index on `technologyId`, `sortOrder` (position in the project's list) and `createdAt`. Both foreign keys cascade: deleting a project or a technology deletes its links, never the other side. `Project.techStack` keeps only technologies that are not in the stack, as plain names; the migration moved the names that match a technology into links.
+
 ## Person and MediaRelation Models
 
 People linked to collection entries (migration `20261102090000_people_relations`):
