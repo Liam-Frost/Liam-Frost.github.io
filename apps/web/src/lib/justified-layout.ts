@@ -61,13 +61,34 @@ export function justifiedLayout(
     }
   }
   const fits = n === input.length && (prefix[n]! * target) / width <= visibleRows * 1.18;
+  const partitionScore = (count: number, end: number) => {
+    if (!Number.isFinite(dp[count]![end])) return Infinity;
+    let sum = 0,
+      squares = 0,
+      smallest = Infinity,
+      largest = 0;
+    for (let k = count; k > 0; k--) {
+      const start = back[k]![end]!;
+      const height = width / (prefix[end]! - prefix[start]!);
+      const log = Math.log(height / target);
+      sum += log;
+      squares += log * log;
+      smallest = Math.min(smallest, height);
+      largest = Math.max(largest, height);
+      end = start;
+    }
+    // A slightly denser but balanced complete prefix beats a conspicuously enlarged last row.
+    const variance = Math.max(0, squares / count - (sum / count) ** 2);
+    const spread = Math.max(0, Math.log(largest / smallest) - Math.log(1.45));
+    return squares / count + 0.9 * variance + 0.6 * spread * spread;
+  };
   let best = Infinity,
     count = 0,
     last = 0;
   // Prefer including every item when the collection fits naturally, globally balancing the last row.
   if (fits)
     for (let k = 1; k <= maxRows; k++) {
-      const score = dp[k]![n]! / k;
+      const score = partitionScore(k, n);
       if (score < best) {
         best = score;
         count = k;
@@ -85,7 +106,7 @@ export function justifiedLayout(
   if (!count) {
     for (let k = maxRows; k >= 1; k--) {
       for (let end = k; end <= n; end++) {
-        const score = dp[k]![end]! / k + (maxRows - k) * 0.18;
+        const score = partitionScore(k, end) + (maxRows - k) * 0.18;
         if (score < best - 1e-10 || (Math.abs(score - best) < 1e-10 && end > last)) {
           best = score;
           count = k;
