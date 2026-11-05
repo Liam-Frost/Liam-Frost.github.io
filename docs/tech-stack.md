@@ -11,6 +11,8 @@ Two tables (migration `20261110090000_stack`):
 
 The migration also inserts the stack the site showed before, with fixed ids and `ON CONFLICT DO NOTHING`: it runs once, like every migration, so later admin changes are never overwritten, and running its inserts again adds nothing. Order is the order the site used to show (core, strong, working, then by name); the old "core" skills (React, Java, Lightroom) are `primary`. "SpringBoot" became "Spring Boot". Lightroom has no logo in either library (Simple Icons removed Adobe's logos), so it shows its initials until a logo is uploaded.
 
+`(categoryId, name)` is checked on every statement, so a layout that swaps two namesakes between categories first gives the moving technologies a placeholder name (with a control character, which real names cannot contain) and restores it in the same transaction (Codex review of PR 50).
+
 A category with technologies cannot be deleted by the database. The admin route asks for an explicit choice: move them to the end of another category, or delete them as well (with a confirmation).
 
 ## Logos

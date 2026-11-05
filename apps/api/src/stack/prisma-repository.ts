@@ -177,12 +177,33 @@ export class PrismaStackRepository implements StackRepository {
 
   async reorder(layout: StackLayout) {
     await this.prisma.$transaction(async (tx) => {
+      const current = await tx.stackTechnology.findMany({
+        select: { id: true, categoryId: true, name: true }
+      });
+      const target = new Map(
+        layout.flatMap((category) => category.technologies.map((id) => [id, category.id] as const))
+      );
+      const moving = current.filter(
+        (t) => target.get(t.id) !== undefined && target.get(t.id) !== t.categoryId
+      );
+      // (categoryId, name) is unique and checked on every statement. Swapping two namesakes between
+      // categories would collide halfway, so technologies changing category first get a placeholder
+      // name no real one can have (names cannot contain control characters), and their own name back
+      // once they are in place.
+      for (const t of moving) {
+        await tx.stackTechnology.update({ where: { id: t.id }, data: { name: `\u0001${t.id}` } });
+      }
+      const names = new Map(moving.map((t) => [t.id, t.name]));
       for (const [index, category] of layout.entries()) {
         await tx.stackCategory.update({ where: { id: category.id }, data: { sortOrder: index } });
         for (const [position, id] of category.technologies.entries()) {
           await tx.stackTechnology.update({
             where: { id },
-            data: { categoryId: category.id, sortOrder: position }
+            data: {
+              categoryId: category.id,
+              sortOrder: position,
+              ...(names.has(id) ? { name: names.get(id)! } : {})
+            }
           });
         }
       }

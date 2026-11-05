@@ -296,6 +296,23 @@ describe("admin stack management", () => {
     ]);
   });
 
+  it("swaps namesakes between categories in one layout", async () => {
+    const { addCategory, addTechnology, call, layout } = await setup();
+    const a = await addCategory("A");
+    const b = await addCategory("B");
+    await addTechnology(a.id, "Python");
+    await addTechnology(b.id, "Python");
+    const [inA, inB] = (await layout()).map((c) => c.technologies[0]!.id);
+    const saved = await call("PUT", "/api/admin/stack/order", {
+      categories: [
+        { id: a.id, technologies: [inB] },
+        { id: b.id, technologies: [inA] }
+      ]
+    });
+    expect(saved.statusCode).toBe(200);
+    expect((await layout()).map((c) => c.technologies.map((t) => t.id))).toEqual([[inB], [inA]]);
+  });
+
   it("never deletes a category's technologies without an explicit choice", async () => {
     const { addCategory, addTechnology, call, layout } = await setup();
     const a = await addCategory("A");
