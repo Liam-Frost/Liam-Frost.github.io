@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { cn } from "../lib/cn";
 
 type CursorStyle = "line" | "block" | "underscore";
@@ -106,6 +106,28 @@ export default function TypingAnimation({
 
   const cursorChar = CURSOR_CHARS[cursorStyle];
 
+  // The cursor follows the text with a transform, measured from an empty marker at the text's end.
+  // Moving it in the layout (as an inline element after the text) would count as a layout shift
+  // for every character typed; a transform and a zero-size marker do not.
+  const lineRef = useRef<HTMLSpanElement | null>(null);
+  const endRef = useRef<HTMLSpanElement | null>(null);
+  const cursorRef = useRef<HTMLSpanElement | null>(null);
+  useLayoutEffect(() => {
+    const line = lineRef.current;
+    const end = endRef.current;
+    const placed = cursorRef.current;
+    if (!line || !end || !placed) return;
+    const place = () => {
+      const from = line.getBoundingClientRect();
+      const to = end.getBoundingClientRect();
+      placed.style.transform = `translate(${to.left - from.left}px, ${to.top - from.top}px)`;
+    };
+    place();
+    const observer = new ResizeObserver(place);
+    observer.observe(line);
+    return () => observer.disconnect();
+  }, [displayText, showCursor]);
+
   // Render text with line breaks (\n -> <br />)
   const renderText = (text: string) => {
     const parts = text.split("\n");
@@ -117,14 +139,36 @@ export default function TypingAnimation({
     ));
   };
 
+  const cursor = (blink: boolean) =>
+    showCursor ? (
+      <span className={cn("typingCursor", blink && "typingCursorBlink")} aria-hidden="true">
+        {cursorChar}
+      </span>
+    ) : null;
+
+  // Every word is laid out, invisible, in the same grid cell as the typed text, so the cell is as
+  // tall as the longest word wraps to: the text below never moves while words are typed and deleted.
   return (
     <span className={cn("typingAnimation", className)}>
-      <span className="typingText">{renderText(displayText)}</span>
-      {showCursor && (
-        <span className={cn("typingCursor", blinkCursor && "typingCursorBlink")} aria-hidden="true">
-          {cursorChar}
+      {words.map((word, i) => (
+        <span key={i} className="typingSizer" aria-hidden="true">
+          {renderText(word)}
+          {cursor(false)}
         </span>
-      )}
+      ))}
+      <span className="typingLine" ref={lineRef}>
+        <span className="typingText">{renderText(displayText)}</span>
+        <span className="typingEnd" ref={endRef} />
+        {showCursor && (
+          <span
+            ref={cursorRef}
+            className={cn("typingCursor", "typingCursorPlaced", blinkCursor && "typingCursorBlink")}
+            aria-hidden="true"
+          >
+            {cursorChar}
+          </span>
+        )}
+      </span>
     </span>
   );
 }

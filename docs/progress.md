@@ -387,6 +387,13 @@ Status: implementation complete; Claude Code review complete and fixes applied. 
 - Tests: 192 passed.
 - Verified with a temporary database: the migration on photos stored the old way, a server folder import with previews and EXIF, a Flickr short link through oEmbed (referenced), an image link (imported), a refused local address, 转为本站托管 and 替换图片 from a server file with EXIF, the old image folder removed.
 
+### Stage 26: Motion System, Phase 1
+
+Status: phase 1 complete (Claude Code); phase 2 (tech stack scroll-linked pilot) not started.
+
+- Shared motion tokens and one `<Reveal>` for the public site: transform and opacity only (the blur is gone), nothing left on revealed elements, staggered in order on screen, visible when printing, with reduced motion or without IntersectionObserver. The hero's typing title no longer moves the content below it. See `motion.md`.
+- Playwright on production builds of `dev` before and after: largest CLS window 0.30 → 0.047 at 320 px, 0.155 → 0.041 at 375 px, at most 0.013 at 768 px and up; no leftover transforms (before: 28–29 per page); print hid 24 sections before, none now.
+
 ### Stage 25: Tech Stack Logos and Projects
 
 Status: implementation complete (Claude Code); browser and Playwright checks complete.
