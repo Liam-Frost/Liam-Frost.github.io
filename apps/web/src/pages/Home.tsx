@@ -12,6 +12,7 @@ import { useCollection } from "../data/useCollection";
 import { usePhotos } from "../data/usePhotos";
 import { useProjects } from "../data/useProjects";
 import { pickLocalized, useI18n, type Lang } from "../lib/i18n";
+import { stackScrollMotion } from "../lib/motion";
 
 // Greeting messages (Japanese uses \n for forced line break)
 const GREETINGS = {
@@ -43,6 +44,7 @@ export default function HomePage() {
   const collection = useCollection();
 
   const navigate = useNavigate();
+  const stackScroll = useMemo(stackScrollMotion, []);
 
   const [copyHint, setCopyHint] = useState("");
 
@@ -226,9 +228,14 @@ export default function HomePage() {
             <p className="sectionSubtitle">{t("skills.subtitle")}</p>
           </Reveal>
 
-          <Reveal delayMs={120}>
-            <TechStack />
-          </Reveal>
+          {/* The stack's own scroll-linked motion (pilot) or, without it, the one-time reveal. */}
+          {stackScroll ? (
+            <TechStack scrollMotion />
+          ) : (
+            <Reveal delayMs={120}>
+              <TechStack />
+            </Reveal>
+          )}
         </div>
       </section>
 

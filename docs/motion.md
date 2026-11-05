@@ -40,6 +40,16 @@ The values are starting points, tuned in the browser.
 
 Content is visible by default. It is hidden while waiting only when all of these hold: the page is on a screen (not print), motion is allowed, and the observer runs (`html.revealReady`, set before the first render and removed if the observer cannot be created). Printing, reduced motion (also when switched on while a page is open), a browser without IntersectionObserver or a failed setup all leave everything visible.
 
+## Tech stack pilot (phase 2)
+
+Categories and technologies rise in as they pass into the viewport, and go back when scrolling up: the animation's progress is the scroll position (CSS `animation-timeline: view()`), not a timer.
+
+- Each category heading and each technology has its own view timeline. A technology's rise takes the first `--motion-scroll-range` (35%) of its pass through the viewport (`cover`, from its top at the viewport's bottom); technologies on the same row start `--motion-scroll-stagger` (7%) apart from left to right. Their column is measured in `TechStack` (`--stack-col`, kept up to date when the layout changes).
+- Headings rise from 20px below (`--motion-scroll-distance-heading`), technologies from 40px (`--motion-scroll-distance`), times `--motion-scale` on phones. The user chose these values (variant B, "gentler") from recorded comparisons with 20% / 4% / 28px and 12% / 2.5% / 16px. Only `transform` and `opacity`; the animation fills backwards only, so once past its range an element has no animated value left (`transform: none`).
+- No section exit fade and no smooth scrolling; the page scrolls natively.
+- Off switch: `STACK_SCROLL_MOTION` in `apps/web/src/lib/motion.ts` (false: the stack goes back to the one-time reveal). For one visit, `?stackMotion=off` or `?stackMotion=on` before the `#` (e.g. `/?stackMotion=off#/`) overrides it, to compare.
+- Fallback to the one-time reveal: browsers without scroll-driven animations (checked with `CSS.supports`). Reduced motion and print show the stack as it is.
+
 ## Hero title
 
 The typing greeting changes its number of lines and pushes the content below it on purpose; this is a feature, not a layout shift to remove. The motion work does not touch it.

@@ -387,6 +387,13 @@ Status: implementation complete; Claude Code review complete and fixes applied. 
 - Tests: 192 passed.
 - Verified with a temporary database: the migration on photos stored the old way, a server folder import with previews and EXIF, a Flickr short link through oEmbed (referenced), an image link (imported), a refused local address, 转为本站托管 and 替换图片 from a server file with EXIF, the old image folder removed.
 
+### Stage 26: Motion System, Phase 2 (pilot)
+
+Status: tech stack pilot implemented (Claude Code), behind a switch; not yet rolled out to other sections.
+
+- The tech stack's categories and technologies rise in with the scroll and go back when scrolling up (CSS scroll-driven animations), technologies on one row from left to right. Off switch `STACK_SCROLL_MOTION` in `lib/motion.ts`, or `?stackMotion=off` for one visit. Without browser support, the one-time reveal. See `motion.md`.
+- Playwright (Chromium) at eight sizes: progress follows the scroll and matches on the way back, rows stagger left to right, nothing left on elements past their range, the details panel still opens in view; switch off, no support, reduced motion and print show the stack; CLS as before.
+
 ### Stage 26: Motion System, Phase 1
 
 Status: phase 1 complete (Claude Code); phase 2 (tech stack scroll-linked pilot) not started.
