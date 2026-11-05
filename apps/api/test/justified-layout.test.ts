@@ -51,6 +51,12 @@ describe("seamless justified layout", () => {
     expect(low.visibleCount).toBeGreaterThan(high.visibleCount);
     expect(high.rows[0]!.height).toBeGreaterThan(low.rows[0]!.height);
   });
+  it("prefers balanced phone rows to an enlarged two-cover last row", () => {
+    const layout = check(mixed, 375);
+    const heights = layout.rows.map((row) => row.height);
+    expect(layout.rows).toHaveLength(3);
+    expect(Math.max(...heights) / Math.min(...heights)).toBeLessThan(1.3);
+  });
   it("shrinks a sparse canvas, without giant covers, repeated entries or internal blank columns", () => {
     for (const ratios of [[1], [2 / 3], [1, 2 / 3], [1, 2 / 3, 0.55]]) {
       const layout = check(ratios, 1200);
