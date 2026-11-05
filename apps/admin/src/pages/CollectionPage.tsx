@@ -708,7 +708,8 @@ function SettingsDialog({
       <div className="space-y-4">
         <div>
           <p className="mb-2 text-[12.5px] font-medium text-brand-dark">在网站上显示</p>
-          <div className="flex flex-col items-start gap-2.5">
+          {/* As many columns as fit (4 in the dialog, 3 on a narrow phone): two short rows, not one long one. */}
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(5rem,1fr))] gap-x-3 gap-y-3">
             {kinds.map(([key, label]) => (
               <Switch
                 key={key}
