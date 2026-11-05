@@ -48,6 +48,9 @@ export default function PortfolioPage() {
   const [category, setCategory] = useState<string>(ALL);
   const [query, setQuery] = useState<string>("");
   const [sort, setSort] = useState<SortMode>("new");
+  // Once the visitor filters, searches or sorts, the photos that come in are shown at once: the
+  // reveal is for arriving at the page, not for every change of the results.
+  const [refined, setRefined] = useState(false);
 
   const sortedAll = useMemo(() => sortByDate(sort, photos, lang), [sort, photos, lang]);
 
@@ -117,6 +120,7 @@ export default function PortfolioPage() {
   };
 
   const reset = () => {
+    setRefined(true);
     setCategory(ALL);
     setQuery("");
     setSort("new");
@@ -125,7 +129,7 @@ export default function PortfolioPage() {
   return (
     <section className="section">
       <div className="container">
-        <Reveal>
+        <Reveal intensity="subtle">
           <h1 className="sectionTitle">{t("portfolio.title")}</h1>
           <p className="sectionSubtitle">{t("portfolio.subtitle")}</p>
         </Reveal>
@@ -138,7 +142,10 @@ export default function PortfolioPage() {
                   key={c.key}
                   type="button"
                   className={cx("btn", c.key === category ? "btnSoft" : "btnGhost")}
-                  onClick={() => setCategory(c.key)}
+                  onClick={() => {
+                    setRefined(true);
+                    setCategory(c.key);
+                  }}
                 >
                   {c.label}
                 </button>
@@ -149,7 +156,10 @@ export default function PortfolioPage() {
               <input
                 className="input"
                 value={query}
-                onChange={(e) => setQuery(e.target.value)}
+                onChange={(e) => {
+                  setRefined(true);
+                  setQuery(e.target.value);
+                }}
                 placeholder={t("portfolio.search")}
                 aria-label={t("portfolio.search")}
               />
@@ -157,7 +167,10 @@ export default function PortfolioPage() {
               <select
                 className="select"
                 value={sort}
-                onChange={(e) => setSort(e.target.value as SortMode)}
+                onChange={(e) => {
+                  setRefined(true);
+                  setSort(e.target.value as SortMode);
+                }}
                 aria-label="Sort"
               >
                 <option value="new">{t("portfolio.sort.new")}</option>
@@ -177,7 +190,7 @@ export default function PortfolioPage() {
         <div className="masonry" aria-label="Photo gallery">
           {filtered.map((p, idx) => (
             <div key={p.id} className="masonryItem">
-              <Reveal stagger>
+              <Reveal after stagger instant={refined}>
                 <PhotoCard photo={p} onOpen={open} priority={idx < 4} />
               </Reveal>
             </div>

@@ -174,7 +174,7 @@ export default function HomeCollection({ collection }: { collection: PublicColle
   return (
     <section className="section" id="watching">
       <div className="container">
-        <Reveal>
+        <Reveal intensity="subtle">
           <h2 className="sectionTitle">{t("collection.home.title")}</h2>
           {parts.stats.length ? (
             <p className="sectionSubtitle">
@@ -189,14 +189,14 @@ export default function HomeCollection({ collection }: { collection: PublicColle
         </Reveal>
 
         {parts.featured.length ? (
-          <div className="homeBlock">
+          <Reveal after className="homeBlock">
             <h3 className="homeBlockTitle">{t("collection.home.featured")}</h3>
             <FeaturedQuiltWall
               items={parts.featured}
               settings={home.wall?.settings}
               onVisibleItems={onVisibleItems}
             />
-          </div>
+          </Reveal>
         ) : null}
 
         {parts.ongoing.length ? (
@@ -204,7 +204,7 @@ export default function HomeCollection({ collection }: { collection: PublicColle
             <h3 className="homeBlockTitle">{t("collection.home.ongoing")}</h3>
             <div className="homeOngoingRow">
               {parts.ongoing.map((item) => (
-                <Reveal key={item.id} stagger>
+                <Reveal key={item.id} after stagger>
                   <OngoingCard item={item} />
                 </Reveal>
               ))}
@@ -213,7 +213,7 @@ export default function HomeCollection({ collection }: { collection: PublicColle
         ) : null}
 
         {parts.done.length ? (
-          <div className="homeBlock">
+          <Reveal after className="homeBlock">
             <div className="homeBlockHead">
               <h3 className="homeBlockTitle">{t("collection.home.recent")}</h3>
               {groups.length > 2 ? (
@@ -237,11 +237,11 @@ export default function HomeCollection({ collection }: { collection: PublicColle
                 <MediaCard key={item.id} item={item} to={itemLink(item)} />
               ))}
             </div>
-          </div>
+          </Reveal>
         ) : null}
 
         {parts.songs.length ? (
-          <div className="homeListening">
+          <Reveal after className="homeListening">
             <div className="homeListeningCovers" aria-hidden="true">
               {parts.songs.slice(0, 4).map((song) => (
                 <span key={song.id}>
@@ -268,7 +268,7 @@ export default function HomeCollection({ collection }: { collection: PublicColle
               </span>
             </div>
             <PlayAllButton items={parts.songs} spotifyUrl={parts.playlist?.sourceUrl ?? null} />
-          </div>
+          </Reveal>
         ) : null}
 
         <div style={{ marginTop: 18, display: "flex", gap: 12, flexWrap: "wrap" }}>

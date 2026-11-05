@@ -4,14 +4,7 @@ import {
   type PublicStackTechnology
 } from "@liam-frost/shared";
 import { ArrowUpRight, ChevronRight } from "lucide-react";
-import {
-  useCallback,
-  useLayoutEffect,
-  useRef,
-  useState,
-  type CSSProperties,
-  type RefObject
-} from "react";
+import { useCallback, useRef, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import { Link } from "react-router";
 
@@ -19,6 +12,7 @@ import { useStack } from "../data/useStack";
 import { cx } from "../lib/cx";
 import { pickLocalized, useI18n } from "../lib/i18n";
 import DetailDrawer from "./DetailDrawer";
+import { useStackScrub } from "./useStackScrub";
 
 /** Related projects listed at first in a technology's details; the rest behind "show all". */
 const INITIAL_PROJECTS = 4;
@@ -207,33 +201,10 @@ function TechnologyDetail({
  * the admin (GET /api/stack). A technology used by public projects opens its details on click.
  */
 /**
- * Marks each technology with its column (`--stack-col`), so that technologies entering the viewport on
- * the same row follow each other from left to right in the scroll-linked motion. Recomputed when the
- * layout changes (the number of columns depends on the width).
- */
-function useStackColumns(root: RefObject<HTMLDivElement | null>, active: boolean, key: unknown) {
-  useLayoutEffect(() => {
-    const list = root.current;
-    if (!active || !list) return;
-    const mark = () => {
-      for (const items of list.querySelectorAll<HTMLElement>(".stackItems")) {
-        const children = [...items.children] as HTMLElement[];
-        const lefts = [...new Set(children.map((li) => li.offsetLeft))].sort((a, b) => a - b);
-        for (const li of children)
-          li.style.setProperty("--stack-col", String(lefts.indexOf(li.offsetLeft)));
-      }
-    };
-    mark();
-    const observer = new ResizeObserver(mark);
-    observer.observe(list);
-    return () => observer.disconnect();
-  }, [root, active, key]);
-}
-
-/**
- * The home page's tech stack. With `scrollMotion` (the Stage 26 pilot, see lib/motion.ts) categories
- * and technologies rise in with the scroll and go back when scrolling up (CSS scroll-driven
- * animations); otherwise the caller wraps it in a one-time <Reveal>.
+ * The home page's tech stack. With `scrollMotion` (Stage 26, see lib/motion.ts and useStackScrub)
+ * categories and technologies rise in one by one as the page scrolls, go back one by one when
+ * scrolling up, and the section fades out as it leaves; otherwise the caller wraps it in a one-time
+ * <Reveal>.
  */
 export default function TechStack({ scrollMotion = false }: { scrollMotion?: boolean }) {
   const { lang, t } = useI18n();
@@ -241,7 +212,7 @@ export default function TechStack({ scrollMotion = false }: { scrollMotion?: boo
   const [openId, setOpenId] = useState<string | null>(null);
   const trigger = useRef<HTMLButtonElement | null>(null);
   const listRef = useRef<HTMLDivElement | null>(null);
-  useStackColumns(listRef, scrollMotion, categories);
+  useStackScrub(listRef, scrollMotion, categories);
 
   const open = useCallback((id: string, button: HTMLButtonElement) => {
     trigger.current = button;
@@ -301,7 +272,7 @@ export default function TechStack({ scrollMotion = false }: { scrollMotion?: boo
   const openTechnology = openCategory?.technologies.find((x) => x.id === openId);
 
   return (
-    <div ref={listRef} className={cx("stackList", scrollMotion && "stackScroll")}>
+    <div ref={listRef} className={cx("stackList", scrollMotion && "stackScrub")}>
       {categories.map((category, index) => {
         const name = pickLocalized(category.name, lang);
         const description = pickLocalized(category.description, lang);
