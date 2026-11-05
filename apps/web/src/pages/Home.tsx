@@ -5,7 +5,7 @@ import HomeCollection from "../components/HomeCollection";
 import PhotoCard from "../components/PhotoCard";
 import ProjectCard from "../components/ProjectCard";
 import Reveal from "../components/Reveal";
-import SkillStack from "../components/SkillStack";
+import TechStack from "../components/TechStack";
 import TypingAnimation from "../components/TypingAnimation";
 import { site } from "../data/site";
 import { useCollection } from "../data/useCollection";
@@ -227,7 +227,7 @@ export default function HomePage() {
           </Reveal>
 
           <Reveal delayMs={120}>
-            <SkillStack />
+            <TechStack />
           </Reveal>
         </div>
       </section>

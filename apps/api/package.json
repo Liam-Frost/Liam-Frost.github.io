@@ -29,12 +29,14 @@
     "@liam-frost/shared": "^0.1.0",
     "@prisma/adapter-pg": "7.10.1",
     "@prisma/client": "7.10.1",
+    "devicon": "^2.18.0",
     "dotenv": "^18.0.9",
     "exif-reader": "^2.0.3",
     "fastify": "^5.0.0",
     "maxmind": "^5.0.7",
     "prisma": "7.10.1",
     "sharp": "^0.35.5",
+    "simple-icons": "^16.36.0",
     "zod": "^4.6.7"
   },
   "devDependencies": {

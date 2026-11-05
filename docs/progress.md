@@ -387,6 +387,13 @@ Status: implementation complete; Claude Code review complete and fixes applied. 
 - Tests: 192 passed.
 - Verified with a temporary database: the migration on photos stored the old way, a server folder import with previews and EXIF, a Flickr short link through oEmbed (referenced), an image link (imported), a refused local address, 转为本站托管 and 替换图片 from a server file with EXIF, the old image folder removed.
 
+### Stage 24: Tech Stack
+
+Status: implementation complete (Claude Code); browser check complete.
+
+- The home page's tech stack moved from a hard-coded list into the database (`StackCategory`, `StackTechnology`; the old list is inserted by the migration). Admin page 技术栈: categories and technologies, icon library search (Devicon, Simple Icons), uploaded logos, drag-and-drop and arrow ordering, hiding, Primary/Standard. The site shows an editorial list with logos instead of cards of tags. See `tech-stack.md`.
+- Tests: 263 passed (15 new).
+
 ### Stage 23: Featured Collection Wall
 
 Status: implementation complete (Codex, PR 48); Claude Code review and browser check complete, fixes applied.

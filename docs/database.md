@@ -101,6 +101,10 @@ npm run db:studio
 
 Collection entries (migration `20261031150000_media`; `book` and `comic` added by `20261103090000_books_comics`, `game` by `20261104090000_games`): `kind` (movie, tv, anime, book, comic, game, track, album), `source` and `sourceId` (unique together; TMDB ids are prefixed `movie:` / `tv:`), localized `title`, `overview`, `review` and `genres` as JSON, `credits`, local `poster` (same shape as project covers), `status`, `rating` (1-5), `watchedOn`, `rewatchCount`, `progress` (`{ watched, total }`: episodes, a comic's volumes or a book's pages), `extra` (kind-specific JSON: `music` for songs, `publication` `{ publisher, pages, volumes, ongoing }` for books and comics, `game` `{ platforms, publishers, playtimeHours, steamAppId, lastPlayedOn, purchasedOn }` for games; games added from the Steam store have source `steam`), `featured`, `featuredOrder` (position in the fixed home page order; migration `20261109090000_media_featured_order`; null when never ordered), `visibility`. The `collection` key in `Setting` holds the display switches and `homeFeatured` (`rotate` or `manual`; settings saved before Stage 21 rotate).
 
+## Stack Models
+
+The home page's tech stack (migration `20261110090000_stack`, which also inserts the stack the site used to hard-code): `StackCategory` (localized `name` and `description`, `visible`, `sortOrder`) and `StackTechnology` (`categoryId` with `ON DELETE RESTRICT`, `name` unique per category, `iconProvider` + `iconKey` or an uploaded `customIcon`, `websiteUrl`, `prominence`, `visible`, `sortOrder`). See `tech-stack.md`.
+
 ## Person and MediaRelation Models
 
 People linked to collection entries (migration `20261102090000_people_relations`):

@@ -15,6 +15,7 @@ import type { PhotoRepository } from "../src/photos/types";
 import type { ProjectRepository } from "../src/projects/types";
 import { buildServer } from "../src/server";
 import type { SettingsRepository } from "../src/settings/types";
+import type { StackRepository } from "../src/stack/types";
 import type { SpotifyAccount } from "../src/spotify/account";
 import type { PlaylistFetcher } from "../src/spotify/playlist";
 
@@ -58,6 +59,8 @@ export type TestServerOptions = {
   photos?: PhotoRepository | null;
   /** Defaults to none. */
   projects?: ProjectRepository | null;
+  /** Defaults to none. */
+  stack?: StackRepository | null;
   /** Defaults to none. */
   media?: MediaRepository | null;
   /** Defaults to none. */
@@ -112,6 +115,7 @@ export async function buildTestServer(
     webDistDir: options.webDistDir ?? "/nonexistent-web-dist",
     photos: options.photos ?? null,
     projects: options.projects ?? null,
+    stack: options.stack ?? null,
     media: options.media ?? null,
     people: options.people ?? null,
     relations: options.relations ?? null,

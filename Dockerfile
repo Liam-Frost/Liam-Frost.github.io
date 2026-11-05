@@ -28,7 +28,10 @@ ENV NODE_ENV=production \
   HOST=0.0.0.0 \
   PORT=8787 \
   UPLOAD_DIR=/data/uploads
-RUN npm ci --omit=dev --workspace apps/api && npm cache clean --force
+# devicon ships fonts and EPS sources next to its SVGs; the API only reads devicon.json and the SVGs.
+RUN npm ci --omit=dev --workspace apps/api && npm cache clean --force \
+  && rm -rf node_modules/devicon/fonts node_modules/devicon/icomoon.json \
+  && find node_modules/devicon/icons -type f ! -name '*.svg' -delete
 
 COPY --from=build /app/apps/api/dist apps/api/dist
 COPY --from=build /app/apps/api/prisma apps/api/prisma
