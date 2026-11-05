@@ -75,13 +75,6 @@
   --motion-stagger-max: 6;
   /* Content after its heading (<Reveal after>) starts this much later. */
   --motion-after-heading: 100ms;
-  /* Scroll-linked motion (tech stack pilot): how much of an element's pass through the viewport
-     ("cover", 0% = its top at the viewport's bottom) the rise takes, and each column's head start. */
-  --motion-scroll-range: 35%;
-  --motion-scroll-stagger: 7%;
-  /* How far headings and items rise from (times --motion-scale). */
-  --motion-scroll-distance-heading: 20px;
-  --motion-scroll-distance: 40px;
   /* Phones move less. */
   --motion-scale: 1;
 }
@@ -1594,42 +1587,14 @@ html[data-theme="light"] .stackDetail {
   }
 }
 
-/* Stage 26 pilot (lib/motion.ts): categories and technologies rise in with the scroll and go back when
-   scrolling up. Only on screens, with motion allowed, in browsers with scroll-driven animations;
-   otherwise the stack is shown as it is. Each element ends at opacity 1 and transform none. */
-@keyframes stackRise {
-  from {
-    opacity: 0;
-    transform: translate3d(0, calc(var(--stack-rise) * var(--motion-scale)), 0);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-
-@media screen and (prefers-reduced-motion: no-preference) {
-  @supports (animation-timeline: view()) {
-    .stackScroll .stackGroupHead,
-    .stackScroll .stackItems > li {
-      --stack-rise: var(--motion-scroll-distance);
-      animation-name: stackRise;
-      animation-duration: auto;
-      animation-timing-function: linear;
-      /* Backwards only: once past its range an element has no animated value left (transform none). */
-      animation-fill-mode: backwards;
-      animation-timeline: view();
-      animation-range: cover 0% cover var(--motion-scroll-range);
-    }
-
-    .stackScroll .stackGroupHead {
-      --stack-rise: var(--motion-scroll-distance-heading);
-    }
-
-    .stackScroll .stackItems > li {
-      animation-range: cover calc(var(--stack-col, 0) * var(--motion-scroll-stagger)) cover
-        calc(var(--motion-scroll-range) + var(--stack-col, 0) * var(--motion-scroll-stagger));
-    }
+/* Stage 26 (components/useStackScrub.ts): the tech stack's scroll motion writes opacity and
+   transform on its items and section. Printing shows them as they are. */
+@media print {
+  .stackScrub .stackGroupHead,
+  .stackScrub .stackItems > li,
+  .section:has(.stackScrub) {
+    opacity: 1 !important;
+    transform: none !important;
   }
 }
 
