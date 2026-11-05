@@ -57,6 +57,30 @@
   --header-h: 72px;
 
   --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  /* Motion tokens (see docs/motion.md). Reveal reads one intensity's set; the values are starting
+     points, tuned in the browser. Only transform and opacity move. */
+  --motion-ease: var(--ease);
+  --motion-distance-subtle: 6px;
+  --motion-distance-standard: 14px;
+  --motion-distance-expressive: 28px;
+  --motion-duration-subtle: 280ms;
+  --motion-duration-standard: 440ms;
+  --motion-duration-expressive: 600ms;
+  --motion-opacity-subtle: 0.2;
+  --motion-opacity-standard: 0;
+  --motion-opacity-expressive: 0;
+  /* Delay between items revealed together (in order on screen), and the most steps used. */
+  --motion-stagger: 50ms;
+  --motion-stagger-max: 6;
+  /* Phones move less. */
+  --motion-scale: 1;
+}
+
+@media (max-width: 560px) {
+  :root {
+    --motion-scale: 0.6;
+  }
 }
 
 html[data-lang="zh"] {
@@ -315,10 +339,7 @@ html[data-perf-tier="1"] .brandMark {
 
 html[data-perf-tier="0"] .reveal,
 html[data-perf-tier="1"] .reveal {
-  filter: none;
-  transition:
-    opacity 220ms var(--ease),
-    transform 220ms var(--ease);
+  --reveal-duration: 220ms;
 }
 
 .bgFx::before,
@@ -2544,29 +2565,45 @@ html[data-theme="light"] .stackDetail {
   gap: 12px;
 }
 
-/* Reveal */
+/* Reveal
+   Content is visible unless it is waiting to be revealed, which only happens on screens, with motion
+   allowed, while the observer runs (html.revealReady, set by lib/reveal.ts). Printing, reduced motion,
+   a missing IntersectionObserver or a failed setup all leave everything visible.
+   Revealed content ends at opacity 1 and transform none: nothing is left behind that would make it a
+   containing block for fixed descendants (drawers, tooltips) or a stacking context. */
 .reveal {
-  opacity: 0;
-  transform: translateY(12px) scale(0.995);
-  filter: blur(10px);
-  transition:
-    opacity 520ms var(--ease),
-    transform 520ms var(--ease),
-    filter 520ms var(--ease);
-  transition-delay: var(--reveal-delay, 0ms);
+  --reveal-distance: var(--motion-distance-standard);
+  --reveal-duration: var(--motion-duration-standard);
+  --reveal-opacity: var(--motion-opacity-standard);
+  /* The component's own offset, then its place among items revealed together. */
+  --reveal-delay: calc(
+    var(--reveal-offset, 0ms) + min(var(--reveal-order, 0), var(--motion-stagger-max)) *
+      var(--motion-stagger)
+  );
 }
 
-.revealVisible {
-  opacity: 1;
-  transform: translateY(0) scale(1);
-  filter: blur(0);
+.revealSubtle {
+  --reveal-distance: var(--motion-distance-subtle);
+  --reveal-duration: var(--motion-duration-subtle);
+  --reveal-opacity: var(--motion-opacity-subtle);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .reveal {
-    opacity: 1;
-    transform: none;
-    filter: none;
+.revealExpressive {
+  --reveal-distance: var(--motion-distance-expressive);
+  --reveal-duration: var(--motion-duration-expressive);
+  --reveal-opacity: var(--motion-opacity-expressive);
+}
+
+@media screen and (prefers-reduced-motion: no-preference) {
+  html.revealReady .reveal:not(.revealVisible) {
+    opacity: var(--reveal-opacity);
+    transform: translate3d(0, calc(var(--reveal-distance) * var(--motion-scale)), 0);
+  }
+
+  html.revealReady .revealVisible {
+    transition:
+      opacity var(--reveal-duration) var(--motion-ease) var(--reveal-delay),
+      transform var(--reveal-duration) var(--motion-ease) var(--reveal-delay);
   }
 }
 

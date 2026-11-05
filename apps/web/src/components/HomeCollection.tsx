@@ -203,8 +203,8 @@ export default function HomeCollection({ collection }: { collection: PublicColle
           <div className="homeBlock">
             <h3 className="homeBlockTitle">{t("collection.home.ongoing")}</h3>
             <div className="homeOngoingRow">
-              {parts.ongoing.map((item, idx) => (
-                <Reveal key={item.id} delayMs={idx * 50}>
+              {parts.ongoing.map((item) => (
+                <Reveal key={item.id} stagger>
                   <OngoingCard item={item} />
                 </Reveal>
               ))}

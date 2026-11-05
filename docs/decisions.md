@@ -2,6 +2,10 @@
 
 ## User Decisions
 
+### 2026-11-05: Motion System (Stage 26)
+
+After an audit (current animations, a reference site using GSAP ScrollTrigger and Lenis), the user chose a balanced direction, in phases: shared tokens and a one-time scroll-triggered reveal everywhere; the tech stack as a scroll-linked, reversible pilot that can be switched off; no exit fades, no Lenis, no GSAP for now; other sections stay one-time until the pilot is judged. Phase 1 (foundation) first, reported before phase 2. See `motion.md`.
+
 ### 2026-11-05: Tech Stack Logos and Projects (Stage 25)
 
 The user asked for logos without tiles and for technologies to be linked to projects, editable from both sides, with the site showing a technology's projects on click. The model chose:

@@ -56,7 +56,7 @@ export default function ProjectsPage() {
         ) : (
           <div className="projectGrid">
             {visible.map((project, index) => (
-              <Reveal key={project.slug} delayMs={(index % 4) * 50}>
+              <Reveal key={project.slug} stagger>
                 <ProjectCard project={project} priority={index < 2} />
               </Reveal>
             ))}
