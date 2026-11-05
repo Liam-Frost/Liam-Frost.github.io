@@ -117,7 +117,7 @@ export default function HomePage() {
               </div>
             </Reveal>
 
-            <Reveal delayMs={120} className="card heroCard">
+            <Reveal after className="card heroCard">
               <div className="profile">
                 <div className="profileHeader">
                   <div className="avatar" aria-hidden="true">
@@ -146,7 +146,7 @@ export default function HomePage() {
 
       <section className="section" id="about">
         <div className="container">
-          <Reveal>
+          <Reveal intensity="subtle">
             <h2 className="sectionTitle">{t("about.title")}</h2>
             <p className="sectionSubtitle">
               {pickLocalized(site.role, lang)} · {t("about.subtitle")}
@@ -154,7 +154,7 @@ export default function HomePage() {
           </Reveal>
 
           <div className="grid grid2 aboutGrid">
-            <Reveal delayMs={80}>
+            <Reveal after stagger>
               <div className="card aboutCard">
                 <h3 className="aboutCardTitle">{t("about.card.left")}</h3>
 
@@ -187,7 +187,7 @@ export default function HomePage() {
               </div>
             </Reveal>
 
-            <Reveal delayMs={140}>
+            <Reveal after stagger>
               <div className="card aboutCard">
                 <h3 className="aboutCardTitle">{t("about.card.right")}</h3>
 
@@ -223,7 +223,7 @@ export default function HomePage() {
 
       <section className="section" id="skills">
         <div className="container">
-          <Reveal>
+          <Reveal intensity="subtle">
             <h2 className="sectionTitle">{t("skills.title")}</h2>
             <p className="sectionSubtitle">{t("skills.subtitle")}</p>
           </Reveal>
@@ -232,7 +232,7 @@ export default function HomePage() {
           {stackScroll ? (
             <TechStack scrollMotion />
           ) : (
-            <Reveal delayMs={120}>
+            <Reveal after>
               <TechStack />
             </Reveal>
           )}
@@ -242,14 +242,14 @@ export default function HomePage() {
       {featuredProjects.length ? (
         <section className="section" id="projects">
           <div className="container">
-            <Reveal>
+            <Reveal intensity="subtle">
               <h2 className="sectionTitle">{t("projects.title")}</h2>
               <p className="sectionSubtitle">{t("projects.home.subtitle")}</p>
             </Reveal>
 
             <div className="projectGrid">
               {featuredProjects.map((project) => (
-                <Reveal key={project.slug} stagger>
+                <Reveal key={project.slug} after stagger>
                   <ProjectCard project={project} />
                 </Reveal>
               ))}
@@ -268,7 +268,7 @@ export default function HomePage() {
 
       <section className="section" id="featured">
         <div className="container">
-          <Reveal>
+          <Reveal intensity="subtle">
             <h2 className="sectionTitle">{t("featured.title")}</h2>
             <p className="sectionSubtitle">{t("featured.subtitle")}</p>
           </Reveal>
@@ -276,7 +276,7 @@ export default function HomePage() {
           <div className="masonry" aria-label={t("featured.title")}>
             {featured.map((p, idx) => (
               <div key={p.id} className="masonryItem">
-                <Reveal stagger>
+                <Reveal after stagger>
                   <PhotoCard photo={p} onOpen={openFeatured} priority={idx < 2} />
                 </Reveal>
               </div>
@@ -296,12 +296,12 @@ export default function HomePage() {
 
       <section className="section" id="contact">
         <div className="container">
-          <Reveal>
+          <Reveal intensity="subtle">
             <h2 className="sectionTitle">{t("contact.title")}</h2>
             <p className="sectionSubtitle">{t("contact.subtitle")}</p>
           </Reveal>
 
-          <Reveal delayMs={120}>
+          <Reveal after>
             <div className="card contactCard">
               <p className="contactLead">{t("contact.lead")}</p>
               <p className="contactMessage">{t("contact.message")}</p>

@@ -387,6 +387,14 @@ Status: implementation complete; Claude Code review complete and fixes applied. 
 - Tests: 192 passed.
 - Verified with a temporary database: the migration on photos stored the old way, a server folder import with previews and EXIF, a Flickr short link through oEmbed (referenced), an image link (imported), a refused local address, 转为本站托管 and 替换图片 from a server file with EXIF, the old image folder removed.
 
+### Stage 26: Motion System, Phases 3–5
+
+Status: complete (Claude Code).
+
+- Every public page follows one set of reveal rules: subtle headings, content `after` its heading (a token instead of fixed delays), grid items staggered in order on screen, one reveal per composite block (the featured collection wall, the recent entries, the listening bar), and portfolio filter results shown at once. See `motion.md`.
+- The page column no longer grows to its content's minimum width: in English at 320 px the listening bar made the page 323 px wide and phones zoomed out. The music dock was not the cause and is unchanged.
+- Acceptance: new Playwright suite `motion.spec.ts` (settling on every page, reduced motion, print, the stack pilot and its switch, anchors and back navigation, filter results, dialogs) plus the tech stack suite: 64 of 64 in light and in dark at eight sizes; CLS as on `dev`.
+
 ### Stage 26: Motion System, Phase 2 (pilot)
 
 Status: tech stack pilot implemented (Claude Code), behind a switch; not yet rolled out to other sections.

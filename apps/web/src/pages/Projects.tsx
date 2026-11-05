@@ -29,7 +29,7 @@ export default function ProjectsPage() {
   return (
     <section className="section">
       <div className="container">
-        <Reveal>
+        <Reveal intensity="subtle">
           <h1 className="sectionTitle">{t("projects.title")}</h1>
           <p className="sectionSubtitle">{t("projects.subtitle")}</p>
         </Reveal>
@@ -56,7 +56,7 @@ export default function ProjectsPage() {
         ) : (
           <div className="projectGrid">
             {visible.map((project, index) => (
-              <Reveal key={project.slug} stagger>
+              <Reveal key={project.slug} after stagger>
                 <ProjectCard project={project} priority={index < 2} />
               </Reveal>
             ))}

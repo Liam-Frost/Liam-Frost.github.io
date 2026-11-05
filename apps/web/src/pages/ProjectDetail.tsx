@@ -61,7 +61,7 @@ export default function ProjectDetailPage() {
   return (
     <article className="section projectDetail">
       <div className="container">
-        <Reveal>
+        <Reveal intensity="subtle">
           <Link className="projectBack" to="/projects">
             ← {t("projects.back")}
           </Link>
@@ -102,7 +102,7 @@ export default function ProjectDetailPage() {
         </Reveal>
 
         {project.cover ? (
-          <Reveal delayMs={80}>
+          <Reveal after stagger>
             <button
               type="button"
               className="projectHero"
@@ -124,7 +124,7 @@ export default function ProjectDetailPage() {
         ) : null}
 
         {body ? (
-          <Reveal delayMs={120}>
+          <Reveal after stagger>
             <div className="card prose" data-analytics="project_body">
               {/* No raw HTML: react-markdown escapes it, so admin-entered text cannot inject markup. */}
               <Markdown
@@ -142,7 +142,7 @@ export default function ProjectDetailPage() {
         ) : null}
 
         {project.gallery.length ? (
-          <Reveal delayMs={160}>
+          <Reveal after stagger>
             <h2 className="projectSectionTitle">{t("projects.gallery")}</h2>
             <div className="projectGallery">
               {project.gallery.map((image, index) => (

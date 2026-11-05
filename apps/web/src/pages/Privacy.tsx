@@ -16,11 +16,11 @@ export default function PrivacyPage() {
   return (
     <section className="section">
       <div className="container privacy">
-        <Reveal>
+        <Reveal intensity="subtle">
           <h1 className="sectionTitle">{t("privacy.title")}</h1>
           <p className="sectionSubtitle">{t("privacy.intro")}</p>
         </Reveal>
-        <Reveal delayMs={80}>
+        <Reveal after>
           <div className="card prose">
             {SECTIONS.map(([title, text]) => (
               <section key={title}>
