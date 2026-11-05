@@ -598,7 +598,7 @@ export type PublicCollection = {
   home: {
     featured: PublicHomeFeatured[];
     /** Full ordered candidates; the client lays out a prefix, limited to complete visible rows. */
-    wall?: { items: PublicHomeFeatured[]; settings: FeaturedWallSettings };
+    wall?: { items: { id: string }[]; settings: FeaturedWallSettings };
   };
 };
 

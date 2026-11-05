@@ -142,7 +142,7 @@ export function registerCollectionRoutes(app: FastifyInstance, deps: Deps) {
               [...shown.media.values()],
               shown.settings.homeFeatured,
               deps.today()
-            ).map(toHomeFeatured),
+            ).map((row) => ({ id: row.id })),
             settings: resolveFeaturedWall(shown.settings.featuredWall)
           }
         }

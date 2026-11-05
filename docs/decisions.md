@@ -2,6 +2,10 @@
 
 ## User Decisions
 
+### 2026-11-05: Featured Collection Wall (Stage 23)
+
+The user had Codex replace the three featured cards with a seamless wall of covers following a reference design, with configurable rows and row height. In review the user asked for the gaps to be fixed and the wall checked in a local browser. The model chose: share-normalised flex rows rather than px widths per tile (the browser still spreads subpixels); `contain: inline-size` on the wall's host rather than `min-width: 0` up the page's grid; `home.wall` with ids only, since the entries are already in `items`. The review excerpt and stars of the old cards are not on the wall (the reference design has none); this is left as it is.
+
 ### 2026-11-04: Admin Overview and API Settings Layout (Stage 22)
 
 The user asked for a structural UI/UX pass on 概览 and API 配置 within the existing design language: a grouped accordion list for API settings, and an operations dashboard on one grid. Confirmed plan: `docs/plan-admin-ux.md`. The model chose: Spotify and Steam grouped as 账号与同步 (they also need an account connected); connection status only from existing records (job log, connected accounts), since nothing tests connections and no new third-party requests were wanted; drafts kept per service rather than confirming on switch.

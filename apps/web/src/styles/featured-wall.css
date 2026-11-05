@@ -1,6 +1,9 @@
 .featuredWallHost {
   width: 100%;
   min-width: 0;
+  /* The wall's width is in px; without this it holds the page open, so the host could never shrink
+     on a narrower window and the wall would never be laid out again. */
+  contain: inline-size;
 }
 .featuredWall {
   max-width: 100%;

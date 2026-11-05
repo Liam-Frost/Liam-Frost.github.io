@@ -47,6 +47,8 @@ describe("featured wall data and persisted controls", () => {
     const data = (await app.inject("/api/collection")).json();
     expect(data.home.featured).toHaveLength(3);
     expect(data.home.wall.items).toHaveLength(22);
+    // Ids only: the entries themselves are in `items`.
+    expect(Object.keys(data.home.wall.items[0])).toEqual(["id"]);
     expect(data.home.wall.settings).toEqual({ visibleRows: 5, targetRowHeight: 240 });
     const expected = (await media.list())
       .filter((row) => row.featured)

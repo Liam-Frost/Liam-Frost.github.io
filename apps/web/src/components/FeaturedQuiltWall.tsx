@@ -168,7 +168,8 @@ export default function FeaturedQuiltWall({
     .slice(0, layout.visibleCount)
     .map((item) => item.id)
     .join("\n");
-  useEffect(() => {
+  // Before paint, so the shelves below never flash covers that the wall already shows.
+  useLayoutEffect(() => {
     if (width > 0) onVisibleItems?.(visibleKey ? visibleKey.split("\n") : []);
   }, [visibleKey, onVisibleItems, width]);
   const { t } = useI18n();
@@ -180,22 +181,27 @@ export default function FeaturedQuiltWall({
         aria-label={t("collection.wall.label")}
         style={{ width: layout.width || "100%" }}
       >
-        {layout.rows.map((row) => (
-          <div
-            className="featuredWallRow"
-            key={items[row.start]!.id}
-            style={{ height: row.height }}
-          >
-            {items.slice(row.start, row.end).map((item, index) => (
-              <QuiltTile
-                key={item.id}
-                item={item}
-                cover={covers[row.start + index]!}
-                onDimensions={reportDimensions}
-              />
-            ))}
-          </div>
-        ))}
+        {layout.rows.map((row) => {
+          const sum = row.ratios.reduce((total, ratio) => total + ratio, 0);
+          return (
+            <div
+              className="featuredWallRow"
+              key={items[row.start]!.id}
+              style={{ height: row.height }}
+            >
+              {items.slice(row.start, row.end).map((item, index) => (
+                <QuiltTile
+                  key={item.id}
+                  item={item}
+                  cover={covers[row.start + index]!}
+                  // Shares that add up to 1: with a total below 1, flexbox would leave the rest empty.
+                  grow={row.ratios[index]! / sum}
+                  onDimensions={reportDimensions}
+                />
+              ))}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -204,10 +210,12 @@ export default function FeaturedQuiltWall({
 function QuiltTile({
   item,
   cover,
+  grow,
   onDimensions
 }: {
   item: PublicMediaSummary;
   cover: Cover;
+  grow: number;
   onDimensions: (src: string, width: number, height: number) => void;
 }) {
   const { lang, t } = useI18n();
@@ -269,7 +277,7 @@ function QuiltTile({
       </span>
     </>
   );
-  const style = { flexGrow: cover.ratio };
+  const style = { flexGrow: grow };
   return playable ? (
     <button
       type="button"
