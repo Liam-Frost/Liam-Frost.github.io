@@ -127,4 +127,20 @@ describe("scroll history and query navigation", () => {
     });
     expect(env.browser.scrollTo).not.toHaveBeenCalled();
   });
+  it("uses the shared scrolling adapter for both saved positions and anchor fallback", () => {
+    const env = environment();
+    const scrollPosition = vi.fn();
+    const scrollAnchor = vi.fn();
+    env.html.scrollHeight = 1800;
+    const cancel = restoreScroll(900, undefined, { scrollPosition, scrollAnchor });
+    vi.advanceTimersByTime(16);
+    expect(scrollPosition).toHaveBeenCalledExactlyOnceWith(900);
+    expect(env.browser.scrollTo).not.toHaveBeenCalled();
+    cancel();
+    env.html.scrollHeight = 600;
+    restoreScroll(900, "target", { scrollPosition, scrollAnchor });
+    vi.advanceTimersByTime(8000);
+    expect(scrollAnchor).toHaveBeenCalledExactlyOnceWith(env.anchor);
+    expect(env.anchor.scrollIntoView).not.toHaveBeenCalled();
+  });
 });

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
 import { useI18n } from "../../lib/i18n";
+import { scrollToElement } from "../../lib/smoothScroll";
 import { useQuality } from "../../perf/useQuality";
 import { clamp, sectionAt, SEGMENTS } from "./model";
 import { useSections } from "./useSections";
@@ -73,10 +74,8 @@ export default function WaveformNavigator() {
   };
   const go = (id: string) => {
     if (location.hash === `#${id}`) {
-      const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      document
-        .getElementById(id)
-        ?.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" });
+      const element = document.getElementById(id);
+      if (element) scrollToElement(element);
     } else navigate({ pathname: "/", hash: `#${id}` });
   };
   return (

@@ -1,147 +1,116 @@
-import { type RefObject, useLayoutEffect } from "react";
+import { type RefObject, useEffect } from "react";
 
 /**
- * The tech stack's scroll motion (Stage 26), modelled on a GSAP ScrollTrigger timeline:
+ * The tech stack's scroll motion (Stage 26), ported from the reference site's own code
+ * (github.com/Tajmirul/portfolio-2.0, app/_components/Skills.tsx, MIT) with GSAP ScrollTrigger:
  *
- * - Entrance: one progress for the whole stack, from its top at 80% of the viewport to its bottom at
- *   80%. Category headings and technologies take turns in document order: each rises for 0.5 of the
- *   timeline, the next starting 0.4 later, so one or two move at a time and scrolling back up hides
- *   them one by one in reverse.
- * - Exit: the whole section rises 150px and fades out while its bottom goes from 50% to 10% of the
- *   viewport (and comes back when scrolling up).
- * - Both follow the scroll with a short catch-up (0.5s for the entrance, 1s for the exit, easing
- *   out), like GSAP's `scrub`, instead of jumping with every scroll event.
+ * - Entrance: one ScrollTrigger timeline for the whole section, from its top at 80% of the viewport
+ *   to its bottom at 80%, scrubbed with a 0.5s catch-up. Category headings and technologies come in
+ *   in document order (`stagger: 0.4`, each rising 40px with `ease: "none"`), so they appear one by
+ *   one as the page scrolls down and disappear one by one when scrolling up.
+ * - Exit: while the section's bottom goes from 50% to 10% of the viewport, the section rises 150px
+ *   and fades out (1s catch-up).
  *
- * Opacity and transform are written on the elements themselves and removed once an element is fully
- * shown, so nothing is left behind (no transform: no containing block for fixed descendants).
- * Without JavaScript, with reduced motion or when printing (see globals.css) everything is shown.
+ * Differences from the reference: GSAP is loaded only when the stack mounts (it is below the fold; the
+ * first page load does not wait for it), reduced motion turns it off (gsap.matchMedia, also when
+ * switched on while the page is open), print shows everything (globals.css), and an element's inline
+ * transform and opacity are removed once it is fully shown (GSAP would leave `translate(0px, 0px)`,
+ * which makes it a containing block for fixed descendants). If GSAP fails to load, the stack is shown
+ * as it is.
  */
-const ENTRANCE = { duration: 0.5, stagger: 0.4, start: 0.8, end: 0.8, distance: 40, catchUp: 0.5 };
-const EXIT = { start: 0.5, end: 0.1, distance: 150, catchUp: 1 };
-
 const ITEMS = ".stackGroupHead, .stackItems > li";
-const clamp = (value: number) => Math.min(1, Math.max(0, value));
-
-/** Writes an element's state; `null` (fully shown) removes the inline styles. */
-function paint(el: HTMLElement, opacity: number | null, y: number) {
-  if (opacity === null) {
-    el.style.removeProperty("opacity");
-    el.style.removeProperty("transform");
-    return;
-  }
-  el.style.opacity = opacity.toFixed(3);
-  el.style.transform = `translate3d(0, ${y.toFixed(1)}px, 0)`;
-}
 
 export function useStackScrub(
   listRef: RefObject<HTMLDivElement | null>,
   active: boolean,
   key: unknown
 ) {
-  useLayoutEffect(() => {
+  useEffect(() => {
     const list = listRef.current;
     if (!active || !list) return;
     const section = list.closest<HTMLElement>("section") ?? list;
-    const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)");
+    const items = [...list.querySelectorAll<HTMLElement>(ITEMS)];
+    if (!items.length) return;
 
-    let items: HTMLElement[] = [];
-    let total = 1;
-    let entrance = 0;
-    let exit = 0;
-    let frame = 0;
-    let running = false;
-    const shown = new Map<HTMLElement, number>();
-    let exitShown = 0;
+    let cancelled = false;
+    let cleanup = () => {};
 
-    /** Where the scroll position says the two progresses should be. */
-    const targets = () => {
-      const vh = window.innerHeight;
-      const box = list.getBoundingClientRect();
-      const outer = section.getBoundingClientRect();
-      return {
-        entrance: clamp(
-          (vh * ENTRANCE.start - box.top) /
-            Math.max(1, box.height + vh * (ENTRANCE.start - ENTRANCE.end))
-        ),
-        exit: clamp((vh * EXIT.start - outer.bottom) / (vh * (EXIT.start - EXIT.end)))
-      };
-    };
+    void Promise.all([import("gsap"), import("gsap/ScrollTrigger")])
+      .then(([{ default: gsap }, { ScrollTrigger }]) => {
+        if (cancelled) return;
+        gsap.registerPlugin(ScrollTrigger);
+        const clear = (targets: gsap.TweenTarget) =>
+          gsap.set(targets, { clearProps: "transform,opacity" });
 
-    const render = () => {
-      const time = entrance * total;
-      items.forEach((el, i) => {
-        const t = clamp((time - ENTRANCE.stagger * i) / ENTRANCE.duration);
-        if (shown.get(el) === t) return;
-        shown.set(el, t);
-        paint(el, t >= 1 ? null : t, (1 - t) * ENTRANCE.distance);
+        const media = gsap.matchMedia();
+        media.add("(prefers-reduced-motion: no-preference)", () => {
+          // GSAP leaves `translate(0px, 0px)` and `opacity: 1` on finished elements, and puts them
+          // back whenever ScrollTrigger recalculates; remove them from every finished element.
+          const STAGGER = 0.4;
+          const DURATION = 0.5;
+          // Filled in below; ScrollTrigger may refresh while they are being created.
+          const timelines: { entrance?: gsap.core.Timeline; exit?: gsap.core.Timeline } = {};
+          const sweep = () => {
+            const { entrance, exit } = timelines;
+            if (!entrance || !exit) return;
+            const time = entrance.time();
+            items.forEach((el, i) => {
+              if (time >= i * STAGGER + DURATION - 1e-6 && el.style.transform) clear(el);
+            });
+            if (exit.progress() === 0 && section.style.transform) clear(section);
+          };
+
+          timelines.entrance = gsap
+            .timeline({
+              scrollTrigger: {
+                trigger: section,
+                start: "top 80%",
+                end: "bottom 80%",
+                scrub: 0.5,
+                onRefresh: () => sweep()
+              },
+              onUpdate: () => sweep()
+            })
+            .from(items, { opacity: 0, y: 40, ease: "none", stagger: STAGGER, duration: DURATION });
+
+          timelines.exit = gsap
+            .timeline({
+              scrollTrigger: {
+                trigger: section,
+                start: "bottom 50%",
+                end: "bottom 10%",
+                scrub: 1,
+                onRefresh: () => sweep()
+              },
+              onUpdate: () => sweep()
+            })
+            .to(section, { y: -150, opacity: 0 });
+
+          return () => clear([...items, section]);
+        });
+
+        // Content above changes height without a resize (the hero title re-wraps, images and the
+        // collection load): keep the start and end positions in step.
+        let pending = 0;
+        const layout = new ResizeObserver(() => {
+          window.clearTimeout(pending);
+          pending = window.setTimeout(() => ScrollTrigger.refresh(), 200);
+        });
+        layout.observe(document.body);
+
+        cleanup = () => {
+          layout.disconnect();
+          window.clearTimeout(pending);
+          media.revert();
+        };
+      })
+      .catch(() => {
+        // Without GSAP the stack simply stays as it is.
       });
-      if (exitShown !== exit) {
-        exitShown = exit;
-        paint(section, exit <= 0 ? null : 1 - exit, -exit * EXIT.distance);
-      }
-    };
 
-    // Catch-up like GSAP's `scrub`: whenever the target moves, ease from where the motion is to the
-    // new target over exactly `catchUp` seconds (ease-out), so it always arrives.
-    type Follower = { value: number; from: number; to: number; since: number };
-    const entranceMotion: Follower = { value: 0, from: 0, to: 0, since: 0 };
-    const exitMotion: Follower = { value: 0, from: 0, to: 0, since: 0 };
-    const follow = (m: Follower, target: number, now: number, catchUp: number) => {
-      if (target !== m.to) Object.assign(m, { from: m.value, to: target, since: now });
-      const k = Math.min(1, (now - m.since) / (catchUp * 1000));
-      m.value = k >= 1 ? m.to : m.from + (m.to - m.from) * (1 - (1 - k) ** 3);
-      return m.value;
-    };
-
-    const tick = (now: number) => {
-      const target = targets();
-      entrance = follow(entranceMotion, target.entrance, now, ENTRANCE.catchUp);
-      exit = follow(exitMotion, target.exit, now, EXIT.catchUp);
-      render();
-      if (entrance !== target.entrance || exit !== target.exit) frame = requestAnimationFrame(tick);
-      else running = false;
-    };
-
-    const wake = () => {
-      if (running) return;
-      running = true;
-      frame = requestAnimationFrame(tick);
-    };
-
-    const start = () => {
-      items = [...list.querySelectorAll<HTMLElement>(ITEMS)];
-      total = ENTRANCE.duration + ENTRANCE.stagger * Math.max(0, items.length - 1);
-      shown.clear();
-      exitShown = 0;
-      // Start where the page is (a reload or an anchor jump mid-page), without catching up.
-      ({ entrance, exit } = targets());
-      Object.assign(entranceMotion, { value: entrance, from: entrance, to: entrance });
-      Object.assign(exitMotion, { value: exit, from: exit, to: exit });
-      render();
-      window.addEventListener("scroll", wake, { passive: true });
-      window.addEventListener("resize", wake);
-      layout.observe(document.body);
-    };
-
-    const stop = () => {
-      cancelAnimationFrame(frame);
-      running = false;
-      window.removeEventListener("scroll", wake);
-      window.removeEventListener("resize", wake);
-      layout.disconnect();
-      for (const el of items) paint(el, null, 0);
-      paint(section, null, 0);
-    };
-
-    // Content above can change height without scrolling (the hero title re-wraps, images load).
-    const layout = new ResizeObserver(wake);
-    const onPreference = () => (reduced?.matches ? stop() : start());
-
-    if (!reduced?.matches) start();
-    reduced?.addEventListener?.("change", onPreference);
     return () => {
-      reduced?.removeEventListener?.("change", onPreference);
-      stop();
+      cancelled = true;
+      cleanup();
     };
   }, [listRef, active, key]);
 }

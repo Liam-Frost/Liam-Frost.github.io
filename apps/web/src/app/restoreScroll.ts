@@ -11,7 +11,20 @@ export function isQueryOnlyNavigation(
 }
 
 /** Wait for asynchronous content before restoring a saved document offset. */
-export function restoreScroll(target: number, hash: string | undefined) {
+export function restoreScroll(
+  target: number,
+  hash: string | undefined,
+  options: {
+    scrollPosition?: (position: number) => void;
+    scrollAnchor?: (element: HTMLElement) => void;
+  } = {}
+) {
+  const scrollPosition =
+    options.scrollPosition ??
+    ((position: number) => window.scrollTo({ top: position, left: 0, behavior: "instant" }));
+  const scrollAnchor =
+    options.scrollAnchor ??
+    ((element: HTMLElement) => element.scrollIntoView({ behavior: "instant", block: "start" }));
   const root = document.getElementById("root") ?? document.body;
   const content = document.getElementById("main") ?? root;
   let frame = 0;
@@ -40,8 +53,7 @@ export function restoreScroll(target: number, hash: string | undefined) {
     frame = 0;
     const maximum = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
     if (maximum + 1 < target) return;
-    if (Math.abs(window.scrollY - target) > 1)
-      window.scrollTo({ top: target, left: 0, behavior: "instant" });
+    if (Math.abs(window.scrollY - target) > 1) scrollPosition(target);
     restored = true;
     // Lazy images can resize the list again after it first becomes tall enough.
     clearTimeout(settleTimer);
@@ -54,8 +66,8 @@ export function restoreScroll(target: number, hash: string | undefined) {
     if (finished) return;
     if (restored) return stop();
     const anchor = hash ? document.getElementById(hash) : null;
-    if (anchor) anchor.scrollIntoView({ behavior: "instant", block: "start" });
-    else window.scrollTo({ top: target, left: 0, behavior: "instant" });
+    if (anchor) scrollAnchor(anchor);
+    else scrollPosition(target);
     stop();
   };
   mutation = new MutationObserver(schedule);
