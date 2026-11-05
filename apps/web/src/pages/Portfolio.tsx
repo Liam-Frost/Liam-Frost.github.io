@@ -177,7 +177,7 @@ export default function PortfolioPage() {
         <div className="masonry" aria-label="Photo gallery">
           {filtered.map((p, idx) => (
             <div key={p.id} className="masonryItem">
-              <Reveal delayMs={(idx % 8) * 35}>
+              <Reveal stagger>
                 <PhotoCard photo={p} onOpen={open} priority={idx < 4} />
               </Reveal>
             </div>

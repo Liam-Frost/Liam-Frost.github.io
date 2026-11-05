@@ -57,6 +57,30 @@
   --header-h: 72px;
 
   --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  /* Motion tokens (see docs/motion.md). Reveal reads one intensity's set; the values are starting
+     points, tuned in the browser. Only transform and opacity move. */
+  --motion-ease: var(--ease);
+  --motion-distance-subtle: 6px;
+  --motion-distance-standard: 14px;
+  --motion-distance-expressive: 28px;
+  --motion-duration-subtle: 280ms;
+  --motion-duration-standard: 440ms;
+  --motion-duration-expressive: 600ms;
+  --motion-opacity-subtle: 0.2;
+  --motion-opacity-standard: 0;
+  --motion-opacity-expressive: 0;
+  /* Delay between items revealed together (in order on screen), and the most steps used. */
+  --motion-stagger: 50ms;
+  --motion-stagger-max: 6;
+  /* Phones move less. */
+  --motion-scale: 1;
+}
+
+@media (max-width: 560px) {
+  :root {
+    --motion-scale: 0.6;
+  }
 }
 
 html[data-lang="zh"] {
@@ -315,10 +339,7 @@ html[data-perf-tier="1"] .brandMark {
 
 html[data-perf-tier="0"] .reveal,
 html[data-perf-tier="1"] .reveal {
-  filter: none;
-  transition:
-    opacity 220ms var(--ease),
-    transform 220ms var(--ease);
+  --reveal-duration: 220ms;
 }
 
 .bgFx::before,
@@ -1063,109 +1084,537 @@ html[data-theme="light"] .aboutSection {
   line-height: 1.65;
 }
 
-/* Skills stack (structured, grouped, leveled) */
-.skillPanel {
-  display: grid;
-  gap: 14px;
+/* Tech stack: an editorial list. Category name on the left, logos and names in a grid on the right. */
+.stackList,
+.stackDetail {
+  /* Logo slot: every logo takes the same square, whatever its own proportions. */
+  --stack-logo: 44px;
+  /* Single-colour dark marks in the dark theme get the page's ink; light ones in the light theme. */
+  --stack-logo-dark-filter: brightness(0) invert(0.9) sepia(0.12);
+  --stack-logo-light-filter: none;
+  --stack-logo-contrast-filter: drop-shadow(0 0 0.8px rgba(242, 236, 226, 0.9))
+    drop-shadow(0 0 0.6px rgba(242, 236, 226, 0.55));
 }
 
-.skillPanelTop {
+.stackList {
+  margin-top: clamp(18px, 2.4vw, 28px);
+  border-top: 1px solid var(--border);
+}
+
+.stackDetail {
+  display: grid;
+  gap: 16px;
+}
+
+html[data-theme="light"] .stackList,
+html[data-theme="light"] .stackDetail {
+  --stack-logo-dark-filter: none;
+  --stack-logo-light-filter: brightness(0) opacity(0.78);
+  --stack-logo-contrast-filter: none;
+}
+
+@media (prefers-color-scheme: light) {
+  html[data-theme="system"] .stackList,
+  html[data-theme="system"] .stackDetail {
+    --stack-logo-dark-filter: none;
+    --stack-logo-light-filter: brightness(0) opacity(0.78);
+    --stack-logo-contrast-filter: none;
+  }
+}
+
+.stackGroup {
+  display: grid;
+  grid-template-columns: minmax(180px, 30%) minmax(0, 1fr);
+  gap: clamp(20px, 4vw, 56px);
+  padding: clamp(22px, 3vw, 34px) 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.stackGroupHead {
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  min-width: 0;
+}
+
+.stackGroupIndex {
+  color: var(--faint);
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  font-variant-numeric: tabular-nums;
+}
+
+.stackGroupTitle {
+  margin: 0;
+  font-size: clamp(22px, 2.4vw, 30px);
+  font-weight: 750;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  overflow-wrap: anywhere;
+}
+
+.stackGroupDesc {
+  margin: 2px 0 0;
+  max-width: 34ch;
+  color: var(--muted);
+  font-size: 13.5px;
+  line-height: 1.6;
+}
+
+.stackItems {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(176px, 1fr));
+  gap: 6px 18px;
+  align-content: start;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.stackItems > li {
+  min-width: 0;
+}
+
+.stackItem {
+  position: relative;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.skillLayout {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 14px;
-  align-items: stretch;
+  width: 100%;
+  min-height: 60px;
+  padding: 8px 10px 8px 6px;
+  border: 0;
+  border-radius: 14px;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  text-decoration: none;
 }
 
-.skillGroup {
-  padding: 16px;
+/* No tile: the logo itself, centred in its slot, scaled by its measured optical size. */
+.stackLogo {
   display: grid;
-  grid-template-rows: auto 1fr;
-  gap: 12px;
+  flex: none;
+  place-items: center;
+  width: var(--stack-logo);
+  height: var(--stack-logo);
+  transition: transform 180ms var(--ease);
 }
 
-.skillGroupHead {
+.stackLogo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transform: scale(var(--logo-scale, 1));
+}
+
+.stackLogoTone-dark img {
+  filter: var(--stack-logo-dark-filter);
+}
+
+.stackLogoTone-light img {
+  filter: var(--stack-logo-light-filter);
+}
+
+.stackLogoTone-contrast img {
+  filter: var(--stack-logo-contrast-filter);
+}
+
+/* Fallback for a technology without a logo: a quiet monogram, not a tile. */
+.stackLogoInitials {
   display: grid;
+  place-items: center;
+  width: 82%;
+  height: 82%;
+  border: 1.5px solid var(--border);
+  border-radius: 50%;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 750;
+  letter-spacing: 0.02em;
+  line-height: 1;
+}
+
+.stackName {
+  min-width: 0;
+  font-size: 15.5px;
+  font-weight: 560;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+/* A slight emphasis only: every technology keeps the same size. */
+.stackItemPrimary .stackName {
+  font-weight: 720;
+}
+
+.stackItemArrow {
+  flex: none;
+  width: 15px;
+  height: 15px;
+  margin-left: auto;
+  color: var(--faint);
+  opacity: 0;
+  transition:
+    opacity 180ms var(--ease),
+    transform 180ms var(--ease);
+}
+
+/* Technologies that open something: details (a button) or their website (a link). */
+.stackItemAction {
+  cursor: pointer;
+  transition:
+    background 180ms var(--ease),
+    transform 120ms var(--ease);
+}
+
+.stackItemAction:hover,
+.stackItemAction:focus-visible,
+.stackItemAction[aria-expanded="true"] {
+  background: var(--card);
+}
+
+.stackItemAction:hover .stackLogo,
+.stackItemAction:focus-visible .stackLogo {
+  transform: translateY(-1px);
+}
+
+.stackItemAction:hover .stackItemArrow,
+.stackItemAction:focus-visible .stackItemArrow,
+.stackItemAction[aria-expanded="true"] .stackItemArrow {
+  opacity: 1;
+}
+
+.stackItemAction:hover .stackItemArrow {
+  transform: translateX(2px);
+}
+
+.stackItemAction:active {
+  transform: scale(0.985);
+}
+
+.stackItemAction:focus-visible {
+  outline: 2px solid var(--accent2);
+  outline-offset: 1px;
+}
+
+/* Touch screens have no hover: show which technologies open something. */
+@media (hover: none) {
+  .stackItemArrow {
+    opacity: 0.7;
+  }
+}
+
+.stackNotice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 16px;
+  margin-top: clamp(18px, 2.4vw, 28px);
+  padding: 22px 0;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  color: var(--muted);
+}
+
+.stackNotice p {
+  margin: 0;
+}
+
+.stackSkeleton {
+  display: block;
+  border-radius: 6px;
+  background: var(--border);
+  animation: stackPulse 1.4s ease-in-out infinite;
+}
+
+.stackLogo.stackSkeleton {
+  border-radius: 12px;
+}
+
+.stackSkeletonTitle {
+  width: 60%;
+  height: 26px;
+}
+
+.stackSkeletonName {
+  width: 72px;
+  height: 12px;
+}
+
+@keyframes stackPulse {
+  50% {
+    opacity: 0.45;
+  }
+}
+
+/* A technology's details (compact detail panel; a bottom sheet on phones). */
+.mediaDrawer.isCompact {
+  width: min(440px, 100vw);
+  /* Opaque: the panel covers a busy grid of logos, which must not show through. */
+  background: linear-gradient(var(--card), var(--card)), var(--bg);
+}
+
+.stackDetailHead {
+  --stack-logo: 52px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px 16px;
+}
+
+.stackDetailHeading {
+  flex: 1 1 140px;
+  min-width: 0;
+}
+
+.stackDetailCategory {
+  margin: 0 0 2px;
+  color: var(--faint);
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.stackDetailTitle {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 750;
+  line-height: 1.2;
+  letter-spacing: -0.015em;
+  overflow-wrap: anywhere;
+}
+
+.stackDetailWebsite {
+  flex: none;
   gap: 6px;
 }
 
-.skillGroupTitle {
-  margin: 0;
-  font-size: 14px;
-  font-weight: 850;
-  letter-spacing: -0.01em;
+.stackDetailWebsite svg {
+  width: 14px;
+  height: 14px;
 }
 
-.skillGroupDesc {
+.stackDetailSection {
+  display: grid;
+  gap: 10px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+.stackDetailSection h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   margin: 0;
   color: var(--faint);
-  font-size: 12px;
-  line-height: 1.5;
-}
-
-.skillChips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  align-content: start;
-}
-
-.skillChip {
-  border: 1px solid var(--border);
-  background: var(--card);
-  color: var(--text);
-
-  border-radius: 12px;
-  padding: 8px 10px;
-
-  display: inline-flex;
-  align-items: center;
-
-  cursor: default;
-  user-select: none;
-}
-
-.skillChipName {
   font-size: 13px;
-  line-height: 1.2;
   font-weight: 650;
 }
 
-.skillChipCore {
-  background: rgba(148, 180, 193, 0.24);
-  border-color: rgba(148, 180, 193, 0.42);
-  padding: 9px 12px;
+.stackDetailCount {
+  min-width: 20px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--muted);
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
 }
 
-.skillChipCore .skillChipName {
-  font-weight: 800;
+.stackRelated {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
-.skillChipStrong {
-  background: rgba(148, 180, 193, 0.16);
-  border-color: rgba(148, 180, 193, 0.3);
+.stackRelatedItem {
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding: 8px;
+  border-radius: 14px;
+  color: var(--text);
+  text-decoration: none;
+  transition: background 180ms var(--ease);
 }
 
-.skillChipWorking {
+.stackRelatedItem:hover,
+.stackRelatedItem:focus-visible {
   background: var(--card);
 }
 
+.stackRelatedItem:focus-visible {
+  outline: 2px solid var(--accent2);
+  outline-offset: 1px;
+}
+
+.stackRelatedThumb {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  border-radius: 10px;
+  background: rgba(148, 180, 193, 0.14);
+  color: var(--muted);
+  font-size: 15px;
+  font-weight: 750;
+}
+
+.stackRelatedThumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.stackRelatedText {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.stackRelatedTitle {
+  font-size: 15px;
+  font-weight: 650;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.stackRelatedSummary {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.stackRelatedMeta {
+  color: var(--faint);
+  font-size: 12px;
+}
+
+.stackRelatedArrow {
+  width: 16px;
+  height: 16px;
+  color: var(--faint);
+}
+
+.stackDetailMore {
+  justify-self: start;
+}
+
 @media (max-width: 1020px) {
-  .skillLayout {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .stackGroup {
+    grid-template-columns: minmax(150px, 26%) minmax(0, 1fr);
+    gap: 24px;
+  }
+
+  .stackItems {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
   }
 }
 
 @media (max-width: 760px) {
-  .skillLayout {
-    grid-template-columns: 1fr;
+  .stackList {
+    --stack-logo: 36px;
+  }
+
+  .stackGroup {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+    padding: 22px 0;
+  }
+
+  .stackGroupDesc {
+    max-width: none;
+  }
+
+  .stackItems {
+    grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+    gap: 4px 10px;
+  }
+
+  .stackItem {
+    gap: 11px;
+    min-height: 52px;
+    padding: 6px 6px 6px 4px;
+  }
+
+  .stackName {
+    font-size: 14px;
+  }
+
+  .stackLogoInitials {
+    font-size: 12px;
+  }
+}
+
+/* Phones: the details rise from the bottom instead of covering the whole screen. */
+@media (max-width: 560px) {
+  .mediaDrawerBackdrop.isCompact {
+    place-items: end stretch;
+  }
+
+  .mediaDrawer.isCompact {
+    width: 100%;
+    height: auto;
+    max-height: min(86dvh, 640px);
+    border-radius: 20px 20px 0 0;
+    padding-bottom: max(24px, env(safe-area-inset-bottom));
+  }
+
+  .stackRelatedItem {
+    grid-template-columns: 64px minmax(0, 1fr) auto;
+    gap: 12px;
+    padding: 8px 4px;
+  }
+}
+
+@media (max-width: 560px) and (prefers-reduced-motion: no-preference) {
+  .mediaDrawer.isCompact {
+    animation-name: stackSheetIn;
+  }
+
+  @keyframes stackSheetIn {
+    from {
+      transform: translateY(24px);
+      opacity: 0;
+    }
+    to {
+      transform: none;
+      opacity: 1;
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stackLogo,
+  .stackItemArrow,
+  .stackItemAction,
+  .stackRelatedItem {
+    transition: none;
+  }
+
+  .stackItemAction:hover .stackLogo,
+  .stackItemAction:focus-visible .stackLogo,
+  .stackItemAction:hover .stackItemArrow,
+  .stackItemAction:active {
+    transform: none;
+  }
+
+  .stackSkeleton {
+    animation: none;
   }
 }
 
@@ -2116,29 +2565,45 @@ html[data-theme="light"] .aboutSection {
   gap: 12px;
 }
 
-/* Reveal */
+/* Reveal
+   Content is visible unless it is waiting to be revealed, which only happens on screens, with motion
+   allowed, while the observer runs (html.revealReady, set by lib/reveal.ts). Printing, reduced motion,
+   a missing IntersectionObserver or a failed setup all leave everything visible.
+   Revealed content ends at opacity 1 and transform none: nothing is left behind that would make it a
+   containing block for fixed descendants (drawers, tooltips) or a stacking context. */
 .reveal {
-  opacity: 0;
-  transform: translateY(12px) scale(0.995);
-  filter: blur(10px);
-  transition:
-    opacity 520ms var(--ease),
-    transform 520ms var(--ease),
-    filter 520ms var(--ease);
-  transition-delay: var(--reveal-delay, 0ms);
+  --reveal-distance: var(--motion-distance-standard);
+  --reveal-duration: var(--motion-duration-standard);
+  --reveal-opacity: var(--motion-opacity-standard);
+  /* The component's own offset, then its place among items revealed together. */
+  --reveal-delay: calc(
+    var(--reveal-offset, 0ms) + min(var(--reveal-order, 0), var(--motion-stagger-max)) *
+      var(--motion-stagger)
+  );
 }
 
-.revealVisible {
-  opacity: 1;
-  transform: translateY(0) scale(1);
-  filter: blur(0);
+.revealSubtle {
+  --reveal-distance: var(--motion-distance-subtle);
+  --reveal-duration: var(--motion-duration-subtle);
+  --reveal-opacity: var(--motion-opacity-subtle);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .reveal {
-    opacity: 1;
-    transform: none;
-    filter: none;
+.revealExpressive {
+  --reveal-distance: var(--motion-distance-expressive);
+  --reveal-duration: var(--motion-duration-expressive);
+  --reveal-opacity: var(--motion-opacity-expressive);
+}
+
+@media screen and (prefers-reduced-motion: no-preference) {
+  html.revealReady .reveal:not(.revealVisible) {
+    opacity: var(--reveal-opacity);
+    transform: translate3d(0, calc(var(--reveal-distance) * var(--motion-scale)), 0);
+  }
+
+  html.revealReady .revealVisible {
+    transition:
+      opacity var(--reveal-duration) var(--motion-ease) var(--reveal-delay),
+      transform var(--reveal-duration) var(--motion-ease) var(--reveal-delay);
   }
 }
 

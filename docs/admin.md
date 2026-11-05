@@ -112,6 +112,10 @@ Requires `DATABASE_URL`.
 
 API: `GET/POST /api/admin/projects`, `GET/PATCH/DELETE /api/admin/projects/:id`, `POST /api/admin/projects/:id/images?slot=cover|gallery`, `DELETE /api/admin/projects/:id/images/:imageId`, `PUT /api/admin/projects/order`. Public: `GET /api/projects` (summaries), `GET /api/projects/:slug`.
 
+## Tech Stack (技术栈)
+
+Requires `DATABASE_URL`. Categories and technologies of the home page's tech stack, in the site's order: drag or use the arrows (also between categories), search the icon libraries when adding a technology, upload a logo (SVG, PNG or WebP) when they have none, hide entries, mark them Primary. A category with technologies is only deleted after choosing to move them or to delete them too. Each technology's 关联项目 picks the projects using it (hidden ones included; the site lists public ones only), and a project's 技术栈 field picks technologies from the stack, with 其他技术 for names that are not in it; both edit the same links. Details and routes: [tech-stack.md](tech-stack.md).
+
 ## API configuration
 
 Use **API 配置** in the admin to configure TMDB, Spotify, Google Books, Twitch/IGDB and Steam. Changes apply to subsequent admin operations without restarting the API. A blank credential input keeps its current value; explicit **停用** disables the provider even if an environment credential exists. **恢复服务器配置** removes the admin override and uses the environment fallback again. Existing imported content is unaffected by disabling an integration.

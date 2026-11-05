@@ -5,7 +5,7 @@ import HomeCollection from "../components/HomeCollection";
 import PhotoCard from "../components/PhotoCard";
 import ProjectCard from "../components/ProjectCard";
 import Reveal from "../components/Reveal";
-import SkillStack from "../components/SkillStack";
+import TechStack from "../components/TechStack";
 import TypingAnimation from "../components/TypingAnimation";
 import { site } from "../data/site";
 import { useCollection } from "../data/useCollection";
@@ -227,7 +227,7 @@ export default function HomePage() {
           </Reveal>
 
           <Reveal delayMs={120}>
-            <SkillStack />
+            <TechStack />
           </Reveal>
         </div>
       </section>
@@ -241,8 +241,8 @@ export default function HomePage() {
             </Reveal>
 
             <div className="projectGrid">
-              {featuredProjects.map((project, idx) => (
-                <Reveal key={project.slug} delayMs={idx * 60}>
+              {featuredProjects.map((project) => (
+                <Reveal key={project.slug} stagger>
                   <ProjectCard project={project} />
                 </Reveal>
               ))}
@@ -269,7 +269,7 @@ export default function HomePage() {
           <div className="masonry" aria-label={t("featured.title")}>
             {featured.map((p, idx) => (
               <div key={p.id} className="masonryItem">
-                <Reveal delayMs={(idx % 6) * 40}>
+                <Reveal stagger>
                   <PhotoCard photo={p} onOpen={openFeatured} priority={idx < 2} />
                 </Reveal>
               </div>

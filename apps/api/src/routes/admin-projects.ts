@@ -5,7 +5,9 @@ import { randomBytes, randomUUID } from "node:crypto";
 import type { AdminAuthService } from "../auth/service";
 import { badRequest, HttpError, notFound } from "../lib/errors";
 import { KeyedLock } from "../lib/keyed-lock";
+import { withLinkWrites } from "../projects/link-lock";
 import {
+  MAX_TECHNOLOGY_PROJECTS,
   parseInput,
   projectCreateSchema,
   projectIdSchema,
@@ -23,6 +25,7 @@ import {
   type ProjectRow,
   type StoredImage
 } from "../projects/types";
+import type { StackRepository } from "../stack/types";
 import type { LocalImageStore } from "../storage/local";
 import { readUploadedImage } from "./read-upload";
 
@@ -37,8 +40,35 @@ export function registerAdminProjectRoutes(
   auth: AdminAuthService,
   projects: ProjectRepository | null,
   store: LocalImageStore,
-  maxUploadBytes: number
+  maxUploadBytes: number,
+  stack: StackRepository | null
 ) {
+  /**
+   * Linked technologies must exist in the stack (hidden ones included), and one linked anew must have
+   * room for one more project: the technology dialog refuses more than MAX_TECHNOLOGY_PROJECTS.
+   */
+  const checkTechnologies = async (ids: string[] | undefined, projectId: string) => {
+    if (!ids?.length) return;
+    const byId = new Map(
+      (stack ? await stack.list() : []).flatMap((c) =>
+        c.technologies.map((t) => [t.id, t] as const)
+      )
+    );
+    if (ids.some((id) => !byId.has(id)))
+      throw new HttpError(400, "UNKNOWN_TECHNOLOGY", "A linked technology is not in the stack");
+    const full = ids
+      .map((id) => byId.get(id)!)
+      .find(
+        (t) => !t.projectIds.includes(projectId) && t.projectIds.length >= MAX_TECHNOLOGY_PROJECTS
+      );
+    if (full)
+      throw new HttpError(
+        400,
+        "TOO_MANY_PROJECTS",
+        `“${full.name}” already has ${MAX_TECHNOLOGY_PROJECTS} projects`
+      );
+  };
+
   const repo = () => {
     if (!projects) {
       throw new HttpError(
@@ -101,33 +131,46 @@ export function registerAdminProjectRoutes(
 
   app.patch("/api/admin/projects/:id", admin, async (request): Promise<AdminProjectResponse> => {
     const id = projectId(request);
-    const { gallery: galleryOrder, ...patch } = parseInput(projectUpdateSchema, request.body);
-    return lock.run(id, async () => {
-      const row = await get(id);
-      const startedAt = patch.startedAt !== undefined ? patch.startedAt : row.startedAt;
-      const endedAt = patch.endedAt !== undefined ? patch.endedAt : row.endedAt;
-      if (startedAt && endedAt && endedAt < startedAt)
-        throw badRequest("The end month is before the start month", "VALIDATION");
+    const {
+      gallery: galleryOrder,
+      otherTechnologies,
+      ...patch
+    } = parseInput(projectUpdateSchema, request.body);
+    return lock.run(id, () =>
+      withLinkWrites(patch.technologyIds !== undefined, async () => {
+        await checkTechnologies(patch.technologyIds, id);
+        const row = await get(id);
+        const startedAt = patch.startedAt !== undefined ? patch.startedAt : row.startedAt;
+        const endedAt = patch.endedAt !== undefined ? patch.endedAt : row.endedAt;
+        if (startedAt && endedAt && endedAt < startedAt)
+          throw badRequest("The end month is before the start month", "VALIDATION");
 
-      let gallery: StoredImage[] | undefined;
-      if (galleryOrder) {
-        // A new order of the existing screenshots; adding and removing go through the image routes.
-        const byId = new Map(row.gallery.map((image) => [image.id, image]));
-        if (
-          galleryOrder.length !== byId.size ||
-          galleryOrder.some((imageId) => !byId.has(imageId))
-        ) {
-          throw new HttpError(
-            409,
-            "GALLERY_OUT_OF_DATE",
-            "The screenshots changed; reload and try again"
-          );
+        let gallery: StoredImage[] | undefined;
+        if (galleryOrder) {
+          // A new order of the existing screenshots; adding and removing go through the image routes.
+          const byId = new Map(row.gallery.map((image) => [image.id, image]));
+          if (
+            galleryOrder.length !== byId.size ||
+            galleryOrder.some((imageId) => !byId.has(imageId))
+          ) {
+            throw new HttpError(
+              409,
+              "GALLERY_OUT_OF_DATE",
+              "The screenshots changed; reload and try again"
+            );
+          }
+          gallery = galleryOrder.map((imageId) => byId.get(imageId)!);
         }
-        gallery = galleryOrder.map((imageId) => byId.get(imageId)!);
-      }
 
-      return respond(await save(row.id, { ...patch, ...(gallery ? { gallery } : {}) }));
-    });
+        return respond(
+          await save(row.id, {
+            ...patch,
+            ...(otherTechnologies ? { techStack: otherTechnologies } : {}),
+            ...(gallery ? { gallery } : {})
+          })
+        );
+      })
+    );
   });
 
   app.delete("/api/admin/projects/:id", admin, async (request, reply) => {

@@ -73,8 +73,10 @@ model Project {
   cover      Json?
   /// Uploaded screenshots, same shape as cover, in display order.
   gallery    Json
-  /// Technology names, e.g. ["React", "Fastify"].
+  /// Technologies that are not in the tech stack, as plain names (e.g. ["Fastify"]); the ones in the
+  /// stack are linked through ProjectTechnology.
   techStack  Json
+  technologies ProjectTechnology[]
   /// { repo?, demo?, docs? } URLs.
   links      Json
   status     ProjectStatus @default(IN_PROGRESS)
@@ -362,4 +364,72 @@ model AnalyticsSystemEvent {
 model AnalyticsFlag {
   key   String @id
   value String
+}
+
+/// A group of the home page's tech stack (Frontend, Backend, ...), in the admin's order.
+model StackCategory {
+  id           String            @id
+  /// Per language.
+  name         Json
+  /// One line per language.
+  description  Json
+  visible      Boolean           @default(true)
+  sortOrder    Int               @default(0)
+  technologies StackTechnology[]
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  @@index([sortOrder])
+}
+
+/// A technology shown with its logo in a stack category. A category with technologies cannot be
+/// deleted (Restrict): the admin moves or deletes them first, explicitly.
+model StackTechnology {
+  id           String            @id
+  categoryId   String
+  category     StackCategory     @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  /// As shown, e.g. "React Router"; unique within its category.
+  name         String
+  iconProvider StackIconProvider @default(NONE)
+  /// The icon's key in its library (devicon "react", simpleicons "springboot"); null otherwise.
+  iconKey      String?
+  /// Uploaded logo: { id, key, width, height, variants: [{ width, height }] }; set with iconProvider CUSTOM.
+  customIcon   Json?
+  websiteUrl   String?
+  prominence   StackProminence   @default(STANDARD)
+  visible      Boolean           @default(true)
+  /// Position within the category.
+  sortOrder    Int               @default(0)
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  projects     ProjectTechnology[]
+
+  @@unique([categoryId, name])
+  @@index([categoryId, sortOrder])
+}
+
+/// A project using a technology of the stack. Deleting either side deletes the link, never the other side.
+model ProjectTechnology {
+  projectId    String
+  project      Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  technologyId String
+  technology   StackTechnology @relation(fields: [technologyId], references: [id], onDelete: Cascade)
+  /// Position in the project's list of technologies.
+  sortOrder    Int             @default(0)
+  createdAt    DateTime        @default(now())
+
+  @@id([projectId, technologyId])
+  @@index([technologyId])
+}
+
+enum StackIconProvider {
+  NONE        @map("none")
+  DEVICON     @map("devicon")
+  SIMPLEICONS @map("simpleicons")
+  CUSTOM      @map("custom")
+}
+
+enum StackProminence {
+  PRIMARY  @map("primary")
+  STANDARD @map("standard")
 }

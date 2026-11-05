@@ -25,9 +25,6 @@ const zh = {
   // Nav
   "nav.home": "主页",
   "nav.portfolio": "作品集",
-  "nav.about": "关于",
-  "nav.skills": "技术栈",
-  "nav.contact": "联系",
   "nav.openMenu": "打开菜单",
   "nav.closeMenu": "关闭菜单",
 
@@ -67,14 +64,15 @@ const zh = {
   "skills.title": "技术栈",
   "skills.subtitle": "结构化展示能力分组与层级。",
   "skills.filterAll": "显示全部",
-
-  "skills.group.frontend": "Frontend",
-  "skills.group.backend": "Backend",
-  "skills.group.creative": "Creative",
-
-  "skills.groupDesc.frontend": "前端工程与现代 Web 交付。",
-  "skills.groupDesc.backend": "后端工程与性能和可靠性。",
-  "skills.groupDesc.creative": "设计工具与视觉 / 动效能力。",
+  "skills.loading": "正在加载技术栈",
+  "skills.error": "技术栈暂时无法加载。",
+  "skills.retry": "重试",
+  "skills.empty": "技术栈暂时还没有内容。",
+  "skills.website": "打开官网",
+  "skills.details": "查看 {name} 的相关项目",
+  "skills.related": "相关项目",
+  "skills.showAll": "查看全部 {count} 个项目",
+  "skills.officialSite": "官网",
 
   // Featured
   "featured.title": "精选照片",
@@ -321,9 +319,6 @@ const en: Record<Key, string> = {
 
   "nav.home": "Home",
   "nav.portfolio": "Gallery",
-  "nav.about": "About",
-  "nav.skills": "Stack",
-  "nav.contact": "Contact",
   "nav.openMenu": "Open menu",
   "nav.closeMenu": "Close menu",
 
@@ -359,14 +354,15 @@ const en: Record<Key, string> = {
   "skills.title": "Tech Stack",
   "skills.subtitle": "A structured skill stack with clear grouping and priority.",
   "skills.filterAll": "Show all",
-
-  "skills.group.frontend": "Frontend",
-  "skills.group.backend": "Backend",
-  "skills.group.creative": "Creative",
-
-  "skills.groupDesc.frontend": "UI engineering and modern web delivery.",
-  "skills.groupDesc.backend": "Backend engineering, performance, and reliability.",
-  "skills.groupDesc.creative": "Design tools and visual/motion craft.",
+  "skills.loading": "Loading the tech stack",
+  "skills.error": "The tech stack could not be loaded right now.",
+  "skills.retry": "Try again",
+  "skills.empty": "Nothing in the tech stack yet.",
+  "skills.website": "open the official website",
+  "skills.details": "Projects built with {name}",
+  "skills.related": "Related projects",
+  "skills.showAll": "Show all {count} projects",
+  "skills.officialSite": "Website",
 
   "featured.title": "Featured Photos",
   "featured.subtitle": "Click to open the lightbox. Keyboard navigation supported.",
@@ -608,9 +604,6 @@ const fr: Record<Key, string> = {
 
   "nav.home": "Accueil",
   "nav.portfolio": "Galerie",
-  "nav.about": "À propos",
-  "nav.skills": "Stack",
-  "nav.contact": "Contact",
   "nav.openMenu": "Ouvrir le menu",
   "nav.closeMenu": "Fermer le menu",
 
@@ -647,14 +640,15 @@ const fr: Record<Key, string> = {
   "skills.title": "Technos",
   "skills.subtitle": "Stack structuré : groupes + priorité.",
   "skills.filterAll": "Tout afficher",
-
-  "skills.group.frontend": "Frontend",
-  "skills.group.backend": "Backend",
-  "skills.group.creative": "Créatif",
-
-  "skills.groupDesc.frontend": "Ingénierie UI et delivery web moderne.",
-  "skills.groupDesc.backend": "Ingénierie backend, performance, fiabilité.",
-  "skills.groupDesc.creative": "Outils design et sens du visuel/motion.",
+  "skills.loading": "Chargement des technos",
+  "skills.error": "Les technos ne peuvent pas être chargées pour le moment.",
+  "skills.retry": "Réessayer",
+  "skills.empty": "Aucune techno pour le moment.",
+  "skills.website": "ouvrir le site officiel",
+  "skills.details": "Projets réalisés avec {name}",
+  "skills.related": "Projets associés",
+  "skills.showAll": "Voir les {count} projets",
+  "skills.officialSite": "Site officiel",
 
   "featured.title": "Photos sélectionnées",
   "featured.subtitle": "Clique pour ouvrir la lightbox. Navigation clavier supportée.",
@@ -897,9 +891,6 @@ const ja: Record<Key, string> = {
 
   "nav.home": "ホーム",
   "nav.portfolio": "ギャラリー",
-  "nav.about": "概要",
-  "nav.skills": "技術",
-  "nav.contact": "連絡",
   "nav.openMenu": "メニューを開く",
   "nav.closeMenu": "メニューを閉じる",
 
@@ -936,14 +927,15 @@ const ja: Record<Key, string> = {
   "skills.title": "技術スタック",
   "skills.subtitle": "構造化したスキルスタック（グループ＋優先度）。",
   "skills.filterAll": "すべて表示",
-
-  "skills.group.frontend": "Frontend",
-  "skills.group.backend": "Backend",
-  "skills.group.creative": "Creative",
-
-  "skills.groupDesc.frontend": "UI実装とモダンなWeb開発。",
-  "skills.groupDesc.backend": "後端工程、性能、信頼性。",
-  "skills.groupDesc.creative": "デザインツールと視覚／モーションの感覚。",
+  "skills.loading": "技術スタックを読み込み中",
+  "skills.error": "技術スタックを読み込めませんでした。",
+  "skills.retry": "再試行",
+  "skills.empty": "技術スタックはまだありません。",
+  "skills.website": "公式サイトを開く",
+  "skills.details": "{name} を使ったプロジェクト",
+  "skills.related": "関連プロジェクト",
+  "skills.showAll": "{count} 件のプロジェクトをすべて表示",
+  "skills.officialSite": "公式サイト",
 
   "featured.title": "おすすめ写真",
   "featured.subtitle": "クリックでライトボックス。キーボード操作対応。",
@@ -1185,9 +1177,6 @@ const zhHant: Record<Key, string> = {
   // Nav
   "nav.home": "首頁",
   "nav.portfolio": "作品集",
-  "nav.about": "關於",
-  "nav.skills": "技術棧",
-  "nav.contact": "聯繫",
   "nav.openMenu": "開啟選單",
   "nav.closeMenu": "關閉選單",
 
@@ -1227,14 +1216,15 @@ const zhHant: Record<Key, string> = {
   "skills.title": "技術棧",
   "skills.subtitle": "結構化展示能力分組與層級。",
   "skills.filterAll": "顯示全部",
-
-  "skills.group.frontend": "Frontend",
-  "skills.group.backend": "Backend",
-  "skills.group.creative": "Creative",
-
-  "skills.groupDesc.frontend": "前端工程與現代 Web 交付。",
-  "skills.groupDesc.backend": "後端工程與效能和可靠性。",
-  "skills.groupDesc.creative": "設計工具與視覺 / 動效能力。",
+  "skills.loading": "正在載入技術棧",
+  "skills.error": "技術棧暫時無法載入。",
+  "skills.retry": "重試",
+  "skills.empty": "技術棧暫時還沒有內容。",
+  "skills.website": "開啟官網",
+  "skills.details": "查看 {name} 的相關專案",
+  "skills.related": "相關專案",
+  "skills.showAll": "查看全部 {count} 個專案",
+  "skills.officialSite": "官網",
 
   // Featured
   "featured.title": "精選照片",

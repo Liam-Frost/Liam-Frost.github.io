@@ -98,16 +98,6 @@ export default function Header({ theme, onCycleTheme }: Props) {
           {t("nav.portfolio")}
         </NavLink>
 
-        <Link className="navLink" to="/#about">
-          {t("nav.about")}
-        </Link>
-        <Link className="navLink" to="/#skills">
-          {t("nav.skills")}
-        </Link>
-        <Link className="navLink" to="/#contact">
-          {t("nav.contact")}
-        </Link>
-
         <div className="navActions">
           <div ref={langWrapRef} className={cx("langWrap", langOpen && "langWrapOpen")}>
             <Tooltip content={langOpen ? "" : t("common.language")} describe={false}>

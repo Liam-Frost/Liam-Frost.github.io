@@ -387,6 +387,28 @@ Status: implementation complete; Claude Code review complete and fixes applied. 
 - Tests: 192 passed.
 - Verified with a temporary database: the migration on photos stored the old way, a server folder import with previews and EXIF, a Flickr short link through oEmbed (referenced), an image link (imported), a refused local address, 转为本站托管 and 替换图片 from a server file with EXIF, the old image folder removed.
 
+### Stage 26: Motion System, Phase 1
+
+Status: phase 1 complete (Claude Code); phase 2 (tech stack scroll-linked pilot) not started.
+
+- Shared motion tokens and one `<Reveal>` for the public site: transform and opacity only (the blur is gone), nothing left on revealed elements, staggered in order on screen, visible when printing, with reduced motion or without IntersectionObserver. The hero's typing title is unchanged (its re-wrapping is intended). See `motion.md`.
+- Playwright on production builds of `dev` before and after: no leftover transforms (before: 28–29 per page); print hid 24 sections before, none now; CLS figures in the PR.
+
+### Stage 25: Tech Stack Logos and Projects
+
+Status: implementation complete (Claude Code); browser and Playwright checks complete.
+
+- Logos are shown without their light tile, in a 44 px slot (36 px on phones), each scaled by its measured optical size; single-colour marks that would vanish in one theme are recoloured there, and logos with large black parts get a thin light outline in the dark theme.
+- Technologies and projects are linked many-to-many (`ProjectTechnology`). The migration links the projects' old technology names to the stack (exact names, common aliases); names that match nothing stay as plain names. Admin: 关联项目 in the technology dialog, 技术栈 (from the stack) and 其他技术 (plain names) in the project form; both edit the same links. Site: a technology used by public projects opens a details panel (a bottom sheet on phones) listing them. See `tech-stack.md`.
+- Tests: 272 passed (8 new). Playwright: layout, logos and the details panel at eight sizes.
+
+### Stage 24: Tech Stack
+
+Status: implementation complete (Claude Code); browser check complete.
+
+- The home page's tech stack moved from a hard-coded list into the database (`StackCategory`, `StackTechnology`; the old list is inserted by the migration). Admin page 技术栈: categories and technologies, icon library search (Devicon, Simple Icons), uploaded logos, drag-and-drop and arrow ordering, hiding, Primary/Standard. The site shows an editorial list with logos instead of cards of tags. See `tech-stack.md`.
+- Tests: 263 passed (15 new).
+
 ### Stage 23: Featured Collection Wall
 
 Status: implementation complete (Codex, PR 48); Claude Code review and browser check complete, fixes applied.
