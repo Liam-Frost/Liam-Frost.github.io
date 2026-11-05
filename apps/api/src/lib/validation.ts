@@ -630,3 +630,104 @@ export const relationUpdateSchema = z
   .object({ role: relationRole.nullable(), note: localizedText(200) })
   .partial()
   .strict();
+
+// Tech stack (Stage 24). Ids are UUIDs, including the migrated defaults.
+export const stackIdSchema = z.object({ id: uuid });
+
+const stackName = z
+  .string()
+  .trim()
+  .min(1, "Name is required")
+  .max(60, "Names are at most 60 characters")
+  .refine(
+    (value) => ![...value].some((c) => c.charCodeAt(0) < 32 || c.charCodeAt(0) === 127),
+    "Names cannot contain control characters"
+  );
+
+/** An official website: https or http only; null or "" clears it. */
+const stackWebsite = z
+  .string()
+  .trim()
+  .max(2048)
+  .nullable()
+  .refine((value) => {
+    if (!value) return true;
+    try {
+      const url = new URL(value);
+      return (
+        (url.protocol === "https:" || url.protocol === "http:") && !url.username && !url.password
+      );
+    } catch {
+      return false;
+    }
+  }, "Websites must be http(s) links")
+  .transform((value) => (value ? new URL(value).href : null));
+
+const stackIcon = z.discriminatedUnion("provider", [
+  z
+    .object({
+      provider: z.enum(["devicon", "simpleicons"]),
+      key: z.string().regex(/^[a-z0-9_][a-z0-9_-]{0,80}$/, "Unknown icon")
+    })
+    .strict(),
+  z.object({ provider: z.literal("none") }).strict()
+]);
+
+export const stackCategoryCreateSchema = z
+  .object({
+    name: requiredText(40, "Name is required in at least one language"),
+    description: localizedText(200).default({}),
+    visible: z.boolean().default(true)
+  })
+  .strict();
+
+export const stackCategoryUpdateSchema = z
+  .object({
+    name: requiredText(40, "Name is required in at least one language"),
+    description: localizedText(200),
+    visible: z.boolean()
+  })
+  .partial()
+  .strict();
+
+/** Query of DELETE: without `technologies` only an empty category can be deleted. */
+export const stackCategoryDeleteSchema = z
+  .object({ technologies: z.enum(["move", "delete"]).optional(), to: uuid.optional() })
+  .strict()
+  .refine((value) => value.technologies !== "move" || value.to, "Choose where to move them")
+  .refine((value) => value.technologies === "move" || !value.to, "Unexpected target category");
+
+export const stackTechnologyCreateSchema = z
+  .object({
+    categoryId: uuid,
+    name: stackName,
+    icon: stackIcon.default({ provider: "none" }),
+    websiteUrl: stackWebsite.default(null),
+    prominence: z.enum(["primary", "standard"]).default("standard"),
+    visible: z.boolean().default(true)
+  })
+  .strict();
+
+export const stackTechnologyUpdateSchema = z
+  .object({
+    categoryId: uuid,
+    name: stackName,
+    icon: stackIcon,
+    websiteUrl: stackWebsite,
+    prominence: z.enum(["primary", "standard"]),
+    visible: z.boolean()
+  })
+  .partial()
+  .strict();
+
+export const stackOrderSchema = z
+  .object({
+    categories: z
+      .array(z.object({ id: uuid, technologies: z.array(uuid).max(500) }).strict())
+      .max(100)
+  })
+  .strict();
+
+export const stackIconSearchSchema = z.object({
+  q: z.string().trim().min(1, "Enter a name to search").max(60)
+});

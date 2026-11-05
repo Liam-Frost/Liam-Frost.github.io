@@ -5,10 +5,11 @@ import { join, resolve, sep } from "node:path";
 export const UPLOADS_PREFIX = "/uploads";
 
 /**
- * Keys: "photos|projects|media|people/<id>" (an entry's folder) or "<same>/<imageId>" (one image of it).
+ * Keys: "photos|projects|media|people|stack/<id>" (an entry's folder) or "<same>/<imageId>" (one image of it).
  * Lowercase letters, digits and '-' only, so they can never escape the root.
  */
-const KEY = /^(photos|projects|media|people)\/[a-z0-9][a-z0-9-]{0,80}(\/[a-z0-9][a-z0-9-]{0,40})?$/;
+const KEY =
+  /^(photos|projects|media|people|stack)\/[a-z0-9][a-z0-9-]{0,80}(\/[a-z0-9][a-z0-9-]{0,40})?$/;
 /** Served file names: generated sizes only ("1280.webp"). Originals are stored but never served. */
 const PUBLIC_FILE = /^\d{1,5}\.webp$/;
 

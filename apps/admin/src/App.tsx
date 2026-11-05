@@ -18,6 +18,7 @@ import { PersonEditPage } from "./pages/PersonEditPage";
 import { PhotosPage } from "./pages/PhotosPage";
 import { ProjectEditPage } from "./pages/ProjectEditPage";
 import { ProjectsPage } from "./pages/ProjectsPage";
+import { StackPage } from "./pages/StackPage";
 import { NotFoundPage, OverviewPage, SectionNotFound } from "./pages/OverviewPage";
 
 // Any 401 (session expired or revoked elsewhere) sends the app back to the login screen.
@@ -80,6 +81,7 @@ function SessionGate() {
         <Route path="photos" element={<PhotosPage />} />
         <Route path="projects" element={<ProjectsPage />} />
         <Route path="projects/:id" element={<ProjectEditPage />} />
+        <Route path="stack" element={<StackPage />} />
         <Route path="collection" element={<CollectionLayout />}>
           <Route index element={<CollectionPage />} />
           <Route path="people" element={<PeoplePage />} />

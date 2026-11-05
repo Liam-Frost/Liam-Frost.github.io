@@ -2,6 +2,20 @@
 
 ## User Decisions
 
+### 2026-11-05: Tech Stack (Stage 24)
+
+The user asked for the tech stack to come from the database with an admin page, logos from Devicon and Simple Icons or uploads, and an editorial layout instead of cards of tags. The model chose:
+
+- Icon packages on the API only, served as images under `/uploads/icons` (no icon JavaScript in the site; the static snapshot copies them like uploads). The Docker image drops devicon's fonts and EPS files.
+- Uploaded logos, SVG included, are rendered to WebP rather than sanitised and served as SVG.
+- One ordering route taking the complete layout, which covers category order, order within a category and moving between categories.
+- The site's order is the admin's order only; Primary is a slightly bolder name.
+- Category names stay localized like the rest of the site.
+- "SpringBoot" became "Spring Boot", as the user wrote it.
+- Lightroom keeps its initials (no library has its logo).
+- The public route answers 503 without a database, so the site shows an error rather than an old list.
+- The About card's short tool list (React, Java, …) is a separate module and is unchanged.
+
 ### 2026-11-05: Featured Collection Wall (Stage 23)
 
 The user had Codex replace the three featured cards with a seamless wall of covers following a reference design, with configurable rows and row height. In review the user asked for the gaps to be fixed and the wall checked in a local browser. The model chose: share-normalised flex rows rather than px widths per tile (the browser still spreads subpixels); `contain: inline-size` on the wall's host rather than `min-width: 0` up the page's grid; `home.wall` with ids only, since the entries are already in `items`. The review excerpt and stars of the old cards are not on the wall (the reference design has none); this is left as it is.

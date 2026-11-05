@@ -39,6 +39,7 @@ import { registerCollectionRoutes } from "./routes/collection";
 import { registerPhotoRoutes } from "./routes/photos";
 import { registerProjectRoutes } from "./routes/projects";
 import { registerSpotifyRoutes } from "./routes/spotify";
+import { registerStackRoutes } from "./routes/stack";
 import { registerSteamRoutes } from "./routes/steam";
 import { registerUploadRoutes } from "./routes/uploads";
 import { registerWebApp } from "./routes/web-app";
@@ -60,6 +61,8 @@ import { PrismaPhotoRepository } from "./photos/prisma-repository";
 import type { PhotoRepository } from "./photos/types";
 import { PrismaProjectRepository } from "./projects/prisma-repository";
 import type { ProjectRepository } from "./projects/types";
+import { PrismaStackRepository } from "./stack/prisma-repository";
+import type { StackRepository } from "./stack/types";
 import { PrismaSettingsRepository } from "./settings/prisma-repository";
 import { MemorySettingsRepository, type SettingsRepository } from "./settings/types";
 import { IntegrationSettings } from "./settings/integrations";
@@ -87,6 +90,12 @@ function defaultPhotoRepository(): PhotoRepository | null {
 function defaultProjectRepository(): ProjectRepository | null {
   const client = getPrismaClient();
   return client ? new PrismaProjectRepository(client) : null;
+}
+
+/** The Prisma-backed tech stack when DATABASE_URL is set, otherwise none (the site shows it as unavailable). */
+function defaultStackRepository(): StackRepository | null {
+  const client = getPrismaClient();
+  return client ? new PrismaStackRepository(client) : null;
 }
 
 /** The Prisma-backed collection when DATABASE_URL is set, otherwise none. */
@@ -138,6 +147,8 @@ export type BuildServerOptions = {
   photos?: PhotoRepository | null;
   /** Project storage; defaults to Prisma when DATABASE_URL is set. Pass null for none. */
   projects?: ProjectRepository | null;
+  /** Tech stack; defaults to Prisma when DATABASE_URL is set. Pass null for none. */
+  stack?: StackRepository | null;
   /** Collection storage; defaults to Prisma when DATABASE_URL is set. Pass null for none. */
   media?: MediaRepository | null;
   /** People; defaults to Prisma when DATABASE_URL is set. Pass null for none. */
@@ -180,6 +191,7 @@ export async function buildServer({
   webDistDir = DEFAULT_WEB_DIST_DIR,
   photos = defaultPhotoRepository(),
   projects = defaultProjectRepository(),
+  stack = defaultStackRepository(),
   media = defaultMediaRepository(),
   people = defaultPersonRepository(),
   relations = defaultRelationRepository(),
@@ -454,6 +466,7 @@ export async function buildServer({
   registerAdminProjectRoutes(app, auth, projects, store, config.uploads.maxBytes);
   registerPhotoRoutes(app, photos, store);
   registerProjectRoutes(app, projects, store);
+  registerStackRoutes(app, auth, stack, store);
   registerAdminMediaRoutes(app, auth, {
     media,
     collection,

@@ -1063,109 +1063,278 @@ html[data-theme="light"] .aboutSection {
   line-height: 1.65;
 }
 
-/* Skills stack (structured, grouped, leveled) */
-.skillPanel {
-  display: grid;
-  gap: 14px;
+/* Tech stack: an editorial list. Category name on the left, logos and names in a grid on the right. */
+.stackList {
+  /* Logos sit on a light tile in both themes, so dark logos (Adobe's, GitHub's) stay visible. */
+  --stack-tile: rgba(242, 236, 226, 0.94);
+  --stack-tile-border: rgba(234, 224, 207, 0.32);
+  margin-top: clamp(18px, 2.4vw, 28px);
+  border-top: 1px solid var(--border);
 }
 
-.skillPanelTop {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
+html[data-theme="light"] .stackList {
+  --stack-tile: rgba(255, 255, 255, 0.82);
+  --stack-tile-border: rgba(33, 52, 72, 0.12);
 }
 
-.skillLayout {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
-  align-items: stretch;
+@media (prefers-color-scheme: light) {
+  html[data-theme="system"] .stackList {
+    --stack-tile: rgba(255, 255, 255, 0.82);
+    --stack-tile-border: rgba(33, 52, 72, 0.12);
+  }
 }
 
-.skillGroup {
-  padding: 16px;
+.stackGroup {
   display: grid;
-  grid-template-rows: auto 1fr;
-  gap: 12px;
+  grid-template-columns: minmax(180px, 30%) minmax(0, 1fr);
+  gap: clamp(20px, 4vw, 56px);
+  padding: clamp(22px, 3vw, 34px) 0;
+  border-bottom: 1px solid var(--border);
 }
 
-.skillGroupHead {
+.stackGroupHead {
   display: grid;
+  align-content: start;
   gap: 6px;
+  min-width: 0;
 }
 
-.skillGroupTitle {
-  margin: 0;
-  font-size: 14px;
-  font-weight: 850;
-  letter-spacing: -0.01em;
-}
-
-.skillGroupDesc {
-  margin: 0;
+.stackGroupIndex {
   color: var(--faint);
   font-size: 12px;
-  line-height: 1.5;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  font-variant-numeric: tabular-nums;
 }
 
-.skillChips {
+.stackGroupTitle {
+  margin: 0;
+  font-size: clamp(22px, 2.4vw, 30px);
+  font-weight: 750;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  overflow-wrap: anywhere;
+}
+
+.stackGroupDesc {
+  margin: 2px 0 0;
+  max-width: 34ch;
+  color: var(--muted);
+  font-size: 13.5px;
+  line-height: 1.6;
+}
+
+.stackItems {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(176px, 1fr));
+  gap: 8px 18px;
+  align-content: start;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.stackItems > li {
+  min-width: 0;
+}
+
+.stackItem {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 52px;
+  padding: 6px 8px;
+  border-radius: 12px;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.stackLogo {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  padding: 7px;
+  border: 1px solid var(--stack-tile-border);
+  border-radius: 11px;
+  background: var(--stack-tile);
+  transition: transform 180ms var(--ease);
+}
+
+.stackLogo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.stackLogoInitials {
+  color: #3d5a73;
+  font-size: 13px;
+  font-weight: 750;
+  letter-spacing: 0.02em;
+  line-height: 1;
+}
+
+.stackName {
+  min-width: 0;
+  font-size: 15px;
+  font-weight: 550;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+/* A slight emphasis only: every technology keeps the same size and tile. */
+.stackItemPrimary .stackName {
+  font-weight: 720;
+}
+
+.stackItemArrow {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  margin-left: auto;
+  color: var(--faint);
+  opacity: 0;
+  transition: opacity 180ms var(--ease);
+}
+
+.stackItemLink {
+  transition: background 180ms var(--ease);
+}
+
+.stackItemLink:hover,
+.stackItemLink:focus-visible {
+  background: var(--card);
+}
+
+.stackItemLink:hover .stackLogo,
+.stackItemLink:focus-visible .stackLogo {
+  transform: translateY(-1px);
+}
+
+.stackItemLink:hover .stackItemArrow,
+.stackItemLink:focus-visible .stackItemArrow {
+  opacity: 1;
+}
+
+.stackItemLink:focus-visible {
+  outline: 2px solid var(--accent2);
+  outline-offset: 1px;
+}
+
+/* Touch screens have no hover: show that a technology opens its website. */
+@media (hover: none) {
+  .stackItemArrow {
+    opacity: 0.7;
+  }
+}
+
+.stackNotice {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
-  align-content: start;
-}
-
-.skillChip {
-  border: 1px solid var(--border);
-  background: var(--card);
-  color: var(--text);
-
-  border-radius: 12px;
-  padding: 8px 10px;
-
-  display: inline-flex;
   align-items: center;
-
-  cursor: default;
-  user-select: none;
+  gap: 12px 16px;
+  margin-top: clamp(18px, 2.4vw, 28px);
+  padding: 22px 0;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  color: var(--muted);
 }
 
-.skillChipName {
-  font-size: 13px;
-  line-height: 1.2;
-  font-weight: 650;
+.stackNotice p {
+  margin: 0;
 }
 
-.skillChipCore {
-  background: rgba(148, 180, 193, 0.24);
-  border-color: rgba(148, 180, 193, 0.42);
-  padding: 9px 12px;
+.stackSkeleton {
+  display: block;
+  border-radius: 6px;
+  background: var(--border);
+  animation: stackPulse 1.4s ease-in-out infinite;
 }
 
-.skillChipCore .skillChipName {
-  font-weight: 800;
+.stackLogo.stackSkeleton {
+  border-color: transparent;
+  border-radius: 11px;
 }
 
-.skillChipStrong {
-  background: rgba(148, 180, 193, 0.16);
-  border-color: rgba(148, 180, 193, 0.3);
+.stackSkeletonTitle {
+  width: 60%;
+  height: 26px;
 }
 
-.skillChipWorking {
-  background: var(--card);
+.stackSkeletonName {
+  width: 72px;
+  height: 12px;
+}
+
+@keyframes stackPulse {
+  50% {
+    opacity: 0.45;
+  }
 }
 
 @media (max-width: 1020px) {
-  .skillLayout {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .stackGroup {
+    grid-template-columns: minmax(150px, 26%) minmax(0, 1fr);
+    gap: 24px;
+  }
+
+  .stackItems {
+    grid-template-columns: repeat(auto-fill, minmax(156px, 1fr));
   }
 }
 
 @media (max-width: 760px) {
-  .skillLayout {
-    grid-template-columns: 1fr;
+  .stackGroup {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+    padding: 22px 0;
+  }
+
+  .stackGroupDesc {
+    max-width: none;
+  }
+
+  .stackItems {
+    grid-template-columns: repeat(auto-fill, minmax(128px, 1fr));
+    gap: 4px 10px;
+  }
+
+  .stackItem {
+    gap: 10px;
+    min-height: 46px;
+    padding: 5px 4px;
+  }
+
+  .stackLogo {
+    width: 36px;
+    height: 36px;
+    padding: 6px;
+    border-radius: 10px;
+  }
+
+  .stackName {
+    font-size: 14px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stackLogo,
+  .stackItemArrow,
+  .stackItemLink {
+    transition: none;
+  }
+
+  .stackItemLink:hover .stackLogo,
+  .stackItemLink:focus-visible .stackLogo {
+    transform: none;
+  }
+
+  .stackSkeleton {
+    animation: none;
   }
 }
 

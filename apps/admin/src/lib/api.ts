@@ -53,6 +53,14 @@ import {
   type AdminProjectsResponse,
   type AdminProjectUpdate,
   type AdminSessionResponse,
+  type AdminStackCategoryCreate,
+  type AdminStackCategoryDelete,
+  type AdminStackCategoryUpdate,
+  type AdminStackIconSearchResponse,
+  type AdminStackOrder,
+  type AdminStackResponse,
+  type AdminStackTechnologyCreate,
+  type AdminStackTechnologyUpdate,
   type AdminSpotifyResponse,
   type AdminIntegrationsResponse,
   type IntegrationProvider,
@@ -199,6 +207,9 @@ const serverQuery = (root: number, path: string) =>
 export const serverPreviewUrl = (root: number, path: string) =>
   `/api/admin/photos/server/preview?${serverQuery(root, path)}`;
 const projectPath = (id: string) => `/api/admin/projects/${encodeURIComponent(id)}`;
+const stackCategoryPath = (id: string) => `/api/admin/stack/categories/${encodeURIComponent(id)}`;
+const stackTechnologyPath = (id: string) =>
+  `/api/admin/stack/technologies/${encodeURIComponent(id)}`;
 const mediaPath = (id: string) => `/api/admin/media/${encodeURIComponent(id)}`;
 const personPath = (id: string) => `/api/admin/people/${encodeURIComponent(id)}`;
 const relationPath = (id: string) => `/api/admin/relations/${encodeURIComponent(id)}`;
@@ -235,6 +246,30 @@ export const api = {
   reorderPhotos: (ids: string[]) =>
     request<AdminPhotosResponse>("/api/admin/photos/order", { method: "PUT", json: { ids } }),
 
+  stack: () => request<AdminStackResponse>("/api/admin/stack"),
+  searchStackIcons: (q: string, signal?: AbortSignal) =>
+    request<AdminStackIconSearchResponse>(`/api/admin/stack/icons?${new URLSearchParams({ q })}`, {
+      signal
+    }),
+  createStackCategory: (body: AdminStackCategoryCreate) =>
+    request<AdminStackResponse>("/api/admin/stack/categories", { method: "POST", json: body }),
+  updateStackCategory: (id: string, body: AdminStackCategoryUpdate) =>
+    request<AdminStackResponse>(stackCategoryPath(id), { method: "PATCH", json: body }),
+  deleteStackCategory: (id: string, choice?: AdminStackCategoryDelete) =>
+    request<AdminStackResponse>(
+      `${stackCategoryPath(id)}${choice ? `?${new URLSearchParams(choice)}` : ""}`,
+      { method: "DELETE" }
+    ),
+  createStackTechnology: (body: AdminStackTechnologyCreate) =>
+    request<AdminStackResponse>("/api/admin/stack/technologies", { method: "POST", json: body }),
+  updateStackTechnology: (id: string, body: AdminStackTechnologyUpdate) =>
+    request<AdminStackResponse>(stackTechnologyPath(id), { method: "PATCH", json: body }),
+  deleteStackTechnology: (id: string) =>
+    request<AdminStackResponse>(stackTechnologyPath(id), { method: "DELETE" }),
+  uploadStackIcon: (id: string, file: File) =>
+    uploadFile<AdminStackResponse>(`${stackTechnologyPath(id)}/icon`, file),
+  reorderStack: (order: AdminStackOrder) =>
+    request<AdminStackResponse>("/api/admin/stack/order", { method: "PUT", json: order }),
   projects: () => request<AdminProjectsResponse>("/api/admin/projects"),
   project: (id: string) => request<AdminProjectResponse>(projectPath(id)),
   createProject: (body: AdminProjectCreate) =>
