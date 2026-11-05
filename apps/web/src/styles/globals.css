@@ -185,6 +185,12 @@ html {
   }
 }
 
+/* Lenis (lib/smoothScroll.ts) scrolls the page frame by frame; the browser must not animate each
+   step again. */
+html.lenis {
+  scroll-behavior: auto;
+}
+
 body {
   margin: 0;
   font-family: var(--font-sans);
@@ -1587,7 +1593,7 @@ html[data-theme="light"] .stackDetail {
   }
 }
 
-/* Stage 26 (components/useStackScrub.ts): the tech stack's scroll motion writes opacity and
+/* Stage 26 (components/useStackScrub.ts, GSAP): the tech stack's scroll motion writes opacity and
    transform on its items and section. Printing shows them as they are. */
 @media print {
   .stackScrub .stackGroupHead,

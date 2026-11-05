@@ -1,4 +1,4 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { Route, Routes } from "react-router";
 
 import AnalyticsTracker from "./AnalyticsTracker";
@@ -13,6 +13,7 @@ import PortfolioPage from "../pages/Portfolio";
 import PrivacyPage from "../pages/Privacy";
 import ProjectsPage from "../pages/Projects";
 import { useI18n } from "../lib/i18n";
+import { startSmoothScroll } from "../lib/smoothScroll";
 import { useTheme } from "../lib/useTheme";
 
 // The Markdown renderer is only needed on project pages; keep it out of the main bundle.
@@ -23,6 +24,8 @@ const CollectionPage = lazy(() => import("../pages/Collection"));
 export default function App() {
   const { t } = useI18n();
   const { theme, cycleTheme } = useTheme();
+  // Smooth scrolling for the whole site (lib/smoothScroll.ts).
+  useEffect(() => startSmoothScroll(), []);
 
   return (
     <div className="site">
