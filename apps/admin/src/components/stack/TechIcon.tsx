@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 
 /**
  * Logos come from the API (a path on this site or an https URL) or are a local file's preview
- * (a blob: URL from URL.createObjectURL). Anything else is not used as an image source.
+ * (a blob: URL of a canvas-encoded PNG, never the raw uploaded file). Anything else is not used.
  */
 const IMAGE_SOURCE = /^(?:https?:\/\/|blob:|\/(?![/\\]))/i;
 function imageSource(url: string | null) {

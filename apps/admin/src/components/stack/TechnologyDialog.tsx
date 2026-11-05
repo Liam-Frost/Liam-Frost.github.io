@@ -16,6 +16,7 @@ import { projectsKey, useProjects } from "../../hooks/useProjects";
 import { stackKey } from "../../hooks/useStack";
 import { api, ApiError } from "../../lib/api";
 import { pickText } from "../../lib/i18n";
+import { createIconPreview } from "../../lib/icon-preview";
 import { Dialog } from "../ui/Dialog";
 import { Field, Switch } from "../ui/Field";
 import { MultiCombobox } from "../ui/MultiCombobox";
@@ -90,6 +91,7 @@ export function TechnologyDialog({
   const [draft, setDraft] = useState(initial);
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
+  const [previewFailed, setPreviewFailed] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [confirmDiscard, setConfirmDiscard] = useState(false);
@@ -101,10 +103,25 @@ export function TechnologyDialog({
   const options = useMemo(() => projectOptions(projects.data ?? []), [projects.data]);
 
   useEffect(() => {
-    if (!file) return setPreview(null);
-    const url = URL.createObjectURL(file);
-    setPreview(url);
-    return () => URL.revokeObjectURL(url);
+    let cancelled = false;
+    let url: string | null = null;
+    setPreview(null);
+    setPreviewFailed(false);
+    if (file)
+      void createIconPreview(file).then(
+        (result) => {
+          if (cancelled) return URL.revokeObjectURL(result);
+          url = result;
+          setPreview(result);
+        },
+        () => {
+          if (!cancelled) setPreviewFailed(true);
+        }
+      );
+    return () => {
+      cancelled = true;
+      if (url) URL.revokeObjectURL(url);
+    };
   }, [file]);
 
   const iconChanged =
@@ -345,6 +362,11 @@ export function TechnologyDialog({
           <p className="mt-1 text-[11.5px] leading-relaxed text-faint">
             上传 SVG、PNG 或 WebP（最大 2 MB）。SVG 会被安全地转成图片保存，保持原比例。
           </p>
+          {previewFailed ? (
+            <p className="mt-1 text-[11.5px] leading-relaxed text-faint" role="status">
+              浏览器无法生成此文件的本地预览；保存后将显示服务端处理的图标。
+            </p>
+          ) : null}
           {technology ? (
             <div className="mt-2.5">
               <label htmlFor="tech-icon-search" className="mb-1 block text-[12px] text-muted">
