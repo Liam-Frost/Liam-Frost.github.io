@@ -7,6 +7,7 @@ import BackgroundFX from "../components/BackgroundFX";
 import Footer from "../components/Footer";
 import Header from "../components/Header";
 import SpotifyDock from "../components/SpotifyDock";
+import WaveformNavigator from "../components/waveform/WaveformNavigator";
 import HomePage from "../pages/Home";
 import NotFoundPage from "../pages/NotFound";
 import PortfolioPage from "../pages/Portfolio";
@@ -76,6 +77,7 @@ export default function App() {
       </footer>
 
       <SpotifyDock />
+      <WaveformNavigator />
     </div>
   );
 }

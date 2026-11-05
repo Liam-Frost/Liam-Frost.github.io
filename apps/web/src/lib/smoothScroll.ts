@@ -54,15 +54,23 @@ function layoutTop(element: HTMLElement) {
 }
 
 /** To an anchor, below the sticky header (the element's `scroll-margin-top`). */
-export function scrollToElement(element: HTMLElement) {
-  const glide = !prefersReducedMotion();
+export function scrollToElement(element: HTMLElement, immediate = false) {
+  const glide = !immediate && !prefersReducedMotion();
   const margin = parseFloat(getComputedStyle(element).scrollMarginTop) || 0;
   const top = Math.max(0, layoutTop(element) - margin);
   if (lenis) {
     // Lenis re-measures the page on a delay; the page may just have grown (content loading above).
     lenis.resize();
     lenis.scrollTo(top, { immediate: !glide, force: true });
-  } else window.scrollTo({ top, left: 0, behavior: glide ? "smooth" : "auto" });
+  } else window.scrollTo({ top, left: 0, behavior: glide ? "smooth" : "instant" });
+}
+
+/** Restore an exact history position and synchronize Lenis' internal scroll state. */
+export function scrollToPosition(top: number) {
+  if (lenis) {
+    lenis.resize();
+    lenis.scrollTo(top, { immediate: true, force: true });
+  } else window.scrollTo({ top, left: 0, behavior: "instant" });
 }
 
 /** While a dialog or drawer is open the page does not scroll (nested by count). */
