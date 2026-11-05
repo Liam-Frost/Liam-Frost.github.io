@@ -25,9 +25,6 @@ const zh = {
   // Nav
   "nav.home": "主页",
   "nav.portfolio": "作品集",
-  "nav.about": "关于",
-  "nav.skills": "技术栈",
-  "nav.contact": "联系",
   "nav.openMenu": "打开菜单",
   "nav.closeMenu": "关闭菜单",
 
@@ -322,9 +319,6 @@ const en: Record<Key, string> = {
 
   "nav.home": "Home",
   "nav.portfolio": "Gallery",
-  "nav.about": "About",
-  "nav.skills": "Stack",
-  "nav.contact": "Contact",
   "nav.openMenu": "Open menu",
   "nav.closeMenu": "Close menu",
 
@@ -610,9 +604,6 @@ const fr: Record<Key, string> = {
 
   "nav.home": "Accueil",
   "nav.portfolio": "Galerie",
-  "nav.about": "À propos",
-  "nav.skills": "Stack",
-  "nav.contact": "Contact",
   "nav.openMenu": "Ouvrir le menu",
   "nav.closeMenu": "Fermer le menu",
 
@@ -900,9 +891,6 @@ const ja: Record<Key, string> = {
 
   "nav.home": "ホーム",
   "nav.portfolio": "ギャラリー",
-  "nav.about": "概要",
-  "nav.skills": "技術",
-  "nav.contact": "連絡",
   "nav.openMenu": "メニューを開く",
   "nav.closeMenu": "メニューを閉じる",
 
@@ -1189,9 +1177,6 @@ const zhHant: Record<Key, string> = {
   // Nav
   "nav.home": "首頁",
   "nav.portfolio": "作品集",
-  "nav.about": "關於",
-  "nav.skills": "技術棧",
-  "nav.contact": "聯繫",
   "nav.openMenu": "開啟選單",
   "nav.closeMenu": "關閉選單",
 
