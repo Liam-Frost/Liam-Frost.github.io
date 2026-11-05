@@ -144,15 +144,21 @@ describe("public stack", () => {
         id: expect.any(String),
         name: "React",
         iconUrl: "/uploads/icons/devicon/react.svg",
+        iconScale: expect.any(Number),
+        iconTone: null,
         websiteUrl: null,
-        prominence: "primary"
+        prominence: "primary",
+        projects: []
       },
       {
         id: expect.any(String),
         name: "Lightroom",
         iconUrl: null,
+        iconScale: 1,
+        iconTone: null,
         websiteUrl: "https://example.com/lr",
-        prominence: "standard"
+        prominence: "standard",
+        projects: []
       }
     ]);
     expect(Object.keys(categories[0]).sort()).toEqual([

@@ -120,11 +120,12 @@ describe("admin project management", () => {
     expect((await patch(id, { slug: "taken" })).statusCode).toBe(409);
     expect((await patch(id, { links: { repo: "javascript:alert(1)" } })).statusCode).toBe(400);
     expect((await patch(id, { startedAt: "2025-06", endedAt: "2025-01" })).statusCode).toBe(400);
-    expect((await patch(id, { techStack: ["React", "react"] })).statusCode).toBe(400);
+    expect((await patch(id, { otherTechnologies: ["React", "react"] })).statusCode).toBe(400);
+    expect((await patch(id, { techStack: ["React"] })).statusCode).toBe(400);
 
     const saved = await patch(id, {
       summary: { zh: "个人网站", en: "Personal site" },
-      techStack: ["React", "Fastify"],
+      otherTechnologies: ["React", "Fastify"],
       links: { repo: "https://github.com/x/y", demo: "" },
       status: "completed",
       startedAt: "2025-01",
@@ -134,6 +135,8 @@ describe("admin project management", () => {
     expect(saved.statusCode).toBe(200);
     expect(saved.json().project).toMatchObject({
       techStack: ["React", "Fastify"],
+      otherTechnologies: ["React", "Fastify"],
+      technologyIds: [],
       links: { repo: "https://github.com/x/y" },
       status: "completed",
       startedAt: "2025-01",

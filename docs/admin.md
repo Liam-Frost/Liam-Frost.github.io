@@ -114,7 +114,7 @@ API: `GET/POST /api/admin/projects`, `GET/PATCH/DELETE /api/admin/projects/:id`,
 
 ## Tech Stack (技术栈)
 
-Requires `DATABASE_URL`. Categories and technologies of the home page's tech stack, in the site's order: drag or use the arrows (also between categories), search the icon libraries when adding a technology, upload a logo (SVG, PNG or WebP) when they have none, hide entries, mark them Primary. A category with technologies is only deleted after choosing to move them or to delete them too. Details and routes: [tech-stack.md](tech-stack.md).
+Requires `DATABASE_URL`. Categories and technologies of the home page's tech stack, in the site's order: drag or use the arrows (also between categories), search the icon libraries when adding a technology, upload a logo (SVG, PNG or WebP) when they have none, hide entries, mark them Primary. A category with technologies is only deleted after choosing to move them or to delete them too. Each technology's 关联项目 picks the projects using it (hidden ones included; the site lists public ones only), and a project's 技术栈 field picks technologies from the stack, with 其他技术 for names that are not in it; both edit the same links. Details and routes: [tech-stack.md](tech-stack.md).
 
 ## API configuration
 

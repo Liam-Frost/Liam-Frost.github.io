@@ -1,5 +1,6 @@
 import type {
   AdminProject,
+  AdminStackTechnology,
   AdminProjectUpdate,
   LocalizedText,
   ProjectImage,
@@ -7,14 +8,17 @@ import type {
   ProjectStatus
 } from "@liam-frost/shared";
 import { ArrowLeft, ExternalLink, ImagePlus, Trash2, X } from "lucide-react";
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { Link, useParams } from "react-router";
 
+import { technologyOptions } from "../components/stack/linkOptions";
 import { Field, Switch } from "../components/ui/Field";
+import { MultiCombobox } from "../components/ui/MultiCombobox";
 import { IconButton } from "../components/ui/IconButton";
 import { Panel } from "../components/ui/Panel";
 import { useToast } from "../components/ui/Toast";
 import { useProject, useProjectImages, useUpdateProject } from "../hooks/useProjects";
+import { useStack } from "../hooks/useStack";
 import { ApiError } from "../lib/api";
 import { LANG_LABELS, LANGS, pickText, STATUS_LABELS, type Lang } from "../lib/i18n";
 import { RecentStats } from "../components/analytics/RecentStats";
@@ -26,7 +30,8 @@ type Draft = {
   title: LocalizedText;
   summary: LocalizedText;
   body: LocalizedText;
-  techStack: string[];
+  technologyIds: string[];
+  otherTechnologies: string[];
   links: Required<ProjectLinks>;
   status: ProjectStatus;
   startedAt: string;
@@ -35,13 +40,24 @@ type Draft = {
   visibility: AdminProject["visibility"];
 };
 
+/** Same technology name, ignoring case, spaces, '.', '-' and '_' ("SpringBoot" is "Spring Boot"). */
+const techKey = (name: string) =>
+  name
+    .trim()
+    .toLowerCase()
+    .replace(/[\s._-]+/g, "");
+
+const sameList = (a: string[], b: string[]) =>
+  a.length === b.length && a.every((value, index) => value === b[index]);
+
 function toDraft(project: AdminProject): Draft {
   return {
     slug: project.slug,
     title: project.title,
     summary: project.summary,
     body: project.body,
-    techStack: project.techStack,
+    technologyIds: project.technologyIds,
+    otherTechnologies: project.otherTechnologies,
     links: {
       repo: project.links.repo ?? "",
       demo: project.links.demo ?? "",
@@ -83,6 +99,16 @@ function ProjectEditor({ project }: { project: AdminProject }) {
   // Last saved state; texts are saved explicitly, so unsaved edits are tracked against it.
   const [saved, setSaved] = useState(draft);
   const dirty = JSON.stringify(draft) !== JSON.stringify(saved);
+
+  // The project can change elsewhere (its links, from the stack page) and arrive after the editor
+  // opened with a cached copy: follow it while nothing is edited here.
+  useEffect(() => {
+    if (dirty) return;
+    const next = toDraft(project);
+    setDraft(next);
+    setSaved(next);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only when the project data changes
+  }, [project]);
   const [lang, setLang] = useState<Lang>("zh");
   const [error, setError] = useState("");
   const [techInput, setTechInput] = useState("");
@@ -102,17 +128,48 @@ function ProjectEditor({ project }: { project: AdminProject }) {
   const setText = (field: "title" | "summary" | "body", value: string) =>
     setDraft((d) => ({ ...d, [field]: { ...d[field], [lang]: value } }));
 
+  const stack = useStack();
+  const technologyChoices = useMemo(() => technologyOptions(stack.data ?? []), [stack.data]);
+  // Technologies by name; null when several have it (namesakes in two categories): pick one in the list.
+  const stackByKey = useMemo(() => {
+    const map = new Map<string, AdminStackTechnology | null>();
+    for (const t of (stack.data ?? []).flatMap((c) => c.technologies)) {
+      const key = techKey(t.name);
+      map.set(key, map.has(key) ? null : t);
+    }
+    return map;
+  }, [stack.data]);
+
   const addTech = () => {
     const value = techInput.trim();
     if (!value) return;
-    if (
-      !draft.techStack.some((t) => t.toLowerCase() === value.toLowerCase()) &&
-      draft.techStack.length < 20
+    // A name the stack has becomes a link instead of a plain name.
+    const inStack = stackByKey.get(techKey(value));
+    if (inStack === null) {
+      setError(`技术栈里有多个“${value}”，请在上面的技术栈列表里选择`);
+      return;
+    }
+    if (inStack) {
+      if (!draft.technologyIds.includes(inStack.id))
+        set("technologyIds", [...draft.technologyIds, inStack.id]);
+    } else if (
+      !draft.otherTechnologies.some((t) => t.toLowerCase() === value.toLowerCase()) &&
+      draft.otherTechnologies.length < 20
     ) {
-      set("techStack", [...draft.techStack, value]);
+      set("otherTechnologies", [...draft.otherTechnologies, value]);
     }
     setTechInput("");
   };
+
+  /** Turns a plain name into a link to the technology of the same name. */
+  const linkOther = (name: string, technologyId: string) =>
+    setDraft((d) => ({
+      ...d,
+      otherTechnologies: d.otherTechnologies.filter((t) => t !== name),
+      technologyIds: d.technologyIds.includes(technologyId)
+        ? d.technologyIds
+        : [...d.technologyIds, technologyId]
+    }));
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
@@ -125,10 +182,15 @@ function ProjectEditor({ project }: { project: AdminProject }) {
       return;
     }
     setError("");
+    const { technologyIds, otherTechnologies, ...fields } = draft;
     const body: AdminProjectUpdate = {
-      ...draft,
+      ...fields,
       startedAt: draft.startedAt || null,
-      endedAt: draft.endedAt || null
+      endedAt: draft.endedAt || null,
+      // Links are also edited from the stack page: send them only when changed here, so an
+      // unrelated save never writes back an older list.
+      ...(sameList(technologyIds, saved.technologyIds) ? {} : { technologyIds }),
+      ...(sameList(otherTechnologies, saved.otherTechnologies) ? {} : { otherTechnologies })
     };
     update.mutate(body, {
       onSuccess: ({ project: next }) => {
@@ -142,7 +204,11 @@ function ProjectEditor({ project }: { project: AdminProject }) {
         setError(
           e instanceof ApiError && e.code === "SLUG_TAKEN"
             ? "这个网址名已被其它项目使用"
-            : e.message
+            : e instanceof ApiError && e.code === "UNKNOWN_TECHNOLOGY"
+              ? "有关联的技术已从技术栈删除，请刷新后重试"
+              : e instanceof ApiError && e.code === "TOO_MANY_PROJECTS"
+                ? `有技术关联的项目已达上限：${e.message}`
+                : e.message
         )
     });
   };
@@ -318,33 +384,72 @@ function ProjectEditor({ project }: { project: AdminProject }) {
                 />
               </Field>
             </div>
-            <Field label="技术栈" htmlFor="project-tech" hint="回车添加">
+            <Field
+              label="技术栈"
+              htmlFor="project-technologies"
+              hint="从首页技术栈中选择；技术栈管理页会同步显示这个项目"
+            >
+              {stack.isError ? (
+                <p role="alert" className="text-[12.5px] text-status-error">
+                  无法加载技术栈
+                </p>
+              ) : (
+                <MultiCombobox
+                  id="project-technologies"
+                  options={technologyChoices}
+                  value={draft.technologyIds}
+                  onChange={(ids) => set("technologyIds", ids)}
+                  placeholder={stack.isPending ? "加载技术栈中…" : "搜索技术名称"}
+                  listLabel="技术栈中的技术"
+                  emptyText={technologyChoices.length ? "技术栈里没有这项技术" : "技术栈还是空的"}
+                  max={40}
+                />
+              )}
+            </Field>
+            <Field
+              label="其他技术（不在技术栈中）"
+              htmlFor="project-tech"
+              hint="只作为项目的标签显示，回车添加；输入技术栈里已有的名称会自动改为关联"
+            >
               <div className="mb-2 flex flex-wrap gap-1.5">
-                {draft.techStack.map((tech) => (
-                  <span key={tech} className="chip inline-flex items-center gap-1">
-                    {tech}
-                    <button
-                      type="button"
-                      aria-label={`删除 ${tech}`}
-                      onClick={() =>
-                        set(
-                          "techStack",
-                          draft.techStack.filter((t) => t !== tech)
-                        )
-                      }
-                      className="rounded-full hover:text-status-error"
-                    >
-                      <X aria-hidden="true" className="size-3" />
-                    </button>
-                  </span>
-                ))}
+                {draft.otherTechnologies.map((tech) => {
+                  const match = stackByKey.get(techKey(tech));
+                  return (
+                    <span key={tech} className="chip inline-flex items-center gap-1">
+                      {tech}
+                      {match ? (
+                        <button
+                          type="button"
+                          onClick={() => linkOther(tech, match.id)}
+                          className="rounded-full px-1 text-[11px] text-brand underline-offset-2 hover:underline"
+                          title={`改为关联技术栈中的 ${match.name}`}
+                        >
+                          关联
+                        </button>
+                      ) : null}
+                      <button
+                        type="button"
+                        aria-label={`删除 ${tech}`}
+                        onClick={() =>
+                          set(
+                            "otherTechnologies",
+                            draft.otherTechnologies.filter((t) => t !== tech)
+                          )
+                        }
+                        className="rounded-full hover:text-status-error"
+                      >
+                        <X aria-hidden="true" className="size-3" />
+                      </button>
+                    </span>
+                  );
+                })}
               </div>
               <input
                 id="project-tech"
                 className="field"
                 value={techInput}
                 maxLength={30}
-                placeholder="例如 React"
+                placeholder="例如 Fastify"
                 onChange={(e) => setTechInput(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {

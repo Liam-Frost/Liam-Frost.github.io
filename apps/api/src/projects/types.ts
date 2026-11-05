@@ -17,6 +17,14 @@ export type StoredImage = {
   variants: StoredVariant[];
 };
 
+/** A technology of the stack linked to a project. */
+export type ProjectTechnologyRef = {
+  id: string;
+  name: string;
+  /** Shown on the public site: the technology and its category are visible. */
+  public: boolean;
+};
+
 export type ProjectRow = {
   id: string;
   slug: string;
@@ -25,7 +33,10 @@ export type ProjectRow = {
   body: LocalizedText;
   cover: StoredImage | null;
   gallery: StoredImage[];
+  /** Technologies that are not in the stack, as plain names (the column keeps its old name). */
   techStack: string[];
+  /** Linked technologies of the stack, in the project's order. */
+  technologies: ProjectTechnologyRef[];
   links: ProjectLinks;
   status: ProjectStatus;
   startedAt: string | null;
@@ -40,8 +51,11 @@ export type ProjectRow = {
 export type NewProject = Pick<ProjectRow, "id" | "slug" | "title">;
 
 export type ProjectPatch = Partial<
-  Omit<ProjectRow, "id" | "sortOrder" | "createdAt" | "updatedAt">
->;
+  Omit<ProjectRow, "id" | "technologies" | "sortOrder" | "createdAt" | "updatedAt">
+> & {
+  /** Replaces the linked technologies (existing ids only), in this order. */
+  technologyIds?: string[];
+};
 
 export class SlugTakenError extends Error {}
 

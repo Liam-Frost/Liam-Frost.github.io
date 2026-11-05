@@ -155,6 +155,7 @@ export type PublicProjectSummary = {
   title: LocalizedText;
   summary: LocalizedText;
   cover: ProjectImage | null;
+  /** Names of the technologies used: the linked ones of the stack (visible ones only), then the others. */
   techStack: string[];
   links: ProjectLinks;
   status: ProjectStatus;
@@ -172,6 +173,10 @@ export type PublicProject = PublicProjectSummary & {
 
 export type AdminProject = PublicProject & {
   id: string;
+  /** Linked technologies of the stack, in the project's order (hidden ones included). */
+  technologyIds: string[];
+  /** Technologies that are not in the stack, as plain names. */
+  otherTechnologies: string[];
   visibility: PhotoVisibility;
   sortOrder: number;
   createdAt: string;
@@ -186,7 +191,9 @@ export type AdminProjectUpdate = Partial<{
   title: LocalizedText;
   summary: LocalizedText;
   body: LocalizedText;
-  techStack: string[];
+  /** Technologies of the stack, in order: replaces the project's links (seen from the stack too). */
+  technologyIds: string[];
+  otherTechnologies: string[];
   links: ProjectLinks;
   status: ProjectStatus;
   startedAt: string | null;

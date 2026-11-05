@@ -16,6 +16,8 @@ export type StackTechnologyRow = {
   sortOrder: number;
   createdAt: Date;
   updatedAt: Date;
+  /** Every project linked to it (hidden ones included), in no particular order. */
+  projectIds: string[];
 };
 
 export type StackCategoryRow = {
@@ -46,6 +48,7 @@ export type NewStackTechnology = Pick<
   | "prominence"
   | "visible"
 >;
+/** `projectIds` replaces the links (existing projects only); new links go last in each project's list. */
 export type StackTechnologyPatch = Partial<
   Omit<StackTechnologyRow, "id" | "sortOrder" | "createdAt" | "updatedAt">
 >;

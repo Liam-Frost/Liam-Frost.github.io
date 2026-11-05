@@ -23,6 +23,18 @@ export function toProjectImage(image: StoredImage, store: LocalImageStore): Proj
   };
 }
 
+/**
+ * The names shown on the site: linked technologies that are public, then the plain names (minus any
+ * that repeat a linked one). Hidden technologies are left out, like everywhere else on the site.
+ */
+export function publicTechStack(row: Pick<ProjectRow, "technologies" | "techStack">) {
+  const linked = row.technologies.map((t) => t.name.toLowerCase());
+  return [
+    ...row.technologies.filter((t) => t.public).map((t) => t.name),
+    ...row.techStack.filter((name) => !linked.includes(name.toLowerCase()))
+  ];
+}
+
 export function toPublicProjectSummary(
   row: ProjectRow,
   store: LocalImageStore
@@ -32,7 +44,7 @@ export function toPublicProjectSummary(
     title: row.title,
     summary: row.summary,
     cover: row.cover ? toProjectImage(row.cover, store) : null,
-    techStack: row.techStack,
+    techStack: publicTechStack(row),
     links: row.links,
     status: row.status,
     startedAt: row.startedAt,
@@ -53,6 +65,8 @@ export function toAdminProject(row: ProjectRow, store: LocalImageStore): AdminPr
   return {
     ...toPublicProject(row, store),
     id: row.id,
+    technologyIds: row.technologies.map((t) => t.id),
+    otherTechnologies: row.techStack,
     visibility: row.visibility,
     sortOrder: row.sortOrder,
     createdAt: row.createdAt.toISOString(),

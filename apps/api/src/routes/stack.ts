@@ -10,6 +10,7 @@ import type { AdminAuthService } from "../auth/service";
 import { HttpError, notFound } from "../lib/errors";
 import { KeyedLock } from "../lib/keyed-lock";
 import {
+  MAX_PROJECT_TECHNOLOGIES,
   parseInput,
   stackCategoryCreateSchema,
   stackCategoryDeleteSchema,
@@ -24,7 +25,9 @@ import { variantFileName } from "../photos/mapping";
 import type { StoredImage } from "../projects/types";
 import { hasCatalogIcon, readCatalogIcon, searchCatalog } from "../stack/catalog";
 import { readUploadedIcon } from "../stack/icons";
+import type { ProjectRepository } from "../projects/types";
 import { toAdminStack, toPublicStack } from "../stack/mapping";
+import { stackOptics } from "../stack/optics";
 import type {
   StackCategoryRow,
   StackRepository,
@@ -51,8 +54,15 @@ export function registerStackRoutes(
   app: FastifyInstance,
   auth: AdminAuthService,
   stack: StackRepository | null,
-  store: LocalImageStore
+  store: LocalImageStore,
+  projects: ProjectRepository | null
 ) {
+  const opticsOf = (rows: StackCategoryRow[]) =>
+    stackOptics(
+      rows.flatMap((c) => c.technologies),
+      store
+    );
+
   app.get("/api/stack", async (request, reply): Promise<PublicStackResponse> => {
     if (!stack)
       throw new HttpError(503, "UNAVAILABLE", "The tech stack is temporarily unavailable");
@@ -63,8 +73,15 @@ export function registerStackRoutes(
       request.log.warn({ error }, "Stack database unavailable");
       throw new HttpError(503, "UNAVAILABLE", "The tech stack is temporarily unavailable");
     }
+    // Public projects only, in their order; without them the stack still shows, with no projects.
+    const publicProjects = projects
+      ? await projects.list().catch((error: unknown) => {
+          request.log.warn({ error }, "Project database unavailable");
+          return [];
+        })
+      : [];
     reply.header("x-snapshot-data-source", "database");
-    return { categories: toPublicStack(rows, store) };
+    return { categories: toPublicStack(rows, store, await opticsOf(rows), publicProjects) };
   });
 
   // Library logos, read from the installed icon packages. Content only changes with a package upgrade.
@@ -119,9 +136,35 @@ export function registerStackRoutes(
   // One lock for the whole stack: names are unique per category and orders span categories.
   const lock = new KeyedLock();
   const serialized = <T>(work: () => Promise<T>) => lock.run("stack", work);
-  const respond = async (): Promise<AdminStackResponse> => ({
-    categories: toAdminStack(await repo().list(), store)
-  });
+  const respond = async (): Promise<AdminStackResponse> => {
+    const rows = await repo().list();
+    return { categories: toAdminStack(rows, store, await opticsOf(rows)) };
+  };
+  /**
+   * Linked projects must exist (hidden ones included), and a project linked anew must have room for
+   * one more technology: the project form refuses to save more than MAX_PROJECT_TECHNOLOGIES.
+   */
+  const checkProjects = async (ids: string[] | undefined, technologyId?: string) => {
+    if (!ids?.length) return;
+    const byId = new Map(
+      (projects ? await projects.list({ includePrivate: true }) : []).map((p) => [p.id, p])
+    );
+    if (ids.some((id) => !byId.has(id)))
+      throw new HttpError(400, "UNKNOWN_PROJECT", "A linked project does not exist");
+    const full = ids
+      .map((id) => byId.get(id)!)
+      .find(
+        (p) =>
+          !p.technologies.some((t) => t.id === technologyId) &&
+          p.technologies.length >= MAX_PROJECT_TECHNOLOGIES
+      );
+    if (full)
+      throw new HttpError(
+        400,
+        "TOO_MANY_TECHNOLOGIES",
+        `“${full.slug}” already uses ${MAX_PROJECT_TECHNOLOGIES} technologies`
+      );
+  };
   const idOf = (request: FastifyRequest) => parseInput(stackIdSchema, request.params).id;
 
   const findCategory = (rows: StackCategoryRow[], id: string) => {
@@ -229,8 +272,9 @@ export function registerStackRoutes(
   });
 
   app.post("/api/admin/stack/technologies", admin, async (request, reply) => {
-    const { icon, ...input } = parseInput(stackTechnologyCreateSchema, request.body);
+    const { icon, projectIds, ...input } = parseInput(stackTechnologyCreateSchema, request.body);
     checkIcon(icon);
+    await checkProjects(projectIds);
     const result = await serialized(async () => {
       const rows = await repo().list();
       const category = findCategory(rows, input.categoryId);
@@ -238,12 +282,14 @@ export function registerStackRoutes(
         throw new HttpError(400, "TOO_MANY", `At most ${MAX_TECHNOLOGIES} technologies`);
       if (category.technologies.some((t) => sameName(t.name, input.name)))
         throw duplicateName(input.name);
+      const id = randomUUID();
       await repo().createTechnology({
-        id: randomUUID(),
+        id,
         ...input,
         iconProvider: icon.provider,
         iconKey: icon.provider === "none" ? null : icon.key
       });
+      if (projectIds?.length) await repo().updateTechnology(id, { projectIds });
       return respond();
     });
     reply.code(201);
@@ -254,6 +300,7 @@ export function registerStackRoutes(
     const id = idOf(request);
     const { icon, ...input } = parseInput(stackTechnologyUpdateSchema, request.body);
     if (icon) checkIcon(icon);
+    await checkProjects(input.projectIds, id);
     let dropped: StoredImage | null = null;
     const result = await serialized(async () => {
       const rows = await repo().list();
