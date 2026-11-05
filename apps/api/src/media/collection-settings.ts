@@ -1,4 +1,8 @@
-import type { CollectionSettings } from "@liam-frost/shared";
+import {
+  DEFAULT_FEATURED_WALL,
+  resolveFeaturedWall,
+  type CollectionSettings
+} from "@liam-frost/shared";
 
 import { collectionSettingsSchema } from "../lib/validation";
 import type { SettingsRepository } from "../settings/types";
@@ -18,7 +22,8 @@ export const DEFAULT_COLLECTION_SETTINGS: CollectionSettings = {
     people: true
   },
   showWant: true,
-  homeFeatured: "rotate"
+  homeFeatured: "rotate",
+  featuredWall: { ...DEFAULT_FEATURED_WALL }
 };
 
 /**
@@ -36,7 +41,15 @@ export class CollectionSettingsStore {
   async get(): Promise<CollectionSettings> {
     if (this.cached && this.now() - this.cached.at < CACHE_MS) return this.cached.value;
     // Stored settings were validated on save; anything unreadable falls back to the defaults.
-    const parsed = collectionSettingsSchema.safeParse(await this.repo.get(KEY));
+    const stored = await this.repo.get(KEY);
+    const candidate =
+      stored && typeof stored === "object" && !Array.isArray(stored)
+        ? {
+            ...stored,
+            featuredWall: resolveFeaturedWall((stored as CollectionSettings).featuredWall)
+          }
+        : stored;
+    const parsed = collectionSettingsSchema.safeParse(candidate);
     const value = parsed.success ? parsed.data : DEFAULT_COLLECTION_SETTINGS;
     this.cached = { value, at: this.now() };
     return value;

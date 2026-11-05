@@ -15,6 +15,7 @@ This folder is the source of truth for the migration from a static portfolio to 
 - `plan-dashboard.md`: execution plan for the admin overview, Stage 20 (Chinese).
 - `plan-home-collection.md`: execution plan for the home page collection section, Stage 21 (Chinese).
 - `plan-admin-ux.md`: execution plan for the admin overview and API settings layout, Stage 22 (Chinese).
+- `featured-quilt-wall.md`: how the home page's featured wall lays out, orders and plays entries, Stage 23.
 - `progress.md`: migration progress by stage.
 - `development-log.md`: chronological development log.
 - `decisions.md`: user decisions and model-made implementation decisions.

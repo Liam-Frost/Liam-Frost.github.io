@@ -354,7 +354,8 @@ describe("admin collection", () => {
           people: true
         },
         showWant: true,
-        homeFeatured: "rotate"
+        homeFeatured: "rotate",
+        featuredWall: { visibleRows: 3, targetRowHeight: 180 }
       },
       sources: {
         tmdb: true,
