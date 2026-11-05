@@ -42,7 +42,7 @@ Content is visible by default. It is hidden while waiting only when all of these
 
 ## Hero title
 
-The typing greeting sits in a grid cell together with every greeting laid out invisibly, so the cell is as tall as the longest greeting wraps to and the text below never moves. The cursor is placed with a transform at an empty marker after the typed text; moving it in the layout would count as a layout shift for every character. On wide screens the reserved height is two lines (the Japanese greeting has a line break).
+The typing greeting changes its number of lines and pushes the content below it on purpose; this is a feature, not a layout shift to remove. The motion work does not touch it.
 
 ## Checks
 

@@ -391,8 +391,8 @@ Status: implementation complete; Claude Code review complete and fixes applied. 
 
 Status: phase 1 complete (Claude Code); phase 2 (tech stack scroll-linked pilot) not started.
 
-- Shared motion tokens and one `<Reveal>` for the public site: transform and opacity only (the blur is gone), nothing left on revealed elements, staggered in order on screen, visible when printing, with reduced motion or without IntersectionObserver. The hero's typing title no longer moves the content below it. See `motion.md`.
-- Playwright on production builds of `dev` before and after: largest CLS window 0.30 → 0.047 at 320 px, 0.155 → 0.041 at 375 px, at most 0.013 at 768 px and up; no leftover transforms (before: 28–29 per page); print hid 24 sections before, none now.
+- Shared motion tokens and one `<Reveal>` for the public site: transform and opacity only (the blur is gone), nothing left on revealed elements, staggered in order on screen, visible when printing, with reduced motion or without IntersectionObserver. The hero's typing title is unchanged (its re-wrapping is intended). See `motion.md`.
+- Playwright on production builds of `dev` before and after: no leftover transforms (before: 28–29 per page); print hid 24 sections before, none now; CLS figures in the PR.
 
 ### Stage 25: Tech Stack Logos and Projects
 

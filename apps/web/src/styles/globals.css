@@ -837,29 +837,7 @@ html[data-theme="light"] .langPanel {
 
 /* Typing Animation */
 .typingAnimation {
-  display: inline-grid;
-  vertical-align: top;
-}
-
-.typingSizer,
-.typingLine {
-  grid-area: 1 / 1;
-}
-
-.typingSizer {
-  visibility: hidden;
-}
-
-.typingLine {
-  position: relative;
-}
-
-/* Placed by TypingAnimation with a transform, at the end marker. */
-.typingCursorPlaced {
-  position: absolute;
-  top: 0;
-  left: 0;
-  white-space: pre;
+  display: inline;
 }
 
 .typingText {
