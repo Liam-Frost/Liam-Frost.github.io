@@ -1,3 +1,4 @@
+import { ContactPage } from "./pages/ContactPage";
 import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Navigate, Route, Routes, useParams } from "react-router";
 
@@ -84,6 +85,7 @@ function SessionGate() {
         <Route path="projects/:id" element={<ProjectEditPage />} />
         <Route path="stack" element={<StackPage />} />
         <Route path="about" element={<AboutPage />} />
+        <Route path="contact" element={<ContactPage />} />
         <Route path="collection" element={<CollectionLayout />}>
           <Route index element={<CollectionPage />} />
           <Route path="people" element={<PeoplePage />} />

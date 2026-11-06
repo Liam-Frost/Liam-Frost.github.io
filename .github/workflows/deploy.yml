@@ -105,7 +105,7 @@ jobs:
                       if member.isdir():continue
                       assert p.suffix.lower() in ALLOWED or p.name=='.nojekyll'
                       target=ROOT/p;target.parent.mkdir(parents=True,exist_ok=True);target.write_bytes(archive.extractfile(member).read())
-              paths=['/api/photos','/api/projects','/api/collection','/api/stack','/api/spotify/player']
+              paths=['/api/photos','/api/projects','/api/collection','/api/stack','/api/spotify/player','/api/contact']
               routes={path:get(path, database=path!='/api/spotify/player') for path in paths}
               for item in routes['/api/projects']:
                   ident=item['slug'];assert re.fullmatch('[A-Za-z0-9_-]{1,160}',ident)
@@ -143,7 +143,7 @@ jobs:
                   if isinstance(value,str):return external.get(value,value)
                   return value
               # Re-read every route, not just indexes, to detect concurrent edits during the crawl.
-              for path,value in routes.items():assert canonical(get(path,database=path in paths[:4]))==canonical(value),'Public data changed during snapshot; retry safely'
+              for path,value in routes.items():assert canonical(get(path,database=path in paths and path!='/api/spotify/player'))==canonical(value),'Public data changed during snapshot; retry safely'
               end=get('/__emergency/source.json');assert (end['revision'],end['sha256'])==(source['revision'],source['sha256']),'Production release changed during snapshot'
               routes=replace(routes)
               resources={p.relative_to(ROOT).as_posix():digest(p.read_bytes()) for p in ROOT.rglob('*') if p.is_file()}

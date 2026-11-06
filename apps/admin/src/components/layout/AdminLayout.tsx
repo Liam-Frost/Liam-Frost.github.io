@@ -20,6 +20,7 @@ import { useToast } from "../ui/Toast";
 const NAV = [
   { to: "/", label: "概览", icon: LayoutDashboard, end: true },
   { to: "/about", label: "关于", icon: Quote, end: false },
+  { to: "/contact", label: "联系我", icon: Quote, end: false },
   { to: "/stack", label: "技术栈", icon: Layers, end: false },
   { to: "/projects", label: "项目", icon: FolderKanban, end: false },
   { to: "/collection", label: "收藏", icon: Clapperboard, end: false },
