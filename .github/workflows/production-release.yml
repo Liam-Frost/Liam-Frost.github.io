@@ -224,10 +224,19 @@ jobs:
           cat release/manifest.json | ssh "${ssh_options[@]}" "$SSH_USER@$SSH_HOST" "authorize $REVISION"
           cat release/image.tar.gz | ssh "${ssh_options[@]}" "$SSH_USER@$SSH_HOST" "upload-image $REVISION"
           cat release/public.tar.gz | ssh "${ssh_options[@]}" "$SSH_USER@$SSH_HOST" "upload-public $REVISION"
-          ssh "${ssh_options[@]}" "$SSH_USER@$SSH_HOST" "deploy $REVISION"
+          ssh "${ssh_options[@]}" "$SSH_USER@$SSH_HOST" "deploy $REVISION" | tee production-result.json
+      - name: Retain this deployment attempt's report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: production-result-${{ github.run_id }}-${{ github.run_attempt }}
+          path: production-result.json
+          retention-days: 90
+          if-no-files-found: ignore
       - name: Verify production HTTPS
         run: |
-          curl --fail --silent --show-error --retry 3 https://www.twilightfrosty.com/api/health
+          set -euo pipefail
+          curl --fail --silent --show-error --retry 3 https://www.twilightfrosty.com/api/health | jq -e '.ok == true'
           printf 'Production published: https://www.twilightfrosty.com\n' >> "$GITHUB_STEP_SUMMARY"
       - name: Record deployment result
         if: always()
@@ -245,12 +254,18 @@ jobs:
     timeout-minutes: 3
     outputs:
       matrix: ${{ steps.regions.outputs.matrix }}
+      degraded: ${{ steps.regions.outputs.degraded }}
     steps:
       - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with:
+          name: production-result-${{ github.run_id }}-${{ github.run_attempt }}
+          path: production-report
       - name: Check each regional revision and API
         id: regions
         env:
           REVISION: ${{ needs.validate.outputs.revision }}
+          PRODUCTION_REPORT: production-report/production-result.json
         run: python3 .github/scripts/check-regional-release.py
 
   regional-status:
@@ -273,9 +288,26 @@ jobs:
           with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as out:
               out.write('### {label} ({region}): {status}\n\n{detail}\n\n'.format(**row))
               out.write('Expected revision: `' + os.environ['REVISION'] + '`\n')
+              out.write('Actual revision: `' + row['actual_revision'] + '`\n\nPublication: ' + row['publication'] + '\n')
           if row['status'] == 'degraded':
               print('::warning::Region ' + row['region'] + ': ' + row['detail'])
           PY
+
+  production-result:
+    name: "Production · ${{ needs.regional-probe.outputs.degraded == 'true' && '⚠️ 成功但降级' || '✅ 成功' }}"
+    needs: [deploy, regional-probe, regional-status]
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Record overall release result
+        env:
+          DEGRADED: ${{ needs.regional-probe.outputs.degraded }}
+        run: |
+          if [ "$DEGRADED" = true ]; then
+            echo '::warning::Production succeeded with degraded regions or replication. See the regional report.'
+            echo '## 成功但降级 / Success with degradation' >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo '## 成功 / Success' >> "$GITHUB_STEP_SUMMARY"
+          fi
 
   resume-preview:
     name: Resume disposable preview after release
