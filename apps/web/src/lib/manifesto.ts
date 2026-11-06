@@ -90,16 +90,20 @@ const Segmenter = (Intl as unknown as { Segmenter?: WordSegmenter }).Segmenter;
 export function manifestoWords(
   parts: ManifestoRun[],
   cjk: boolean,
-  locale: string
+  locale: string,
+  segmenter: WordSegmenter | null = Segmenter ?? null
 ): ManifestoRun[][] {
-  if (!cjk || !Segmenter) return parts.map((part) => [part]);
+  if (!cjk) return parts.map((part) => [part]);
   const flags: boolean[] = [];
   for (const part of parts) for (const _ of part.text) flags.push(part.em);
   const plain = parts.map((p) => p.text).join("");
   const words: string[] = [];
-  for (const { segment, isWordLike } of new Segmenter(locale, { granularity: "word" }).segment(
-    plain
-  )) {
+  // Without Intl.Segmenter (older browsers) every character is a word: lines may then break
+  // anywhere, as plain CJK text does, but still never before punctuation.
+  const segments = segmenter
+    ? new segmenter(locale, { granularity: "word" }).segment(plain)
+    : [...plain].map((char) => ({ segment: char, isWordLike: !/[\p{P}\s]/u.test(char) }));
+  for (const { segment, isWordLike } of segments) {
     if (!isWordLike && words.length && !/^\s+$/.test(segment)) words[words.length - 1] += segment;
     else words.push(segment);
   }

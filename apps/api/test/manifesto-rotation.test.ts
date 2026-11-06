@@ -117,6 +117,19 @@ describe("manifestoWords", () => {
     ).toBe("常变");
   });
 
+  it("still breaks CJK text, never before punctuation, without Intl.Segmenter", () => {
+    const list = manifestoWords(
+      splitEmphasis("向上とは変化であり、完璧とは*頻繁に変化すること*だ。"),
+      true,
+      "ja",
+      null
+    ).map((runs) => runs.map((r) => r.text).join(""));
+    expect(list.length).toBeGreaterThan(20);
+    expect(Math.max(...list.map((w) => [...w].length))).toBeLessThanOrEqual(2);
+    expect(list).toContain("り、");
+    expect(list.join("")).toBe("向上とは変化であり、完璧とは頻繁に変化することだ。");
+  });
+
   it("leaves other scripts as they are", () => {
     expect(manifestoWords(splitEmphasis("To *change*"), false, "en")).toEqual([
       [{ text: "To ", em: false }],

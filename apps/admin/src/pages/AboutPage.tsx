@@ -68,21 +68,28 @@ export function AboutPage() {
   const qc = useQueryClient();
   const toast = useToast();
   const { data, isPending, error } = useQuery({ queryKey: aboutKey, queryFn: api.about });
-  const [draft, setDraft] = useState<AboutContent | null>(null);
+  // The draft keeps the revision it was started from, so a save after someone else's (seen by a
+  // refetch meanwhile) is still refused instead of overwriting their changes.
+  const [draft, setDraft] = useState<{ about: AboutContent; revision: string } | null>(null);
   const [editing, setEditing] = useState<Editing>(null);
   const [newItem, setNewItem] = useState<Record<string, string>>({});
   const save = useMutation({
     mutationFn: api.saveAbout,
-    onSuccess: (response: AdminAboutResponse) => {
+    onSuccess: (response: AdminAboutResponse, saved) => {
       qc.setQueryData(aboutKey, response);
-      setDraft(null);
+      // Edits made while the save was pending stay as a draft on top of what was just saved.
+      setDraft((current) =>
+        !current || JSON.stringify(current.about) === JSON.stringify(saved.about)
+          ? null
+          : { ...current, revision: response.revision }
+      );
       toast("已保存，网站上马上生效");
     },
     onError: (e: Error) => toast(e.message, "error")
   });
 
-  const about = draft ?? data?.about ?? null;
-  const dirty = draft !== null && JSON.stringify(draft) !== JSON.stringify(data?.about);
+  const about = draft?.about ?? data?.about ?? null;
+  const dirty = draft !== null && JSON.stringify(draft.about) !== JSON.stringify(data?.about);
 
   useEffect(() => {
     if (!dirty) return;
@@ -101,7 +108,8 @@ export function AboutPage() {
     );
   }
 
-  const change = (update: (about: AboutContent) => AboutContent) => setDraft(update(about));
+  const change = (update: (about: AboutContent) => AboutContent) =>
+    setDraft({ about: update(about), revision: draft?.revision ?? data.revision });
   const setManifestos = (manifestos: AboutManifesto[]) =>
     change((a) => ({
       ...a,
@@ -493,7 +501,7 @@ export function AboutPage() {
               type="button"
               className="btn-primary"
               disabled={save.isPending || !!problem}
-              onClick={() => save.mutate({ about, revision: data.revision })}
+              onClick={() => save.mutate({ about, revision: draft?.revision ?? data.revision })}
             >
               {save.isPending ? "保存中…" : "保存"}
             </button>
