@@ -2758,8 +2758,10 @@ html[data-theme="light"] .stackDetail {
   outline-offset: 3px;
 }
 
+/* 2:1, the shape of a GitHub social preview (1280 x 640), which project covers usually are: shown whole,
+   not cropped at the sides as in 16:9. Other shapes still fill the frame. */
 .projectCover {
-  aspect-ratio: 16 / 9;
+  aspect-ratio: 2 / 1;
   overflow: hidden;
   background: rgba(148, 180, 193, 0.14);
   border-bottom: 1px solid var(--border);
