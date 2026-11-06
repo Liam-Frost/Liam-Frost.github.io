@@ -12,7 +12,13 @@ export const LINE_GAP = 13.1;
 export const RAIL_WIDTH = 64;
 export const RAIL_HEIGHT = Math.round(8 + LINE_GAP * (SEGMENTS - 1));
 export const clamp = (n: number, low = 0, high = 1) => Math.max(low, Math.min(high, n));
-export function gaussian(distance: number, sigma = 1.7) {
+/**
+ * How far the hover peak spreads, in lines (the Gaussian's sigma): the line under the pointer, about
+ * half as much on each neighbour, and almost nothing beyond. Chosen from comparisons with 1.7 (the
+ * first value), 1.35 and 1.05.
+ */
+export const HOVER_SPREAD = 0.8;
+export function gaussian(distance: number, sigma = HOVER_SPREAD) {
   return Math.exp(-(distance * distance) / (2 * sigma * sigma));
 }
 /**
