@@ -147,7 +147,7 @@ jobs:
       - run: printf 'Database risk approved. Production approval is still required.\n' >> "$GITHUB_STEP_SUMMARY"
 
   deploy:
-    name: Primary node (ZGO) deployment
+    name: Deploy release
     needs: [validate, migration-plan, database-review]
     if: always() && needs.validate.result == 'success' && needs.migration-plan.result == 'success' && (needs.database-review.result == 'success' || needs.database-review.result == 'skipped')
     runs-on: ubuntu-24.04
@@ -247,9 +247,9 @@ jobs:
           printf '### Production deployment\n\nRevision: `%s`\n\nResult: **%s**\n\n[Open production](https://www.twilightfrosty.com)\n' "$REVISION" "$RESULT" >> "$GITHUB_STEP_SUMMARY"
 
   regional-probe:
-    name: Verify all regional nodes
+    name: Check release results
     needs: [validate, deploy]
-    if: needs.deploy.result == 'success'
+    if: always() && needs.validate.result == 'success' && needs.deploy.result == 'success'
     runs-on: ubuntu-24.04
     timeout-minutes: 3
     outputs:
@@ -261,7 +261,7 @@ jobs:
         with:
           name: production-result-${{ github.run_id }}-${{ github.run_attempt }}
           path: production-report
-      - name: Check each regional revision and API
+      - name: Read public release results
         id: regions
         env:
           REVISION: ${{ needs.validate.outputs.revision }}
@@ -269,8 +269,9 @@ jobs:
         run: python3 .github/scripts/check-regional-release.py
 
   regional-status:
-    name: "${{ matrix.label }} (${{ matrix.region }}) · ${{ matrix.status == 'success' && '✅ success' || '⚠️ degraded' }}"
+    name: "${{ matrix.label }} · ${{ matrix.status == 'success' && '✅ success' || '⚠️ degraded' }}"
     needs: [validate, regional-probe]
+    if: always() && needs.regional-probe.result == 'success'
     runs-on: ubuntu-24.04
     timeout-minutes: 2
     strategy:
@@ -286,16 +287,17 @@ jobs:
           import json, os
           row = json.loads(os.environ['REGION_RESULT'])
           with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as out:
-              out.write('### {label} ({region}): {status}\n\n{detail}\n\n'.format(**row))
+              out.write('### {label}: {status}\n\n'.format(**row))
               out.write('Expected revision: `' + os.environ['REVISION'] + '`\n')
               out.write('Actual revision: `' + row['actual_revision'] + '`\n\nPublication: ' + row['publication'] + '\n')
           if row['status'] == 'degraded':
-              print('::warning::Region ' + row['region'] + ': ' + row['detail'])
+              print('::warning::' + row['label'] + ' is degraded or unverified.')
           PY
 
   production-result:
     name: "Production · ${{ needs.regional-probe.outputs.degraded == 'true' && '⚠️ 成功但降级' || '✅ 成功' }}"
     needs: [deploy, regional-probe, regional-status]
+    if: always() && needs.deploy.result == 'success' && needs.regional-probe.result == 'success' && needs.regional-status.result == 'success'
     runs-on: ubuntu-24.04
     steps:
       - name: Record overall release result
