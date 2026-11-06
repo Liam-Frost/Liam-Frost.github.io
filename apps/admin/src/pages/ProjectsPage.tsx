@@ -118,14 +118,15 @@ export function ProjectsPage() {
                   className="shrink-0"
                   aria-label={`编辑 ${title}`}
                 >
+                  {/* 2:1 like the site's project cards, so a social-preview cover shows whole. */}
                   {project.cover ? (
                     <img
                       src={project.cover.variants[0].url}
                       alt=""
-                      className="h-16 w-24 rounded-lg bg-line-soft object-cover"
+                      className="h-12 w-24 rounded-lg bg-line-soft object-cover"
                     />
                   ) : (
-                    <span className="flex h-16 w-24 items-center justify-center rounded-lg bg-line-soft text-faint">
+                    <span className="flex h-12 w-24 items-center justify-center rounded-lg bg-line-soft text-faint">
                       <FolderKanban aria-hidden="true" className="size-5" />
                     </span>
                   )}
