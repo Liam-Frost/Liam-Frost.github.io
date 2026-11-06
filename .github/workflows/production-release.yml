@@ -147,6 +147,7 @@ jobs:
       - run: printf 'Database risk approved. Production approval is still required.\n' >> "$GITHUB_STEP_SUMMARY"
 
   deploy:
+    name: Primary node (ZGO) deployment
     needs: [validate, migration-plan, database-review]
     if: always() && needs.validate.result == 'success' && needs.migration-plan.result == 'success' && (needs.database-review.result == 'success' || needs.database-review.result == 'skipped')
     runs-on: ubuntu-24.04
@@ -235,6 +236,46 @@ jobs:
           REVISION: ${{ needs.validate.outputs.revision }}
         run: |
           printf '### Production deployment\n\nRevision: `%s`\n\nResult: **%s**\n\n[Open production](https://www.twilightfrosty.com)\n' "$REVISION" "$RESULT" >> "$GITHUB_STEP_SUMMARY"
+
+  regional-probe:
+    name: Verify all regional nodes
+    needs: [validate, deploy]
+    if: needs.deploy.result == 'success'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    outputs:
+      matrix: ${{ steps.regions.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Check each regional revision and API
+        id: regions
+        env:
+          REVISION: ${{ needs.validate.outputs.revision }}
+        run: python3 .github/scripts/check-regional-release.py
+
+  regional-status:
+    name: "${{ matrix.label }} (${{ matrix.region }}) · ${{ matrix.status == 'success' && '✅ success' || '⚠️ degraded' }}"
+    needs: [validate, regional-probe]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.regional-probe.outputs.matrix) }}
+    steps:
+      - name: Record regional deployment status
+        env:
+          REGION_RESULT: ${{ toJSON(matrix) }}
+          REVISION: ${{ needs.validate.outputs.revision }}
+        run: |
+          python3 - <<'PY'
+          import json, os
+          row = json.loads(os.environ['REGION_RESULT'])
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as out:
+              out.write('### {label} ({region}): {status}\n\n{detail}\n\n'.format(**row))
+              out.write('Expected revision: `' + os.environ['REVISION'] + '`\n')
+          if row['status'] == 'degraded':
+              print('::warning::Region ' + row['region'] + ': ' + row['detail'])
+          PY
 
   resume-preview:
     name: Resume disposable preview after release
