@@ -72,21 +72,6 @@ export const site = {
     ] satisfies SpotifyTrack[]
   },
 
-  stats: [
-    {
-      value: "40+",
-      label: { zh: "作品", "zh-Hant": "作品", en: "Shots", fr: "Photos", ja: "作品" } satisfies L
-    },
-    {
-      value: "5y",
-      label: { zh: "经验", "zh-Hant": "經驗", en: "Years", fr: "Années", ja: "年" } satisfies L
-    },
-    {
-      value: "∞",
-      label: { zh: "灵感", "zh-Hant": "靈感", en: "Ideas", fr: "Idées", ja: "インスピ" } satisfies L
-    }
-  ],
-
   gear: [
     {
       key: { zh: "相机", "zh-Hant": "相機", en: "Camera", fr: "Caméra", ja: "カメラ" } satisfies L,

@@ -820,17 +820,57 @@ html[data-theme="light"] .langPanel {
   color: transparent;
 }
 
-/* Hero */
+/* Hero: the whole first screen, content centred. */
 .hero {
+  min-height: calc(100svh - var(--header-h));
+  display: grid;
+  align-content: center;
+  /* A grid item with auto margins shrinks to its content: keep the container as wide as elsewhere. */
+  grid-template-columns: minmax(0, 1fr);
   padding-top: clamp(40px, 6vw, 64px);
   padding-bottom: clamp(56px, 6vw, 78px);
 }
 
+/* Wide screens: roles, title and introduction on the left, vertically centred as one block; the
+   portrait and the numbers on the right, the numbers bottom-aligned with the portrait. */
 .heroGrid {
   display: grid;
-  grid-template-columns: 1.2fr 0.8fr;
-  gap: 18px;
-  align-items: start;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-rows: 1fr auto auto auto 1fr;
+  grid-template-areas:
+    ".     portrait numbers"
+    "roles portrait numbers"
+    "head  portrait numbers"
+    "bio   portrait numbers"
+    ".     portrait numbers";
+  column-gap: clamp(20px, 3vw, 40px);
+}
+
+.heroRolesBlock {
+  grid-area: roles;
+}
+
+.heroHead {
+  grid-area: head;
+}
+
+.heroBio {
+  grid-area: bio;
+}
+
+.heroPortrait {
+  grid-area: portrait;
+}
+
+.heroNumbers {
+  grid-area: numbers;
+  align-self: end;
+}
+
+.heroRolesBlock,
+.heroHead,
+.heroBio {
+  padding-right: clamp(0px, 2.5vw, 36px);
 }
 
 .eyebrow {
@@ -842,7 +882,7 @@ html[data-theme="light"] .langPanel {
 
 .heroTitle {
   margin: 0;
-  font-size: clamp(34px, 5vw, 56px);
+  font-size: clamp(40px, 6.2vw, 84px);
   line-height: 1.06;
   letter-spacing: -0.03em;
 }
@@ -890,97 +930,247 @@ html[data-theme="light"] .langPanel {
   line-height: 1.75;
 }
 
-.heroCta {
-  margin-top: 18px;
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
+.hero > .container {
+  width: 100%;
 }
 
-.heroMeta {
-  list-style: none;
-  margin: 18px 0 0;
-  padding: 0;
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
+/* The roles above the title (wider spacing only suits Latin text). */
+.heroRoles {
+  letter-spacing: 0.08em;
+  font-size: 13px;
 }
 
-.heroCard {
-  padding: 16px;
+.heroRoles span + span::before {
+  content: "·";
+  margin: 0 0.7em;
 }
 
-.profile {
-  display: grid;
-  gap: 14px;
+.heroSubtitle {
+  max-width: 32em;
 }
 
-.profileHeader {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 14px;
-  align-items: center;
+/* The portrait without a card. */
+.heroPortrait {
+  align-self: center;
+  width: clamp(180px, 20vw, 300px);
+  aspect-ratio: 1;
+  color: var(--text);
 }
 
-.avatar {
-  width: 114px;
-  height: 114px;
-  border-radius: 22px;
-  background: transparent;
-  padding: 0;
-  overflow: hidden;
-}
-
-/* Use theme text color (no harsh pure white). */
-.avatarMark {
+.heroPortrait .avatarMark {
   width: 100%;
   height: 100%;
   background-color: currentColor;
-  -webkit-mask-image: url("/portrait1.svg");
-  mask-image: url("/portrait1.svg");
-  -webkit-mask-repeat: no-repeat;
-  mask-repeat: no-repeat;
-  -webkit-mask-position: center;
-  mask-position: center;
-  -webkit-mask-size: contain;
-  mask-size: contain;
+  -webkit-mask: url("/portrait1.svg") center / contain no-repeat;
+  mask: url("/portrait1.svg") center / contain no-repeat;
 }
 
-.profileName {
-  margin: 0;
-  font-size: 18px;
-}
-
-.profileTagline {
-  margin: 6px 0 0;
-  color: var(--muted);
-  line-height: 1.6;
-}
-
-.profileStats {
+.heroStats {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
+  gap: 18px;
+  margin: 0;
+  padding: 0 0 8px;
+  list-style: none;
+  text-align: right;
 }
 
-.stat {
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 10px;
-  background: var(--card);
-  backdrop-filter: blur(16px) saturate(1.2);
-  -webkit-backdrop-filter: blur(16px) saturate(1.2);
+.heroStat {
+  display: grid;
+  color: var(--text);
+  text-decoration: none;
 }
 
-.statNum {
+.heroStat strong {
+  font-size: clamp(30px, 3vw, 42px);
   font-weight: 850;
-  letter-spacing: -0.02em;
+  line-height: 1;
+  letter-spacing: -0.03em;
 }
 
-.statLabel {
-  margin-top: 4px;
+.heroStat span {
+  margin-top: 6px;
   color: var(--muted);
-  font-size: 12px;
+  font-size: 13px;
+}
+
+.heroStat:hover span,
+.heroStat:focus-visible span {
+  color: var(--text);
+  text-decoration: underline;
+}
+
+/* A quiet hint at the bottom of the first screen that the page goes on. */
+.heroScroll {
+  position: absolute;
+  left: 50%;
+  bottom: 22px;
+  translate: -50% 0;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  color: var(--faint);
+}
+
+.heroScroll svg {
+  width: 22px;
+  height: 22px;
+}
+
+.heroScroll:hover,
+.heroScroll:focus-visible {
+  color: var(--text);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .heroScroll svg {
+    animation: heroScrollHint 2.4s var(--ease) infinite;
+  }
+
+  @keyframes heroScrollHint {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(5px);
+    }
+  }
+}
+
+/* Tablets (700-1099px): a steady asymmetric two-column grid. The text column (roles, title,
+   introduction) starts at the top of the portrait's span, so a greeting that is still being typed
+   only pushes the introduction below it; the portrait and the numbers keep their place. The
+   asymmetry comes from the column ratio and the type scale, not from offsets. */
+@media (max-width: 1099px) {
+  .heroGrid {
+    grid-template-columns: minmax(0, 1fr) clamp(200px, 28vw, 300px);
+    grid-template-rows: auto auto 1fr auto;
+    grid-template-areas:
+      "roles   portrait"
+      "head    portrait"
+      "bio     portrait"
+      "numbers numbers";
+    column-gap: clamp(24px, 4vw, 48px);
+  }
+
+  .heroRolesBlock,
+  .heroHead,
+  .heroBio {
+    padding-right: 0;
+  }
+
+  .heroTitle {
+    font-size: clamp(48px, 7.4vw, 76px);
+  }
+
+  /* Each role stays whole; a long list wraps between roles, never inside one. */
+  .heroRoles span {
+    display: inline-block;
+    white-space: nowrap;
+  }
+
+  .heroPortrait {
+    align-self: center;
+    justify-self: end;
+    width: 100%;
+  }
+
+  .heroBio {
+    align-self: start;
+  }
+
+  .heroBio .heroSubtitle {
+    margin-top: 18px;
+  }
+
+  /* The numbers: one row of equal columns under the whole grid, opened by a hairline. */
+  .heroNumbers {
+    align-self: start;
+    margin-top: clamp(36px, 5vw, 56px);
+    padding-top: clamp(20px, 2.6vw, 28px);
+    border-top: 1px solid var(--border);
+  }
+
+  .heroStats {
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
+    gap: 16px;
+    padding: 0;
+    text-align: left;
+  }
+}
+
+/* Portrait tablets have far more height than the hero needs: a larger portrait, and the first screen
+   capped so the next section shows below instead of a band of empty space. */
+@media (min-width: 700px) and (max-width: 1099px) and (orientation: portrait) {
+  .hero {
+    min-height: min(calc(100svh - var(--header-h)), 720px);
+  }
+
+  .heroGrid {
+    grid-template-columns: minmax(0, 1fr) clamp(200px, 32vw, 320px);
+  }
+}
+
+/* Phones (up to 699px): an editorial stack. The roles sit as a caption beside the portrait, which
+   leans to the right; the greeting below is the anchor, the introduction follows it, and the
+   numbers share the last row in equal columns. Nothing overlaps the title. */
+@media (max-width: 699px) {
+  /* Content-sized on tall phones, so the first screen holds no large empty band. */
+  .hero {
+    min-height: min(calc(100svh - var(--header-h)), 700px);
+  }
+
+  .heroGrid {
+    grid-template-columns: minmax(0, 1fr) clamp(132px, 44vw, 210px);
+    grid-template-rows: auto auto auto auto;
+    grid-template-areas:
+      "roles   portrait"
+      "head    head"
+      "bio     bio"
+      "numbers numbers";
+    column-gap: 16px;
+  }
+
+  .heroTitle {
+    margin-top: clamp(14px, 4vw, 22px);
+    font-size: clamp(38px, 10.6vw, 52px);
+  }
+
+  .heroRolesBlock {
+    align-self: end;
+  }
+
+  .heroRoles {
+    display: grid;
+    gap: 6px;
+    margin: 0;
+    padding-left: 12px;
+    border-left: 2px solid var(--border);
+  }
+
+  .heroRoles span {
+    white-space: normal;
+  }
+
+  .heroRoles span + span::before {
+    content: none;
+  }
+
+  .heroBio .heroSubtitle {
+    margin-top: 14px;
+  }
+
+  .heroNumbers {
+    margin-top: clamp(26px, 7vw, 36px);
+    padding-top: 18px;
+  }
+
+  .heroStats {
+    text-align: center;
+  }
 }
 
 .chips {
@@ -2641,10 +2831,6 @@ html[data-theme="light"] .stackDetail {
 
 /* Responsive */
 @media (max-width: 980px) {
-  .heroGrid {
-    grid-template-columns: 1fr;
-  }
-
   .modal {
     grid-template-columns: 1fr;
     grid-template-rows: var(--media-h) var(--side-h);

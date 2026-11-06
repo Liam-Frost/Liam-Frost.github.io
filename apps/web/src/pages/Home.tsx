@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { ChevronDown } from "lucide-react";
 import { Link, useNavigate } from "react-router";
 
+import HeroStats from "../components/HeroStats";
 import HomeCollection from "../components/HomeCollection";
 import PhotoCard from "../components/PhotoCard";
 import ProjectCard from "../components/ProjectCard";
@@ -44,6 +46,11 @@ export default function HomePage() {
   const collection = useCollection();
 
   const navigate = useNavigate();
+  // The line above the title: the roles, e.g. "全栈工程师 · 摄影爱好者 · 音乐爱好者".
+  const roles = pickLocalized(site.role, lang)
+    .split("|")
+    .map((role) => role.trim())
+    .filter(Boolean);
   const stackScroll = useMemo(stackScrollMotion, []);
 
   const [copyHint, setCopyHint] = useState("");
@@ -88,10 +95,18 @@ export default function HomePage() {
     <>
       <section className="section hero" id="top">
         <div className="container">
+          {/* Five blocks placed by grid areas: text left and portrait right on wide screens; on
+              narrow ones an offset editorial layout (see the hero styles). */}
           <div className="heroGrid">
-            <Reveal>
-              <p className="eyebrow">{t("home.eyebrow")}</p>
+            <Reveal className="heroRolesBlock">
+              <p className="eyebrow heroRoles">
+                {roles.map((role) => (
+                  <span key={role}>{role}</span>
+                ))}
+              </p>
+            </Reveal>
 
+            <Reveal className="heroHead">
               <h1 className="heroTitle">
                 <TypingAnimation
                   words={greetingWords}
@@ -104,44 +119,25 @@ export default function HomePage() {
                   cursorStyle="underscore"
                 />
               </h1>
-
-              <p className="heroSubtitle">{pickLocalized(site.bio, lang)}</p>
-
-              <div className="heroCta">
-                <Link className="btn btnPrimary" to="/portfolio">
-                  {t("home.cta.portfolio")}
-                </Link>
-                <Link className="btn btnSoft" to="/#contact">
-                  {t("home.cta.contact")}
-                </Link>
-              </div>
             </Reveal>
 
-            <Reveal after className="card heroCard">
-              <div className="profile">
-                <div className="profileHeader">
-                  <div className="avatar" aria-hidden="true">
-                    <div className="avatarMark" />
-                  </div>
+            <Reveal className="heroBio">
+              <p className="heroSubtitle">{pickLocalized(site.bio, lang)}</p>
+            </Reveal>
 
-                  <div>
-                    <h2 className="profileName">{site.name}</h2>
-                    <p className="profileTagline">{pickLocalized(site.role, lang)}</p>
-                  </div>
-                </div>
+            <Reveal after className="heroPortrait">
+              <div className="avatarMark" aria-hidden="true" />
+            </Reveal>
 
-                <div className="profileStats" aria-label="Stats">
-                  {site.stats.map((s) => (
-                    <div key={s.value} className="stat">
-                      <div className="statNum">{s.value}</div>
-                      <div className="statLabel">{pickLocalized(s.label, lang)}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+            <Reveal after className="heroNumbers">
+              <HeroStats projects={projects} photos={photos} collection={collection} />
             </Reveal>
           </div>
         </div>
+
+        <Link className="heroScroll" to="/#about" aria-label={t("home.scroll")}>
+          <ChevronDown aria-hidden="true" />
+        </Link>
       </section>
 
       <section className="section" id="about">
