@@ -1,4 +1,5 @@
 import type { FeaturedWallSettings } from "./featured-wall";
+import type { RotationMode } from "./rotation";
 
 /** Header every admin write request must carry; cross-site forms cannot set it (CSRF defense). */
 export const ADMIN_REQUEST_HEADER = "x-admin-request";
@@ -455,8 +456,11 @@ export type CollectionSettings = {
   };
   /** Off: "want" entries never appear on the site, whatever their own visibility. */
   showWant: boolean;
-  /** Home page featured entries: rotate daily, or the fixed order set in the admin. */
-  homeFeatured: "rotate" | "manual";
+  /**
+   * Home page featured entries: the fixed order set in the admin, or rotating daily, on each visit
+   * or per browsing session (see RotationMode).
+   */
+  homeFeatured: RotationMode;
   /** Optional in legacy clients; the API fills defaults on read/save. */
   featuredWall?: FeaturedWallSettings;
 };
@@ -604,8 +608,16 @@ export type PublicCollection = {
   /** The home page's featured entries (at most 3, chosen by the collection settings). */
   home: {
     featured: PublicHomeFeatured[];
-    /** Full ordered candidates; the client lays out a prefix, limited to complete visible rows. */
-    wall?: { items: { id: string }[]; settings: FeaturedWallSettings };
+    /**
+     * Full ordered candidates; the client lays out a prefix, limited to complete visible rows. With
+     * `rotate`, the items are the rotation's base (oldest first) and the browser orders them for
+     * the visit or session with orderHomeWall.
+     */
+    wall?: {
+      items: { id: string }[];
+      settings: FeaturedWallSettings;
+      rotate?: "visit" | "session";
+    };
   };
 };
 

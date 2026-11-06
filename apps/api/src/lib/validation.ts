@@ -2,6 +2,7 @@ import {
   ABOUT_LIMITS,
   MANIFESTO_ROTATION_MODES,
   PERSON_ROLES,
+  ROTATION_MODES,
   SOUNDTRACK_ROLES
 } from "@liam-frost/shared";
 import { z } from "zod";
@@ -550,8 +551,14 @@ export const collectionSettingsSchema = z
       })
       .strict(),
     showWant: z.boolean(),
-    // Settings saved before Stage 21 have no choice; they rotate.
-    homeFeatured: z.enum(["rotate", "manual"]).default("rotate"),
+    // Settings saved before Stage 21 have no choice; they rotate daily. "rotate" and "manual" are
+    // the names from before the visit and session modes.
+    homeFeatured: z
+      .preprocess(
+        (value) => (value === "rotate" ? "daily" : value === "manual" ? "fixed" : value),
+        z.enum(ROTATION_MODES)
+      )
+      .default("daily"),
     featuredWall: z
       .object({
         visibleRows: z.number().int().min(1).max(8).default(3),

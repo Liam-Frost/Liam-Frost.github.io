@@ -1,40 +1,10 @@
 import type { ManifestoRotation, PublicAbout } from "@liam-frost/shared";
 
+import { rotationTurn } from "./rotation";
+
+export { dayNumber } from "./rotation";
+
 type Manifesto = PublicAbout["manifestos"][number];
-
-const TIME_ZONE = "America/Vancouver";
-const LAST_KEY = "manifesto:last";
-const SESSION_KEY = "manifesto:session";
-
-function read(storage: () => Storage, key: string) {
-  try {
-    return storage().getItem(key);
-  } catch {
-    return null;
-  }
-}
-
-function write(storage: () => Storage, key: string, value: string) {
-  try {
-    storage().setItem(key, value);
-  } catch {
-    // Private windows or blocked storage: the choice just is not remembered.
-  }
-}
-
-/** Days since 1970-01-01 in the site's time zone, so a day starts at the same moment for everyone. */
-export function dayNumber(now: Date) {
-  const [y, m, d] = new Intl.DateTimeFormat("en-CA", { timeZone: TIME_ZONE })
-    .format(now)
-    .split("-")
-    .map(Number);
-  return Math.floor(Date.UTC(y!, m! - 1, d!) / 86_400_000);
-}
-
-function randomOther(items: Manifesto[], avoid: string | null) {
-  const pool = items.length > 1 ? items.filter((item) => item.id !== avoid) : items;
-  return pool[Math.floor(Math.random() * pool.length)]!;
-}
 
 /**
  * The manifesto to show now (see ManifestoRotation). Call it once per visit to the page: in `visit`
@@ -46,31 +16,16 @@ export function pickManifesto(
   now = new Date()
 ): Manifesto | undefined {
   if (!items.length) return undefined;
-  switch (rotation.mode) {
-    case "daily":
-      return items[dayNumber(now) % items.length];
-    case "visit": {
-      const next = randomOther(
-        items,
-        read(() => localStorage, LAST_KEY)
-      );
-      write(() => localStorage, LAST_KEY, next.id);
-      return next;
-    }
-    case "session": {
-      const kept = items.find((item) => item.id === read(() => sessionStorage, SESSION_KEY));
-      if (kept) return kept;
-      const next = randomOther(
-        items,
-        read(() => localStorage, LAST_KEY)
-      );
-      write(() => sessionStorage, SESSION_KEY, next.id);
-      write(() => localStorage, LAST_KEY, next.id);
-      return next;
-    }
-    default:
-      return items.find((item) => item.id === rotation.fixedId) ?? items[0];
-  }
+  if (rotation.mode === "fixed")
+    return items.find((item) => item.id === rotation.fixedId) ?? items[0];
+  return items[
+    rotationTurn(
+      items.map((item) => item.id),
+      rotation.mode,
+      "manifesto",
+      now
+    )
+  ];
 }
 
 export type ManifestoRun = { text: string; em: boolean };

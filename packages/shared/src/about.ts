@@ -1,14 +1,9 @@
 import type { LocalizedText } from "./api";
+import { ROTATION_MODES, type RotationMode } from "./rotation";
 
-/**
- * How the about section chooses among the visible manifestos:
- * - fixed: always `fixedId` (or the first visible one when it is missing or hidden);
- * - daily: one per day of the site's time zone, the same for every visitor;
- * - visit: a different one on each visit to the page (never twice in a row);
- * - session: one per browsing session (tab), another in the next session.
- */
-export const MANIFESTO_ROTATION_MODES = ["fixed", "daily", "visit", "session"] as const;
-export type ManifestoRotationMode = (typeof MANIFESTO_ROTATION_MODES)[number];
+/** How the about section chooses among the visible manifestos (see RotationMode). */
+export const MANIFESTO_ROTATION_MODES = ROTATION_MODES;
+export type ManifestoRotationMode = RotationMode;
 
 export type ManifestoRotation = { mode: ManifestoRotationMode; fixedId: string | null };
 

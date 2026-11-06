@@ -7,3 +7,4 @@ export * from "./integrations";
 export * from "./featured-wall";
 export * from "./stack";
 export * from "./about";
+export * from "./rotation";

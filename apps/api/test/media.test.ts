@@ -110,7 +110,7 @@ describe("collection visibility rules", () => {
       people: true
     },
     showWant: false,
-    homeFeatured: "rotate" as const
+    homeFeatured: "daily" as const
   };
   it("combines the entry, its kind and the want switch", () => {
     expect(isMediaPublic({ kind: "movie", status: "done", visibility: "public" }, settings)).toBe(
@@ -354,7 +354,7 @@ describe("admin collection", () => {
           people: true
         },
         showWant: true,
-        homeFeatured: "rotate",
+        homeFeatured: "daily",
         featuredWall: { visibleRows: 3, targetRowHeight: 180 }
       },
       sources: {
