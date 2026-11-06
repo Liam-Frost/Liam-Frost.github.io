@@ -4,7 +4,7 @@ import { pickText, STATUS_LABELS } from "../../lib/i18n";
 import type { MultiOption } from "../ui/MultiCombobox";
 import { TechIcon } from "./TechIcon";
 
-/** Projects as options for a technology's "关联项目": cover thumbnail, title, and whether it is public. */
+/** Projects as options for a technology's "关联项目": cover thumbnail (2:1, as on the site), title, and whether it is public. */
 export function projectOptions(projects: AdminProject[]): MultiOption[] {
   return projects.map((project) => {
     const thumb = project.cover?.variants[0]?.url;
@@ -19,7 +19,7 @@ export function projectOptions(projects: AdminProject[]): MultiOption[] {
       icon: (
         <span
           aria-hidden="true"
-          className="block h-5 w-7 shrink-0 overflow-hidden rounded bg-canvas ring-1 ring-line-soft"
+          className="block h-4 w-8 shrink-0 overflow-hidden rounded bg-canvas ring-1 ring-line-soft"
         >
           {thumb ? (
             <img src={thumb} alt="" className="size-full object-cover" loading="lazy" />
