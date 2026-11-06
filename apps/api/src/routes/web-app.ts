@@ -41,7 +41,7 @@ export function siteCsp(indexHtml: string) {
     "connect-src 'self'",
     "object-src 'none'",
     // The music player can be Spotify's embedded player.
-    "frame-src 'self' data: https://open.spotify.com",
+    "frame-src https://open.spotify.com",
     "frame-ancestors 'none'",
     "base-uri 'self'",
     "form-action 'self'"
@@ -51,7 +51,7 @@ export function siteCsp(indexHtml: string) {
 function cacheControl(urlPath: string) {
   // Vite's hashed assets change name on every build; everything else may change in place.
   if (urlPath.startsWith("/assets/")) return "public, max-age=31536000, immutable";
-  if (urlPath === "/index.html" || urlPath === "/spotify-bridge.html") return "no-cache";
+  if (urlPath === "/index.html") return "no-cache";
   return "public, max-age=3600";
 }
 
@@ -87,13 +87,6 @@ export function registerWebApp(app: FastifyInstance, distDir: string) {
     reply.header("content-type", contentTypeFor(file));
     reply.header("cache-control", cacheControl(urlPath));
     if (urlPath === "/index.html") reply.header("content-security-policy", csp);
-    if (urlPath === "/spotify-bridge.html") {
-      reply.header("x-frame-options", "SAMEORIGIN");
-      reply.header(
-        "content-security-policy",
-        "default-src 'none'; script-src 'unsafe-inline' 'unsafe-eval' https://open.spotify.com/embed/iframe-api/v1 https://embed-cdn.spotifycdn.com/_next/static/; style-src 'unsafe-inline'; frame-src https://open.spotify.com; base-uri 'none'; form-action 'none'"
-      );
-    }
     return reply.send(await readFile(file));
   };
 

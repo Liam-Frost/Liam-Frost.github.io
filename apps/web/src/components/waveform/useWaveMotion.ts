@@ -1,8 +1,21 @@
 import { useEffect, useRef, type RefObject } from "react";
 import { audioVisualization } from "../../data/audio-visualization";
-import { clamp, gaussian, SEGMENTS, syntheticEnergy } from "./model";
+import {
+  clamp,
+  gaussian,
+  HOVER_PEAK,
+  LINE_START,
+  PLAYING_AMPLITUDE,
+  REST_LENGTH,
+  SEGMENTS,
+  syntheticEnergy
+} from "./model";
 
-/** One loop for pointer, scroll and audio; SVG writes only, no React render on animation frames. */
+/**
+ * One loop for pointer, scroll and music; SVG writes only, no React render on animation frames. While
+ * music plays the lines move with a simulated signal (the audio itself is never read) and settle back
+ * when it stops.
+ */
 export function useWaveMotion(
   svg: RefObject<SVGSVGElement | null>,
   maxScroll: RefObject<number>,
@@ -22,9 +35,7 @@ export function useWaveMotion(
       previous = 0,
       lastDraw = 0,
       pointerLevel = 0,
-      pointerPosition = 0,
-      quietSince = 0;
-    let samples = new Uint8Array(128);
+      pointerPosition = 0;
     const tick = (now: number) => {
       frame = 0;
       if (document.hidden) return;
@@ -42,44 +53,23 @@ export function useWaveMotion(
       else pointerLevel += (targetPointer - pointerLevel) * Math.min(1, dt * 13);
       if (pointer.current !== null)
         pointerPosition += (pointer.current - pointerPosition) * Math.min(1, dt * 18);
-      let hasSignal = false;
-      if (!reduced && audioEnabled && current.playing && current.analyser) {
-        if (samples.length !== current.analyser.frequencyBinCount)
-          samples = new Uint8Array(current.analyser.frequencyBinCount);
-        current.analyser.getByteFrequencyData(samples);
-        hasSignal = samples.some((value) => value > 12);
-      }
-      if (hasSignal) quietSince = 0;
-      else if (!quietSince) quietSince = now;
-      const useSynthetic =
-        current.playing && (!current.analyser || (!hasSignal && now - quietSince > 2000));
-      root.dataset.audio =
-        reduced || !audioEnabled || !current.playing
-          ? "none"
-          : useSynthetic
-            ? "synthetic"
-            : current.analyser
-              ? "real"
-              : "none";
+      const playing = !reduced && audioEnabled && current.playing;
+      root.dataset.audio = playing ? "synthetic" : "none";
       const progress = maxScroll.current > 0 ? clamp(window.scrollY / maxScroll.current) : 0;
       let settling = false;
       lines.forEach((line, index) => {
-        const band = Math.floor(1 + (samples.length - 2) * (index / (SEGMENTS - 1)) ** 2);
-        const raw =
-          current.playing && audioEnabled && !reduced
-            ? useSynthetic
-              ? syntheticEnergy(now / 1000, index)
-              : hasSignal
-                ? clamp((samples[band]! - 12) / 150)
-                : 0
-            : 0;
+        const raw = playing ? syntheticEnergy(now / 1000, index) : 0;
         levels[index] = reduced
           ? 0
           : levels[index]! +
             (raw - levels[index]!) * Math.min(1, dt * (raw > levels[index]! ? 9 : 4));
         if (levels[index]! > 0.005) settling = true;
         const hover = gaussian(index - pointerPosition) * pointerLevel;
-        const width = 12 + 35.2 * hover + 8 * levels[index]! * (1 - hover);
+        const width =
+          LINE_START +
+          REST_LENGTH +
+          HOVER_PEAK * hover +
+          PLAYING_AMPLITUDE * levels[index]! * (1 - hover);
         line.setAttribute("x2", String(width));
         line.setAttribute(
           "class",
@@ -90,7 +80,7 @@ export function useWaveMotion(
               : ""
         );
       });
-      if ((!reduced && ((audioEnabled && current.playing) || pointerLevel > 0.005)) || settling)
+      if (playing || (!reduced && pointerLevel > 0.005) || settling)
         frame = requestAnimationFrame(tick);
       else previous = 0;
     };

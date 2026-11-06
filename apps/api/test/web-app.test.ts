@@ -18,7 +18,6 @@ beforeAll(() => {
   writeFileSync(join(dist, "my photo.svg"), "<svg/>");
   writeFileSync(join(dist, "assets", "index-abc123.js"), "console.log('site');");
   writeFileSync(join(dist, "favicon.svg"), "<svg/>");
-  writeFileSync(join(dist, "spotify-bridge.html"), "<!doctype html><title>bridge</title>");
   writeFileSync(join(dist, ".env"), "SECRET=1");
 });
 
@@ -47,23 +46,10 @@ describe("public site hosting", () => {
     const hash = createHash("sha256")
       .update('document.documentElement.dataset.ok = "1";')
       .digest("base64");
-    expect(csp).toContain(`'sha256-${hash}'`);
-    expect(csp).not.toContain("'unsafe-eval'");
+    expect(csp).toContain(`script-src 'self' 'sha256-${hash}'`);
     expect(csp).toContain("frame-ancestors 'none'");
-    expect(csp).toContain("frame-src 'self' data: https://open.spotify.com");
+    expect(csp).toContain("frame-src https://open.spotify.com");
     expect(csp.match(/'sha256-/g)).toHaveLength(1);
-  });
-
-  it("limits the Spotify bridge policy and permits only same-origin framing", async () => {
-    const app = await buildTestServer({}, { webDistDir: dist });
-    const bridge = await app.inject("/spotify-bridge.html");
-    expect(bridge.statusCode).toBe(200);
-    expect(bridge.headers["cache-control"]).toBe("no-cache");
-    expect(bridge.headers["x-frame-options"]).toBe("SAMEORIGIN");
-    expect(bridge.headers["content-security-policy"]).toContain("'unsafe-eval'");
-    const main = await app.inject("/");
-    expect(main.headers["x-frame-options"]).toBe("DENY");
-    expect(main.headers["content-security-policy"]).not.toContain("'unsafe-eval'");
   });
 
   it("serves only files in the build", async () => {
