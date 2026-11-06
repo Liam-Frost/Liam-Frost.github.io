@@ -1449,7 +1449,7 @@ html[data-theme="light"] .stackDetail {
 
 .stackRelatedItem {
   display: grid;
-  grid-template-columns: 76px minmax(0, 1fr) auto;
+  grid-template-columns: 96px minmax(0, 1fr) auto;
   align-items: center;
   gap: 14px;
   padding: 8px;
@@ -1469,10 +1469,11 @@ html[data-theme="light"] .stackDetail {
   outline-offset: 1px;
 }
 
+/* 2:1 like the project cards, so a social-preview cover shows whole (96 x 48, 80 x 40 on phones). */
 .stackRelatedThumb {
   display: grid;
   place-items: center;
-  aspect-ratio: 4 / 3;
+  aspect-ratio: 2 / 1;
   overflow: hidden;
   border-radius: 10px;
   background: rgba(148, 180, 193, 0.14);
@@ -1587,7 +1588,7 @@ html[data-theme="light"] .stackDetail {
   }
 
   .stackRelatedItem {
-    grid-template-columns: 64px minmax(0, 1fr) auto;
+    grid-template-columns: 80px minmax(0, 1fr) auto;
     gap: 12px;
     padding: 8px 4px;
   }
