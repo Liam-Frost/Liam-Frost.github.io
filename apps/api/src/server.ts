@@ -403,7 +403,7 @@ export async function buildServer({
       reply.header("cache-control", "no-store");
     reply.header("x-content-type-options", "nosniff");
     reply.header("referrer-policy", "strict-origin-when-cross-origin");
-    reply.header("x-frame-options", "DENY");
+    if (!reply.hasHeader("x-frame-options")) reply.header("x-frame-options", "DENY");
     return payload;
   });
 

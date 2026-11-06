@@ -20,7 +20,7 @@ export default function WaveformNavigator() {
   const location = useLocation();
   const navigate = useNavigate();
   const { lang } = useI18n();
-  const { config } = useQuality();
+  const { tier } = useQuality();
   const copy = labels[lang];
   const [available, setAvailable] = useState(false);
   const [preview, setPreview] = useState<number | null>(null);
@@ -34,7 +34,8 @@ export default function WaveformNavigator() {
     svg,
     maxScroll,
     enabled && sections.length > 1,
-    config.enableDecorativeAnimations
+    true,
+    tier < 2 ? 15 : 30
   );
 
   useEffect(() => {
@@ -98,7 +99,13 @@ export default function WaveformNavigator() {
           focusable="false"
         >
           {Array.from({ length: SEGMENTS }, (_, i) => (
-            <line key={i} x1="1.5" x2="13.5" y1={4 + i * 8} y2={4 + i * 8} />
+            <line
+              key={i}
+              x1="1.5"
+              x2="13.5"
+              y1={4 + (i * 248) / (SEGMENTS - 1)}
+              y2={4 + (i * 248) / (SEGMENTS - 1)}
+            />
           ))}
         </svg>
         {sections.map((section, index) => {

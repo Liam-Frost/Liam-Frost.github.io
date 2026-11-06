@@ -23,13 +23,19 @@ export const audioVisualization = {
   }
 };
 
-/** A plain Spotify iframe provides no reliable playback state. */
+/** Spotify starts unknown; only its official playback events may update this state. */
 export function observeSpotifyEmbed() {
   publish({ source: "spotify", playback: "unknown", playing: false, analyser: null });
   return () => {
     if (state.source === "spotify")
       publish({ source: "none", playback: "stopped", playing: false, analyser: null });
   };
+}
+
+export function setSpotifyPlayback(playback: "playing" | "paused" | "unknown") {
+  if (state.source !== "spotify") return;
+  if (state.playback === playback) return;
+  publish({ source: "spotify", playback, playing: playback === "playing", analyser: null });
 }
 
 /** Call from the player's user gesture. captureStream may be absent or CORS-restricted. */
