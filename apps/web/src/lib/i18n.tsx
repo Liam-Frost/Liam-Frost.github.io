@@ -34,10 +34,11 @@ const zh = {
   "theme.dark": "深色",
 
   // Home
-  "home.eyebrow": "PERSONAL + PHOTO PORTFOLIO",
   "home.title": "你好，我是 {name}",
-  "home.cta.portfolio": "查看作品集",
-  "home.cta.contact": "联系我",
+  "home.stats.projects": "项目",
+  "home.stats.photos": "照片",
+  "home.stats.collection": "收藏",
+  "home.scroll": "往下看",
 
   // About
   "about.title": "关于我",
@@ -326,10 +327,11 @@ const en: Record<Key, string> = {
   "theme.light": "Light",
   "theme.dark": "Dark",
 
-  "home.eyebrow": "PERSONAL + PHOTO PORTFOLIO",
   "home.title": "Hi, I'm {name}",
-  "home.cta.portfolio": "View gallery",
-  "home.cta.contact": "Contact",
+  "home.stats.projects": "Projects",
+  "home.stats.photos": "Photos",
+  "home.stats.collection": "Collection",
+  "home.scroll": "Scroll down",
 
   "about.title": "About",
   "about.subtitle": "I care about visual storytelling, interaction details, and performance.",
@@ -611,10 +613,11 @@ const fr: Record<Key, string> = {
   "theme.light": "Clair",
   "theme.dark": "Sombre",
 
-  "home.eyebrow": "PORTFOLIO PERSONNEL + PHOTO",
   "home.title": "Salut, je suis {name}",
-  "home.cta.portfolio": "Voir la galerie",
-  "home.cta.contact": "Me contacter",
+  "home.stats.projects": "Projets",
+  "home.stats.photos": "Photos",
+  "home.stats.collection": "Collection",
+  "home.scroll": "Faire défiler",
 
   "about.title": "À propos",
   "about.subtitle":
@@ -898,10 +901,11 @@ const ja: Record<Key, string> = {
   "theme.light": "ライト",
   "theme.dark": "ダーク",
 
-  "home.eyebrow": "PERSONAL + PHOTO PORTFOLIO",
   "home.title": "こんにちは、{name}です",
-  "home.cta.portfolio": "ギャラリーを見る",
-  "home.cta.contact": "連絡する",
+  "home.stats.projects": "プロジェクト",
+  "home.stats.photos": "写真",
+  "home.stats.collection": "コレクション",
+  "home.scroll": "下へスクロール",
 
   "about.title": "概要",
   "about.subtitle":
@@ -1186,10 +1190,11 @@ const zhHant: Record<Key, string> = {
   "theme.dark": "深色",
 
   // Home
-  "home.eyebrow": "PERSONAL + PHOTO PORTFOLIO",
   "home.title": "你好，我是 {name}",
-  "home.cta.portfolio": "查看作品集",
-  "home.cta.contact": "聯繫我",
+  "home.stats.projects": "專案",
+  "home.stats.photos": "照片",
+  "home.stats.collection": "收藏",
+  "home.scroll": "往下看",
 
   // About
   "about.title": "關於我",
