@@ -1254,8 +1254,13 @@ html[data-lang="ja"] .aboutLabel {
   font-variant-numeric: tabular-nums;
 }
 
+/* Vertical rhythm tied to the window height too, so the section fits one screen where it can. */
+.about {
+  padding-block: clamp(48px, 7vh, 88px);
+}
+
 .manifesto {
-  margin: clamp(56px, 9vw, 120px) 0 clamp(56px, 8vw, 104px);
+  margin: clamp(36px, 6.5vh, 96px) 0 clamp(36px, 5.5vh, 80px);
 }
 
 .manifesto blockquote {
@@ -1266,7 +1271,7 @@ html[data-lang="ja"] .aboutLabel {
   margin: 0;
   max-width: 15em;
   color: var(--text);
-  font-size: clamp(38px, 6.4vw, 92px);
+  font-size: clamp(36px, min(5.6vw, 8.6vh), 86px);
   font-weight: 800;
   line-height: 1.08;
   letter-spacing: -0.035em;
@@ -1277,7 +1282,7 @@ html[data-lang="ja"] .aboutLabel {
    clauses where they fit, otherwise between words, never inside one. */
 .about .manifestoText[data-script="cjk"] {
   max-width: 13em;
-  font-size: clamp(36px, 6vw, 84px);
+  font-size: clamp(34px, min(6vw, 8.4vh), 84px);
   line-height: 1.24;
   letter-spacing: 0;
 }
@@ -1296,7 +1301,7 @@ html[data-lang="ja"] .aboutLabel {
 }
 
 .manifestoBy {
-  margin-top: clamp(20px, 2.6vw, 32px);
+  margin-top: clamp(16px, 2.4vh, 28px);
   color: var(--muted);
   font-size: 15px;
   letter-spacing: 0.02em;
@@ -1306,7 +1311,7 @@ html[data-lang="ja"] .aboutLabel {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
   gap: clamp(32px, 5vw, 72px);
-  padding-top: 28px;
+  padding-top: 24px;
   border-top: 1px solid var(--border);
 }
 
@@ -1331,7 +1336,7 @@ html[data-lang="ja"] .aboutLabel {
   display: grid;
   align-content: start;
   gap: 10px;
-  padding-bottom: 22px;
+  padding-bottom: 18px;
   border-bottom: 1px solid var(--border);
 }
 
@@ -1355,8 +1360,8 @@ html[data-lang="ja"] .aboutLabel {
 }
 
 .aboutGear {
-  margin-top: clamp(56px, 7vw, 88px);
-  padding-top: 28px;
+  margin-top: clamp(36px, 5.5vh, 72px);
+  padding-top: 24px;
   border-top: 1px solid var(--border);
 }
 
@@ -1368,7 +1373,7 @@ html[data-lang="ja"] .aboutLabel {
   display: grid;
   grid-template-columns: minmax(88px, 200px) minmax(0, 1fr);
   gap: 24px;
-  padding: 16px 0;
+  padding: 12px 0;
   border-bottom: 1px solid var(--border);
 }
 
