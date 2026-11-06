@@ -1,3 +1,4 @@
+import { useContact } from "../data/useContact";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { Link, useNavigate } from "react-router";
@@ -33,6 +34,7 @@ const GREETING_ORDER: GreetingLang[] = ["zh", "en", "fr", "ja"];
 export default function HomePage() {
   const { lang, t } = useI18n();
   const { photos } = usePhotos();
+  const contact = useContact();
 
   // Featured photo IDs for homepage
   // Marked in the admin ("首页精选"); the seed content marks the original selection.
@@ -85,7 +87,7 @@ export default function HomePage() {
 
   const copyEmail = async () => {
     try {
-      await navigator.clipboard.writeText(site.email);
+      await navigator.clipboard.writeText(contact?.email ?? "");
       setCopyHint(t("contact.copied"));
     } catch {
       setCopyHint(t("contact.copyFailed"));
@@ -209,58 +211,63 @@ export default function HomePage() {
             <Link className="btn btnPrimary" to="/portfolio">
               {t("featured.cta.all")}
             </Link>
-            <Link className="btn btnGhost" to="/#contact">
-              {t("featured.cta.contact")}
-            </Link>
           </div>
         </div>
       </section>
 
-      <section className="section" id="contact">
-        <div className="container">
-          <Reveal intensity="subtle">
-            <h2 className="sectionTitle">{t("contact.title")}</h2>
-            <p className="sectionSubtitle">{t("contact.subtitle")}</p>
-          </Reveal>
+      {contact && (contact.email || contact.links.length > 0) ? (
+        <section className="section" id="contact">
+          <div className="container">
+            <Reveal intensity="subtle">
+              <h2 className="sectionTitle">{t("contact.title")}</h2>
+              <p className="sectionSubtitle">{t("contact.subtitle")}</p>
+            </Reveal>
 
-          <Reveal after>
-            <div className="card contactCard">
-              <p className="contactLead">{t("contact.lead")}</p>
-              <p className="contactMessage">{t("contact.message")}</p>
+            <Reveal after>
+              <div className="card contactCard">
+                <p className="contactLead">{t("contact.lead")}</p>
+                <p className="contactMessage">{t("contact.message")}</p>
 
-              <a className="contactEmail" href={`mailto:${site.email}`}>
-                {site.email}
-              </a>
+                {contact.email && (
+                  <a className="contactEmail" href={`mailto:${contact.email}`}>
+                    {contact.email}
+                  </a>
+                )}
 
-              <div className="contactActions">
-                <button className="contactCopy" type="button" onClick={copyEmail}>
-                  {t("contact.copy")}
-                </button>
-                <span className="contactHint" role="status" aria-live="polite">
-                  {copyHint}
-                </span>
+                {contact.email && (
+                  <div className="contactActions">
+                    <button className="contactCopy" type="button" onClick={copyEmail}>
+                      {t("contact.copy")}
+                    </button>
+                    <span className="contactHint" role="status" aria-live="polite">
+                      {copyHint}
+                    </span>
+                  </div>
+                )}
+
+                {contact.links.length > 0 && (
+                  <div className="contactElsewhere">
+                    <span className="contactElsewhereLabel">{t("contact.elsewhere")}</span>
+                    <div className="contactElsewhereLinks" data-analytics="contact">
+                      {contact.links.map((s, index) => (
+                        <a
+                          key={index}
+                          className="contactElsewhereLink"
+                          href={s.href}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          {s.label}
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
-
-              <div className="contactElsewhere">
-                <span className="contactElsewhereLabel">{t("contact.elsewhere")}</span>
-                <div className="contactElsewhereLinks" data-analytics="contact">
-                  {site.socials.map((s) => (
-                    <a
-                      key={s.label}
-                      className="contactElsewhereLink"
-                      href={s.href}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      {s.label}
-                    </a>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </Reveal>
-        </div>
-      </section>
+            </Reveal>
+          </div>
+        </section>
+      ) : null}
     </>
   );
 }

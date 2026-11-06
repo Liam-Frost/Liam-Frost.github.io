@@ -567,3 +567,7 @@ Reason: the front-end and API are intended to be same-origin behind a VPS revers
 The model chose to remove the tracked `my-app` Vite starter scaffold.
 
 Reason: it was a standalone unused starter app and conflicted with the user's requirement for a clear repository structure.
+
+## Homepage contact settings
+
+The homepage contact email and ordered HTTPS links are managed in the admin Contact page and stored in the existing settings table. Blank email and empty links hide those details. Writes require authentication, CSRF protection and a matching revision; unavailable storage does not restore removed contact details. Emergency Pages snapshots the public contact API alongside the rest of the published content. No schema migration is required.

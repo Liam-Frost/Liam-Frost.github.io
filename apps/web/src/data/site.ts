@@ -8,8 +8,6 @@ export const site = {
   name: "Liam Frost",
   nameLatin: "Liam Frost",
 
-  email: "frostnova986@gmail.com",
-
   role: {
     zh: "全栈工程师 | 摄影爱好者 | 音乐爱好者",
     "zh-Hant": "全棧工程師 | 攝影愛好者 | 音樂愛好者",
@@ -34,13 +32,6 @@ export const site = {
     fr: "J'aime capturer la lumière et le rythme du quotidien, et créer des expériences web interactives. Ce site est ma page personnelle et mon portfolio photo.",
     ja: "光と街のリズムを写真に残しつつ、コードでインタラクティブな体験を作っています。このサイトは個人ページ兼フォトポートフォリオです。"
   } satisfies L,
-
-  socials: [
-    { label: "Instagram", href: "https://www.instagram.com/los_frost_lava/" },
-    { label: "LinkedIn", href: "https://www.linkedin.com/in/shanhaoliu/" },
-    { label: "GitHub", href: "https://github.com/Liam-Frost" },
-    { label: "Blog", href: "#" }
-  ],
 
   /** Fallback tracks for static builds; the API serves the playlist configured in the admin. */
   spotify: {

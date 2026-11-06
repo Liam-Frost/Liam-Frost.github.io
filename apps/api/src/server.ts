@@ -1,3 +1,4 @@
+import { registerContactRoutes } from "./routes/contact";
 import "dotenv/config";
 
 import cookie from "@fastify/cookie";
@@ -470,6 +471,7 @@ export async function buildServer({
   registerProjectRoutes(app, projects, store);
   registerStackRoutes(app, auth, stack, store, projects);
   registerAboutRoutes(app, auth, settings ? new AboutStore(settings) : null);
+  registerContactRoutes(app, auth, settings);
   registerAdminMediaRoutes(app, auth, {
     media,
     collection,
