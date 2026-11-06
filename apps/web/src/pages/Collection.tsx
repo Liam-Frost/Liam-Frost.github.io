@@ -154,7 +154,7 @@ export default function CollectionPage() {
   return (
     <section className="section">
       <div className="container">
-        <Reveal>
+        <Reveal intensity="subtle">
           <h1 className="sectionTitle">{t("collection.title")}</h1>
           <p className="sectionSubtitle">{t("collection.subtitle")}</p>
         </Reveal>

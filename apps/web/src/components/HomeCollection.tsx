@@ -1,10 +1,11 @@
-import type { PublicCollection, PublicMediaSummary } from "@liam-frost/shared";
+import { orderHomeWall, type PublicCollection, type PublicMediaSummary } from "@liam-frost/shared";
 import { useCallback, useMemo, useState } from "react";
 import { Link } from "react-router";
 
 import { pickLocalized, useI18n, type Key } from "../lib/i18n";
 import { cx } from "../lib/cx";
 import { compareCompleted } from "../lib/completed-order";
+import { rotationTurn } from "../lib/rotation";
 import MediaCard, { isReadKind, mediaTitle, statusKey } from "./MediaCard";
 import FeaturedQuiltWall from "./FeaturedQuiltWall";
 import { PlayAllButton } from "./PlayButton";
@@ -97,9 +98,9 @@ function OngoingCard({ item }: { item: PublicMediaSummary }) {
 }
 
 /**
- * The home page's collection: featured entries first (chosen by the server: rotating daily or in the
- * admin's order), then what is in progress, recently finished entries and a playlist. Each entry shows
- * once; empty parts are left out.
+ * The home page's collection: featured entries first (in the admin's order, rotating daily, or per
+ * visit or session, drawn here), then what is in progress, recently finished entries and a
+ * playlist. Each entry shows once; empty parts are left out.
  */
 export default function HomeCollection({ collection }: { collection: PublicCollection }) {
   const { lang, t } = useI18n();
@@ -113,15 +114,32 @@ export default function HomeCollection({ collection }: { collection: PublicColle
   );
   const featured = useMemo(() => {
     const byId = new Map(items.map((item) => [item.id, item]));
-    return (home.wall?.items ?? home.featured)
+    const candidates = (home.wall?.items ?? home.featured)
       .map((pick) => byId.get(pick.id))
       .filter((item): item is PublicMediaSummary => Boolean(item));
+    // Rotating per visit or session: the server sends the base order and the turn is drawn here.
+    const rotate = home.wall?.rotate;
+    return rotate
+      ? orderHomeWall(
+          candidates,
+          rotationTurn(
+            candidates.map((item) => item.id),
+            rotate,
+            "featured"
+          )
+        )
+      : candidates;
   }, [items, home]);
 
   const parts = useMemo(() => {
     const byId = new Map(items.map((item) => [item.id, item]));
     // Exclude only covers actually visible in the wall, not every candidate beyond its row limit.
-    const shown = new Set(visibleFeatured ?? home.featured.map((pick) => pick.id));
+    const shown = new Set(
+      visibleFeatured ??
+        (home.wall?.rotate
+          ? featured.slice(0, home.featured.length).map((item) => item.id)
+          : home.featured.map((pick) => pick.id))
+    );
     const ongoing = items
       .filter(
         (item) =>
@@ -174,7 +192,7 @@ export default function HomeCollection({ collection }: { collection: PublicColle
   return (
     <section className="section" id="watching">
       <div className="container">
-        <Reveal>
+        <Reveal intensity="subtle">
           <h2 className="sectionTitle">{t("collection.home.title")}</h2>
           {parts.stats.length ? (
             <p className="sectionSubtitle">
@@ -189,14 +207,14 @@ export default function HomeCollection({ collection }: { collection: PublicColle
         </Reveal>
 
         {parts.featured.length ? (
-          <div className="homeBlock">
+          <Reveal after className="homeBlock">
             <h3 className="homeBlockTitle">{t("collection.home.featured")}</h3>
             <FeaturedQuiltWall
               items={parts.featured}
               settings={home.wall?.settings}
               onVisibleItems={onVisibleItems}
             />
-          </div>
+          </Reveal>
         ) : null}
 
         {parts.ongoing.length ? (
@@ -204,7 +222,7 @@ export default function HomeCollection({ collection }: { collection: PublicColle
             <h3 className="homeBlockTitle">{t("collection.home.ongoing")}</h3>
             <div className="homeOngoingRow">
               {parts.ongoing.map((item) => (
-                <Reveal key={item.id} stagger>
+                <Reveal key={item.id} after stagger>
                   <OngoingCard item={item} />
                 </Reveal>
               ))}
@@ -213,7 +231,7 @@ export default function HomeCollection({ collection }: { collection: PublicColle
         ) : null}
 
         {parts.done.length ? (
-          <div className="homeBlock">
+          <Reveal after className="homeBlock">
             <div className="homeBlockHead">
               <h3 className="homeBlockTitle">{t("collection.home.recent")}</h3>
               {groups.length > 2 ? (
@@ -237,11 +255,11 @@ export default function HomeCollection({ collection }: { collection: PublicColle
                 <MediaCard key={item.id} item={item} to={itemLink(item)} />
               ))}
             </div>
-          </div>
+          </Reveal>
         ) : null}
 
         {parts.songs.length ? (
-          <div className="homeListening">
+          <Reveal after className="homeListening">
             <div className="homeListeningCovers" aria-hidden="true">
               {parts.songs.slice(0, 4).map((song) => (
                 <span key={song.id}>
@@ -268,7 +286,7 @@ export default function HomeCollection({ collection }: { collection: PublicColle
               </span>
             </div>
             <PlayAllButton items={parts.songs} spotifyUrl={parts.playlist?.sourceUrl ?? null} />
-          </div>
+          </Reveal>
         ) : null}
 
         <div style={{ marginTop: 18, display: "flex", gap: 12, flexWrap: "wrap" }}>

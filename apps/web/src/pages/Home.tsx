@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { ChevronDown } from "lucide-react";
 import { Link, useNavigate } from "react-router";
 
+import AboutSection from "../components/AboutSection";
+import HeroStats from "../components/HeroStats";
 import HomeCollection from "../components/HomeCollection";
 import PhotoCard from "../components/PhotoCard";
 import ProjectCard from "../components/ProjectCard";
@@ -12,6 +15,7 @@ import { useCollection } from "../data/useCollection";
 import { usePhotos } from "../data/usePhotos";
 import { useProjects } from "../data/useProjects";
 import { pickLocalized, useI18n, type Lang } from "../lib/i18n";
+import { stackScrollMotion } from "../lib/motion";
 
 // Greeting messages (Japanese uses \n for forced line break)
 const GREETINGS = {
@@ -43,6 +47,12 @@ export default function HomePage() {
   const collection = useCollection();
 
   const navigate = useNavigate();
+  // The line above the title: the roles, e.g. "全栈工程师 · 摄影爱好者 · 音乐爱好者".
+  const roles = pickLocalized(site.role, lang)
+    .split("|")
+    .map((role) => role.trim())
+    .filter(Boolean);
+  const stackScroll = useMemo(stackScrollMotion, []);
 
   const [copyHint, setCopyHint] = useState("");
 
@@ -86,10 +96,18 @@ export default function HomePage() {
     <>
       <section className="section hero" id="top">
         <div className="container">
+          {/* Five blocks placed by grid areas: text left and portrait right on wide screens; on
+              narrow ones an offset editorial layout (see the hero styles). */}
           <div className="heroGrid">
-            <Reveal>
-              <p className="eyebrow">{t("home.eyebrow")}</p>
+            <Reveal className="heroRolesBlock">
+              <p className="eyebrow heroRoles">
+                {roles.map((role) => (
+                  <span key={role}>{role}</span>
+                ))}
+              </p>
+            </Reveal>
 
+            <Reveal className="heroHead">
               <h1 className="heroTitle">
                 <TypingAnimation
                   words={greetingWords}
@@ -102,147 +120,58 @@ export default function HomePage() {
                   cursorStyle="underscore"
                 />
               </h1>
+            </Reveal>
 
+            <Reveal className="heroBio">
               <p className="heroSubtitle">{pickLocalized(site.bio, lang)}</p>
-
-              <div className="heroCta">
-                <Link className="btn btnPrimary" to="/portfolio">
-                  {t("home.cta.portfolio")}
-                </Link>
-                <Link className="btn btnSoft" to="/#contact">
-                  {t("home.cta.contact")}
-                </Link>
-              </div>
             </Reveal>
 
-            <Reveal delayMs={120} className="card heroCard">
-              <div className="profile">
-                <div className="profileHeader">
-                  <div className="avatar" aria-hidden="true">
-                    <div className="avatarMark" />
-                  </div>
+            <Reveal after className="heroPortrait">
+              <div className="avatarMark" aria-hidden="true" />
+            </Reveal>
 
-                  <div>
-                    <h2 className="profileName">{site.name}</h2>
-                    <p className="profileTagline">{pickLocalized(site.role, lang)}</p>
-                  </div>
-                </div>
-
-                <div className="profileStats" aria-label="Stats">
-                  {site.stats.map((s) => (
-                    <div key={s.value} className="stat">
-                      <div className="statNum">{s.value}</div>
-                      <div className="statLabel">{pickLocalized(s.label, lang)}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+            <Reveal after className="heroNumbers">
+              <HeroStats projects={projects} photos={photos} collection={collection} />
             </Reveal>
           </div>
         </div>
+
+        <Link className="heroScroll" to="/#about" aria-label={t("home.scroll")}>
+          <ChevronDown aria-hidden="true" />
+        </Link>
       </section>
 
-      <section className="section" id="about">
-        <div className="container">
-          <Reveal>
-            <h2 className="sectionTitle">{t("about.title")}</h2>
-            <p className="sectionSubtitle">
-              {pickLocalized(site.role, lang)} · {t("about.subtitle")}
-            </p>
-          </Reveal>
-
-          <div className="grid grid2 aboutGrid">
-            <Reveal delayMs={80}>
-              <div className="card aboutCard">
-                <h3 className="aboutCardTitle">{t("about.card.left")}</h3>
-
-                <div className="aboutCardBody">
-                  <div className="aboutSection">
-                    <div className="aboutSectionTitle">{t("about.section.capabilities")}</div>
-                    <ul className="aboutList">
-                      <li>{t("about.capabilities.b1")}</li>
-                      <li>{t("about.capabilities.b2")}</li>
-                      <li>{t("about.capabilities.b3")}</li>
-                    </ul>
-                  </div>
-
-                  <div className="aboutSection">
-                    <div className="aboutSectionTitle">{t("about.section.focus")}</div>
-                    <p className="aboutText">{t("about.focus.body")}</p>
-                  </div>
-
-                  <div className="aboutSection">
-                    <div className="aboutSectionTitle">{t("about.section.tooling")}</div>
-                    <div className="tags" aria-label={t("skills.title")}>
-                      {["React", "Java", "Springboot", "C++", "Lightroom"].map((x) => (
-                        <span key={x} className="tag">
-                          {x}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </Reveal>
-
-            <Reveal delayMs={140}>
-              <div className="card aboutCard">
-                <h3 className="aboutCardTitle">{t("about.card.right")}</h3>
-
-                <div className="aboutCardBody">
-                  <div className="aboutSection">
-                    <div className="aboutSectionTitle">{t("about.section.gear")}</div>
-                    <div className="metaList">
-                      {site.gear.map((g) => (
-                        <div key={g.value} className="metaItem">
-                          <div className="metaKey">{pickLocalized(g.key, lang)}</div>
-                          <div className="metaVal">{g.value}</div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="aboutSection">
-                    <div className="aboutSectionTitle">{t("about.section.output")}</div>
-                    <div className="tags" aria-label={t("about.section.output")}>
-                      {["Series", "Web", "Performance", "Story"].map((x) => (
-                        <span key={x} className="tag">
-                          {x}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </Reveal>
-          </div>
-        </div>
-      </section>
+      <AboutSection />
 
       <section className="section" id="skills">
         <div className="container">
-          <Reveal>
+          <Reveal intensity="subtle">
             <h2 className="sectionTitle">{t("skills.title")}</h2>
             <p className="sectionSubtitle">{t("skills.subtitle")}</p>
           </Reveal>
 
-          <Reveal delayMs={120}>
-            <TechStack />
-          </Reveal>
+          {/* The stack's own scroll-linked motion (pilot) or, without it, the one-time reveal. */}
+          {stackScroll ? (
+            <TechStack scrollMotion />
+          ) : (
+            <Reveal after>
+              <TechStack />
+            </Reveal>
+          )}
         </div>
       </section>
 
       {featuredProjects.length ? (
         <section className="section" id="projects">
           <div className="container">
-            <Reveal>
+            <Reveal intensity="subtle">
               <h2 className="sectionTitle">{t("projects.title")}</h2>
               <p className="sectionSubtitle">{t("projects.home.subtitle")}</p>
             </Reveal>
 
             <div className="projectGrid">
               {featuredProjects.map((project) => (
-                <Reveal key={project.slug} stagger>
+                <Reveal key={project.slug} after stagger>
                   <ProjectCard project={project} />
                 </Reveal>
               ))}
@@ -261,7 +190,7 @@ export default function HomePage() {
 
       <section className="section" id="featured">
         <div className="container">
-          <Reveal>
+          <Reveal intensity="subtle">
             <h2 className="sectionTitle">{t("featured.title")}</h2>
             <p className="sectionSubtitle">{t("featured.subtitle")}</p>
           </Reveal>
@@ -269,7 +198,7 @@ export default function HomePage() {
           <div className="masonry" aria-label={t("featured.title")}>
             {featured.map((p, idx) => (
               <div key={p.id} className="masonryItem">
-                <Reveal stagger>
+                <Reveal after stagger>
                   <PhotoCard photo={p} onOpen={openFeatured} priority={idx < 2} />
                 </Reveal>
               </div>
@@ -289,12 +218,12 @@ export default function HomePage() {
 
       <section className="section" id="contact">
         <div className="container">
-          <Reveal>
+          <Reveal intensity="subtle">
             <h2 className="sectionTitle">{t("contact.title")}</h2>
             <p className="sectionSubtitle">{t("contact.subtitle")}</p>
           </Reveal>
 
-          <Reveal delayMs={120}>
+          <Reveal after>
             <div className="card contactCard">
               <p className="contactLead">{t("contact.lead")}</p>
               <p className="contactMessage">{t("contact.message")}</p>

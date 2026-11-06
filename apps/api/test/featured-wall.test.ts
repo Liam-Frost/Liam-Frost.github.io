@@ -1,3 +1,4 @@
+import { orderHomeWall } from "@liam-frost/shared";
 import { afterEach, describe, expect, it } from "vitest";
 import {
   CollectionSettingsStore,
@@ -128,8 +129,8 @@ describe("featured wall data and persisted controls", () => {
   it("mixes automatic sequences stably while manual sequences remain exact", async () => {
     const { media } = await setup();
     const rows = (await media.list()).filter((row) => row.featured);
-    const a = pickHomeWall(rows, "rotate", "2026-11-05");
-    expect(a).toEqual(pickHomeWall(rows, "rotate", "2026-11-05"));
+    const a = pickHomeWall(rows, "daily", "2026-11-05");
+    expect(a).toEqual(pickHomeWall(rows, "daily", "2026-11-05"));
     expect(new Set(a.map((row) => row.id)).size).toBe(rows.length);
     expect(a.slice(0, 10).filter((row) => row.kind === "track").length).toBeGreaterThan(3);
     expect(a.slice(0, 10).filter((row) => row.kind === "movie").length).toBeGreaterThan(3);
@@ -139,11 +140,50 @@ describe("featured wall data and persisted controls", () => {
         (_, i) =>
           pickHomeWall(
             rows,
-            "rotate",
+            "daily",
             new Date(Date.UTC(2026, 10, i + 1)).toISOString().slice(0, 10)
           )[0]!.id
       )
     );
     expect(starts.size).toBe(rows.length);
+  });
+  it("leaves visit and session rotation to the browser, with the base order", async () => {
+    const { app, media, headers } = await setup();
+    const base = (await media.list())
+      .filter((row) => row.featured && row.visibility === "public")
+      .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime() || a.id.localeCompare(b.id));
+    for (const mode of ["visit", "session"] as const) {
+      const saved = await app.inject({
+        method: "PUT",
+        url: "/api/admin/collection/settings",
+        headers,
+        payload: { ...DEFAULT_COLLECTION_SETTINGS, homeFeatured: mode }
+      });
+      expect(saved.json().settings.homeFeatured).toBe(mode);
+      const { wall } = (await app.inject("/api/collection")).json().home;
+      expect(wall.rotate).toBe(mode);
+      expect(wall.items.map((pick: { id: string }) => pick.id)).toEqual(base.map((row) => row.id));
+    }
+    for (const mode of ["fixed", "daily"] as const) {
+      await app.inject({
+        method: "PUT",
+        url: "/api/admin/collection/settings",
+        headers,
+        payload: { ...DEFAULT_COLLECTION_SETTINGS, homeFeatured: mode }
+      });
+      expect((await app.inject("/api/collection")).json().home.wall).not.toHaveProperty("rotate");
+    }
+  });
+  it("orders the wall in the browser exactly as a day's turn does on the server", async () => {
+    const { media } = await setup();
+    const rows = (await media.list()).filter((row) => row.featured);
+    const base = pickHomeWall(rows, "visit", "2026-11-05");
+    const day = Math.floor(Date.parse("2026-11-05T00:00:00Z") / 86_400_000);
+    expect(orderHomeWall(base, day).map((row) => row.id)).toEqual(
+      pickHomeWall(rows, "daily", "2026-11-05").map((row) => row.id)
+    );
+    // Every turn of n starts with another entry.
+    const starts = new Set(base.map((_, turn) => orderHomeWall(base, turn)[0]!.id));
+    expect(starts.size).toBe(base.length);
   });
 });

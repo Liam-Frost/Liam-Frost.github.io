@@ -42,6 +42,8 @@
   --accent: var(--blue);
   --accent2: var(--mist);
   --accent3: var(--sand);
+  /* Emphasised words in large type (the about manifesto). */
+  --emphasis: var(--mist);
 
   /* Background FX */
   --fx-a: rgba(148, 180, 193, 0.46);
@@ -73,6 +75,8 @@
   /* Delay between items revealed together (in order on screen), and the most steps used. */
   --motion-stagger: 50ms;
   --motion-stagger-max: 6;
+  /* Content after its heading (<Reveal after>) starts this much later. */
+  --motion-after-heading: 100ms;
   /* Phones move less. */
   --motion-scale: 1;
 }
@@ -105,6 +109,7 @@ html[data-lang="ja"] {
 
 html[data-theme="light"] {
   --bg: var(--sand);
+  --emphasis: var(--blue);
   --bg2: #e0d5c4;
 
   --card: rgba(255, 255, 255, 0.74);
@@ -129,6 +134,7 @@ html[data-theme="light"] {
 @media (prefers-color-scheme: light) {
   html[data-theme="system"] {
     --bg: var(--sand);
+    --emphasis: var(--blue);
     --bg2: #e0d5c4;
 
     --card: rgba(255, 255, 255, 0.74);
@@ -181,6 +187,12 @@ html {
   html {
     scroll-behavior: auto;
   }
+}
+
+/* Lenis (lib/smoothScroll.ts) scrolls the page frame by frame; the browser must not animate each
+   step again. */
+html.lenis {
+  scroll-behavior: auto;
 }
 
 body {
@@ -408,6 +420,10 @@ html[data-theme="light"] .bgFx::after {
   min-height: 100vh;
   display: grid;
   grid-template-rows: auto 1fr auto;
+  /* The page is as wide as the viewport, never as wide as its content's minimum width: an auto
+     column grew to fit e.g. the listening bar's untruncated song title (323px at 320px in English),
+     and phones then zoomed the whole page out. */
+  grid-template-columns: minmax(0, 1fr);
   position: relative;
   isolation: isolate;
 }
@@ -808,17 +824,57 @@ html[data-theme="light"] .langPanel {
   color: transparent;
 }
 
-/* Hero */
+/* Hero: the whole first screen, content centred. */
 .hero {
+  min-height: calc(100svh - var(--header-h));
+  display: grid;
+  align-content: center;
+  /* A grid item with auto margins shrinks to its content: keep the container as wide as elsewhere. */
+  grid-template-columns: minmax(0, 1fr);
   padding-top: clamp(40px, 6vw, 64px);
   padding-bottom: clamp(56px, 6vw, 78px);
 }
 
+/* Wide screens: roles, title and introduction on the left, vertically centred as one block; the
+   portrait and the numbers on the right, the numbers bottom-aligned with the portrait. */
 .heroGrid {
   display: grid;
-  grid-template-columns: 1.2fr 0.8fr;
-  gap: 18px;
-  align-items: start;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-rows: 1fr auto auto auto 1fr;
+  grid-template-areas:
+    ".     portrait numbers"
+    "roles portrait numbers"
+    "head  portrait numbers"
+    "bio   portrait numbers"
+    ".     portrait numbers";
+  column-gap: clamp(20px, 3vw, 40px);
+}
+
+.heroRolesBlock {
+  grid-area: roles;
+}
+
+.heroHead {
+  grid-area: head;
+}
+
+.heroBio {
+  grid-area: bio;
+}
+
+.heroPortrait {
+  grid-area: portrait;
+}
+
+.heroNumbers {
+  grid-area: numbers;
+  align-self: end;
+}
+
+.heroRolesBlock,
+.heroHead,
+.heroBio {
+  padding-right: clamp(0px, 2.5vw, 36px);
 }
 
 .eyebrow {
@@ -830,7 +886,7 @@ html[data-theme="light"] .langPanel {
 
 .heroTitle {
   margin: 0;
-  font-size: clamp(34px, 5vw, 56px);
+  font-size: clamp(40px, 6.2vw, 84px);
   line-height: 1.06;
   letter-spacing: -0.03em;
 }
@@ -878,97 +934,247 @@ html[data-theme="light"] .langPanel {
   line-height: 1.75;
 }
 
-.heroCta {
-  margin-top: 18px;
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
+.hero > .container {
+  width: 100%;
 }
 
-.heroMeta {
-  list-style: none;
-  margin: 18px 0 0;
-  padding: 0;
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
+/* The roles above the title (wider spacing only suits Latin text). */
+.heroRoles {
+  letter-spacing: 0.08em;
+  font-size: 13px;
 }
 
-.heroCard {
-  padding: 16px;
+.heroRoles span + span::before {
+  content: "·";
+  margin: 0 0.7em;
 }
 
-.profile {
-  display: grid;
-  gap: 14px;
+.heroSubtitle {
+  max-width: 32em;
 }
 
-.profileHeader {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 14px;
-  align-items: center;
+/* The portrait without a card. */
+.heroPortrait {
+  align-self: center;
+  width: clamp(180px, 20vw, 300px);
+  aspect-ratio: 1;
+  color: var(--text);
 }
 
-.avatar {
-  width: 114px;
-  height: 114px;
-  border-radius: 22px;
-  background: transparent;
-  padding: 0;
-  overflow: hidden;
-}
-
-/* Use theme text color (no harsh pure white). */
-.avatarMark {
+.heroPortrait .avatarMark {
   width: 100%;
   height: 100%;
   background-color: currentColor;
-  -webkit-mask-image: url("/portrait1.svg");
-  mask-image: url("/portrait1.svg");
-  -webkit-mask-repeat: no-repeat;
-  mask-repeat: no-repeat;
-  -webkit-mask-position: center;
-  mask-position: center;
-  -webkit-mask-size: contain;
-  mask-size: contain;
+  -webkit-mask: url("/portrait1.svg") center / contain no-repeat;
+  mask: url("/portrait1.svg") center / contain no-repeat;
 }
 
-.profileName {
-  margin: 0;
-  font-size: 18px;
-}
-
-.profileTagline {
-  margin: 6px 0 0;
-  color: var(--muted);
-  line-height: 1.6;
-}
-
-.profileStats {
+.heroStats {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
+  gap: 18px;
+  margin: 0;
+  padding: 0 0 8px;
+  list-style: none;
+  text-align: right;
 }
 
-.stat {
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 10px;
-  background: var(--card);
-  backdrop-filter: blur(16px) saturate(1.2);
-  -webkit-backdrop-filter: blur(16px) saturate(1.2);
+.heroStat {
+  display: grid;
+  color: var(--text);
+  text-decoration: none;
 }
 
-.statNum {
+.heroStat strong {
+  font-size: clamp(30px, 3vw, 42px);
   font-weight: 850;
-  letter-spacing: -0.02em;
+  line-height: 1;
+  letter-spacing: -0.03em;
 }
 
-.statLabel {
-  margin-top: 4px;
+.heroStat span {
+  margin-top: 6px;
   color: var(--muted);
-  font-size: 12px;
+  font-size: 13px;
+}
+
+.heroStat:hover span,
+.heroStat:focus-visible span {
+  color: var(--text);
+  text-decoration: underline;
+}
+
+/* A quiet hint at the bottom of the first screen that the page goes on. */
+.heroScroll {
+  position: absolute;
+  left: 50%;
+  bottom: 22px;
+  translate: -50% 0;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  color: var(--faint);
+}
+
+.heroScroll svg {
+  width: 22px;
+  height: 22px;
+}
+
+.heroScroll:hover,
+.heroScroll:focus-visible {
+  color: var(--text);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .heroScroll svg {
+    animation: heroScrollHint 2.4s var(--ease) infinite;
+  }
+
+  @keyframes heroScrollHint {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(5px);
+    }
+  }
+}
+
+/* Tablets (700-1099px): a steady asymmetric two-column grid. The text column (roles, title,
+   introduction) starts at the top of the portrait's span, so a greeting that is still being typed
+   only pushes the introduction below it; the portrait and the numbers keep their place. The
+   asymmetry comes from the column ratio and the type scale, not from offsets. */
+@media (max-width: 1099px) {
+  .heroGrid {
+    grid-template-columns: minmax(0, 1fr) clamp(200px, 28vw, 300px);
+    grid-template-rows: auto auto 1fr auto;
+    grid-template-areas:
+      "roles   portrait"
+      "head    portrait"
+      "bio     portrait"
+      "numbers numbers";
+    column-gap: clamp(24px, 4vw, 48px);
+  }
+
+  .heroRolesBlock,
+  .heroHead,
+  .heroBio {
+    padding-right: 0;
+  }
+
+  .heroTitle {
+    font-size: clamp(48px, 7.4vw, 76px);
+  }
+
+  /* Each role stays whole; a long list wraps between roles, never inside one. */
+  .heroRoles span {
+    display: inline-block;
+    white-space: nowrap;
+  }
+
+  .heroPortrait {
+    align-self: center;
+    justify-self: end;
+    width: 100%;
+  }
+
+  .heroBio {
+    align-self: start;
+  }
+
+  .heroBio .heroSubtitle {
+    margin-top: 18px;
+  }
+
+  /* The numbers: one row of equal columns under the whole grid, opened by a hairline. */
+  .heroNumbers {
+    align-self: start;
+    margin-top: clamp(36px, 5vw, 56px);
+    padding-top: clamp(20px, 2.6vw, 28px);
+    border-top: 1px solid var(--border);
+  }
+
+  .heroStats {
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
+    gap: 16px;
+    padding: 0;
+    text-align: left;
+  }
+}
+
+/* Portrait tablets have far more height than the hero needs: a larger portrait, and the first screen
+   capped so the next section shows below instead of a band of empty space. */
+@media (min-width: 700px) and (max-width: 1099px) and (orientation: portrait) {
+  .hero {
+    min-height: min(calc(100svh - var(--header-h)), 720px);
+  }
+
+  .heroGrid {
+    grid-template-columns: minmax(0, 1fr) clamp(200px, 32vw, 320px);
+  }
+}
+
+/* Phones (up to 699px): an editorial stack. The roles sit as a caption beside the portrait, which
+   leans to the right; the greeting below is the anchor, the introduction follows it, and the
+   numbers share the last row in equal columns. Nothing overlaps the title. */
+@media (max-width: 699px) {
+  /* Content-sized on tall phones, so the first screen holds no large empty band. */
+  .hero {
+    min-height: min(calc(100svh - var(--header-h)), 700px);
+  }
+
+  .heroGrid {
+    grid-template-columns: minmax(0, 1fr) clamp(132px, 44vw, 210px);
+    grid-template-rows: auto auto auto auto;
+    grid-template-areas:
+      "roles   portrait"
+      "head    head"
+      "bio     bio"
+      "numbers numbers";
+    column-gap: 16px;
+  }
+
+  .heroTitle {
+    margin-top: clamp(14px, 4vw, 22px);
+    font-size: clamp(38px, 10.6vw, 52px);
+  }
+
+  .heroRolesBlock {
+    align-self: end;
+  }
+
+  .heroRoles {
+    display: grid;
+    gap: 6px;
+    margin: 0;
+    padding-left: 12px;
+    border-left: 2px solid var(--border);
+  }
+
+  .heroRoles span {
+    white-space: normal;
+  }
+
+  .heroRoles span + span::before {
+    content: none;
+  }
+
+  .heroBio .heroSubtitle {
+    margin-top: 14px;
+  }
+
+  .heroNumbers {
+    margin-top: clamp(26px, 7vw, 36px);
+    padding-top: 18px;
+  }
+
+  .heroStats {
+    text-align: center;
+  }
 }
 
 .chips {
@@ -1015,73 +1221,211 @@ html[data-theme="light"] .langPanel {
 }
 
 /* About */
-.aboutGrid {
-  margin-top: 14px;
-  align-items: stretch;
+/* About: a manifesto as the focal point, then how I think and the gear, separated by hairlines
+   instead of cards. */
+.aboutTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 16px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--border);
 }
 
-.aboutGrid > .reveal {
-  height: 100%;
-}
-
-.aboutGrid > .reveal > * {
-  height: 100%;
-}
-
-.aboutCard {
-  padding: 16px;
-  display: grid;
-  grid-template-rows: auto 1fr;
-  gap: 12px;
-}
-
-.aboutCardTitle {
+.aboutLabel {
   margin: 0;
-  font-size: 16px;
-  font-weight: 850;
-  letter-spacing: -0.02em;
-}
-
-.aboutCardBody {
-  display: grid;
-  gap: 12px;
-  align-content: start;
-}
-
-.aboutSection {
-  display: grid;
-  gap: 8px;
-  padding-top: 12px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
-}
-
-html[data-theme="light"] .aboutSection {
-  border-top: 1px solid rgba(33, 52, 72, 0.1);
-}
-
-.aboutSection:first-child {
-  padding-top: 0;
-  border-top: 0;
-}
-
-.aboutSectionTitle {
-  font-size: 12px;
-  color: var(--faint);
-  letter-spacing: 0.14em;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 750;
+  letter-spacing: 0.22em;
   text-transform: uppercase;
 }
 
-.aboutList {
-  margin: 0;
-  padding-left: 18px;
-  color: var(--muted);
-  line-height: 1.65;
+/* Wide letter spacing only suits Latin capitals. */
+html[data-lang="zh"] .aboutLabel,
+html[data-lang="zh-Hant"] .aboutLabel,
+html[data-lang="ja"] .aboutLabel {
+  letter-spacing: 0.08em;
 }
 
-.aboutText {
+.aboutCount {
+  color: var(--faint);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Vertical rhythm tied to the window height too, so the section fits one screen where it can. */
+.about {
+  padding-block: clamp(48px, 7vh, 88px);
+}
+
+.manifesto {
+  margin: clamp(36px, 6.5vh, 96px) 0 clamp(36px, 5.5vh, 80px);
+}
+
+.manifesto blockquote {
   margin: 0;
+}
+
+.about .manifestoText {
+  margin: 0;
+  max-width: 15em;
+  color: var(--text);
+  font-size: clamp(36px, min(5.6vw, 8.6vh), 86px);
+  font-weight: 800;
+  line-height: 1.08;
+  letter-spacing: -0.035em;
+  text-wrap: balance;
+}
+
+/* CJK manifestos come split into clauses and words (see manifestoClauses): lines break between
+   clauses where they fit, otherwise between words, never inside one. */
+.about .manifestoText[data-script="cjk"] {
+  max-width: 13em;
+  font-size: clamp(34px, min(6vw, 8.4vh), 84px);
+  line-height: 1.24;
+  letter-spacing: 0;
+}
+
+.manifestoClause {
+  display: inline-block;
+}
+
+.manifestoWord {
+  white-space: nowrap;
+}
+
+.manifestoText em {
+  color: var(--emphasis);
+  font-style: normal;
+}
+
+.manifestoBy {
+  margin-top: clamp(16px, 2.4vh, 28px);
   color: var(--muted);
-  line-height: 1.65;
+  font-size: 15px;
+  letter-spacing: 0.02em;
+}
+
+.aboutThink {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+  gap: clamp(32px, 5vw, 72px);
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+}
+
+.aboutThinkText {
+  max-width: 34em;
+  margin: 16px 0 0;
+  color: var(--muted);
+  font-size: clamp(15px, 1.3vw, 17px);
+  line-height: 1.85;
+}
+
+.principles {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(16px, 2vw, 24px);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.principles li {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--border);
+}
+
+.principleNo {
+  color: var(--faint);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.principles strong {
+  color: var(--text);
+  font-size: clamp(16px, 1.5vw, 19px);
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.principleText {
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.aboutGear {
+  margin-top: clamp(36px, 5.5vh, 72px);
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+}
+
+.gearList {
+  margin: 12px 0 0;
+}
+
+.gearRow {
+  display: grid;
+  grid-template-columns: minmax(88px, 200px) minmax(0, 1fr);
+  gap: 24px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.gearRow dt {
+  padding-top: 2px;
+  color: var(--faint);
+  font-size: 13px;
+  letter-spacing: 0.04em;
+}
+
+/* Items in columns of equal width: any number of them wraps into tidy rows, and a long name wraps
+   inside its own column instead of pushing the others around. */
+.gearRow dd {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 230px), 1fr));
+  gap: 8px 28px;
+  margin: 0;
+  color: var(--text);
+  font-size: clamp(15px, 1.3vw, 17px);
+}
+
+@media (max-width: 860px) {
+  .aboutThink {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 560px) {
+  .principles {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+
+  .principles li {
+    grid-template-columns: 32px minmax(0, 1fr);
+    gap: 4px 12px;
+    padding: 16px 0;
+  }
+
+  .principles li > :not(.principleNo) {
+    grid-column: 2;
+  }
+
+  .gearRow {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 6px;
+  }
+
+  .gearRow dd {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 6px;
+  }
 }
 
 /* Tech stack: an editorial list. Category name on the left, logos and names in a grid on the right. */
@@ -1437,7 +1781,7 @@ html[data-theme="light"] .stackDetail {
 
 .stackRelatedItem {
   display: grid;
-  grid-template-columns: 76px minmax(0, 1fr) auto;
+  grid-template-columns: 96px minmax(0, 1fr) auto;
   align-items: center;
   gap: 14px;
   padding: 8px;
@@ -1457,10 +1801,11 @@ html[data-theme="light"] .stackDetail {
   outline-offset: 1px;
 }
 
+/* 2:1 like the project cards, so a social-preview cover shows whole (96 x 48, 80 x 40 on phones). */
 .stackRelatedThumb {
   display: grid;
   place-items: center;
-  aspect-ratio: 4 / 3;
+  aspect-ratio: 2 / 1;
   overflow: hidden;
   border-radius: 10px;
   background: rgba(148, 180, 193, 0.14);
@@ -1575,9 +1920,20 @@ html[data-theme="light"] .stackDetail {
   }
 
   .stackRelatedItem {
-    grid-template-columns: 64px minmax(0, 1fr) auto;
+    grid-template-columns: 80px minmax(0, 1fr) auto;
     gap: 12px;
     padding: 8px 4px;
+  }
+}
+
+/* Stage 26 (components/useStackScrub.ts, GSAP): the tech stack's scroll motion writes opacity and
+   transform on its items and section. Printing shows them as they are. */
+@media print {
+  .stackScrub .stackGroupHead,
+  .stackScrub .stackItems > li,
+  .section:has(.stackScrub) {
+    opacity: 1 !important;
+    transform: none !important;
   }
 }
 
@@ -1928,10 +2284,6 @@ html[data-theme="light"] .stackDetail {
 
   .grid2 {
     grid-template-columns: 1fr;
-  }
-
-  .aboutGrid {
-    margin-top: 14px;
   }
 }
 
@@ -2588,6 +2940,10 @@ html[data-theme="light"] .stackDetail {
   --reveal-opacity: var(--motion-opacity-subtle);
 }
 
+.revealAfter {
+  --reveal-offset: var(--motion-after-heading);
+}
+
 .revealExpressive {
   --reveal-distance: var(--motion-distance-expressive);
   --reveal-duration: var(--motion-duration-expressive);
@@ -2605,14 +2961,14 @@ html[data-theme="light"] .stackDetail {
       opacity var(--reveal-duration) var(--motion-ease) var(--reveal-delay),
       transform var(--reveal-duration) var(--motion-ease) var(--reveal-delay);
   }
+
+  html.revealReady .revealVisible.revealInstant {
+    transition: none;
+  }
 }
 
 /* Responsive */
 @media (max-width: 980px) {
-  .heroGrid {
-    grid-template-columns: 1fr;
-  }
-
   .modal {
     grid-template-columns: 1fr;
     grid-template-rows: var(--media-h) var(--side-h);
@@ -2727,8 +3083,10 @@ html[data-theme="light"] .stackDetail {
   outline-offset: 3px;
 }
 
+/* 2:1, the shape of a GitHub social preview (1280 x 640), which project covers usually are: shown whole,
+   not cropped at the sides as in 16:9. Other shapes still fill the frame. */
 .projectCover {
-  aspect-ratio: 16 / 9;
+  aspect-ratio: 2 / 1;
   overflow: hidden;
   background: rgba(148, 180, 193, 0.14);
   border-bottom: 1px solid var(--border);

@@ -550,7 +550,7 @@ function ImagesPanel({ project }: { project: AdminProject }) {
               src={project.cover.variants[0].url}
               alt=""
               className="w-full rounded-xl border border-line object-cover"
-              style={{ aspectRatio: "16 / 9" }}
+              style={{ aspectRatio: "2 / 1" }}
             />
             <div className="absolute top-2 right-2 rounded-full bg-white/90">
               <IconButton label="删除封面" onClick={() => removeImage(project.cover!)} danger>
@@ -569,6 +569,10 @@ function ImagesPanel({ project }: { project: AdminProject }) {
           {pending === "cover" ? "上传中…" : project.cover ? "更换封面" : "上传封面"}
         </button>
         {fileInput(coverInput, "cover", false)}
+        {/* The site's cards frame covers at 2:1 (apps/web .projectCover). */}
+        <p className="mt-1.5 text-[12px] text-faint">
+          建议 2:1，例如 1280×640（GitHub Social preview 的尺寸），在网站卡片上完整显示。
+        </p>
       </div>
 
       <div>

@@ -2,6 +2,14 @@
 
 ## User Decisions
 
+### 2026-11-06: Lenis smooth scrolling (Stage 26)
+
+After recordings showed that the reference's feel comes largely from Lenis (a wheel notch glides about 600ms instead of jumping), the user asked for Lenis on the whole site, reversing the earlier "no smooth-scrolling library". Touch and reduced motion stay native.
+
+### 2026-11-06: GSAP for the tech stack (Stage 26)
+
+The user compared the tech stack with the reference site in the preview and asked to read its repository and use GSAP if needed, without regard for older browsers. The stack now runs the reference's ScrollTrigger timelines (ported from its code, MIT). GSAP (standard no-charge license) is used only there and loaded on demand. The reference's Lenis smooth scrolling was measured and shown in a recording; the user then asked for it (see above).
+
 ### 2026-11-05: Motion System (Stage 26)
 
 After an audit (current animations, a reference site using GSAP ScrollTrigger and Lenis), the user chose a balanced direction, in phases: shared tokens and a one-time scroll-triggered reveal everywhere; the tech stack as a scroll-linked, reversible pilot that can be switched off; no exit fades, no Lenis, no GSAP for now; other sections stay one-time until the pilot is judged. Phase 1 (foundation) first, reported before phase 2. See `motion.md`.

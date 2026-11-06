@@ -1,5 +1,7 @@
 import {
   ADMIN_REQUEST_HEADER,
+  type AdminAboutResponse,
+  type AdminAboutUpdate,
   type AnalyticsAudience,
   type AnalyticsClearScope,
   type AnalyticsContentCounts,
@@ -437,5 +439,8 @@ export const api = {
     request<AdminCollectionSettingsResponse>("/api/admin/collection/settings", {
       method: "PUT",
       json: settings
-    })
+    }),
+  about: () => request<AdminAboutResponse>("/api/admin/about"),
+  saveAbout: (body: AdminAboutUpdate) =>
+    request<AdminAboutResponse>("/api/admin/about", { method: "PUT", json: body })
 };

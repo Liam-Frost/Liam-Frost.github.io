@@ -34,31 +34,25 @@ const zh = {
   "theme.dark": "深色",
 
   // Home
-  "home.eyebrow": "PERSONAL + PHOTO PORTFOLIO",
   "home.title": "你好，我是 {name}",
-  "home.cta.portfolio": "查看作品集",
-  "home.cta.contact": "联系我",
+  "home.stats.projects": "项目",
+  "home.stats.photos": "照片",
+  "home.stats.collection": "收藏",
+  "home.scroll": "往下看",
 
   // About
   "about.title": "关于我",
-  "about.subtitle": "我关注视觉叙事、交互细节与性能体验。",
 
-  "about.card.left": "能力与方法",
   "about.card.right": "设备",
 
-  "about.section.capabilities": "Capabilities",
-  "about.section.focus": "Focus",
-  "about.section.tooling": "Tooling",
-  "about.section.workflow": "Workflow",
-  "about.section.gear": "Gear",
-  "about.section.output": "Output",
+  "about.think": "我的思考方式",
 
   "about.capabilities.b1": "组件化与设计系统：一致性、可维护性",
   "about.capabilities.b2": "性能与可访问性：让体验更快、更稳",
   "about.capabilities.b3": "动效与交互语义：克制但有层次",
 
   "about.focus.body":
-    "把前端、后端与摄影视为同一件事：用清晰的结构、稳定的系统和可延展的叙事，把复杂内容组织成可被理解、浏览并长期演进的体验。",
+    "工程让我关注结构、逻辑与可靠性，摄影让我重新观察光线、构图与细节。我发现两者并不矛盾：无论构建一个系统，还是捕捉一个瞬间，都需要在复杂的信息中找到真正重要的部分。",
 
   // Skills
   "skills.title": "技术栈",
@@ -326,30 +320,24 @@ const en: Record<Key, string> = {
   "theme.light": "Light",
   "theme.dark": "Dark",
 
-  "home.eyebrow": "PERSONAL + PHOTO PORTFOLIO",
   "home.title": "Hi, I'm {name}",
-  "home.cta.portfolio": "View gallery",
-  "home.cta.contact": "Contact",
+  "home.stats.projects": "Projects",
+  "home.stats.photos": "Photos",
+  "home.stats.collection": "Collection",
+  "home.scroll": "Scroll down",
 
   "about.title": "About",
-  "about.subtitle": "I care about visual storytelling, interaction details, and performance.",
 
-  "about.card.left": "Capabilities & Approach",
   "about.card.right": "Gear",
 
-  "about.section.capabilities": "Capabilities",
-  "about.section.focus": "Focus",
-  "about.section.tooling": "Tooling",
-  "about.section.workflow": "Workflow",
-  "about.section.gear": "Gear",
-  "about.section.output": "Output",
+  "about.think": "How I think",
 
   "about.capabilities.b1": "Component systems & design systems: consistency and maintainability",
   "about.capabilities.b2": "Performance & accessibility: faster, clearer experiences",
   "about.capabilities.b3": "Motion & interaction semantics: restrained but layered",
 
   "about.focus.body":
-    "I approach frontend, backend, and photography in the same way: structuring complexity into systems and narratives that are clear, navigable, and built to evolve over time.",
+    "Engineering keeps me focused on structure, logic and reliability; photography makes me look again at light, composition and detail. I find the two never conflict: whether building a system or capturing a moment, the work is finding what truly matters in a mass of information.",
 
   "skills.title": "Tech Stack",
   "skills.subtitle": "A structured skill stack with clear grouping and priority.",
@@ -611,31 +599,24 @@ const fr: Record<Key, string> = {
   "theme.light": "Clair",
   "theme.dark": "Sombre",
 
-  "home.eyebrow": "PORTFOLIO PERSONNEL + PHOTO",
   "home.title": "Salut, je suis {name}",
-  "home.cta.portfolio": "Voir la galerie",
-  "home.cta.contact": "Me contacter",
+  "home.stats.projects": "Projets",
+  "home.stats.photos": "Photos",
+  "home.stats.collection": "Collection",
+  "home.scroll": "Faire défiler",
 
   "about.title": "À propos",
-  "about.subtitle":
-    "Je m'intéresse au storytelling visuel, aux détails d'interaction et aux performances.",
 
-  "about.card.left": "Capacités & approche",
   "about.card.right": "Matériel",
 
-  "about.section.capabilities": "Capacités",
-  "about.section.focus": "Focus",
-  "about.section.tooling": "Outils",
-  "about.section.workflow": "Workflow",
-  "about.section.gear": "Matériel",
-  "about.section.output": "Sortie",
+  "about.think": "Ma façon de penser",
 
   "about.capabilities.b1": "Design system & composants : cohérence et maintenabilité",
   "about.capabilities.b2": "Performance & accessibilité : expériences plus rapides et claires",
   "about.capabilities.b3": "Motion & sémantique d'interaction : sobre mais riche",
 
   "about.focus.body":
-    "Frontend, backend et photographie relèvent pour moi de la même démarche: structurer la complexité en systèmes et récits clairs, parcourables et conçus pour évoluer dans le temps.",
+    "L’ingénierie me rend attentif à la structure, à la logique et à la fiabilité ; la photographie m’apprend à regarder de nouveau la lumière, la composition et les détails. Les deux ne s’opposent pas : qu’il s’agisse de construire un système ou de saisir un instant, il faut trouver, dans un flot d’informations, ce qui compte vraiment.",
 
   "skills.title": "Technos",
   "skills.subtitle": "Stack structuré : groupes + priorité.",
@@ -898,31 +879,24 @@ const ja: Record<Key, string> = {
   "theme.light": "ライト",
   "theme.dark": "ダーク",
 
-  "home.eyebrow": "PERSONAL + PHOTO PORTFOLIO",
   "home.title": "こんにちは、{name}です",
-  "home.cta.portfolio": "ギャラリーを見る",
-  "home.cta.contact": "連絡する",
+  "home.stats.projects": "プロジェクト",
+  "home.stats.photos": "写真",
+  "home.stats.collection": "コレクション",
+  "home.scroll": "下へスクロール",
 
   "about.title": "概要",
-  "about.subtitle":
-    "ビジュアルストーリー、インタラクションの細部、パフォーマンスを大切にしています。",
 
-  "about.card.left": "能力とアプローチ",
   "about.card.right": "機材",
 
-  "about.section.capabilities": "Capabilities",
-  "about.section.focus": "Focus",
-  "about.section.tooling": "Tooling",
-  "about.section.workflow": "Workflow",
-  "about.section.gear": "Gear",
-  "about.section.output": "Output",
+  "about.think": "考え方",
 
   "about.capabilities.b1": "デザインシステム／コンポーネント：一貫性と保守性",
   "about.capabilities.b2": "パフォーマンス／アクセシビリティ：速く、分かりやすく",
   "about.capabilities.b3": "モーション／インタラクション語彙：控えめに層を作る",
 
   "about.focus.body":
-    "フロントエンド、バックエンド、そして写真制作を、私は同じ視点で捉えています。複雑な要素を整理し、理解しやすく、閲覧でき、継続的に拡張できる体験へと構成することです。",
+    "エンジニアリングは構造・ロジック・信頼性に目を向けさせ、写真は光・構図・ディテールを見つめ直させてくれます。二つは矛盾しません。システムを組み立てるときも、一瞬を切り取るときも、複雑な情報の中から本当に大切なものを見つけ出すことが求められるからです。",
 
   "skills.title": "技術スタック",
   "skills.subtitle": "構造化したスキルスタック（グループ＋優先度）。",
@@ -1186,31 +1160,25 @@ const zhHant: Record<Key, string> = {
   "theme.dark": "深色",
 
   // Home
-  "home.eyebrow": "PERSONAL + PHOTO PORTFOLIO",
   "home.title": "你好，我是 {name}",
-  "home.cta.portfolio": "查看作品集",
-  "home.cta.contact": "聯繫我",
+  "home.stats.projects": "專案",
+  "home.stats.photos": "照片",
+  "home.stats.collection": "收藏",
+  "home.scroll": "往下看",
 
   // About
   "about.title": "關於我",
-  "about.subtitle": "我關注視覺敘事、互動細節與效能體驗。",
 
-  "about.card.left": "能力與方法",
   "about.card.right": "設備",
 
-  "about.section.capabilities": "Capabilities",
-  "about.section.focus": "Focus",
-  "about.section.tooling": "Tooling",
-  "about.section.workflow": "Workflow",
-  "about.section.gear": "Gear",
-  "about.section.output": "Output",
+  "about.think": "我的思考方式",
 
   "about.capabilities.b1": "組件化與設計系統：一致性、可維護性",
   "about.capabilities.b2": "效能與可及性：讓體驗更快、更穩",
   "about.capabilities.b3": "動效與互動語意：克制但有層次",
 
   "about.focus.body":
-    "把前端、後端與攝影視為同一件事：用清晰的結構、穩定的系統和可延展的敘事，把複雜內容組織成可被理解、瀏覽並長期演進的體驗。",
+    "工程讓我關注結構、邏輯與可靠性，攝影讓我重新觀察光線、構圖與細節。我發現兩者並不矛盾：無論構建一個系統，還是捕捉一個瞬間，都需要在複雜的資訊中找到真正重要的部分。",
 
   // Skills
   "skills.title": "技術棧",

@@ -12,6 +12,7 @@ import { useStack } from "../data/useStack";
 import { cx } from "../lib/cx";
 import { pickLocalized, useI18n } from "../lib/i18n";
 import DetailDrawer from "./DetailDrawer";
+import { useStackScrub } from "./useStackScrub";
 
 /** Related projects listed at first in a technology's details; the rest behind "show all". */
 const INITIAL_PROJECTS = 4;
@@ -199,11 +200,19 @@ function TechnologyDetail({
  * with their logos in a grid on the right; stacked on narrow screens. Content and order come from
  * the admin (GET /api/stack). A technology used by public projects opens its details on click.
  */
-export default function TechStack() {
+/**
+ * The home page's tech stack. With `scrollMotion` (Stage 26, GSAP ScrollTrigger; see lib/motion.ts and useStackScrub)
+ * categories and technologies rise in one by one as the page scrolls, go back one by one when
+ * scrolling up, and the section fades out as it leaves; otherwise the caller wraps it in a one-time
+ * <Reveal>.
+ */
+export default function TechStack({ scrollMotion = false }: { scrollMotion?: boolean }) {
   const { lang, t } = useI18n();
   const { categories, status, retry } = useStack();
   const [openId, setOpenId] = useState<string | null>(null);
   const trigger = useRef<HTMLButtonElement | null>(null);
+  const listRef = useRef<HTMLDivElement | null>(null);
+  useStackScrub(listRef, scrollMotion, categories);
 
   const open = useCallback((id: string, button: HTMLButtonElement) => {
     trigger.current = button;
@@ -263,7 +272,7 @@ export default function TechStack() {
   const openTechnology = openCategory?.technologies.find((x) => x.id === openId);
 
   return (
-    <div className="stackList">
+    <div ref={listRef} className={cx("stackList", scrollMotion && "stackScrub")}>
       {categories.map((category, index) => {
         const name = pickLocalized(category.name, lang);
         const description = pickLocalized(category.description, lang);
@@ -293,7 +302,7 @@ export default function TechStack() {
           </section>
         );
       })}
-      {/* On <body>: the section's reveal animation transforms it, which would trap a fixed panel. */}
+      {/* On <body>: a reveal or scroll animation transforms its ancestors, which would trap a fixed panel. */}
       {openTechnology && openCategory
         ? createPortal(
             <TechnologyDetail

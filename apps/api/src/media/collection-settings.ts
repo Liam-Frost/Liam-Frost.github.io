@@ -22,7 +22,7 @@ export const DEFAULT_COLLECTION_SETTINGS: CollectionSettings = {
     people: true
   },
   showWant: true,
-  homeFeatured: "rotate",
+  homeFeatured: "daily",
   featuredWall: { ...DEFAULT_FEATURED_WALL }
 };
 

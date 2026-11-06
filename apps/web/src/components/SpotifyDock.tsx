@@ -2,6 +2,7 @@ import type { PublicSpotifyPlayer } from "@liam-frost/shared";
 import { useCallback, useEffect, useRef, useState, type FocusEvent } from "react";
 
 import { onPlayerCommand, setNowPlaying, type PlayRequest } from "../data/playerBus";
+import { observeAudioPlayback, observeSpotifyEmbed } from "../data/audio-visualization";
 import { useSpotifyPlayer } from "../data/useSpotifyPlayer";
 import { track as trackEvent } from "../lib/analytics";
 import { SpotifyCard } from "./spotify-card";
@@ -39,8 +40,8 @@ function embedSrc(link: string) {
 }
 
 /**
- * Spotify's own embedded player in the dock. It plays inside its iframe, so the page cannot tell whether
- * it is playing; the iframe stays mounted while collapsed so music keeps going.
+ * Spotify's embedded player, a plain iframe (a signed-in visitor gets full tracks), stays mounted while
+ * collapsed so music keeps going. Its own messages tell the side navigator whether it is playing.
  */
 function EmbedDock({ player, src }: { player: PublicSpotifyPlayer; src: string }) {
   const [isExpanded, setIsExpanded] = useState(true);
@@ -49,6 +50,8 @@ function EmbedDock({ player, src }: { player: PublicSpotifyPlayer; src: string }
   // A song chosen on the page replaces the configured link. Spotify's iframe cannot be started from the
   // page, so the visitor presses play in it.
   const [shown, setShown] = useState(src);
+  const frame = useRef<HTMLIFrameElement>(null);
+  useEffect(() => observeSpotifyEmbed(() => frame.current), []);
 
   useEffect(
     () =>
@@ -105,6 +108,7 @@ function EmbedDock({ player, src }: { player: PublicSpotifyPlayer; src: string }
     >
       <div className="spotifyDockPanel">
         <iframe
+          ref={frame}
           title="Spotify"
           src={shown}
           width="100%"
@@ -146,6 +150,7 @@ function Dock({ player }: { player: PublicSpotifyPlayer }) {
   const [isHovering, setIsHovering] = useState(false);
   const [hasAutoCollapsed, setHasAutoCollapsed] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const tapRef = useRef<ReturnType<typeof observeAudioPlayback> | null>(null);
   const failuresRef = useRef(0);
 
   const track = tracks[order[position]] ?? tracks[0];
@@ -253,6 +258,7 @@ function Dock({ player }: { player: PublicSpotifyPlayer }) {
     });
     audio.addEventListener("play", () => setIsPlaying(true));
     audioRef.current = audio;
+    tapRef.current = observeAudioPlayback(audio);
     return audio;
   };
 
@@ -289,6 +295,8 @@ function Dock({ player }: { player: PublicSpotifyPlayer }) {
   useEffect(
     () => () => {
       audioRef.current?.pause();
+      tapRef.current?.dispose();
+      tapRef.current = null;
       if ("mediaSession" in navigator) {
         navigator.mediaSession.metadata = null;
         navigator.mediaSession.setActionHandler("nexttrack", null);

@@ -3,17 +3,20 @@ import { type CSSProperties, type ReactNode, useEffect, useRef, useState } from 
 import { cx } from "../lib/cx";
 import { observeReveal } from "../lib/reveal";
 
-/** How far and how long content moves in; see the motion tokens in globals.css. */
+/** How far and how long content moves in; see the motion tokens in globals.css and docs/motion.md. */
 export type RevealIntensity = "subtle" | "standard" | "expressive";
 
 type Props = {
   children: ReactNode;
   className?: string;
-  /** A fixed offset, e.g. content after its heading. */
-  delayMs?: number;
+  /** Section headings use "subtle"; content the default "standard". */
+  intensity?: RevealIntensity;
+  /** Content that follows its heading: starts `--motion-after-heading` later. */
+  after?: boolean;
   /** Items of a list or grid: those revealed together follow each other in order on screen. */
   stagger?: boolean;
-  intensity?: RevealIntensity;
+  /** Shown at once, without motion: e.g. results of the visitor's own filtering. */
+  instant?: boolean;
 };
 
 const INTENSITY_CLASS: Record<RevealIntensity, string | null> = {
@@ -25,19 +28,22 @@ const INTENSITY_CLASS: Record<RevealIntensity, string | null> = {
 export default function Reveal({
   children,
   className,
-  delayMs = 0,
+  intensity = "standard",
+  after = false,
   stagger = false,
-  intensity = "standard"
+  instant = false
 }: Props) {
   const ref = useRef<HTMLDivElement | null>(null);
   const [order, setOrder] = useState<number | null>(null);
+  // Instant also shows what was still waiting (e.g. photos further down when the results change).
+  const visible = instant || order !== null;
 
   useEffect(() => {
     const el = ref.current;
-    if (!el) return;
+    if (!el || instant) return;
 
     return observeReveal(el, setOrder, { stagger });
-  }, [stagger]);
+  }, [stagger, instant]);
 
   return (
     <div
@@ -45,15 +51,12 @@ export default function Reveal({
       className={cx(
         "reveal",
         INTENSITY_CLASS[intensity],
-        order !== null && "revealVisible",
+        after && "revealAfter",
+        visible && "revealVisible",
+        instant && "revealInstant",
         className
       )}
-      style={
-        {
-          "--reveal-offset": `${delayMs}ms`,
-          ...(order ? { "--reveal-order": order } : {})
-        } as CSSProperties
-      }
+      style={order && !instant ? ({ "--reveal-order": order } as CSSProperties) : undefined}
     >
       {children}
     </div>

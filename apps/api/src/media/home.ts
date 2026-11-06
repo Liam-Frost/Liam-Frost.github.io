@@ -1,4 +1,9 @@
-import type { CollectionSettings, LocalizedText, PublicHomeFeatured } from "@liam-frost/shared";
+import {
+  orderHomeWall,
+  type CollectionSettings,
+  type LocalizedText,
+  type PublicHomeFeatured
+} from "@liam-frost/shared";
 
 import type { MediaRow } from "./types";
 
@@ -12,10 +17,11 @@ const SENTENCE_END = /[。！？!?.…]/u;
 
 /**
  * The home page's featured entries among the shown ones.
- * - manual: the admin's fixed order (entries never ordered go last, newest first).
- * - rotate: a window that moves each day over the featured entries (oldest first), so every visitor
- *   sees the same picks on a given day and every entry comes up within n days; kinds are spread
- *   before any kind repeats.
+ * - fixed: the admin's fixed order (entries never ordered go last, newest first).
+ * - otherwise: a window that moves each day over the featured entries (oldest first), so every
+ *   visitor sees the same picks on a given day and every entry comes up within n days; kinds are
+ *   spread before any kind repeats. (For visit and session rotation the browser orders the wall;
+ *   these picks only stand in until it has.)
  */
 export function pickHomeFeatured(
   rows: MediaRow[],
@@ -24,7 +30,7 @@ export function pickHomeFeatured(
   limit = HOME_FEATURED
 ): MediaRow[] {
   const featured = rows.filter((row) => row.featured);
-  if (mode === "manual") {
+  if (mode === "fixed") {
     return featured
       .sort(
         (a, b) =>
@@ -65,38 +71,22 @@ export function pickHomeFeatured(
 
 const gcd = (a: number, b: number): number => (b ? gcd(b, a % b) : a);
 
-/** Full wall candidates. Manual means exact order; rotation mixes stable music/nonmusic queues. */
+/**
+ * Full wall candidates. Fixed: the admin's exact order. Daily: the day's turn of orderHomeWall.
+ * Visit and session: the rotation's base (oldest first), which the browser orders per visit or
+ * session.
+ */
 export function pickHomeWall(
   rows: MediaRow[],
   mode: CollectionSettings["homeFeatured"],
   day: string
 ): MediaRow[] {
-  if (mode === "manual") return pickHomeFeatured(rows, mode, day, rows.length);
+  if (mode === "fixed") return pickHomeFeatured(rows, mode, day, rows.length);
   const base = rows
     .filter((row) => row.featured)
     .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime() || a.id.localeCompare(b.id));
-  if (!base.length) return [];
-  const offset =
-    ((Math.floor(Date.parse(`${day}T00:00:00Z`) / DAY_MS) % base.length) + base.length) %
-    base.length;
-  const ordered = [...base.slice(offset), ...base.slice(0, offset)];
-  const music = ordered.filter((row) => row.kind === "track" || row.kind === "album");
-  const other = ordered.filter((row) => row.kind !== "track" && row.kind !== "album");
-  // Merge normalized positions: predictable proportional mixing, preserving each queue's order.
-  const out: MediaRow[] = [];
-  let m = 0,
-    o = 0;
-  while (m < music.length || o < other.length) {
-    if (
-      o === other.length ||
-      (m < music.length && (m + 0.5) / music.length <= (o + 0.5) / other.length)
-    )
-      out.push(music[m++]!);
-    else out.push(other[o++]!);
-  }
-  // Preserve the day's first candidate, so every entry gets a turn at the front within n days.
-  const first = out.findIndex((row) => row.id === ordered[0]!.id);
-  return [...out.slice(first), ...out.slice(0, first)];
+  if (mode !== "daily") return base;
+  return orderHomeWall(base, Math.floor(Date.parse(`${day}T00:00:00Z`) / DAY_MS));
 }
 
 /** The start of a text: whole sentences when one ends in time, otherwise cut with "…". */

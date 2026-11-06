@@ -40,6 +40,8 @@ import { registerPhotoRoutes } from "./routes/photos";
 import { registerProjectRoutes } from "./routes/projects";
 import { registerSpotifyRoutes } from "./routes/spotify";
 import { registerStackRoutes } from "./routes/stack";
+import { registerAboutRoutes } from "./routes/about";
+import { AboutStore } from "./about/store";
 import { registerSteamRoutes } from "./routes/steam";
 import { registerUploadRoutes } from "./routes/uploads";
 import { registerWebApp } from "./routes/web-app";
@@ -467,6 +469,7 @@ export async function buildServer({
   registerPhotoRoutes(app, photos, store);
   registerProjectRoutes(app, projects, store);
   registerStackRoutes(app, auth, stack, store, projects);
+  registerAboutRoutes(app, auth, settings ? new AboutStore(settings) : null);
   registerAdminMediaRoutes(app, auth, {
     media,
     collection,

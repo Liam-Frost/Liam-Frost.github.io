@@ -42,7 +42,7 @@ export function FeaturedOrderDialog({
   const { data: settings } = useCollectionSettings();
   const setItem = useSetMediaItem();
   const toast = useToast();
-  const manual = settings?.settings.homeFeatured === "manual";
+  const manual = settings?.settings.homeFeatured === "fixed";
 
   const move = (from: number, to: number) => {
     if (to < 0 || to >= order.length || from === to) return;
@@ -91,7 +91,7 @@ export function FeaturedOrderDialog({
       <p className="mb-3 text-[12.5px] leading-relaxed text-muted">
         {manual
           ? "精选墙严格按这里的顺序分行；隐藏的条目会跳过，超出展示行数的条目暂不显示。"
-          : "现在使用自动轮换：每天稳定轮换并混排音乐与其他收藏。要使用这里的顺序，请在“显示设置”里选择固定顺序。"}
+          : "现在使用轮换（每天、每次访问或每个浏览会话），会混排音乐与其他收藏。要使用这里的顺序，请在“显示设置”里选择“固定”。"}
         拖动或用箭头调整顺序。在条目的编辑页打开“首页精选”可以加入这里。
       </p>
       {order.length ? (

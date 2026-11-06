@@ -1,0 +1,108 @@
+.waveNavigator {
+  position: fixed;
+  z-index: 35;
+  /* Near the window's left edge, clear of it. */
+  left: 24px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  color: var(--text);
+}
+/* Heights come from RAIL_HEIGHT (model.ts). */
+.waveTrack {
+  position: relative;
+  width: 64px;
+  flex: none;
+}
+.waveTrack svg {
+  display: block;
+  width: 64px;
+  overflow: visible;
+  pointer-events: none;
+}
+.waveTrack line {
+  stroke: var(--faint);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  opacity: 0.48;
+}
+.waveTrack line.passed {
+  opacity: 0.7;
+}
+.waveTrack line.current {
+  stroke: var(--text);
+  opacity: 1;
+  stroke-width: 3;
+}
+.waveTarget {
+  position: absolute;
+  left: 0;
+  width: 64px;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.waveTarget:focus-visible {
+  outline: 2px solid var(--accent2);
+  outline-offset: 2px;
+  border-radius: 5px;
+}
+.wavePreview {
+  pointer-events: none;
+  position: absolute;
+  left: 75px;
+  top: 50%;
+  transform: translateY(-50%) translateX(-5px);
+  width: 210px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--popover);
+  color: var(--text);
+  box-shadow: var(--shadow);
+  opacity: 0;
+  transition:
+    opacity 0.16s ease,
+    transform 0.16s ease;
+}
+.wavePreview.isVisible {
+  opacity: 1;
+  transform: translateY(-50%) translateX(0);
+}
+.wavePreview span,
+.wavePreview small {
+  display: block;
+  color: var(--faint);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+}
+.wavePreview strong {
+  display: block;
+  margin-top: 5px;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+.wavePreview p {
+  margin: 5px 0 8px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+@media (max-width: 1279px), (hover: none), (pointer: coarse), print {
+  .waveNavigator {
+    display: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .wavePreview {
+    transition: none;
+  }
+}
