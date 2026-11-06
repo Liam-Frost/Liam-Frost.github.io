@@ -25,6 +25,15 @@ const labels = {
   ja: { nav: "ページ内ナビゲーション", hint: "セクションへ移動", home: "ホーム" }
 };
 
+/** Whether focus came from the keyboard (`:focus-visible`), not from a click or a window refocus. */
+function focusVisible(element: Element) {
+  try {
+    return element.matches(":focus-visible");
+  } catch {
+    return true;
+  }
+}
+
 export default function WaveformNavigator() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -132,7 +141,11 @@ export default function WaveformNavigator() {
               style={{ top: `${start * 100}%`, height: `${Math.max(0, end - start) * 100}%` }}
               aria-label={section.title}
               aria-current={active === index ? "location" : undefined}
-              onFocus={() => {
+              onFocus={(event) => {
+                // Keyboard focus only. A click leaves focus on the button, and the browser focuses
+                // it again when the window or tab comes back: that must not bring back the preview
+                // and the peak after the pointer has left.
+                if (!focusVisible(event.currentTarget)) return;
                 setPreview(index);
                 pointer.current = ((start + end) / 2) * (SEGMENTS - 1);
                 wake.current();
