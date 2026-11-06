@@ -2,13 +2,20 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   audioVisualization,
-  createAudioTap,
-  observeSpotifyEmbed,
-  setSpotifyPlayback
+  observeAudioPlayback,
+  observeSpotifyEmbed
 } from "../../web/src/data/audio-visualization";
-import { gaussian, sectionAt, syntheticEnergy } from "../../web/src/components/waveform/model";
+import {
+  gaussian,
+  PLAYING_AMPLITUDE,
+  sectionAt,
+  syntheticEnergy
+} from "../../web/src/components/waveform/model";
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  vi.useRealTimers();
+  vi.unstubAllGlobals();
+});
 
 describe("section navigation mapping", () => {
   const sections = [
@@ -26,85 +33,90 @@ describe("section navigation mapping", () => {
     expect(gaussian(0)).toBe(1);
     expect(gaussian(-2)).toBe(gaussian(2));
     expect(gaussian(1)).toBeGreaterThan(gaussian(3));
-    for (let i = 0; i < 32; i++) expect(syntheticEnergy(i * 30, i)).toBeGreaterThanOrEqual(0);
+    for (let i = 0; i < 32; i++) {
+      expect(syntheticEnergy(i * 0.37, i % 18)).toBeGreaterThanOrEqual(0);
+      expect(syntheticEnergy(i * 0.37, i % 18)).toBeLessThanOrEqual(1);
+    }
     expect(syntheticEnergy(1, 0)).not.toBe(syntheticEnergy(1, 1));
+  });
+  it("moves visibly over time while staying below the hover peak", () => {
+    const values = Array.from({ length: 60 }, (_, i) => syntheticEnergy(i / 30, 4));
+    expect(Math.max(...values) - Math.min(...values)).toBeGreaterThan(0.4);
+    expect(PLAYING_AMPLITUDE * Math.max(...values)).toBeLessThan(35.2);
+    expect(PLAYING_AMPLITUDE * (Math.max(...values) - Math.min(...values))).toBeGreaterThan(10);
   });
 });
 
-describe("audio capture tap", () => {
-  it("keeps a plain Spotify embed unknown and clears it on unmount", () => {
-    const dispose = observeSpotifyEmbed();
-    expect(audioVisualization.get()).toMatchObject({
-      source: "spotify",
-      playback: "unknown",
-      playing: false,
-      analyser: null
-    });
-    dispose();
-    expect(audioVisualization.get()).toMatchObject({ source: "none", playback: "stopped" });
-    setSpotifyPlayback("playing");
-    expect(audioVisualization.get().source).toBe("none");
+/** A window with message events and timers, for the Spotify embed's messages. */
+function fakeWindow() {
+  const win = Object.assign(new EventTarget(), {
+    setTimeout: (fn: () => void, ms: number) => setTimeout(fn, ms),
+    clearTimeout: (id: number) => clearTimeout(id)
   });
-  it("uses Spotify playback events for synthetic motion without an audio analyser", () => {
-    const dispose = observeSpotifyEmbed();
-    setSpotifyPlayback("playing");
-    expect(audioVisualization.get()).toMatchObject({
-      source: "spotify",
-      playback: "playing",
-      playing: true,
-      analyser: null
-    });
-    setSpotifyPlayback("paused");
-    expect(audioVisualization.get()).toMatchObject({ playback: "paused", playing: false });
-    setSpotifyPlayback("unknown");
-    expect(audioVisualization.get()).toMatchObject({ playback: "unknown", playing: false });
+  vi.stubGlobal("window", win);
+  const frameWindow = {};
+  const frame = { contentWindow: frameWindow } as unknown as HTMLIFrameElement;
+  const post = (
+    data: unknown,
+    origin = "https://open.spotify.com",
+    source: unknown = frameWindow
+  ) => {
+    const event = new Event("message");
+    Object.assign(event, { data, origin, source });
+    win.dispatchEvent(event);
+  };
+  return { frame, post };
+}
+
+describe("music playback for the visualizer", () => {
+  it("follows the Spotify embed's own playback messages", () => {
+    const { frame, post } = fakeWindow();
+    const dispose = observeSpotifyEmbed(() => frame);
+    expect(audioVisualization.get()).toEqual({ source: "spotify", playing: false });
+    post({ type: "playback_started", payload: { playingURI: "spotify:track:x" } });
+    expect(audioVisualization.get().playing).toBe(true);
+    post({ type: "playback_update", payload: { isPaused: true, isBuffering: false } });
+    expect(audioVisualization.get().playing).toBe(false);
+    // Spotify may send the message as a JSON string.
+    post(JSON.stringify({ type: "playback_update", payload: { isPaused: false } }));
+    expect(audioVisualization.get().playing).toBe(true);
+    dispose();
+    expect(audioVisualization.get()).toEqual({ source: "none", playing: false });
+  });
+  it("ignores messages from other origins, other frames and other shapes", () => {
+    const { frame, post } = fakeWindow();
+    const dispose = observeSpotifyEmbed(() => frame);
+    post({ type: "playback_started" }, "https://evil.example");
+    post({ type: "playback_started" }, "https://open.spotify.com", {});
+    post({ type: "playback_update", payload: { isPaused: "no" } });
+    post("not json");
+    expect(audioVisualization.get().playing).toBe(false);
     dispose();
   });
-  it("analyses captured audio without connecting any node to the speaker", () => {
-    const audio = new EventTarget() as HTMLAudioElement & { captureStream: () => MediaStream };
-    const stop = vi.fn(),
-      disconnect = vi.fn(),
-      connect = vi.fn(),
-      close = vi.fn().mockResolvedValue(undefined);
-    const analyser = { fftSize: 0, smoothingTimeConstant: 0, disconnect };
-    const source = { connect, disconnect };
-    const capture = { getTracks: () => [{ stop }] } as unknown as MediaStream;
-    audio.captureStream = () => capture;
-    const context = {
-      resume: vi.fn().mockResolvedValue(undefined),
-      suspend: vi.fn().mockResolvedValue(undefined),
-      close,
-      createMediaStreamSource: vi.fn().mockReturnValue(source),
-      createAnalyser: vi.fn().mockReturnValue(analyser)
-    };
-    vi.stubGlobal(
-      "AudioContext",
-      vi.fn(function () {
-        return context;
-      })
-    );
-    const tap = createAudioTap(audio);
+  it("counts as stopped when the embed goes quiet", () => {
+    vi.useFakeTimers();
+    const { frame, post } = fakeWindow();
+    const dispose = observeSpotifyEmbed(() => frame);
+    post({ type: "playback_update", payload: { isPaused: false } });
+    vi.advanceTimersByTime(3000);
+    post({ type: "playback_update", payload: { isPaused: false } });
+    vi.advanceTimersByTime(3000);
+    expect(audioVisualization.get().playing).toBe(true);
+    vi.advanceTimersByTime(1500);
+    expect(audioVisualization.get().playing).toBe(false);
+    dispose();
+  });
+  it("follows the site player's audio element", () => {
+    const audio = new EventTarget() as HTMLAudioElement;
+    const tap = observeAudioPlayback(audio);
     audio.dispatchEvent(new Event("playing"));
-    expect(audioVisualization.get()).toMatchObject({ source: "custom", playing: true, analyser });
-    expect(connect).toHaveBeenCalledExactlyOnceWith(analyser);
+    expect(audioVisualization.get()).toEqual({ source: "custom", playing: true });
     audio.dispatchEvent(new Event("pause"));
     expect(audioVisualization.get().playing).toBe(false);
-    tap.dispose();
-    expect(stop).toHaveBeenCalledOnce();
-    expect(close).toHaveBeenCalledOnce();
-    expect(audioVisualization.get().source).toBe("none");
-  });
-  it("keeps playback state usable when capture is unsupported or throws", () => {
-    const audio = new EventTarget() as HTMLAudioElement;
-    const tap = createAudioTap(audio);
     audio.dispatchEvent(new Event("playing"));
-    expect(audioVisualization.get()).toMatchObject({
-      source: "custom",
-      playing: true,
-      analyser: null
-    });
     audio.dispatchEvent(new Event("ended"));
     expect(audioVisualization.get().playing).toBe(false);
     tap.dispose();
+    expect(audioVisualization.get().source).toBe("none");
   });
 });

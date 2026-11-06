@@ -3,10 +3,22 @@ export const clamp = (n: number, low = 0, high = 1) => Math.max(low, Math.min(hi
 export function gaussian(distance: number, sigma = 1.7) {
   return Math.exp(-(distance * distance) / (2 * sigma * sigma));
 }
+/**
+ * How far a line grows (in the 64-wide viewBox) at full simulated energy while music plays: clearly
+ * visible, but less than the hover peak (35.2), so the rail still reads as navigation.
+ */
+export const PLAYING_AMPLITUDE = 24;
+
+/**
+ * A simulated, music-like signal for line `index` at `time` seconds (0–1): a ~112 bpm pulse shared by
+ * all lines, plus faster waves whose phase differs per line, so the lines move like an equaliser
+ * without moving in step.
+ */
 export function syntheticEnergy(time: number, index: number) {
-  return clamp(
-    0.34 + 0.16 * Math.sin(time * 2.1 + index * 0.35) + 0.1 * Math.sin(time * 3.7 - index * 0.21)
-  );
+  const pulse = Math.max(0, Math.sin(time * Math.PI * (112 / 60))) ** 2;
+  const wave = Math.sin(time * 5.3 + index * 1.7) * Math.sin(time * 1.3 + index * 0.6);
+  const flicker = Math.sin(time * 8.9 - index * 2.3 + Math.sin(time * 0.7 + index));
+  return clamp(0.22 + 0.36 * pulse + 0.26 * wave + 0.16 * flicker);
 }
 export type SectionGeometry = {
   id: string;
