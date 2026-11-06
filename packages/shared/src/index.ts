@@ -8,3 +8,5 @@ export * from "./featured-wall";
 export * from "./stack";
 export * from "./about";
 export * from "./rotation";
+
+export * from "./contact";
