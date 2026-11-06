@@ -19,14 +19,14 @@ import { useToast } from "../ui/Toast";
 
 const NAV = [
   { to: "/", label: "概览", icon: LayoutDashboard, end: true },
-  { to: "/photos", label: "照片", icon: Images, end: false },
-  { to: "/projects", label: "项目", icon: FolderKanban, end: false },
-  { to: "/stack", label: "技术栈", icon: Layers, end: false },
   { to: "/about", label: "关于", icon: Quote, end: false },
+  { to: "/stack", label: "技术栈", icon: Layers, end: false },
+  { to: "/projects", label: "项目", icon: FolderKanban, end: false },
   { to: "/collection", label: "收藏", icon: Clapperboard, end: false },
+  { to: "/photos", label: "照片", icon: Images, end: false },
   { to: "/music", label: "播放器", icon: Music, end: false },
-  { to: "/analytics", label: "统计", icon: ChartColumn, end: false },
-  { to: "/integrations", label: "API 配置", icon: KeyRound, end: false }
+  { to: "/integrations", label: "API 配置", icon: KeyRound, end: false },
+  { to: "/analytics", label: "统计", icon: ChartColumn, end: false }
 ];
 
 export function AdminLayout({ user }: { user: AdminUser }) {
