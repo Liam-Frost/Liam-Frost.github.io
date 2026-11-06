@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { Link, useNavigate } from "react-router";
 
+import AboutSection from "../components/AboutSection";
 import HeroStats from "../components/HeroStats";
 import HomeCollection from "../components/HomeCollection";
 import PhotoCard from "../components/PhotoCard";
@@ -140,82 +141,7 @@ export default function HomePage() {
         </Link>
       </section>
 
-      <section className="section" id="about">
-        <div className="container">
-          <Reveal intensity="subtle">
-            <h2 className="sectionTitle">{t("about.title")}</h2>
-            <p className="sectionSubtitle">
-              {pickLocalized(site.role, lang)} · {t("about.subtitle")}
-            </p>
-          </Reveal>
-
-          <div className="grid grid2 aboutGrid">
-            <Reveal after stagger>
-              <div className="card aboutCard">
-                <h3 className="aboutCardTitle">{t("about.card.left")}</h3>
-
-                <div className="aboutCardBody">
-                  <div className="aboutSection">
-                    <div className="aboutSectionTitle">{t("about.section.capabilities")}</div>
-                    <ul className="aboutList">
-                      <li>{t("about.capabilities.b1")}</li>
-                      <li>{t("about.capabilities.b2")}</li>
-                      <li>{t("about.capabilities.b3")}</li>
-                    </ul>
-                  </div>
-
-                  <div className="aboutSection">
-                    <div className="aboutSectionTitle">{t("about.section.focus")}</div>
-                    <p className="aboutText">{t("about.focus.body")}</p>
-                  </div>
-
-                  <div className="aboutSection">
-                    <div className="aboutSectionTitle">{t("about.section.tooling")}</div>
-                    <div className="tags" aria-label={t("skills.title")}>
-                      {["React", "Java", "Springboot", "C++", "Lightroom"].map((x) => (
-                        <span key={x} className="tag">
-                          {x}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </Reveal>
-
-            <Reveal after stagger>
-              <div className="card aboutCard">
-                <h3 className="aboutCardTitle">{t("about.card.right")}</h3>
-
-                <div className="aboutCardBody">
-                  <div className="aboutSection">
-                    <div className="aboutSectionTitle">{t("about.section.gear")}</div>
-                    <div className="metaList">
-                      {site.gear.map((g) => (
-                        <div key={g.value} className="metaItem">
-                          <div className="metaKey">{pickLocalized(g.key, lang)}</div>
-                          <div className="metaVal">{g.value}</div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="aboutSection">
-                    <div className="aboutSectionTitle">{t("about.section.output")}</div>
-                    <div className="tags" aria-label={t("about.section.output")}>
-                      {["Series", "Web", "Performance", "Story"].map((x) => (
-                        <span key={x} className="tag">
-                          {x}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </Reveal>
-          </div>
-        </div>
-      </section>
+      <AboutSection />
 
       <section className="section" id="skills">
         <div className="container">

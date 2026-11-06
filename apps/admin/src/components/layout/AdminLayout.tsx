@@ -8,7 +8,8 @@ import {
   LogOut,
   Music,
   KeyRound,
-  Layers
+  Layers,
+  Quote
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { NavLink, Outlet } from "react-router";
@@ -21,6 +22,7 @@ const NAV = [
   { to: "/photos", label: "照片", icon: Images, end: false },
   { to: "/projects", label: "项目", icon: FolderKanban, end: false },
   { to: "/stack", label: "技术栈", icon: Layers, end: false },
+  { to: "/about", label: "关于", icon: Quote, end: false },
   { to: "/collection", label: "收藏", icon: Clapperboard, end: false },
   { to: "/music", label: "播放器", icon: Music, end: false },
   { to: "/analytics", label: "统计", icon: ChartColumn, end: false },

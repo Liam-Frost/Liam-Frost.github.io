@@ -1,4 +1,9 @@
-import { PERSON_ROLES, SOUNDTRACK_ROLES } from "@liam-frost/shared";
+import {
+  ABOUT_LIMITS,
+  MANIFESTO_ROTATION_MODES,
+  PERSON_ROLES,
+  SOUNDTRACK_ROLES
+} from "@liam-frost/shared";
 import { z } from "zod";
 
 import { badRequest } from "./errors";
@@ -745,3 +750,78 @@ export const stackOrderSchema = z
 export const stackIconSearchSchema = z.object({
   q: z.string().trim().min(1, "Enter a name to search").max(60)
 });
+
+const aboutId = z.string().regex(/^[A-Za-z0-9_-]{1,64}$/, "Invalid id");
+
+/** The about section's whole content, as the admin saves it (see AboutContent). */
+export const aboutContentSchema = z
+  .object({
+    manifestos: z
+      .array(
+        z
+          .object({
+            id: aboutId,
+            text: requiredText(
+              ABOUT_LIMITS.manifestoText,
+              "A manifesto needs text in at least one language"
+            ),
+            attribution: localizedText(ABOUT_LIMITS.attribution).default({}),
+            visible: z.boolean()
+          })
+          .strict()
+      )
+      .max(ABOUT_LIMITS.manifestos, `At most ${ABOUT_LIMITS.manifestos} manifestos`),
+    rotation: z
+      .object({ mode: z.enum(MANIFESTO_ROTATION_MODES), fixedId: aboutId.nullable() })
+      .strict(),
+    gear: z
+      .array(
+        z
+          .object({
+            id: aboutId,
+            name: requiredText(
+              ABOUT_LIMITS.gearCategoryName,
+              "A gear category needs a name in at least one language"
+            ),
+            visible: z.boolean(),
+            items: z
+              .array(
+                z
+                  .object({
+                    id: aboutId,
+                    name: z
+                      .string()
+                      .trim()
+                      .min(1, "Gear needs a name")
+                      .max(ABOUT_LIMITS.gearItemName),
+                    visible: z.boolean()
+                  })
+                  .strict()
+              )
+              .max(ABOUT_LIMITS.gearItems, `At most ${ABOUT_LIMITS.gearItems} items per category`)
+          })
+          .strict()
+      )
+      .max(ABOUT_LIMITS.gearCategories, `At most ${ABOUT_LIMITS.gearCategories} gear categories`)
+  })
+  .strict()
+  .superRefine((about, ctx) => {
+    const ids = [
+      ...about.manifestos.map((m) => m.id),
+      ...about.gear.flatMap((c) => [c.id, ...c.items.map((i) => i.id)])
+    ];
+    if (new Set(ids).size !== ids.length)
+      ctx.addIssue({ code: "custom", message: "Duplicate ids" });
+    if (about.rotation.fixedId && !about.manifestos.some((m) => m.id === about.rotation.fixedId))
+      ctx.addIssue({ code: "custom", message: "The fixed manifesto does not exist" });
+    for (const category of about.gear) {
+      const names = category.items.map((i) => i.name.toLowerCase());
+      const clash = category.items.find((_, i) => names.indexOf(names[i]!) !== i);
+      if (clash)
+        ctx.addIssue({ code: "custom", message: `“${clash.name}” is already in this category` });
+    }
+  });
+
+export const aboutUpdateSchema = z
+  .object({ about: aboutContentSchema, revision: z.string().max(100) })
+  .strict();

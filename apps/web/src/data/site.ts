@@ -70,20 +70,5 @@ export const site = {
         previewUrl: "https://p.scdn.co/mp3-preview/2375bc6998d765b02b229ff44e5c3d7b75fff74a"
       }
     ] satisfies SpotifyTrack[]
-  },
-
-  gear: [
-    {
-      key: { zh: "相机", "zh-Hant": "相機", en: "Camera", fr: "Caméra", ja: "カメラ" } satisfies L,
-      value: "Canon R5 | Canon 80D | DJI Action 6 | iPhone 16 Pro Max"
-    },
-    {
-      key: { zh: "镜头", "zh-Hant": "鏡頭", en: "Lens", fr: "Objectif", ja: "レンズ" } satisfies L,
-      value: "RF 24mm f/1.4 L VSM | RF 70-200mm f/2.8 L IS USM | EF-S 18-200mm f/3.5-5.6 IS"
-    },
-    {
-      key: { zh: "后期", "zh-Hant": "後期", en: "Editing", fr: "Retouche", ja: "編集" } satisfies L,
-      value: "Adobe Lightroom | Adobe Photoshop | DaVinci Resolve"
-    }
-  ]
+  }
 } as const;
