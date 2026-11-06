@@ -69,6 +69,7 @@ export function AnalyticsPage({ view }: { view: AnalyticsView }) {
   return (
     <>
       <PageHeader
+        className={view === "audience" ? "max-sm:flex-col max-sm:items-stretch" : ""}
         title="统计"
         description="个人主页的访问情况。不使用 Cookie、不保存 IP；只统计网站，不统计后台和登录后的你自己。"
         actions={
@@ -80,14 +81,22 @@ export function AnalyticsPage({ view }: { view: AnalyticsView }) {
                 aria-label="访问统计总开关"
                 aria-checked={meta.data.enabled}
                 disabled={toggle.isPending}
-                className="btn-secondary"
+                className="inline-flex items-center gap-2 self-center rounded-lg px-1 py-2 text-[12px] text-muted disabled:opacity-50"
                 onClick={() => toggle.mutate(!meta.data!.enabled)}
               >
+                <span
+                  aria-hidden="true"
+                  className={`relative h-5 w-8 rounded-full ${meta.data.enabled ? "bg-brand" : "bg-line-strong"}`}
+                >
+                  <span
+                    className={`absolute top-1 size-3 rounded-full bg-white ${meta.data.enabled ? "left-4" : "left-1"}`}
+                  />
+                </span>
                 {toggle.isPending ? "正在保存…" : meta.data.enabled ? "统计已开启" : "统计已关闭"}
               </button>
             ) : null}
             {overview.data ? (
-              <span className="chip inline-flex items-center gap-1.5 self-center !text-[12px]">
+              <span className="inline-flex items-center gap-1.5 self-center text-[12px] text-muted">
                 <span aria-hidden="true" className="size-2 rounded-full bg-status-ok" />
                 当前在线 {overview.data.online}
               </span>

@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   LogOut,
   Music,
+  Mail,
   KeyRound,
   Layers,
   Quote
@@ -20,11 +21,11 @@ import { useToast } from "../ui/Toast";
 const NAV = [
   { to: "/", label: "概览", icon: LayoutDashboard, end: true },
   { to: "/about", label: "关于", icon: Quote, end: false },
-  { to: "/contact", label: "联系我", icon: Quote, end: false },
   { to: "/stack", label: "技术栈", icon: Layers, end: false },
   { to: "/projects", label: "项目", icon: FolderKanban, end: false },
   { to: "/collection", label: "收藏", icon: Clapperboard, end: false },
   { to: "/photos", label: "照片", icon: Images, end: false },
+  { to: "/contact", label: "联系我", icon: Mail, end: false },
   { to: "/music", label: "播放器", icon: Music, end: false },
   { to: "/integrations", label: "API 配置", icon: KeyRound, end: false },
   { to: "/analytics", label: "统计", icon: ChartColumn, end: false }
@@ -99,14 +100,16 @@ export function AdminLayout({ user }: { user: AdminUser }) {
 export function PageHeader({
   title,
   description,
-  actions
+  actions,
+  className = ""
 }: {
   title: string;
   description?: string;
   actions?: ReactNode;
+  className?: string;
 }) {
   return (
-    <header className="mb-6 flex flex-wrap items-start gap-3">
+    <header className={`mb-6 flex flex-wrap items-start gap-3 ${className}`}>
       <div className="min-w-0 flex-1">
         <h1 className="text-[22px] font-semibold text-brand-dark">{title}</h1>
         {description ? (
