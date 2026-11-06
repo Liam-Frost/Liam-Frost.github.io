@@ -1,6 +1,15 @@
 import { useEffect, useRef, type RefObject } from "react";
 import { audioVisualization } from "../../data/audio-visualization";
-import { clamp, gaussian, PLAYING_AMPLITUDE, SEGMENTS, syntheticEnergy } from "./model";
+import {
+  clamp,
+  gaussian,
+  HOVER_PEAK,
+  LINE_START,
+  PLAYING_AMPLITUDE,
+  REST_LENGTH,
+  SEGMENTS,
+  syntheticEnergy
+} from "./model";
 
 /**
  * One loop for pointer, scroll and music; SVG writes only, no React render on animation frames. While
@@ -56,7 +65,11 @@ export function useWaveMotion(
             (raw - levels[index]!) * Math.min(1, dt * (raw > levels[index]! ? 9 : 4));
         if (levels[index]! > 0.005) settling = true;
         const hover = gaussian(index - pointerPosition) * pointerLevel;
-        const width = 12 + 35.2 * hover + PLAYING_AMPLITUDE * levels[index]! * (1 - hover);
+        const width =
+          LINE_START +
+          REST_LENGTH +
+          HOVER_PEAK * hover +
+          PLAYING_AMPLITUDE * levels[index]! * (1 - hover);
         line.setAttribute("x2", String(width));
         line.setAttribute(
           "class",

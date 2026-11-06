@@ -7,6 +7,7 @@ import {
 } from "../../web/src/data/audio-visualization";
 import {
   gaussian,
+  HOVER_PEAK,
   PLAYING_AMPLITUDE,
   sectionAt,
   syntheticEnergy
@@ -42,7 +43,7 @@ describe("section navigation mapping", () => {
   it("moves visibly over time while staying below the hover peak", () => {
     const values = Array.from({ length: 60 }, (_, i) => syntheticEnergy(i / 30, 4));
     expect(Math.max(...values) - Math.min(...values)).toBeGreaterThan(0.4);
-    expect(PLAYING_AMPLITUDE * Math.max(...values)).toBeLessThan(35.2);
+    expect(PLAYING_AMPLITUDE * Math.max(...values)).toBeLessThan(HOVER_PEAK);
     expect(PLAYING_AMPLITUDE * (Math.max(...values) - Math.min(...values))).toBeGreaterThan(10);
   });
 });

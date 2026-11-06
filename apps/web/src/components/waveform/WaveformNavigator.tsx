@@ -3,7 +3,16 @@ import { useLocation, useNavigate } from "react-router";
 import { useI18n } from "../../lib/i18n";
 import { scrollToElement } from "../../lib/smoothScroll";
 import { useQuality } from "../../perf/useQuality";
-import { clamp, sectionAt, SEGMENTS } from "./model";
+import {
+  clamp,
+  LINE_GAP,
+  LINE_START,
+  RAIL_HEIGHT,
+  RAIL_WIDTH,
+  REST_LENGTH,
+  sectionAt,
+  SEGMENTS
+} from "./model";
 import { useSections } from "./useSections";
 import { useWaveMotion } from "./useWaveMotion";
 import "../../styles/waveform-navigator.css";
@@ -84,6 +93,7 @@ export default function WaveformNavigator() {
       <div
         className="waveTrack"
         ref={track}
+        style={{ height: RAIL_HEIGHT }}
         onPointerEnter={(event) => {
           trackBounds.current = track.current?.getBoundingClientRect() ?? null;
           move(event.clientY);
@@ -93,7 +103,8 @@ export default function WaveformNavigator() {
       >
         <svg
           ref={svg}
-          viewBox="0 0 64 256"
+          viewBox={`0 0 ${RAIL_WIDTH} ${RAIL_HEIGHT}`}
+          style={{ height: RAIL_HEIGHT }}
           preserveAspectRatio="none"
           aria-hidden="true"
           focusable="false"
@@ -101,10 +112,10 @@ export default function WaveformNavigator() {
           {Array.from({ length: SEGMENTS }, (_, i) => (
             <line
               key={i}
-              x1="1.5"
-              x2="13.5"
-              y1={4 + (i * 248) / (SEGMENTS - 1)}
-              y2={4 + (i * 248) / (SEGMENTS - 1)}
+              x1={LINE_START}
+              x2={LINE_START + REST_LENGTH}
+              y1={4 + i * LINE_GAP}
+              y2={4 + i * LINE_GAP}
             />
           ))}
         </svg>
