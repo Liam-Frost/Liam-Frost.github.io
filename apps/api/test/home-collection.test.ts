@@ -53,11 +53,11 @@ describe("home featured picks", () => {
       row("anime"),
       row("movie")
     ];
-    const ids = (day: string) => pickHomeFeatured(rows, "rotate", day).map((r) => r.id);
+    const ids = (day: string) => pickHomeFeatured(rows, "daily", day).map((r) => r.id);
     expect(ids("2026-11-04")).toEqual(ids("2026-11-04"));
     expect(ids("2026-11-04")).not.toEqual(ids("2026-11-05"));
     for (const day of ["2026-11-04", "2026-11-05", "2026-11-06", "2026-11-07"]) {
-      const picked = pickHomeFeatured(rows, "rotate", day);
+      const picked = pickHomeFeatured(rows, "daily", day);
       expect(picked).toHaveLength(3);
       // Four kinds exist, so three picks never repeat one.
       expect(new Set(picked.map((r) => r.kind)).size).toBe(3);
@@ -76,7 +76,7 @@ describe("home featured picks", () => {
     const check = (rows: MediaRow[]) => {
       const seen = new Set<string>();
       for (const day of days(rows.length))
-        pickHomeFeatured(rows, "rotate", day).forEach((r) => seen.add(r.id));
+        pickHomeFeatured(rows, "daily", day).forEach((r) => seen.add(r.id));
       expect(seen.size, rows.map((r) => r.kind).join(",")).toBe(rows.length);
     };
     // Codex's case: six entries, so a window moving by three only ever started at two places, and the
@@ -95,10 +95,10 @@ describe("home featured picks", () => {
       row("movie"),
       row("tv", { featured: false })
     ];
-    const picked = pickHomeFeatured(rows, "rotate", "2026-11-04");
+    const picked = pickHomeFeatured(rows, "daily", "2026-11-04");
     expect(picked).toHaveLength(3);
     expect(picked.every((r) => r.kind === "movie")).toBe(true);
-    expect(pickHomeFeatured(rows.slice(0, 2), "rotate", "2026-11-04")).toHaveLength(2);
+    expect(pickHomeFeatured(rows.slice(0, 2), "daily", "2026-11-04")).toHaveLength(2);
   });
 
   it("keeps the fixed order, with entries never ordered last and newest first", () => {
@@ -106,9 +106,11 @@ describe("home featured picks", () => {
     const b = row("book", { featuredOrder: 0 });
     const older = row("game", { updatedAt: new Date("2026-02-01") });
     const newer = row("anime", { updatedAt: new Date("2026-03-01") });
-    expect(pickHomeFeatured([a, older, b, newer], "manual", "2026-11-04").map((r) => r.id)).toEqual(
-      [b.id, a.id, newer.id]
-    );
+    expect(pickHomeFeatured([a, older, b, newer], "fixed", "2026-11-04").map((r) => r.id)).toEqual([
+      b.id,
+      a.id,
+      newer.id
+    ]);
   });
 });
 
@@ -217,7 +219,8 @@ describe("home collection API", () => {
         homeFeatured: "manual"
       }
     });
-    expect(put.json().settings.homeFeatured).toBe("manual");
+    // "manual" is the name from before the visit and session modes; it is read as "fixed".
+    expect(put.json().settings.homeFeatured).toBe("fixed");
     // The hidden entry is skipped; the rest follow the order.
     expect((await home()).featured.map((f) => f.id)).toEqual([anime.id, game.id, book.id]);
   });
@@ -230,6 +233,6 @@ describe("home collection API", () => {
       headers,
       payload: { show: { movie: true, tv: false, anime: true, music: true }, showWant: true }
     });
-    expect(legacy.json().settings).toMatchObject({ homeFeatured: "rotate", show: { tv: false } });
+    expect(legacy.json().settings).toMatchObject({ homeFeatured: "daily", show: { tv: false } });
   });
 });

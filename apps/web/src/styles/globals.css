@@ -42,6 +42,8 @@
   --accent: var(--blue);
   --accent2: var(--mist);
   --accent3: var(--sand);
+  /* Emphasised words in large type (the about manifesto). */
+  --emphasis: var(--mist);
 
   /* Background FX */
   --fx-a: rgba(148, 180, 193, 0.46);
@@ -107,6 +109,7 @@ html[data-lang="ja"] {
 
 html[data-theme="light"] {
   --bg: var(--sand);
+  --emphasis: var(--blue);
   --bg2: #e0d5c4;
 
   --card: rgba(255, 255, 255, 0.74);
@@ -131,6 +134,7 @@ html[data-theme="light"] {
 @media (prefers-color-scheme: light) {
   html[data-theme="system"] {
     --bg: var(--sand);
+    --emphasis: var(--blue);
     --bg2: #e0d5c4;
 
     --card: rgba(255, 255, 255, 0.74);
@@ -1217,73 +1221,206 @@ html[data-theme="light"] .langPanel {
 }
 
 /* About */
-.aboutGrid {
-  margin-top: 14px;
-  align-items: stretch;
+/* About: a manifesto as the focal point, then how I think and the gear, separated by hairlines
+   instead of cards. */
+.aboutTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 16px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--border);
 }
 
-.aboutGrid > .reveal {
-  height: 100%;
-}
-
-.aboutGrid > .reveal > * {
-  height: 100%;
-}
-
-.aboutCard {
-  padding: 16px;
-  display: grid;
-  grid-template-rows: auto 1fr;
-  gap: 12px;
-}
-
-.aboutCardTitle {
+.aboutLabel {
   margin: 0;
-  font-size: 16px;
-  font-weight: 850;
-  letter-spacing: -0.02em;
-}
-
-.aboutCardBody {
-  display: grid;
-  gap: 12px;
-  align-content: start;
-}
-
-.aboutSection {
-  display: grid;
-  gap: 8px;
-  padding-top: 12px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
-}
-
-html[data-theme="light"] .aboutSection {
-  border-top: 1px solid rgba(33, 52, 72, 0.1);
-}
-
-.aboutSection:first-child {
-  padding-top: 0;
-  border-top: 0;
-}
-
-.aboutSectionTitle {
-  font-size: 12px;
-  color: var(--faint);
-  letter-spacing: 0.14em;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 750;
+  letter-spacing: 0.22em;
   text-transform: uppercase;
 }
 
-.aboutList {
-  margin: 0;
-  padding-left: 18px;
-  color: var(--muted);
-  line-height: 1.65;
+/* Wide letter spacing only suits Latin capitals. */
+html[data-lang="zh"] .aboutLabel,
+html[data-lang="zh-Hant"] .aboutLabel,
+html[data-lang="ja"] .aboutLabel {
+  letter-spacing: 0.08em;
 }
 
-.aboutText {
+.aboutCount {
+  color: var(--faint);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.manifesto {
+  margin: clamp(56px, 9vw, 120px) 0 clamp(56px, 8vw, 104px);
+}
+
+.manifesto blockquote {
   margin: 0;
+}
+
+.about .manifestoText {
+  margin: 0;
+  max-width: 15em;
+  color: var(--text);
+  font-size: clamp(38px, 6.4vw, 92px);
+  font-weight: 800;
+  line-height: 1.08;
+  letter-spacing: -0.035em;
+  text-wrap: balance;
+}
+
+/* CJK manifestos come split into clauses and words (see manifestoClauses): lines break between
+   clauses where they fit, otherwise between words, never inside one. */
+.about .manifestoText[data-script="cjk"] {
+  max-width: 13em;
+  font-size: clamp(36px, 6vw, 84px);
+  line-height: 1.24;
+  letter-spacing: 0;
+}
+
+.manifestoClause {
+  display: inline-block;
+}
+
+.manifestoWord {
+  white-space: nowrap;
+}
+
+.manifestoText em {
+  color: var(--emphasis);
+  font-style: normal;
+}
+
+.manifestoBy {
+  margin-top: clamp(20px, 2.6vw, 32px);
   color: var(--muted);
-  line-height: 1.65;
+  font-size: 15px;
+  letter-spacing: 0.02em;
+}
+
+.aboutThink {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+  gap: clamp(32px, 5vw, 72px);
+  padding-top: 28px;
+  border-top: 1px solid var(--border);
+}
+
+.aboutThinkText {
+  max-width: 34em;
+  margin: 16px 0 0;
+  color: var(--muted);
+  font-size: clamp(15px, 1.3vw, 17px);
+  line-height: 1.85;
+}
+
+.principles {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(16px, 2vw, 24px);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.principles li {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  padding-bottom: 22px;
+  border-bottom: 1px solid var(--border);
+}
+
+.principleNo {
+  color: var(--faint);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.principles strong {
+  color: var(--text);
+  font-size: clamp(16px, 1.5vw, 19px);
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.principleText {
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.aboutGear {
+  margin-top: clamp(56px, 7vw, 88px);
+  padding-top: 28px;
+  border-top: 1px solid var(--border);
+}
+
+.gearList {
+  margin: 12px 0 0;
+}
+
+.gearRow {
+  display: grid;
+  grid-template-columns: minmax(88px, 200px) minmax(0, 1fr);
+  gap: 24px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.gearRow dt {
+  padding-top: 2px;
+  color: var(--faint);
+  font-size: 13px;
+  letter-spacing: 0.04em;
+}
+
+/* Items in columns of equal width: any number of them wraps into tidy rows, and a long name wraps
+   inside its own column instead of pushing the others around. */
+.gearRow dd {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 230px), 1fr));
+  gap: 8px 28px;
+  margin: 0;
+  color: var(--text);
+  font-size: clamp(15px, 1.3vw, 17px);
+}
+
+@media (max-width: 860px) {
+  .aboutThink {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 560px) {
+  .principles {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+
+  .principles li {
+    grid-template-columns: 32px minmax(0, 1fr);
+    gap: 4px 12px;
+    padding: 16px 0;
+  }
+
+  .principles li > :not(.principleNo) {
+    grid-column: 2;
+  }
+
+  .gearRow {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 6px;
+  }
+
+  .gearRow dd {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 6px;
+  }
 }
 
 /* Tech stack: an editorial list. Category name on the left, logos and names in a grid on the right. */
@@ -2142,10 +2279,6 @@ html[data-theme="light"] .stackDetail {
 
   .grid2 {
     grid-template-columns: 1fr;
-  }
-
-  .aboutGrid {
-    margin-top: 14px;
   }
 }
 

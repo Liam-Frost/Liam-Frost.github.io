@@ -143,7 +143,10 @@ export function registerCollectionRoutes(app: FastifyInstance, deps: Deps) {
               shown.settings.homeFeatured,
               deps.today()
             ).map((row) => ({ id: row.id })),
-            settings: resolveFeaturedWall(shown.settings.featuredWall)
+            settings: resolveFeaturedWall(shown.settings.featuredWall),
+            ...(shown.settings.homeFeatured === "visit" || shown.settings.homeFeatured === "session"
+              ? { rotate: shown.settings.homeFeatured }
+              : {})
           }
         }
       };
