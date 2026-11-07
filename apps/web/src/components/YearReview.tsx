@@ -1,8 +1,9 @@
+import { genreLabel } from "@liam-frost/shared";
 import type { MediaKind, PublicMediaSummary } from "@liam-frost/shared";
 import { useMemo, useState } from "react";
 import type { To } from "react-router";
 
-import { pickLocalized, useI18n, type Key } from "../lib/i18n";
+import { useI18n, type Key } from "../lib/i18n";
 import MediaCard from "./MediaCard";
 
 /** Kinds in the order the summary names them. */
@@ -58,7 +59,7 @@ export default function YearReview({
     for (const item of done) {
       for (const genre of item.genres) {
         const id = genre.zh || genre.en || Object.values(genre).find(Boolean) || "";
-        const entry = genres.get(id) ?? { name: pickLocalized(genre, lang), count: 0 };
+        const entry = genres.get(id) ?? { name: genreLabel(genre, lang), count: 0 };
         entry.count += 1;
         genres.set(id, entry);
       }

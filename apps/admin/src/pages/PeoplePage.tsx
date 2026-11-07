@@ -1,3 +1,4 @@
+import { useArrivalParams } from "../hooks/useArrivalParams";
 import LoadingSkeleton from "../../../web/src/components/LoadingSkeleton";
 import type {
   AdminBatchRequest,
@@ -27,7 +28,8 @@ import { Tooltip } from "../components/ui/Tooltip";
 export function PeoplePage() {
   const { data: people, isPending, error } = usePeople();
   const { data: settings } = useCollectionSettings();
-  const [adding, setAdding] = useState(false);
+  const arrival = useArrivalParams("open").open;
+  const [adding, setAdding] = useState(arrival === "add");
   const [filter, setFilter] = useState("");
   const [processed, setProcessed] = useState(0);
   const qc = useQueryClient();

@@ -1,3 +1,4 @@
+import { COLLECTION_SORTS, sortCollection, type CollectionSort } from "../lib/collectionSort";
 import LoadingSkeleton from "../../../web/src/components/LoadingSkeleton";
 import type {
   AdminMediaItem,
@@ -11,7 +12,6 @@ import { Clapperboard, EyeOff, Plus, Search, Settings2, Star } from "lucide-reac
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
 
-import { FeaturedOrderDialog } from "../components/collection/FeaturedOrderDialog";
 import { MediaBatchActions } from "../components/collection/MediaBatchActions";
 import { SteamDialog } from "../components/games/SteamDialog";
 import { PageHeader } from "../components/layout/AdminLayout";
@@ -56,6 +56,7 @@ import { Tooltip } from "../components/ui/Tooltip";
 const STATUSES = Object.keys(MEDIA_STATUS_LABELS) as MediaStatus[];
 
 export function CollectionPage() {
+  const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
   const kind: CollectionKind = COLLECTION_KINDS.find((k) => k === params.get("kind")) ?? "movie";
   const status = STATUSES.find((s) => s === params.get("status")) ?? null;
@@ -89,7 +90,6 @@ export function CollectionPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- only when returning from a sign-in page
   }, []);
   const [editingSettings, setEditingSettings] = useState(false);
-  const [orderingFeatured, setOrderingFeatured] = useState(false);
   const { data: items, isPending, error } = useMediaList();
   const { data: settings } = useCollectionSettings();
 
@@ -100,6 +100,7 @@ export function CollectionPage() {
   }) => {
     const value = new URLSearchParams();
     value.set("kind", next.kind ?? kind);
+    if (params.has("sort")) value.set("sort", params.get("sort")!);
     const nextStatus = next.status === undefined ? status : next.status;
     if (nextStatus) value.set("status", nextStatus);
     if (next.unrated ?? (next.kind === undefined && unrated)) value.set("rating", "none");
@@ -116,7 +117,13 @@ export function CollectionPage() {
     );
   }
 
-  const ofKind = (items ?? []).filter((item) => item.kind === kind);
+  const sort: CollectionSort = Object.hasOwn(COLLECTION_SORTS, params.get("sort") ?? "")
+    ? (params.get("sort") as CollectionSort)
+    : "updated";
+  const ofKind = sortCollection(
+    (items ?? []).filter((item) => item.kind === kind),
+    sort
+  );
 
   return (
     <>
@@ -137,7 +144,7 @@ export function CollectionPage() {
           <button
             type="button"
             className="btn-secondary"
-            onClick={() => setOrderingFeatured(true)}
+            onClick={() => navigate("/collection/featured")}
             disabled={!items}
           >
             <Star aria-hidden="true" className="size-4" /> 首页精选
@@ -192,8 +199,30 @@ export function CollectionPage() {
         ))}
       </div>
 
+      <div className="mb-4 flex flex-wrap items-center gap-3">
+        <label htmlFor="collection-sort" className="text-xs text-brand-secondary">
+          排列顺序
+        </label>
+        <select
+          id="collection-sort"
+          className="field !w-auto"
+          value={sort}
+          onChange={(e) => {
+            const next = new URLSearchParams(params);
+            next.set("sort", e.target.value);
+            setParams(next, { replace: true });
+          }}
+        >
+          {Object.entries(COLLECTION_SORTS).map(([key, label]) => (
+            <option key={key} value={key}>
+              {label}
+            </option>
+          ))}
+        </select>
+        <span className="text-xs text-brand-secondary">不改变首页精选或歌单播放顺序</span>
+      </div>
       {kind === "track" ? (
-        <MusicTab items={ofKind} />
+        <MusicTab items={ofKind} sort={sort} />
       ) : (
         <WatchList
           kind={kind}
@@ -220,9 +249,6 @@ export function CollectionPage() {
       {steamOpen ? <SteamDialog onClose={() => setSteamOpen(false)} /> : null}
       {editingSettings && settings ? (
         <SettingsDialog settings={settings.settings} onClose={() => setEditingSettings(false)} />
-      ) : null}
-      {orderingFeatured && items ? (
-        <FeaturedOrderDialog items={items} onClose={() => setOrderingFeatured(false)} />
       ) : null}
     </>
   );

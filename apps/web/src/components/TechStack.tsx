@@ -207,9 +207,16 @@ function TechnologyDetail({
  * scrolling up, and the section fades out as it leaves; otherwise the caller wraps it in a one-time
  * <Reveal>.
  */
-export default function TechStack({ scrollMotion = false }: { scrollMotion?: boolean }) {
+export default function TechStack({
+  scrollMotion = false,
+  data
+}: {
+  scrollMotion?: boolean;
+  data?: ReturnType<typeof useStack>;
+}) {
   const { lang, t } = useI18n();
-  const { categories, status, retry } = useStack();
+  const loaded = useStack(!data);
+  const { categories, status, retry } = data ?? loaded;
   const [openId, setOpenId] = useState<string | null>(null);
   const trigger = useRef<HTMLButtonElement | null>(null);
   const listRef = useRef<HTMLDivElement | null>(null);

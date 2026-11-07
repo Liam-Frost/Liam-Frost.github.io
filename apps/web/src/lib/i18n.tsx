@@ -21,6 +21,7 @@ const zh = {
   "common.reset": "重置",
   "common.close": "关闭",
   "common.backToTop": "回到顶部",
+  "home.loadFailed": "首页暂时无法加载，请稍后重试。",
 
   // Nav
   "nav.home": "主页",
@@ -310,6 +311,7 @@ const en: Record<Key, string> = {
   "common.reset": "Reset",
   "common.close": "Close",
   "common.backToTop": "Back to top",
+  "home.loadFailed": "The home page could not be loaded. Please try again.",
 
   "nav.home": "Home",
   "nav.portfolio": "Gallery",
@@ -589,6 +591,7 @@ const fr: Record<Key, string> = {
   "common.reset": "Réinitialiser",
   "common.close": "Fermer",
   "common.backToTop": "Haut de page",
+  "home.loadFailed": "La page d’accueil ne peut pas être chargée. Veuillez réessayer.",
 
   "nav.home": "Accueil",
   "nav.portfolio": "Galerie",
@@ -869,6 +872,7 @@ const ja: Record<Key, string> = {
   "common.reset": "リセット",
   "common.close": "閉じる",
   "common.backToTop": "トップへ",
+  "home.loadFailed": "ホームページを読み込めませんでした。もう一度お試しください。",
 
   "nav.home": "ホーム",
   "nav.portfolio": "ギャラリー",
@@ -1147,6 +1151,7 @@ const zhHant: Record<Key, string> = {
   "common.reset": "重置",
   "common.close": "關閉",
   "common.backToTop": "回到頂部",
+  "home.loadFailed": "首頁暫時無法載入，請稍後重試。",
 
   // Nav
   "nav.home": "首頁",

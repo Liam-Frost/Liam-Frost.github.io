@@ -1,3 +1,4 @@
+import { useArrivalParams } from "../hooks/useArrivalParams";
 import LoadingSkeleton from "../../../web/src/components/LoadingSkeleton";
 import {
   ABOUT_LIMITS,
@@ -72,7 +73,14 @@ export function AboutPage() {
   // The draft keeps the revision it was started from, so a save after someone else's (seen by a
   // refetch meanwhile) is still refused instead of overwriting their changes.
   const [draft, setDraft] = useState<{ about: AboutContent; revision: string } | null>(null);
-  const [editing, setEditing] = useState<Editing>(null);
+  const arrival = useArrivalParams("open").open;
+  const [editing, setEditing] = useState<Editing>(
+    arrival === "manifesto"
+      ? { kind: "manifesto" }
+      : arrival === "gear"
+        ? { kind: "category" }
+        : null
+  );
   const [newItem, setNewItem] = useState<Record<string, string>>({});
   const save = useMutation({
     mutationFn: api.saveAbout,

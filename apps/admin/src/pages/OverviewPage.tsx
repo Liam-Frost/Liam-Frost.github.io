@@ -694,7 +694,11 @@ function Activity({ data, className }: { data: DashboardActivity; className: str
 const QUICK = [
   { to: "/photos?open=add", label: "添加照片" },
   { to: "/projects?open=new", label: "新建项目" },
-  { to: "/collection?open=add", label: "添加收藏" }
+  { to: "/collection?open=add", label: "添加收藏" },
+  { to: "/about?open=manifesto", label: "添加宣言" },
+  { to: "/about?open=gear", label: "添加设备分类" },
+  { to: "/stack", label: "管理技术栈" },
+  { to: "/collection/people?open=add", label: "添加人物" }
 ];
 
 function DashboardSkeleton() {
@@ -723,15 +727,14 @@ export function OverviewPage() {
 
   return (
     <>
-      <PageHeader
-        title="概览"
-        description="网站运行情况、需要处理的事和最近的动态。"
-        actions={QUICK.map(({ to, label }) => (
+      <PageHeader title="概览" description="网站运行情况、需要处理的事和最近的动态。" />
+      <div role="group" aria-label="快捷入口" className="mb-6 flex flex-wrap gap-2">
+        {QUICK.map(({ to, label }) => (
           <Link key={to} to={to} className="btn-secondary">
             <Plus aria-hidden="true" className="size-4" /> {label}
           </Link>
         ))}
-      />
+      </div>
       {error ? (
         <DatabaseNotice error={error} subject="概览" />
       ) : isPending || !data ? (

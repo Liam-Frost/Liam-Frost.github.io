@@ -6,6 +6,7 @@ import { useI18n, type Lang } from "../lib/i18n";
 import type { ThemeMode } from "../lib/useTheme";
 import AnimatedThemeToggler from "./AnimatedThemeToggler";
 import Tooltip from "./Tooltip";
+import SiteMark from "./SiteMark";
 
 type Props = {
   theme: ThemeMode;
@@ -76,7 +77,7 @@ export default function Header({ theme, onCycleTheme }: Props) {
   return (
     <nav className="nav" aria-label="Primary">
       <Link className="brand" onClick={goHome} to="/" aria-label={t("nav.home")}>
-        <span className="brandMark" aria-hidden="true" />
+        <SiteMark />
       </Link>
 
       <button
