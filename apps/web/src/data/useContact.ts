@@ -3,7 +3,7 @@ import { type ContactContent } from "@liam-frost/shared";
 import { useEffect, useState } from "react";
 import { apiFetchEnabled, apiUrl } from "../lib/api";
 
-export function useContact() {
+export function useContactState() {
   const [contact, setContact] = useState<ContactContent | null>(null);
   const [loading, setLoading] = useState(apiFetchEnabled);
   useLayoutPending(loading);
@@ -25,5 +25,9 @@ export function useContact() {
       });
     return () => controller.abort();
   }, []);
-  return contact;
+  return { contact, loading };
+}
+
+export function useContact() {
+  return useContactState().contact;
 }

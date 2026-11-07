@@ -1,3 +1,4 @@
+import LoadingImage from "./LoadingImage";
 import type { PublicMediaSummary } from "@liam-frost/shared";
 import { Link, type To } from "react-router";
 
@@ -58,7 +59,7 @@ function Poster({
     );
   }
   return (
-    <img
+    <LoadingImage
       src={item.poster.variants[0].url}
       srcSet={imageSrcSet(item.poster)}
       sizes={sizes}

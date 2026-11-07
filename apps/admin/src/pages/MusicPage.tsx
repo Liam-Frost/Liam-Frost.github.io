@@ -1,3 +1,4 @@
+import LoadingSkeleton from "../../../web/src/components/LoadingSkeleton";
 import type { SpotifySettings } from "@liam-frost/shared";
 import { useEffect, useState, type FormEvent } from "react";
 import { Link } from "react-router";
@@ -15,7 +16,7 @@ import { pickText } from "../lib/i18n";
 export function MusicPage() {
   const { data, isPending, error } = useSpotify();
 
-  if (isPending) return <p className="py-10 text-center text-[13px] text-subtle">加载中…</p>;
+  if (isPending) return <LoadingSkeleton label="加载中…" variant="rows" />;
   if (error) {
     return (
       <>

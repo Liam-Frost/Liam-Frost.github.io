@@ -353,6 +353,10 @@ export class AnalyticsService {
       previous: kpis(previous),
       trend: { bucket: single ? "hour" : "day", points },
       topPages,
+      missingPages: [...sum.keys("missingPage")]
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 100)
+        .map(([path, views]) => ({ path, views })),
       online
     };
   }

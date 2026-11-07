@@ -102,6 +102,7 @@ export default function QualityProvider({ children }: Props) {
     };
 
     const onVisibilityChange = () => {
+      document.documentElement.dataset.pageHidden = String(document.hidden);
       qualityManager.onVisibilityChange();
       if (document.hidden || reducedMotion) stop();
       else start();

@@ -1,3 +1,4 @@
+import LoadingSkeleton from "./LoadingSkeleton";
 import type { PersonRole, PublicMediaSummary } from "@liam-frost/shared";
 
 import { usePublicPerson } from "../data/useCollection";
@@ -40,7 +41,7 @@ export default function PersonDetail({
   return (
     <DetailDrawer id={id} labelledBy="person-detail-title" onClose={onClose}>
       {status === "loading" || status === "idle" ? (
-        <p className="sectionSubtitle">{t("collection.loading")}</p>
+        <LoadingSkeleton label={t("collection.loading")} variant="detail" count={1} />
       ) : null}
       {status === "missing" ? (
         <p className="sectionSubtitle">{t("collection.personNotFound")}</p>

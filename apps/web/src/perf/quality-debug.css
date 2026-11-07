@@ -1,0 +1,102 @@
+.qualityDebug {
+  position: fixed;
+  left: 12px;
+  bottom: 12px;
+  z-index: 99999;
+  width: 390px;
+  max-width: calc(100vw - 24px);
+  max-height: calc(100dvh - 24px);
+  overflow: auto;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--bg);
+  color: var(--text);
+  box-shadow: var(--shadow);
+  font: 13px/1.5 var(--font-sans);
+}
+.qualityDebug header,
+.qualityDebug footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+.qualityDebug small {
+  display: block;
+  color: var(--muted);
+}
+.qualityDebug button,
+.qualityDebug select {
+  font: inherit;
+  background: var(--card2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 10px;
+}
+.qualityDebug select option {
+  background: var(--bg);
+  color: var(--text);
+}
+.qualityDebug button {
+  cursor: pointer;
+}
+.qualityMetrics {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: 16px 0;
+}
+.qualityMetrics div {
+  padding: 10px;
+  background: var(--card);
+  border-radius: 10px;
+}
+.qualityMetrics dt {
+  font-size: 11px;
+  color: var(--muted);
+}
+.qualityMetrics dd {
+  margin: 2px 0 0;
+  font-size: 17px;
+  font-variant-numeric: tabular-nums;
+}
+.qualityBudgets section {
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-top: 1px solid var(--border);
+}
+.qualityBudgets h3 {
+  font-size: 13px;
+  margin: 0 0 3px;
+}
+.qualityBudgets strong {
+  font-size: 12px;
+}
+.qualityBudgets p,
+.qualityNotice {
+  font-size: 11px;
+  color: var(--muted);
+  margin: 3px 0 0;
+}
+.qualityDebug footer {
+  margin-top: 10px;
+  font-size: 11px;
+}
+.qualityNotice {
+  padding: 10px;
+  background: var(--card);
+  border-radius: 8px;
+}
+
+.qualityDebug.isCollapsed {
+  width: auto;
+  max-width: calc(100vw - 100px);
+}
+.qualityDebug.isCollapsed small {
+  display: none;
+}

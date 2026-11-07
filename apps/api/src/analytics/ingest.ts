@@ -5,6 +5,7 @@ import {
   ANALYTICS_PLAY_SOURCES,
   ANALYTICS_PLAYERS,
   ANALYTICS_VITALS,
+  missingPagePath,
   LANGS
 } from "@liam-frost/shared";
 import { z } from "zod";
@@ -32,7 +33,7 @@ const eventSchema = z
       .regex(/^[A-Za-z0-9_.:-]{1,80}$/)
       .optional(),
     target: z.string().max(100).optional(),
-    detail: z.string().max(40).optional(),
+    detail: z.string().max(256).optional(),
     value: z.number().finite().optional(),
     lang: z.string().max(10).optional(),
     referrer: z.string().max(2048).optional(),
@@ -107,6 +108,7 @@ export function validateEvent(raw: unknown, siteHost: string): ValidEvent | null
 
   switch (e.type) {
     case "page_view": {
+      if (e.path === "*" && e.detail) event.detail = missingPagePath(e.detail);
       event.lang = (LANGS as readonly string[]).includes(e.lang ?? "") ? e.lang! : null;
       const referrer = e.referrer ? hostOf(e.referrer) : null;
       event.referrer = referrer && referrer !== siteHost.replace(/^www\./, "") ? referrer : null;

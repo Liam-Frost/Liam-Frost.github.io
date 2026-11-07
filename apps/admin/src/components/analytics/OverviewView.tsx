@@ -141,6 +141,31 @@ export function OverviewView({ data }: { data: AnalyticsOverview }) {
           <p className="text-[13px] text-muted">这段时间没有页面浏览。</p>
         )}
       </Card>
+      <Card
+        title="不存在的页面 · 实际路径"
+        hint="仅记录路径，不保存查询参数；历史汇总无法还原路径。最多显示前100项。"
+      >
+        {data.missingPages?.length ? (
+          <table className="w-full table-fixed text-left text-[13px]">
+            <thead>
+              <tr>
+                <th className="py-2">请求路径</th>
+                <th className="w-20 text-right">浏览量</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.missingPages.map((page) => (
+                <tr key={page.path} className="border-t border-line-soft">
+                  <td className="break-all py-2 pr-3 font-mono">{page.path}</td>
+                  <td className="text-right tabular-nums">{number.format(page.views)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : (
+          <p className="text-[13px] text-muted">当前范围没有具体的不存在页面路径记录。</p>
+        )}
+      </Card>
     </>
   );
 }

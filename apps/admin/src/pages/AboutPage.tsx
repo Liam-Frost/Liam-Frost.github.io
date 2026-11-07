@@ -1,3 +1,4 @@
+import LoadingSkeleton from "../../../web/src/components/LoadingSkeleton";
 import {
   ABOUT_LIMITS,
   MANIFESTO_ROTATION_MODES,
@@ -98,7 +99,7 @@ export function AboutPage() {
     return () => window.removeEventListener("beforeunload", warn);
   }, [dirty]);
 
-  if (isPending) return <p className="py-10 text-center text-[13px] text-subtle">加载中…</p>;
+  if (isPending) return <LoadingSkeleton label="加载中…" variant="form" />;
   if (error || !data || !about) {
     return (
       <>

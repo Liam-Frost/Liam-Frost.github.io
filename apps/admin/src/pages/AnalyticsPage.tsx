@@ -1,3 +1,4 @@
+import LoadingSkeleton from "../../../web/src/components/LoadingSkeleton";
 import {
   ANALYTICS_CONTENT_TYPES,
   type AnalyticsClearScope,
@@ -158,7 +159,7 @@ export function AnalyticsPage({ view }: { view: AnalyticsView }) {
           ) : overview.error ? (
             <p className="text-[13px] text-status-error">{overview.error.message}</p>
           ) : (
-            <p className="text-[13px] text-subtle">加载中…</p>
+            <LoadingSkeleton label="加载统计…" count={4} />
           )
         ) : view === "content" ? (
           <ContentView />

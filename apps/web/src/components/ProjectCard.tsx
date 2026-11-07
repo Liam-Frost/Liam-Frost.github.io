@@ -1,3 +1,4 @@
+import LoadingImage from "./LoadingImage";
 import type { ProjectImage, PublicProjectSummary } from "@liam-frost/shared";
 import { Link } from "react-router";
 
@@ -38,7 +39,7 @@ export default function ProjectCard({
     >
       <div className="projectCover">
         {project.cover ? (
-          <img
+          <LoadingImage
             src={project.cover.variants[Math.min(1, project.cover.variants.length - 1)].url}
             srcSet={imageSrcSet(project.cover)}
             sizes="(max-width: 760px) calc(100vw - 40px), (max-width: 1100px) calc((100vw - 54px) / 2), 520px"

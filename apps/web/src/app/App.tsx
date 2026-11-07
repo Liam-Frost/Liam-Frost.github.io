@@ -1,3 +1,4 @@
+import LoadingSkeleton from "../components/LoadingSkeleton";
 import { lazy, Suspense, useEffect } from "react";
 import { Route, Routes } from "react-router";
 
@@ -64,7 +65,13 @@ export default function App() {
           <Route
             path="/collection"
             element={
-              <Suspense fallback={null}>
+              <Suspense
+                fallback={
+                  <div className="container">
+                    <LoadingSkeleton label={t("collection.loading")} />
+                  </div>
+                }
+              >
                 <CollectionPage />
               </Suspense>
             }
@@ -72,7 +79,13 @@ export default function App() {
           <Route
             path="/projects/:slug"
             element={
-              <Suspense fallback={null}>
+              <Suspense
+                fallback={
+                  <div className="container">
+                    <LoadingSkeleton label={t("collection.loading")} />
+                  </div>
+                }
+              >
                 <ProjectDetailPage />
               </Suspense>
             }

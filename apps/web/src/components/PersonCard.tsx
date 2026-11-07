@@ -1,3 +1,4 @@
+import LoadingImage from "./LoadingImage";
 import type { PublicPersonSummary } from "@liam-frost/shared";
 import { Link, type To } from "react-router";
 
@@ -18,7 +19,7 @@ export default function PersonCard({ person, to }: { person: PublicPersonSummary
     >
       <span className="personCardPhoto">
         {person.photo ? (
-          <img
+          <LoadingImage
             src={person.photo.variants[0].url}
             srcSet={imageSrcSet(person.photo)}
             sizes="120px"

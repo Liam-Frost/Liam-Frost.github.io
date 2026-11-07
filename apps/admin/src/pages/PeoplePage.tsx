@@ -1,3 +1,4 @@
+import LoadingSkeleton from "../../../web/src/components/LoadingSkeleton";
 import type {
   AdminBatchRequest,
   AdminPerson,
@@ -93,7 +94,7 @@ export function PeoplePage() {
         }
       />
 
-      {isPending ? <p className="py-10 text-center text-[13px] text-subtle">加载中…</p> : null}
+      {isPending ? <LoadingSkeleton label="加载中…" variant="rows" /> : null}
       {error ? <DatabaseNotice error={error} subject="人物" /> : null}
 
       {people ? (

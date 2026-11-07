@@ -1,3 +1,4 @@
+import "../../../web/src/components/loading-skeleton.css";
 import type {
   AdminDashboard,
   AnalyticsKpis,
@@ -697,7 +698,7 @@ const QUICK = [
 ];
 
 function DashboardSkeleton() {
-  const block = "card animate-pulse motion-reduce:animate-none";
+  const block = "card loadingSkeleton-block";
   return (
     <div aria-hidden="true" className="space-y-4">
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">

@@ -1,3 +1,4 @@
+import LoadingSkeleton from "../components/LoadingSkeleton";
 import { useMemo, useState } from "react";
 
 import ProjectCard from "../components/ProjectCard";
@@ -50,7 +51,7 @@ export default function ProjectsPage() {
         ) : null}
 
         {status === "loading" ? (
-          <p className="sectionSubtitle">{t("projects.loading")}</p>
+          <LoadingSkeleton label={t("projects.loading")} variant="cards" />
         ) : visible.length === 0 ? (
           <p className="sectionSubtitle">{t("projects.empty")}</p>
         ) : (

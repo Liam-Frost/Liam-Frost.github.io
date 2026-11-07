@@ -1,3 +1,4 @@
+import LoadingSkeleton from "../../../web/src/components/LoadingSkeleton";
 import type { AdminPerson, LocalizedText } from "@liam-frost/shared";
 import { ArrowLeft, ExternalLink, ImagePlus, RefreshCw, Trash2, UserRound, X } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -43,7 +44,7 @@ export function PersonEditPage() {
   const { id = "" } = useParams();
   const { data: person, isPending, error } = usePerson(id);
 
-  if (isPending) return <p className="py-10 text-center text-[13px] text-subtle">加载中…</p>;
+  if (isPending) return <LoadingSkeleton label="加载中…" variant="form" />;
   if (error || !person) {
     return (
       <div className="card p-6 text-[13.5px]">

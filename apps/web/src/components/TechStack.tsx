@@ -1,3 +1,4 @@
+import "./loading-skeleton.css";
 import {
   stackInitials,
   type PublicStackProject,
@@ -231,13 +232,13 @@ export default function TechStack({ scrollMotion = false }: { scrollMotion?: boo
         {[0, 1, 2].map((row) => (
           <div key={row} className="stackGroup stackGroupPlaceholder" aria-hidden="true">
             <div className="stackGroupHead">
-              <span className="stackSkeleton stackSkeletonTitle" />
+              <span className="stackSkeleton loadingSkeleton-block stackSkeletonTitle" />
             </div>
             <div className="stackItems">
               {[0, 1, 2, 3].map((item) => (
                 <span key={item} className="stackItem">
-                  <span className="stackLogo stackSkeleton" />
-                  <span className="stackSkeleton stackSkeletonName" />
+                  <span className="stackLogo stackSkeleton loadingSkeleton-block" />
+                  <span className="stackSkeleton loadingSkeleton-block stackSkeletonName" />
                 </span>
               ))}
             </div>

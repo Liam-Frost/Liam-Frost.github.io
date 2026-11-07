@@ -1,3 +1,4 @@
+import LoadingImage from "./LoadingImage";
 import {
   resolveFeaturedWall,
   type FeaturedWallSettings,
@@ -244,7 +245,7 @@ function QuiltTile({
           <span aria-hidden="true">{title.slice(0, 1)}</span>
         </span>
       ) : (
-        <img
+        <LoadingImage
           src={cover.src!}
           alt=""
           loading="lazy"

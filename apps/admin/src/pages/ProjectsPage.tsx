@@ -1,3 +1,4 @@
+import LoadingSkeleton from "../../../web/src/components/LoadingSkeleton";
 import type { AdminProject } from "@liam-frost/shared";
 import { ArrowDown, ArrowUp, EyeOff, FolderKanban, Plus, Star, Trash2 } from "lucide-react";
 import { useState, type FormEvent } from "react";
@@ -49,7 +50,7 @@ export function ProjectsPage() {
   const remove = useDeleteProject();
   const toast = useToast();
 
-  if (isPending) return <p className="py-10 text-center text-[13px] text-subtle">加载中…</p>;
+  if (isPending) return <LoadingSkeleton label="加载中…" variant="rows" />;
   if (error) {
     return (
       <>

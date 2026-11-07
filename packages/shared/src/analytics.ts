@@ -119,6 +119,7 @@ export type AnalyticsOverview = {
   /** Hours for a single day, days otherwise. */
   trend: { bucket: "hour" | "day"; points: AnalyticsTrendPoint[] };
   topPages: { path: string; views: number; avgEngagedSeconds: number }[];
+  missingPages?: { path: string; views: number }[];
   /** Sessions active in the last five minutes. */
   online: number;
 };
@@ -264,3 +265,15 @@ export type AnalyticsPreferencesStatus = {
   environmentCountrySource: "header" | "geoip" | "none";
   database: { id: string; type: string; builtAt: string; bytes: number } | null;
 };
+
+/** Path-only diagnostic for missing pages; never retain query strings or fragments. */
+export function missingPagePath(value: string): string | null {
+  if (!value.startsWith("/") || value.startsWith("//")) return null;
+  const path = value
+    .split(/[?#]/, 1)[0]
+    .split("")
+    .filter((char) => char.charCodeAt(0) >= 32 && char.charCodeAt(0) !== 127)
+    .join("")
+    .slice(0, 256);
+  return path || null;
+}

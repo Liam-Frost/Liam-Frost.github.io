@@ -1,3 +1,4 @@
+import LoadingImage from "./LoadingImage";
 import {
   useEffect,
   useMemo,
@@ -444,7 +445,7 @@ export default function FullscreenImageViewer({
           e.preventDefault();
         }}
       >
-        <img
+        <LoadingImage
           ref={imgRef}
           src={src}
           alt={alt}

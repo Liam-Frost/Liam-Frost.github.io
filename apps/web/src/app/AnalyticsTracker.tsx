@@ -35,7 +35,7 @@ export default function AnalyticsTracker() {
     const params = new URLSearchParams(location.search);
     const last = previous.current;
     const route = routeOf(location.pathname);
-    if (last?.pathname !== location.pathname) trackPage(route, lang);
+    if (last?.pathname !== location.pathname) trackPage(route, lang, location.pathname);
 
     const content = new Set<string>();
     for (const [type, id] of contentOf(location.pathname, params)) {

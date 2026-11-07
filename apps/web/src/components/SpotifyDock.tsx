@@ -53,6 +53,14 @@ function EmbedDock({ player, src }: { player: PublicSpotifyPlayer; src: string }
   const [embedReady, setEmbedReady] = useState(false);
   const [embedLoaded, setEmbedLoaded] = useState(false);
   const dismissed = useRef(false);
+  const autoShown = useRef(false);
+  useEffect(() => {
+    try {
+      autoShown.current = sessionStorage.getItem("lf.spotify.auto-shown") === "1";
+    } catch {
+      /* Session storage may be disabled. */
+    }
+  }, []);
   useEffect(() => {
     if (embedReady) return;
     const connection = (
@@ -125,6 +133,12 @@ function EmbedDock({ player, src }: { player: PublicSpotifyPlayer; src: string }
 
   const collapse = () => {
     dismissed.current = true;
+    autoShown.current = true;
+    try {
+      sessionStorage.setItem("lf.spotify.auto-shown", "1");
+    } catch {
+      /* Storage can be blocked. */
+    }
     setHasAutoCollapsed(true);
     setIsExpanded(false);
   };
@@ -151,7 +165,15 @@ function EmbedDock({ player, src }: { player: PublicSpotifyPlayer; src: string }
             loading="eager"
             onLoad={() => {
               setEmbedLoaded(true);
-              if (!dismissed.current && !hasAutoCollapsed) setIsExpanded(true);
+              if (!dismissed.current && !hasAutoCollapsed && !autoShown.current) {
+                autoShown.current = true;
+                try {
+                  sessionStorage.setItem("lf.spotify.auto-shown", "1");
+                } catch {
+                  /* Session storage may be disabled. */
+                }
+                setIsExpanded(true);
+              }
             }}
           />
         ) : null}

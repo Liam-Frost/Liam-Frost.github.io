@@ -58,6 +58,21 @@ describe("analytics", () => {
     return { app, store, send, overview };
   }
 
+  it("reports individual missing paths without query parameters alongside route totals", async () => {
+    const { send, overview } = await setup();
+    await send([
+      event(id("s"), { path: "*", detail: "/missing-one?token=secret" }),
+      event(id("s"), { path: "*", detail: "/missing-two#private" }),
+      event(id("s"), { path: "*" })
+    ]);
+    const report = await overview();
+    expect(report.missingPages).toEqual([
+      { path: "/missing-one", views: 1 },
+      { path: "/missing-two", views: 1 }
+    ]);
+    expect(report.topPages.find((p) => p.path === "*")?.views).toBe(3);
+  });
+
   it("persists the admin collection switch, gates ingestion and preserves it when clearing data", async () => {
     const { app, store, send } = await setup({ ANALYTICS_ENABLED: "false" });
     await send([event(id("s"))]);
