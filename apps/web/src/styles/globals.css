@@ -4548,3 +4548,8 @@ html[data-perf-filter-tier="1"] .bgFx::before {
   width: 32px;
   height: 32px;
 }
+
+/* Caption tags remain readable with filters enabled as well as disabled. */
+.photoOverlay .tag {
+  background: transparent;
+}
