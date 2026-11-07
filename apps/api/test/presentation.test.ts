@@ -99,6 +99,9 @@ describe("presentation settings", () => {
 describe("genre label fallback", () => {
   it("fills known taxonomy gaps while preserving explicit translations and unknown custom tags", () => {
     expect(genreLabel({ zh: "科幻" }, "en")).toBe("Science Fiction");
+    expect(genreLabel({ zh: "战斗" }, "en")).toBe("Battle");
+    expect(genreLabel({ zh: "漫改" }, "en")).toBe("Manga adaptation");
+    expect(genreLabel({ zh: "实用工具" }, "fr")).toBe("Utilitaires");
     expect(genreLabel({ en: "Sci-Fi" }, "ja")).toBe("SF");
     expect(genreLabel({ zh: "漫画改" }, "fr")).toBe("Adaptation de manga");
     expect(genreLabel({ zh: "日常", en: "My custom label" }, "en")).toBe("My custom label");
