@@ -1,6 +1,6 @@
 import type { ManifestoRotation, PublicAbout } from "@liam-frost/shared";
 
-import { rotationTurn } from "./rotation";
+import { dayNumber } from "./rotation";
 
 export { dayNumber } from "./rotation";
 
@@ -18,14 +18,47 @@ export function pickManifesto(
   if (!items.length) return undefined;
   if (rotation.mode === "fixed")
     return items.find((item) => item.id === rotation.fixedId) ?? items[0];
-  return items[
-    rotationTurn(
-      items.map((item) => item.id),
-      rotation.mode,
-      "manifesto",
-      now
-    )
-  ];
+  const eligible = items.filter((item) => (item.weight ?? 1) > 0);
+  if (!eligible.length) return undefined;
+  const signature = JSON.stringify(eligible.map((item) => [item.id, item.weight ?? 1]));
+  const storageKey = "manifesto:weighted-session";
+  if (rotation.mode === "session") {
+    try {
+      const saved = JSON.parse(sessionStorage.getItem(storageKey) ?? "null");
+      if (saved?.signature === signature) {
+        const kept = eligible.find((m) => m.id === saved.id);
+        if (kept) return kept;
+      }
+    } catch {
+      /* unavailable storage */
+    }
+  }
+  let unit = Math.random();
+  if (rotation.mode === "daily") {
+    let hash = 2166136261;
+    for (const c of `manifesto:${dayNumber(now)}`)
+      hash = Math.imul(hash ^ c.charCodeAt(0), 16777619);
+    hash ^= hash >>> 16;
+    hash = Math.imul(hash, 0x7feb352d);
+    hash ^= hash >>> 15;
+    hash = Math.imul(hash, 0x846ca68b);
+    hash ^= hash >>> 16;
+    unit = (hash >>> 0) / 4294967296;
+  }
+  let remaining = unit * eligible.reduce((sum, m) => sum + (m.weight ?? 1), 0);
+  const selected =
+    eligible.find((m) => {
+      remaining -= m.weight ?? 1;
+      return remaining < 0;
+    }) ?? eligible[eligible.length - 1]!;
+  if (rotation.mode === "session") {
+    try {
+      sessionStorage.setItem(storageKey, JSON.stringify({ signature, id: selected.id }));
+    } catch {
+      /* choice still works */
+    }
+  }
+  return selected;
 }
 
 export type ManifestoRun = { text: string; em: boolean };

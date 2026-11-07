@@ -7,10 +7,15 @@ import { track } from "../lib/analytics";
 export type PlayRequest = SpotifyTrack & { spotifyUrl: string | null };
 
 type Command =
-  | { type: "play"; track: PlayRequest }
+  | { type: "play"; track: PlayRequest; player?: "site" | "spotify" }
   | { type: "pause" }
   /** Plays a list (an album, an artist, a playlist) from its first song; Spotify's player shows `spotifyUrl`. */
-  | { type: "queue"; tracks: PlayRequest[]; spotifyUrl: string | null };
+  | {
+      type: "queue";
+      tracks: PlayRequest[];
+      spotifyUrl: string | null;
+      player?: "site" | "spotify";
+    };
 type NowPlaying = { trackId: string | null; playing: boolean };
 
 const COMMAND = "lf:player";
@@ -25,8 +30,20 @@ let countedTrack: string | null = null;
  * audio inside the click that asked for it, which browsers count as user-initiated playback.
  */
 export function sendPlayerCommand(command: Command) {
-  if (command.type !== "pause")
+  if (command.type !== "pause") {
+    const player = command.player ?? "site";
+    const first =
+      command.type === "play"
+        ? command.track
+        : command.tracks.find((t) => (player === "spotify" ? t.spotifyUrl : t.previewUrl));
+    if (first)
+      track("music_request", {
+        contentId: first.id,
+        target: player,
+        detail: command.type === "play" ? "button" : "all"
+      });
     lastCommand = { source: command.type === "play" ? "button" : "all", at: Date.now() };
+  }
   window.dispatchEvent(new CustomEvent<Command>(COMMAND, { detail: command }));
 }
 

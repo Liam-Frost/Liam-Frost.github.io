@@ -17,9 +17,9 @@ Spotify内嵌播放器能观察本站请求载入曲目的操作，不能完整�
 
 正式与Preview统计各自独立。Preview内容刷新会重建内容库，保留自己的统计开关，但不导入生产访问事件。真实数据排查的计数与基础设施证据仅保存在私有报告中。
 
-## 人物与乐队：建议下一阶段扩展
+## 人物与团体：设计与实现
 
-当前人物源只有TMDB和手动，作品的音乐部分只保存艺人显示名字符串；人物到作品的credit关系已经存在。现有手动创建艺人/乐队后，可利用同名演唱者建议或手动关联作品，无需先在TMDB找到该人。
+此前人物源只有 TMDB 和手动，音乐艺人仅保存显示名。下述设计的核心部分现已在源码实现（正式部署仍须正常迁移与发布）。
 
 不建议再给TMDB强行补音乐搜索。更合适的演进是保留“人物”兼容入口，将界面扩展为“人物与团体”，增加person/group/organization类型，把多个来源身份拆成独立身份表：personId、provider、externalId、sourceUrl，并对provider+externalId去重。名字/别名和图片都是可编辑内容，不作为唯一身份。
 
@@ -33,10 +33,20 @@ MusicBrainz可作为音乐身份与关系主来源：其搜索明确支持artist
 
 人物成员/团体关系和人物到音乐作品的角色应分开：成员、演唱、作曲、作词、制作、参与演奏，避免把所有关系都叫出演。未知身份、同名艺人和重制/现场版本需要明确展示歧义。已有人工简介与图片不被同步覆盖；用户可按字段选择采用来源值。
 
-这部分是数据模型和交互方案，本轮没有上线新的音乐人物API集成或执行相关迁移。
+### 当前实现与边界
+
+已实现人物 / 团体 / 机构、别名、多来源唯一身份、MusicBrainz 搜索导入、Spotify Web API 艺人 ID 和可取得 ISRC 的保存，以及 iTunes artist ID 保存。现有 ID、资料图片和人工编辑不重建或覆盖。MusicBrainz 关联的 Spotify 身份初始为待确认，管理员核对后才参与自动关联。
+
+音乐自动关联仅接受已确认的来源身份；名字/别名和同名冲突显示在待确认面板，可逐项选择后批量确认，本次忽略不会永久屏蔽未来建议。确认失败保留选择，可幂等重试。既有歌曲缺少艺人 ID 时不会凭名字伪造 ID；可先手工确认作品关联，后续重新取得来源身份再启用精确匹配。公开播放列表嵌入页未给出艺人 ID 时也保留为空，不进行猜测。
+
+团体成员使用独立表保存人物、职责及加入/离开年份，与作品演唱、作曲、作词、制作、演奏角色独立。只允许人物作为成员，防止自引用和嵌套循环；删除人物级联移除成员关系。前台仅展示本来就符合公开展示条件的成员，不泄漏私密人物。成员不会自动继承团体全部作品的 credit。
+
+不会自动导入外部完整唱片目录、成员履历或批量覆盖人工资料；本轮也不按标题或 ISRC 自动合并不同版本作品。进一步的录音/发行关系导入和持久化拒绝名单可独立扩展。
 
 MusicBrainz接入需要共享请求队列、缓存和失败退避，按其官方每IP约1次/秒的规则运行，并提供可联系的User-Agent；不要为全部收藏定时并发刷新。头像不由MusicBrainz身份查询自动保证，继续保留人工图片及来源许可。[MusicBrainz限流文档](https://musicbrainz.org/doc/MusicBrainz_API/Rate_Limiting)。
 
 ## Validation of this iteration
 
-344 application tests cover the new settings guards, concurrent revision conflicts, public-photo visibility, genre fallbacks and stable management sorting alongside the existing suite. Browser checks at 390px and 1440px cover failed-save drafts, settings persistence, collection sorting, complete featured-order saves under filtering, sign-in backgrounds, empty-section hiding and failed-settings retry. The new appearance and featured pages also passed automated WCAG A/AA rule scans. The README admin image uses demonstration responses; no private account credentials or operational records are included.
+352 application tests cover the new settings guards, concurrent revision conflicts, public-photo visibility, genre fallbacks and stable management sorting alongside the existing suite. Browser checks at 390px and 1440px cover failed-save drafts, settings persistence, collection sorting, complete featured-order saves under filtering, sign-in backgrounds, empty-section hiding and failed-settings retry. The new appearance and featured pages also passed automated WCAG A/AA rule scans. The README admin image uses demonstration responses; no private account credentials or operational records are included.
+
+The artist follow-up adds weighted-manifesto boundaries/session tests, provider identity and membership guards, explicit page-play requests and daily analytics rollups. Isolated 390px/1440px artist-editor checks passed, including failed-save drafts and explicit ambiguous-match confirmation; the editor passed WCAG A/AA scans. MusicBrainz lookup was also checked against its live public API, including nullable alias metadata.

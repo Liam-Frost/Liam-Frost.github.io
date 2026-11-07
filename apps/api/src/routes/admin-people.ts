@@ -1,3 +1,5 @@
+import { musicMatch } from "../people/music-matching";
+import { createMusicBrainz } from "../people/musicbrainz";
 import {
   PERSON_ROLES,
   SOUNDTRACK_ROLES,
@@ -74,7 +76,7 @@ function sourceFailure(error: unknown): never {
 
 /** Name identity across scripts and spacing, for matching singers to people. */
 const personKeys = (person: PersonRow) =>
-  [...Object.values(person.name), person.originalName]
+  [...Object.values(person.name), person.originalName, ...(person.aliases ?? [])]
     .filter((name): name is string => Boolean(name))
     .map(titleKey);
 
@@ -107,9 +109,11 @@ export function registerAdminPeopleRoutes(
     sources: MediaSources;
     store: LocalImageStore;
     maxUploadBytes: number;
+    musicbrainz?: ReturnType<typeof createMusicBrainz>;
   }
 ) {
   const { sources, store } = deps;
+  const musicbrainz = deps.musicbrainz ?? createMusicBrainz();
   const repo = () => {
     if (!deps.media || !deps.people || !deps.relations) {
       throw new HttpError(
@@ -182,10 +186,12 @@ export function registerAdminPeopleRoutes(
     "/api/admin/people/search",
     admin,
     async (request): Promise<AdminPersonSearchResponse> => {
-      const { q } = parseInput(personSearchQuerySchema, request.query);
-      const hits = await sources.searchPeople(q).catch(sourceFailure);
+      const { q, source } = parseInput(personSearchQuerySchema, request.query);
+      const hits = await (
+        source === "musicbrainz" ? musicbrainz.search(q) : sources.searchPeople(q)
+      ).catch(sourceFailure);
       const existing = await repo().people.findBySource(
-        "tmdb",
+        source,
         hits.map((hit) => hit.sourceId)
       );
       return {
@@ -199,11 +205,13 @@ export function registerAdminPeopleRoutes(
     "/api/admin/people/import",
     admin,
     async (request, reply): Promise<AdminPersonResponse> => {
-      const { sourceId } = parseInput(personImportSchema, request.body);
+      const { sourceId, source } = parseInput(personImportSchema, request.body);
       const { people } = repo();
-      if ((await people.findBySource("tmdb", [sourceId])).has(sourceId))
+      if ((await people.findBySource(source, [sourceId])).has(sourceId))
         throw new HttpError(409, "PERSON_EXISTS", "This person is already in the collection");
-      const { photoUrl, ...details } = await sources.person(sourceId).catch(sourceFailure);
+      const { photoUrl, ...details } = await (
+        source === "musicbrainz" ? musicbrainz.artist(sourceId) : sources.person(sourceId)
+      ).catch(sourceFailure);
       const id = randomUUID();
 
       let photo: StoredImage | null = null;
@@ -222,7 +230,7 @@ export function registerAdminPeopleRoutes(
       }
 
       try {
-        const row = await people.create({ id, source: "tmdb", ...details, photo });
+        const row = await people.create({ id, source, ...details, photo });
         reply.code(201);
         return respond(row);
       } catch (error) {
@@ -235,10 +243,12 @@ export function registerAdminPeopleRoutes(
   );
 
   app.post("/api/admin/people", admin, async (request, reply): Promise<AdminPersonResponse> => {
-    const { name, originalName } = parseInput(personCreateSchema, request.body);
+    const { name, originalName, kind, aliases } = parseInput(personCreateSchema, request.body);
     const row = await repo().people.create({
       id: randomUUID(),
       source: "manual",
+      kind,
+      aliases,
       name,
       originalName: originalName ?? null
     });
@@ -249,6 +259,23 @@ export function registerAdminPeopleRoutes(
   app.get("/api/admin/people/:id", admin, async (request) =>
     respond(await getPerson(personId(request)))
   );
+
+  app.get("/api/admin/people/:id/music-candidates", admin, async (request) => {
+    const person = await getPerson(personId(request));
+    const { media, people, relations } = repo();
+    const existing = new Set(
+      (await relations.list({ personId: person.id }))
+        .filter((r) => r.type === "credit" && r.role === "singer")
+        .map((r) => r.toMediaId)
+    );
+    const everyone = await people.list({ includePrivate: true });
+    const candidates = (await media.list({ includePrivate: true })).flatMap((item) => {
+      if (existing.has(item.id)) return [];
+      const match = musicMatch(person, item, everyone);
+      return match ? [{ id: item.id, title: item.title, year: item.year, ...match }] : [];
+    });
+    return { candidates };
+  });
 
   app.post("/api/admin/people/:id/sync-relations", admin, async (request) => {
     const person = await getPerson(personId(request));
@@ -261,17 +288,53 @@ export function registerAdminPeopleRoutes(
   app.patch("/api/admin/people/:id", admin, async (request): Promise<AdminPersonResponse> => {
     const id = personId(request);
     const patch = parseInput(personUpdateSchema, request.body);
-    const row = await lock.run(id, () => repo().people.update(id, patch));
+    const row = await lock
+      .run("people-write", () =>
+        lock.run(id, async () => {
+          // Membership is separate from credits. Groups contain people, never themselves or nested groups.
+          if (patch.kind !== undefined || patch.members !== undefined) {
+            const current = await getPerson(id);
+            const kind = patch.kind ?? current.kind ?? "person";
+            const members = patch.members ?? current.members ?? [];
+            const everyone = await repo().people.list({ includePrivate: true });
+            if (kind === "person" && members.length)
+              throw badRequest("人物不能包含成员，请先移除成员或选择团体类型", "VALIDATION");
+            if (
+              kind !== "person" &&
+              everyone.some((p) => p.members?.some((m) => m.personId === id))
+            )
+              throw badRequest("此人物已是团体成员，请先解除成员关系", "VALIDATION");
+            for (const member of members)
+              if (
+                member.personId === id ||
+                !everyone.some((p) => p.id === member.personId && (p.kind ?? "person") === "person")
+              )
+                throw badRequest("成员必须是已存在的人物，不能是自己或其他团体", "VALIDATION");
+          }
+          return repo().people.update(id, patch);
+        })
+      )
+      .catch((error) => {
+        if (error instanceof DuplicatePersonError)
+          throw new HttpError(
+            409,
+            "PERSON_EXISTS",
+            "该来源身份已属于其他人物，请先核对，不能自动合并"
+          );
+        throw error;
+      });
     if (!row) throw notFound("Person not found");
     return respond(row);
   });
 
   /** Deletes a person, their photo and their links. */
   const removePerson = async (request: FastifyRequest, id: string) => {
-    await lock.run(id, async () => {
-      await getPerson(id);
-      await repo().people.delete(id);
-    });
+    await lock.run("people-write", () =>
+      lock.run(id, async () => {
+        await getPerson(id);
+        await repo().people.delete(id);
+      })
+    );
     await store
       .remove(`people/${id}`)
       .catch((error) => request.log.warn({ error, personId: id }, "Failed to remove person files"));
@@ -497,7 +560,8 @@ export function registerAdminPeopleRoutes(
       if (nameRole && item.credits.length) {
         const everyone = await people.list({ includePrivate: true });
         for (const name of item.credits) {
-          const match = everyone.find((person) => personKeys(person).includes(titleKey(name)));
+          const matches = everyone.filter((person) => personKeys(person).includes(titleKey(name)));
+          const match = matches.length === 1 ? matches[0] : undefined;
           if (
             match &&
             existing.has(

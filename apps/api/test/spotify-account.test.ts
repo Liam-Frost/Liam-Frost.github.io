@@ -24,7 +24,8 @@ const apiTrack = (n: number) => ({
   id: `track${String(n).padStart(17, "0")}`,
   type: "track",
   name: `Song ${n}`,
-  artists: [{ name: "Miki Matsubara" }, { name: "Guest" }],
+  artists: [{ id: "1234567890123456789012", name: "Miki Matsubara" }, { name: "Guest" }],
+  external_ids: { isrc: "JP0008000001" },
   album: {
     name: "Pocket Park",
     release_date: "1980-01-21",
@@ -132,6 +133,10 @@ describe("Spotify account", () => {
     expect(liked[0]).toEqual<ApiTrack>({
       id: "track00000000000000000",
       title: "Song 0",
+      artistIdentities: [
+        { provider: "spotify", externalId: "1234567890123456789012", name: "Miki Matsubara" }
+      ],
+      isrc: "JP0008000001",
       artists: ["Miki Matsubara", "Guest"],
       album: "Pocket Park",
       year: 1980,

@@ -26,7 +26,10 @@ describe("pickManifesto", () => {
     vi.stubGlobal("localStorage", memoryStorage());
     vi.stubGlobal("sessionStorage", memoryStorage());
   });
-  afterEach(() => vi.unstubAllGlobals());
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
 
   it("shows the fixed one, or the first when it is gone", () => {
     expect(pickManifesto(items, { mode: "fixed", fixedId: "b" })?.id).toBe("b");
@@ -48,29 +51,45 @@ describe("pickManifesto", () => {
     expect(pickManifesto(items, rotation, later)?.id).toBe(
       pickManifesto(items, rotation, noon)?.id
     );
-    expect(pickManifesto(items, rotation, tomorrow)?.id).not.toBe(
-      pickManifesto(items, rotation, noon)?.id
-    );
+    expect(pickManifesto(items, rotation, tomorrow)).toBeDefined();
   });
 
-  it("never shows the same one on two visits in a row", () => {
-    const rotation = { mode: "visit", fixedId: null } as const;
-    let previous = pickManifesto(items, rotation)!.id;
-    for (let i = 0; i < 50; i++) {
-      const next = pickManifesto(items, rotation)!.id;
-      expect(next).not.toBe(previous);
-      previous = next;
+  it("draws weighted visits, allows repeats, and excludes zero weights", () => {
+    const weighted = items.map((m, i) => ({ ...m, weight: [0, 1, 3][i] }));
+    const random = vi.spyOn(Math, "random");
+    const mode = { mode: "visit", fixedId: null } as const;
+    for (const [unit, id] of [
+      [0, "b"],
+      [0.24999, "b"],
+      [0.25, "c"],
+      [0.99999, "c"]
+    ] as const) {
+      random.mockReturnValue(unit);
+      expect(pickManifesto(weighted, mode)?.id).toBe(id);
+      expect(pickManifesto(weighted, mode)?.id).toBe(id);
     }
-    // A single manifesto is simply shown every time.
-    expect(pickManifesto(items.slice(0, 1), rotation)?.id).toBe("a");
+    expect(
+      pickManifesto(
+        weighted.map((m) => ({ ...m, weight: 0 })),
+        mode
+      )
+    ).toBeUndefined();
+    expect(pickManifesto(weighted, { mode: "fixed", fixedId: "a" })?.id).toBe("a");
   });
-
-  it("keeps one per session and picks another in the next", () => {
+  it("keeps the weighted session choice until session or configuration changes", () => {
+    const random = vi.spyOn(Math, "random").mockReturnValue(0);
     const rotation = { mode: "session", fixedId: null } as const;
-    const first = pickManifesto(items, rotation)!.id;
-    for (let i = 0; i < 10; i++) expect(pickManifesto(items, rotation)!.id).toBe(first);
+    expect(pickManifesto(items, rotation)?.id).toBe("a");
+    random.mockReturnValue(0.9999);
+    expect(pickManifesto(items, rotation)?.id).toBe("a");
     vi.stubGlobal("sessionStorage", memoryStorage());
-    expect(pickManifesto(items, rotation)!.id).not.toBe(first);
+    expect(pickManifesto(items, rotation)?.id).toBe("c");
+    expect(
+      pickManifesto(
+        items.map((m) => ({ ...m, weight: m.id === "b" ? 1 : 0 })),
+        rotation
+      )?.id
+    ).toBe("b");
   });
 
   it("still picks one when storage is blocked", () => {

@@ -326,6 +326,8 @@ export type SteamSyncJob = {
 
 /** Song details (kind "track"). */
 export type MediaMusic = {
+  artistIdentities?: MusicArtistIdentity[];
+  isrc?: string | null;
   album: string | null;
   durationMs: number | null;
   /** 30-second preview (iTunes or Spotify CDN). */
@@ -634,6 +636,7 @@ export type PersonRole =
   | "producer"
   | "actor"
   | "voice"
+  | "musician"
   | "singer"
   | "composer"
   | "lyricist"
@@ -651,6 +654,7 @@ export const PERSON_ROLES: readonly PersonRole[] = [
   "producer",
   "actor",
   "voice",
+  "musician",
   "singer",
   "composer",
   "lyricist",
@@ -668,9 +672,30 @@ export const SOUNDTRACK_ROLES: readonly SoundtrackRole[] = [
 ];
 
 /** Where a person's details came from. */
-export type PersonSource = "tmdb" | "manual";
+export type PersonSource = "tmdb" | "musicbrainz" | "manual";
+export type PersonKind = "person" | "group" | "organization";
+export type PersonIdentity = {
+  provider: "tmdb" | "musicbrainz" | "spotify" | "itunes";
+  externalId: string;
+  confirmed?: boolean;
+};
+export type MusicArtistIdentity = {
+  provider: PersonIdentity["provider"];
+  externalId: string;
+  name: string;
+};
 
+export type PersonMembership = {
+  personId: string;
+  role: string | null;
+  startYear: number | null;
+  endYear: number | null;
+};
 export type AdminPerson = {
+  members?: PersonMembership[];
+  kind?: PersonKind;
+  aliases?: string[];
+  identities?: PersonIdentity[];
   id: string;
   source: PersonSource;
   sourceId: string | null;
@@ -689,9 +714,18 @@ export type AdminPerson = {
   updatedAt: string;
 };
 
-export type AdminPersonCreate = { name: LocalizedText; originalName?: string | null };
-export type AdminPersonImport = { source: "tmdb"; sourceId: string };
+export type AdminPersonCreate = {
+  name: LocalizedText;
+  originalName?: string | null;
+  kind?: PersonKind;
+  aliases?: string[];
+};
+export type AdminPersonImport = { source: "tmdb" | "musicbrainz"; sourceId: string };
 export type AdminPersonUpdate = Partial<{
+  members: PersonMembership[];
+  kind: PersonKind;
+  aliases: string[];
+  identities: PersonIdentity[];
   name: LocalizedText;
   originalName: string | null;
   bio: LocalizedText;
@@ -701,7 +735,8 @@ export type AdminPersonUpdate = Partial<{
 }>;
 
 export type PersonSearchResult = {
-  source: "tmdb";
+  source: "tmdb" | "musicbrainz";
+  kind?: PersonKind;
   sourceId: string;
   name: string;
   /** e.g. "Directing", "Acting". */
@@ -712,6 +747,13 @@ export type PersonSearchResult = {
   existingId: string | null;
 };
 
+export type PersonMusicCandidate = {
+  id: string;
+  title: LocalizedText;
+  year: number | null;
+  reason: "identity" | "name" | "conflict";
+  ambiguous: boolean;
+};
 export type AdminPeopleResponse = { people: AdminPerson[] };
 export type AdminPersonResponse = { person: AdminPerson };
 export type AdminPersonSearchResponse = { results: PersonSearchResult[] };
@@ -781,6 +823,8 @@ export type AdminRelationSuggestionsResponse = { suggestions: RelationSuggestion
 
 /** A person in public lists and links. */
 export type PublicPersonSummary = {
+  kind?: PersonKind;
+  aliases?: string[];
   id: string;
   name: LocalizedText;
   originalName: string | null;
@@ -804,6 +848,7 @@ export type PublicLink = {
 
 /** One person with their entries, for the person view. */
 export type PublicPerson = PublicPersonSummary & {
+  members?: (Omit<PersonMembership, "personId"> & { person: PublicPersonSummary })[];
   bio: LocalizedText;
   links: string[];
   sourceUrl: string | null;

@@ -88,6 +88,53 @@ describe("analytics reports", () => {
     return { app, store, media, movie, song, send, get, cookie };
   }
 
+  it("reports explicit playback requests separately, deduplicates rapid clicks, excludes hidden content and preserves daily rollups", async () => {
+    const { store, media, send, get } = await setup();
+    const session = id("s");
+    await send([
+      event(session, {
+        type: "music_request",
+        contentId: "song-1",
+        target: "spotify",
+        detail: "button"
+      }),
+      event(session, {
+        type: "music_request",
+        contentId: "song-1",
+        target: "spotify",
+        detail: "button"
+      }),
+      event(session, {
+        type: "music_request",
+        contentId: "hidden-1",
+        target: "spotify",
+        detail: "button"
+      }),
+      event(session, {
+        type: "music_request",
+        contentId: "missing",
+        target: "spotify",
+        detail: "button"
+      })
+    ]);
+    const report = await get<AnalyticsContentReport>("/api/admin/analytics/content?range=today");
+    expect(report.items).toMatchObject([{ id: "song-1", requests: 1, plays: 0 }]);
+    expect(report.players).toEqual([]);
+    expect(store.events.size).toBe(1);
+    await send([
+      event(id("s"), { type: "music_request", contentId: "song-1", target: "site", detail: "all" })
+    ]);
+    expect(
+      (await get<AnalyticsContentReport>("/api/admin/analytics/content?range=today")).items[0]
+        ?.requests
+    ).toBe(2);
+    clock = new Date("2026-11-03T05:00:00Z");
+    const service = await serviceFor(store, media);
+    await service.maintain();
+    const rollup = await service.content("7d");
+    expect(rollup.items[0]).toMatchObject({ id: "song-1", requests: 2, plays: 0 });
+  });
+
   it("counts views and plays of public content only, and keeps names after deletion", async () => {
     const { app, store, media, send, get } = await setup();
     const a = id("s");
@@ -117,7 +164,8 @@ describe("analytics reports", () => {
         removed: false,
         views: 2,
         visitors: 2,
-        plays: 0
+        plays: 0,
+        requests: 0
       },
       {
         type: "media",
@@ -127,7 +175,8 @@ describe("analytics reports", () => {
         removed: false,
         views: 0,
         visitors: 0,
-        plays: 1
+        plays: 1,
+        requests: 0
       }
     ]);
     expect(report.players).toEqual([{ key: "site", value: 1 }]);

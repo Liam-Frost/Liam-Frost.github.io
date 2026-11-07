@@ -1,5 +1,7 @@
 # Liam Frost · Personal Site
 
+English · [简体中文](README.zh-CN.md)
+
 A personal website for photography, software projects, and a collection of films, books, games, and music. Built as a TypeScript monorepo with a public site, a separate admin app, and a Fastify API.
 
 [![CI](https://github.com/Liam-Frost/Liam-Frost.github.io/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Liam-Frost/Liam-Frost.github.io/actions/workflows/ci.yml)
@@ -14,11 +16,11 @@ A personal website for photography, software projects, and a collection of films
 
 - **Photography portfolio** — responsive galleries, fullscreen viewing, image metadata, and adaptive image quality.
 - **Project showcase** — technology filters, localized project details, Markdown descriptions, and image galleries.
-- **Media collection** — films, series, anime, books, comics, games, music, and people, with ratings, reviews, progress, relationships, and a yearly review.
+- **Media collection** — films, series, anime, books, comics, games, music, and people, with ratings, reviews, progress, relationships, and a yearly review. MusicBrainz artist imports support people and groups; confirmed provider IDs link existing music while names remain suggestions.
 - **Music and game integrations** — Spotify account imports and playlist management, a music player, and Steam library synchronization.
 - **Separate admin app** — manage photos, projects, collections, uploads, and bulk actions without adding admin code to the public bundle.
 - **Multilingual interface** — English, Simplified Chinese, Traditional Chinese, Japanese, and French on the public site, with light and dark themes.
-- **Configurable homepage** — manage manifestos, gear, technology categories and contact details; hide empty sections and control each section's visibility.
+- **Configurable homepage** — manage weighted manifestos, gear, technology categories and contact details; hide empty sections and control each section's visibility.
 - **Collection management** — title, date, year and rating sorting, a dedicated featured-order page, and shared genre translations that preserve custom labels.
 - **Appearance controls** — independent public/admin logos and a fixed or rotating public-gallery background for admin sign-in.
 - **Visitor analytics and audit history** — content views, player requests, traffic sources, missing-page paths and a read-only administrative audit trail. Administrator visits and browser privacy preferences are respected.
@@ -41,7 +43,7 @@ The public website and preview are available at the links above and **[preview.t
 
 This is a personal project under active development.
 
-See [admin features](docs/admin.md), [collection UX and artist-source plans](docs/collection-admin-ux.md), [authentication protections and limits](docs/admin-security-review.md), and [performance behavior](docs/performance.md). Artist/group integrations described in the collection plan are proposals, rather than currently available provider integrations.
+See [admin features](docs/admin.md), [collection UX and artist-source plans](docs/collection-admin-ux.md), [authentication protections and limits](docs/admin-security-review.md), and [performance behavior](docs/performance.md). The current source includes MusicBrainz artist imports, editable person/group identities, confirmed-ID music matching, and explicit name-match suggestions. The unified website-settings design is documented in [the proposal](docs/website-settings-proposal.zh-CN.md); account and route changes remain proposals. Features reach production through the normal release process.
 
 ## Technology
 

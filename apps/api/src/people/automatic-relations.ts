@@ -1,3 +1,4 @@
+import { musicMatch } from "./music-matching";
 import type { PersonRole } from "@liam-frost/shared";
 import { randomUUID } from "node:crypto";
 
@@ -72,6 +73,16 @@ export class AutomaticRelations {
     const role = namedRole(item.kind);
     if (!role) return 0;
     let added = 0;
+    if (item.kind === "track" || item.kind === "album") {
+      for (const person of everyone) {
+        if (
+          (!onlyPersonId || person.id === onlyPersonId) &&
+          musicMatch(person, item, everyone)?.reason === "identity"
+        )
+          added += await this.add(person.id, item, "singer");
+      }
+      return added;
+    }
     for (const name of new Set(item.credits.map(nameKey).filter(Boolean))) {
       const matches = everyone.filter((person) => namesOf(person).has(name));
       if (matches.length !== 1) continue;
@@ -91,7 +102,12 @@ export class AutomaticRelations {
       if (!everyone.length) return 0;
       if (item.source === "tmdb" && item.sourceId && this.sources.available().tmdb) {
         const known = new Map(
-          everyone.filter((p) => p.source === "tmdb" && p.sourceId).map((p) => [p.sourceId!, p.id])
+          everyone.flatMap((p) => [
+            ...(p.source === "tmdb" && p.sourceId ? [[p.sourceId, p.id] as const] : []),
+            ...(p.identities ?? [])
+              .filter((i) => i.provider === "tmdb" && i.confirmed)
+              .map((i) => [i.externalId, p.id] as const)
+          ])
         );
         if (!known.size) return 0;
         const credits = await this.sources.credits(item.sourceId, item.kind, { all: true });
@@ -110,8 +126,15 @@ export class AutomaticRelations {
     return this.lock.run("sync", async () => {
       const items = await this.media.list({ includePrivate: true });
       let added = 0;
-      if (person.source === "tmdb" && person.sourceId && this.sources.available().tmdb) {
-        const works = await this.sources.personCredits(person.sourceId);
+      const tmdbIds = new Set([
+        ...(person.source === "tmdb" && person.sourceId ? [person.sourceId] : []),
+        ...(person.identities ?? [])
+          .filter((i) => i.provider === "tmdb" && i.confirmed)
+          .map((i) => i.externalId)
+      ]);
+      if (tmdbIds.size && this.sources.available().tmdb) {
+        const works = [];
+        for (const id of tmdbIds) works.push(...(await this.sources.personCredits(id)));
         const bySource = new Map(
           items
             .filter((item) => item.source === "tmdb" && item.sourceId)
@@ -127,7 +150,11 @@ export class AutomaticRelations {
       const everyone = await this.people.list({ includePrivate: true });
       const keys = namesOf(person);
       for (const item of items) {
-        if (namedRole(item.kind) && item.credits.some((name) => keys.has(nameKey(name))))
+        if (
+          item.kind === "track" ||
+          item.kind === "album" ||
+          (namedRole(item.kind) && item.credits.some((name) => keys.has(nameKey(name))))
+        )
           added += await this.named(item, everyone, person.id);
       }
       return added;
@@ -154,9 +181,13 @@ export function withAutomaticMedia(
     setFeaturedOrder: repo.setFeaturedOrder.bind(repo),
     create: async (input) => synchronize(await repo.create(input)),
     update: async (id, patch) => {
-      const before = patch.credits !== undefined ? await repo.get(id) : null;
+      const before =
+        patch.credits !== undefined || patch.extra !== undefined ? await repo.get(id) : null;
       const row = await repo.update(id, patch);
-      return row && before && JSON.stringify(before.credits) !== JSON.stringify(row.credits)
+      return row &&
+        before &&
+        (JSON.stringify(before.credits) !== JSON.stringify(row.credits) ||
+          JSON.stringify(before.extra) !== JSON.stringify(row.extra))
         ? synchronize(row)
         : row;
     }
@@ -180,12 +211,17 @@ export function withAutomaticPeople(
     create: async (input) => synchronize(await repo.create(input)),
     update: async (id, patch) => {
       const before =
-        patch.name !== undefined || patch.originalName !== undefined ? await repo.get(id) : null;
+        patch.name !== undefined ||
+        patch.originalName !== undefined ||
+        patch.identities !== undefined
+          ? await repo.get(id)
+          : null;
       const row = await repo.update(id, patch);
       return row &&
         before &&
         (JSON.stringify(before.name) !== JSON.stringify(row.name) ||
-          before.originalName !== row.originalName)
+          before.originalName !== row.originalName ||
+          JSON.stringify(before.identities) !== JSON.stringify(row.identities))
         ? synchronize(row)
         : row;
     }

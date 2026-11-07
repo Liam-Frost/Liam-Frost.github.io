@@ -10,7 +10,7 @@ export function CollectionLayout() {
       <nav aria-label="收藏分类" className="mb-6 flex gap-2 border-b border-line pb-3">
         {[
           { to: "/collection", label: "作品", active: !people && !featured },
-          { to: "/collection/people", label: "人物", active: people },
+          { to: "/collection/people", label: "人物与团体", active: people },
           { to: "/collection/featured", label: "首页精选", active: featured }
         ].map(({ to, label, active }) => (
           <Link

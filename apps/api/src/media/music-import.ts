@@ -1,4 +1,4 @@
-import type { MediaMusic, MusicImportJob } from "@liam-frost/shared";
+import type { MediaMusic, MusicArtistIdentity, MusicImportJob } from "@liam-frost/shared";
 import { randomBytes, randomUUID } from "node:crypto";
 
 import { InvalidImageError, processImage, type ProcessedImage } from "../photos/images";
@@ -60,6 +60,7 @@ export async function importItunesSong(
       credits: splitArtists(song.artist),
       poster,
       extra: musicExtra({
+        artistIdentities: song.artistIdentities ?? [],
         album: song.album,
         durationMs: song.durationMs,
         previewUrl: song.previewUrl,
@@ -79,6 +80,8 @@ type ImportSong = {
   spotifyId: string;
   title: string;
   artists: string[];
+  artistIdentities?: MusicArtistIdentity[];
+  isrc?: string | null;
   album: string | null;
   year: number | null;
   durationMs: number | null;
@@ -328,7 +331,9 @@ export class MusicImports {
         credits: song.artists,
         poster,
         extra: musicExtra({
+          artistIdentities: song.artistIdentities ?? [],
           album: song.album,
+          isrc: song.isrc ?? null,
           durationMs: song.durationMs,
           previewUrl: preview.previewUrl,
           spotifyUrl: song.spotifyUrl,

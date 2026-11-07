@@ -1,9 +1,10 @@
-import type { MusicSearchResult } from "@liam-frost/shared";
+import type { MusicArtistIdentity, MusicSearchResult } from "@liam-frost/shared";
 
 import { SourceError } from "./sources";
 
 /** An iTunes song, with a large cover for importing. */
 export type ItunesSong = Omit<MusicSearchResult, "existingId"> & {
+  artistIdentities?: MusicArtistIdentity[];
   artworkLarge: string | null;
   genre: string | null;
 };
@@ -26,6 +27,7 @@ type ItunesResult = {
   trackId?: number;
   trackName?: string;
   artistName?: string;
+  artistId?: number;
   collectionName?: string;
   releaseDate?: string;
   artworkUrl100?: string;
@@ -44,6 +46,10 @@ function toSong(result: ItunesResult): ItunesSong | null {
     itunesId: String(result.trackId),
     title: result.trackName,
     artist: result.artistName ?? "",
+    artistIdentities:
+      result.artistId && result.artistName
+        ? [{ provider: "itunes", externalId: String(result.artistId), name: result.artistName }]
+        : [],
     album: result.collectionName ?? null,
     year: Number(result.releaseDate?.slice(0, 4)) || null,
     artworkUrl: artwork,

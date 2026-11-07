@@ -15,12 +15,12 @@
   --color-line: #d8dde1;
   --color-line-soft: #edf0f2;
   --color-line-strong: #d2d8dd;
-  --color-muted: #667784;
-  --color-subtle: #6c7d89;
-  --color-faint: #748391;
+  --color-muted: #536775;
+  --color-subtle: #596d7b;
+  --color-faint: #60717e;
 
   --color-status-ok: #3f8f6b;
-  --color-status-warn: #b7862f;
+  --color-status-warn: #876015;
   --color-status-error: #b5573f;
 
   --color-rating: #d39b2a;

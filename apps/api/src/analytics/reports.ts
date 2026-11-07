@@ -56,6 +56,7 @@ export function contentItems(
 ): AnalyticsContentItem[] {
   const keys = new Set([
     ...sum.keys("content").keys(),
+    ...[...sum.keys("playRequest").keys()].map((id) => `media:${id}`),
     ...[...sum.keys("play").keys()].map((id) => `media:${id}`)
   ]);
   return [...keys]
@@ -72,10 +73,15 @@ export function contentItems(
         removed: !catalog.has(key),
         views: sum.value("content", key),
         visitors: sum.value("contentVisitors", key),
+        requests: type === "media" ? sum.value("playRequest", id) : 0,
         plays: type === "media" ? sum.value("play", id) : 0
       };
     })
-    .sort((a, b) => b.views + b.plays - (a.views + a.plays) || a.id.localeCompare(b.id));
+    .sort(
+      (a, b) =>
+        b.views + b.plays + b.requests - (a.views + a.plays + a.requests) ||
+        a.id.localeCompare(b.id)
+    );
 }
 
 /**

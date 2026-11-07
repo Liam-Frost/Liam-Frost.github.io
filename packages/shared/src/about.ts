@@ -14,6 +14,8 @@ export type AboutManifesto = {
   /** Who said it, when it is a quotation; empty for the site owner's own words. */
   attribution: LocalizedText;
   visible: boolean;
+  /** Relative selection weight; omitted legacy values mean 1. Fixed mode ignores it. */
+  weight?: number;
 };
 
 export type AboutGearItem = { id: string; name: string; visible: boolean };
@@ -121,7 +123,7 @@ export const DEFAULT_ABOUT: AboutContent = {
 export function toPublicAbout(about: AboutContent): PublicAbout {
   const manifestos = about.manifestos
     .filter((m) => m.visible)
-    .map(({ id, text, attribution }) => ({ id, text, attribution }));
+    .map(({ id, text, attribution, weight }) => ({ id, text, attribution, weight: weight ?? 1 }));
   const fixedId = manifestos.some((m) => m.id === about.rotation.fixedId)
     ? about.rotation.fixedId
     : (manifestos[0]?.id ?? null);

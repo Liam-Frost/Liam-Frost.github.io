@@ -3,8 +3,8 @@
  * featured collection entries):
  * - fixed: the admin's choice or order;
  * - daily: changes once a day, the same for every visitor;
- * - visit: changes on each visit to the page (never the same start twice in a row);
- * - session: one per browsing session (tab), another in the next session.
+ * - visit: draws on each visit to the page (weighted manifestos may repeat);
+ * - session: one per browsing session (tab), a new draw in the next session.
  * The last two are chosen in the browser, since only it knows visits and sessions.
  */
 export const ROTATION_MODES = ["fixed", "daily", "visit", "session"] as const;

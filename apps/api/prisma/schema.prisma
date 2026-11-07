@@ -169,6 +169,11 @@ model MediaItem {
 
 /// A person or group linked to collection entries: actors, directors, singers, writers, studios.
 model Person {
+  kind String @default("person")
+  aliases Json @default("[]")
+  identities PersonIdentity[]
+  members PersonMembership[] @relation("GroupMembers")
+  memberOf PersonMembership[] @relation("MemberGroups")
   id           String          @id
   /// tmdb or manual.
   source       String
@@ -446,4 +451,27 @@ model AdminAuditEvent {
  ip String
  @@index([createdAt, id])
  @@index([action, createdAt])
+}
+
+model PersonIdentity {
+  id String @id @default(uuid())
+  personId String
+  person Person @relation(fields: [personId], references: [id], onDelete: Cascade)
+  provider String
+  externalId String
+  confirmed Boolean @default(false)
+  @@unique([provider, externalId])
+  @@index([personId])
+}
+
+model PersonMembership {
+  groupId String
+  personId String
+  role String?
+  startYear Int?
+  endYear Int?
+  group Person @relation("GroupMembers", fields: [groupId], references: [id], onDelete: Cascade)
+  person Person @relation("MemberGroups", fields: [personId], references: [id], onDelete: Cascade)
+  @@id([groupId, personId])
+  @@index([personId])
 }

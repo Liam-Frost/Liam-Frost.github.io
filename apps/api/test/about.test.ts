@@ -49,6 +49,20 @@ const content = (patch: Partial<AboutContent> = {}): AboutContent => ({
 });
 
 describe("about content", () => {
+  it("defaults legacy weights and rejects non-fixed all-zero visible weights", async () => {
+    const { app, save } = await setup();
+    const bad = content({
+      manifestos: [{ id: "a", text: { en: "Zero" }, attribution: {}, visible: true, weight: 0 }]
+    });
+    expect((await save(bad, "default")).statusCode).toBe(400);
+    expect(
+      (await save({ ...bad, rotation: { mode: "fixed", fixedId: "a" } }, "default")).statusCode
+    ).toBe(200);
+    const { app: other, save: otherSave } = await setup();
+    expect((await otherSave(content(), "default")).json().about.manifestos[0].weight).toBe(1);
+    await app.close();
+    await other.close();
+  });
   it("serves the defaults before the first save, and without a database", async () => {
     const { app, read } = await setup();
     const initial = await read();

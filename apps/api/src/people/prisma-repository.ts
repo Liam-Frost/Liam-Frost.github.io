@@ -1,4 +1,11 @@
-import type { LocalizedText, PersonSource, RelationType } from "@liam-frost/shared";
+import type {
+  LocalizedText,
+  PersonSource,
+  PersonKind,
+  PersonIdentity,
+  PersonMembership,
+  RelationType
+} from "@liam-frost/shared";
 
 import {
   Prisma,
@@ -43,10 +50,28 @@ const isUniqueConflict = (error: unknown) =>
 const isMissing = (error: unknown) =>
   error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025";
 
-function personRow(record: Person): PersonRow {
+function personRow(
+  record: Person & {
+    members?: PersonMembership[];
+    identities?: { provider: string; externalId: string; confirmed: boolean }[];
+  }
+): PersonRow {
   return {
     ...record,
     source: record.source as PersonSource,
+    kind: record.kind as PersonKind,
+    aliases: record.aliases as string[],
+    members: (record.members ?? []).map(({ personId, role, startYear, endYear }) => ({
+      personId,
+      role,
+      startYear,
+      endYear
+    })),
+    identities: (record.identities ?? []).map((i) => ({
+      provider: i.provider as PersonIdentity["provider"],
+      externalId: i.externalId,
+      confirmed: i.confirmed
+    })),
     name: record.name as LocalizedText,
     photo: record.photo as StoredImage | null,
     bio: record.bio as LocalizedText,
@@ -56,8 +81,19 @@ function personRow(record: Person): PersonRow {
 }
 
 function personData(patch: PersonPatch): Prisma.PersonUpdateInput {
-  const { photo, visibility, ...rest } = patch;
+  const { photo, visibility, identities, aliases, members, ...rest } = patch;
   const data: Prisma.PersonUpdateInput = { ...rest };
+  if (members !== undefined) data.members = { deleteMany: {}, create: members };
+  if (aliases !== undefined) data.aliases = aliases;
+  if (identities !== undefined)
+    data.identities = {
+      deleteMany: {},
+      create: identities.map((i) => ({
+        provider: i.provider,
+        externalId: i.externalId,
+        confirmed: i.confirmed ?? false
+      }))
+    };
   if (photo !== undefined) data.photo = json(photo);
   if (visibility !== undefined) data.visibility = visibility === "private" ? "PRIVATE" : "PUBLIC";
   return data;
@@ -75,32 +111,65 @@ export class PrismaPersonRepository implements PersonRepository {
 
   async list({ includePrivate = false }: { includePrivate?: boolean } = {}) {
     const records = await this.prisma.person.findMany({
+      include: { identities: true, members: true },
       where: includePrivate ? {} : { visibility: "PUBLIC" }
     });
     return records.map(personRow).sort(byName);
   }
 
   async get(id: string) {
-    const record = await this.prisma.person.findUnique({ where: { id } });
+    const record = await this.prisma.person.findUnique({
+      where: { id },
+      include: { identities: true, members: true }
+    });
     return record ? personRow(record) : null;
   }
 
   async findBySource(source: PersonSource, sourceIds: string[]) {
     if (!sourceIds.length) return new Map<string, string>();
     const records = await this.prisma.person.findMany({
-      where: { source, sourceId: { in: sourceIds } },
-      select: { id: true, sourceId: true }
+      where: {
+        OR: [
+          { source, sourceId: { in: sourceIds } },
+          { identities: { some: { provider: source, externalId: { in: sourceIds } } } }
+        ]
+      },
+      include: { identities: true, members: true }
     });
-    return new Map(records.map((record) => [record.sourceId!, record.id]));
+    return new Map(
+      records.flatMap((record) => [
+        ...(record.source === source && record.sourceId
+          ? [[record.sourceId, record.id] as const]
+          : []),
+        ...record.identities
+          .filter((i) => i.provider === source && sourceIds.includes(i.externalId))
+          .map((i) => [i.externalId, record.id] as const)
+      ])
+    );
   }
 
   async create(person: NewPerson) {
-    const { photo, visibility, links, ...rest } = person;
+    const { photo, visibility, links, identities, aliases, members, ...rest } = person;
     try {
       const record = await this.prisma.person.create({
+        include: { identities: true, members: true },
         data: {
           bio: {},
           ...rest,
+          aliases: aliases ?? [],
+          members: { create: members ?? [] },
+          identities: {
+            create: (
+              identities ??
+              (person.source !== "manual" && person.sourceId
+                ? [{ provider: person.source, externalId: person.sourceId, confirmed: true }]
+                : [])
+            ).map((i) => ({
+              provider: i.provider,
+              externalId: i.externalId,
+              confirmed: i.confirmed ?? false
+            }))
+          },
           links: links ?? [],
           photo: json(photo ?? null),
           visibility: visibility === "private" ? "PRIVATE" : "PUBLIC"
@@ -115,9 +184,16 @@ export class PrismaPersonRepository implements PersonRepository {
 
   async update(id: string, patch: PersonPatch) {
     try {
-      return personRow(await this.prisma.person.update({ where: { id }, data: personData(patch) }));
+      return personRow(
+        await this.prisma.person.update({
+          where: { id },
+          data: personData(patch),
+          include: { identities: true, members: true }
+        })
+      );
     } catch (error) {
       if (isMissing(error)) return null;
+      if (isUniqueConflict(error)) throw new DuplicatePersonError();
       throw error;
     }
   }

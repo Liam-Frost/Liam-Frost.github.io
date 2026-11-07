@@ -122,6 +122,7 @@ export function validateEvent(raw: unknown, siteHost: string): ValidEvent | null
     case "content_view":
       if (!e.contentType || !e.contentId) return null;
       return { ...event, contentType: e.contentType, contentId: e.contentId };
+    case "music_request":
     case "music_play": {
       const player = (ANALYTICS_PLAYERS as readonly string[]).includes(e.target ?? "");
       const source = (ANALYTICS_PLAY_SOURCES as readonly string[]).includes(e.detail ?? "");
@@ -196,7 +197,12 @@ export class RepeatFilter {
   constructor(private readonly windowMs = 1000) {}
 
   repeat(event: ValidEvent, now: number) {
-    if (event.type !== "music_play" && event.type !== "outbound_click") return false;
+    if (
+      event.type !== "music_play" &&
+      event.type !== "music_request" &&
+      event.type !== "outbound_click"
+    )
+      return false;
     const key = `${event.sessionId}|${event.type}|${event.contentId ?? event.target}`;
     const previous = this.last.get(key);
     this.last.set(key, now);

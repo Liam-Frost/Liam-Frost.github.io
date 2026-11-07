@@ -571,26 +571,51 @@ export const collectionSettingsSchema = z
 
 export const personIdSchema = projectIdSchema;
 
+export const personIdentitySchema = z
+  .object({
+    provider: z.enum(["tmdb", "musicbrainz", "spotify", "itunes"]),
+    externalId: z.string().trim().min(1).max(100),
+    confirmed: z.boolean().default(false)
+  })
+  .strict()
+  .superRefine((v, ctx) => {
+    const valid =
+      v.provider === "musicbrainz"
+        ? /^[a-f0-9]{8}(-[a-f0-9]{4}){3}-[a-f0-9]{12}$/.test(v.externalId)
+        : v.provider === "spotify"
+          ? /^[A-Za-z0-9]{22}$/.test(v.externalId)
+          : /^\d{1,15}$/.test(v.externalId);
+    if (!valid) ctx.addIssue({ code: "custom", message: "来源ID格式无效" });
+  });
+const personIdentityFields = {
+  kind: z.enum(["person", "group", "organization"]),
+  aliases: z.array(z.string().trim().min(1).max(120)).max(50),
+  identities: z
+    .array(personIdentitySchema)
+    .max(20)
+    .refine(
+      (v) => new Set(v.map((i) => `${i.provider}:${i.externalId}`)).size === v.length,
+      "重复的来源身份"
+    )
+};
 export const personSearchQuerySchema = z.object({
+  source: z.enum(["tmdb", "musicbrainz"]).default("tmdb"),
   q: z.string().trim().min(1, "Enter a name to search").max(100)
 });
 
 export const personCreateSchema = z
   .object({
+    kind: personIdentityFields.kind.default("person"),
+    aliases: personIdentityFields.aliases.default([]),
     name: requiredText(120, "Name is required in at least one language"),
     originalName: clearableString(120).optional()
   })
   .strict();
 
-export const personImportSchema = z
-  .object({
-    source: z.literal("tmdb"),
-    sourceId: z
-      .string()
-      .trim()
-      .regex(/^\d{1,12}$/, "Invalid source id")
-  })
-  .strict();
+export const personImportSchema = z.discriminatedUnion("source", [
+  z.object({ source: z.literal("tmdb"), sourceId: z.string().regex(/^\d{1,12}$/) }).strict(),
+  z.object({ source: z.literal("musicbrainz"), sourceId: z.string().uuid() }).strict()
+]);
 
 /** An https link. */
 const httpsLink = z
@@ -607,6 +632,24 @@ const httpsLink = z
 
 export const personUpdateSchema = z
   .object({
+    ...personIdentityFields,
+    members: z
+      .array(
+        z
+          .object({
+            personId: z.string().uuid(),
+            role: z.string().trim().max(80).nullable(),
+            startYear: z.number().int().min(1000).max(3000).nullable(),
+            endYear: z.number().int().min(1000).max(3000).nullable()
+          })
+          .strict()
+          .refine(
+            (m) => m.startYear === null || m.endYear === null || m.endYear >= m.startYear,
+            "成员结束年份不能早于开始年份"
+          )
+      )
+      .max(100)
+      .refine((v) => new Set(v.map((m) => m.personId)).size === v.length, "成员重复"),
     name: requiredText(120, "Name is required in at least one language"),
     originalName: clearableString(120),
     bio: localizedText(5000),
@@ -773,6 +816,7 @@ export const aboutContentSchema = z
               "A manifesto needs text in at least one language"
             ),
             attribution: localizedText(ABOUT_LIMITS.attribution).default({}),
+            weight: z.number().int().min(0).max(10000).default(1),
             visible: z.boolean()
           })
           .strict()
@@ -813,6 +857,12 @@ export const aboutContentSchema = z
   })
   .strict()
   .superRefine((about, ctx) => {
+    if (
+      about.rotation.mode !== "fixed" &&
+      about.manifestos.some((m) => m.visible) &&
+      !about.manifestos.some((m) => m.visible && m.weight > 0)
+    )
+      ctx.addIssue({ code: "custom", message: "至少一条可见宣言的权重必须大于0" });
     const ids = [
       ...about.manifestos.map((m) => m.id),
       ...about.gear.flatMap((c) => [c.id, ...c.items.map((i) => i.id)])

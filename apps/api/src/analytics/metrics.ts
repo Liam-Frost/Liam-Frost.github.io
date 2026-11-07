@@ -91,6 +91,9 @@ export function computeDay(
         contentVisitors.set(key, seen);
         break;
       }
+      case "music_request":
+        counter.add("playRequest", event.contentId);
+        break;
       case "music_play":
         counter.add("play", event.contentId);
         counter.add("player", event.target);

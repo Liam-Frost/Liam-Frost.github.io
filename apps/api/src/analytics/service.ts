@@ -598,7 +598,17 @@ export class AnalyticsService {
         const report = await this.content(range, from, to);
         return {
           range: report.range,
-          header: ["type", "id", "name", "kind", "removed", "views", "visitors", "plays"],
+          header: [
+            "type",
+            "id",
+            "name",
+            "kind",
+            "removed",
+            "views",
+            "visitors",
+            "plays",
+            "requests"
+          ],
           rows: report.items.map((i) => [
             i.type,
             i.id,
@@ -607,7 +617,8 @@ export class AnalyticsService {
             i.removed ? "yes" : "no",
             i.views,
             i.visitors,
-            i.plays
+            i.plays,
+            i.requests ?? 0
           ])
         };
       }

@@ -1,16 +1,24 @@
 import LoadingSkeleton from "../../../web/src/components/LoadingSkeleton";
-import type { AdminPerson, LocalizedText } from "@liam-frost/shared";
+import type {
+  AdminPerson,
+  PersonIdentity,
+  PersonKind,
+  PersonMembership,
+  LocalizedText
+} from "@liam-frost/shared";
 import { ArrowLeft, ExternalLink, ImagePlus, RefreshCw, Trash2, UserRound, X } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 
+import { MusicCandidatesPanel } from "../components/people/MusicCandidatesPanel";
 import { RelationsPanel } from "../components/relations/RelationsPanel";
 import { Dialog } from "../components/ui/Dialog";
 import { Field, Switch } from "../components/ui/Field";
 import { Panel } from "../components/ui/Panel";
 import { useToast } from "../components/ui/Toast";
 import {
+  usePeople,
   useDeletePerson,
   usePerson,
   useUpdatePerson,
@@ -23,6 +31,10 @@ import { RecentStats } from "../components/analytics/RecentStats";
 const ACCEPT = "image/jpeg,image/png,image/webp,image/avif,image/tiff";
 
 type Draft = {
+  members: PersonMembership[];
+  kind: PersonKind;
+  aliases: string[];
+  identities: PersonIdentity[];
   name: LocalizedText;
   originalName: string;
   bio: LocalizedText;
@@ -32,6 +44,10 @@ type Draft = {
 };
 
 const toDraft = (person: AdminPerson): Draft => ({
+  members: person.members ?? [],
+  kind: person.kind ?? "person",
+  aliases: person.aliases ?? [],
+  identities: person.identities ?? [],
   name: person.name,
   originalName: person.originalName ?? "",
   bio: person.bio,
@@ -63,6 +79,7 @@ export function PersonEditPage() {
 }
 
 function PersonEditor({ person }: { person: AdminPerson }) {
+  const { data: everyone } = usePeople();
   const [draft, setDraft] = useState(() => toDraft(person));
   const [saved, setSaved] = useState(draft);
   const dirty = JSON.stringify(draft) !== JSON.stringify(saved);
@@ -114,6 +131,10 @@ function PersonEditor({ person }: { person: AdminPerson }) {
     setError("");
     update.mutate(
       {
+        members: draft.members,
+        kind: draft.kind,
+        aliases: draft.aliases.map((s) => s.trim()).filter(Boolean),
+        identities: draft.identities,
         name: draft.name,
         originalName: draft.originalName,
         bio: draft.bio,
@@ -228,6 +249,110 @@ function PersonEditor({ person }: { person: AdminPerson }) {
             </div>
           </section>
 
+          {draft.kind !== "person" || draft.members.length ? (
+            <Panel title="团体成员">
+              <p className="text-xs text-muted">
+                成员关系与作品角色独立，不会把成员自动记作乐队全部作品的演唱者。年份可留空。
+              </p>
+              {draft.members.map((member, index) => (
+                <div className="space-y-2 rounded-lg border border-line-soft p-3" key={index}>
+                  <label className="block text-xs">
+                    成员
+                    <select
+                      className="field"
+                      aria-label={`成员 ${index + 1}`}
+                      value={member.personId}
+                      onChange={(e) =>
+                        set(
+                          "members",
+                          draft.members.map((m, i) =>
+                            i === index ? { ...m, personId: e.target.value } : m
+                          )
+                        )
+                      }
+                    >
+                      <option value="">请选择人物</option>
+                      {(everyone ?? [])
+                        .filter((p) => p.id !== person.id && (p.kind ?? "person") === "person")
+                        .map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {pickText(p.name)}
+                          </option>
+                        ))}
+                    </select>
+                  </label>
+                  <input
+                    className="field"
+                    aria-label={`成员 ${index + 1} 职责`}
+                    placeholder="职责，如主唱、吉他手"
+                    value={member.role ?? ""}
+                    maxLength={80}
+                    onChange={(e) =>
+                      set(
+                        "members",
+                        draft.members.map((m, i) =>
+                          i === index ? { ...m, role: e.target.value || null } : m
+                        )
+                      )
+                    }
+                  />
+                  <div className="flex gap-2">
+                    {(["startYear", "endYear"] as const).map((field) => (
+                      <label className="min-w-0 text-xs" key={field}>
+                        {field === "startYear" ? "加入年份" : "离开年份"}
+                        <input
+                          type="number"
+                          className="field"
+                          min={1000}
+                          max={3000}
+                          value={member[field] ?? ""}
+                          onChange={(e) =>
+                            set(
+                              "members",
+                              draft.members.map((m, i) =>
+                                i === index
+                                  ? {
+                                      ...m,
+                                      [field]: e.target.value ? Number(e.target.value) : null
+                                    }
+                                  : m
+                              )
+                            )
+                          }
+                        />
+                      </label>
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    onClick={() =>
+                      set(
+                        "members",
+                        draft.members.filter((_, i) => i !== index)
+                      )
+                    }
+                  >
+                    移除成员
+                  </button>
+                </div>
+              ))}
+              <button
+                type="button"
+                className="btn-secondary"
+                disabled={draft.members.length >= 100}
+                onClick={() =>
+                  set("members", [
+                    ...draft.members,
+                    { personId: "", role: null, startYear: null, endYear: null }
+                  ])
+                }
+              >
+                添加成员
+              </button>
+            </Panel>
+          ) : null}
+          <MusicCandidatesPanel personId={person.id} />
           <RelationsPanel subject={{ type: "person", id: person.id }} />
         </div>
 
@@ -254,6 +379,134 @@ function PersonEditor({ person }: { person: AdminPerson }) {
             </p>
           </Panel>
 
+          <Panel title="身份与别名">
+            <Field label="类型" htmlFor="person-kind">
+              <select
+                className="field"
+                id="person-kind"
+                value={draft.kind}
+                onChange={(e) => set("kind", e.target.value as PersonKind)}
+              >
+                <option value="person">人物</option>
+                <option value="group">团体 / 乐队</option>
+                <option value="organization">机构 / 工作室</option>
+              </select>
+            </Field>
+            <Field
+              label="别名"
+              htmlFor="person-aliases"
+              hint="每行一个，最多 50 个；用于建议匹配，不证明身份"
+            >
+              <textarea
+                className="field"
+                rows={3}
+                id="person-aliases"
+                value={draft.aliases.join("\n")}
+                onChange={(e) => set("aliases", e.target.value.split("\n"))}
+              />
+            </Field>
+            <p className="text-xs text-muted">
+              确认来源 ID 后才参与音乐自动关联。相同来源身份只能属于一个人物；保存时校验。
+            </p>
+            {draft.identities.map((identity, index) => (
+              <div key={index} className="space-y-2 rounded-lg border border-line-soft p-3">
+                <label className="block text-xs">
+                  来源
+                  <select
+                    aria-label={`身份 ${index + 1} 来源`}
+                    className="field"
+                    value={identity.provider}
+                    onChange={(e) =>
+                      set(
+                        "identities",
+                        draft.identities.map((v, i) =>
+                          i === index
+                            ? {
+                                ...v,
+                                provider: e.target.value as PersonIdentity["provider"],
+                                confirmed: false
+                              }
+                            : v
+                        )
+                      )
+                    }
+                  >
+                    {["musicbrainz", "spotify", "itunes", "tmdb"].map((provider) => (
+                      <option key={provider}>{provider}</option>
+                    ))}
+                  </select>
+                </label>
+                <input
+                  className="field"
+                  aria-label={`身份 ${index + 1} ID`}
+                  placeholder="艺人 ID（不是歌曲或专辑 ID）"
+                  value={identity.externalId}
+                  maxLength={100}
+                  onChange={(e) =>
+                    set(
+                      "identities",
+                      draft.identities.map((v, i) =>
+                        i === index ? { ...v, externalId: e.target.value, confirmed: false } : v
+                      )
+                    )
+                  }
+                />
+                {identity.externalId ? (
+                  <a
+                    className="text-xs text-brand underline"
+                    href={
+                      {
+                        tmdb: "https://www.themoviedb.org/person/",
+                        musicbrainz: "https://musicbrainz.org/artist/",
+                        spotify: "https://open.spotify.com/artist/",
+                        itunes: "https://music.apple.com/artist/"
+                      }[identity.provider] + encodeURIComponent(identity.externalId)
+                    }
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    打开来源核对
+                  </a>
+                ) : null}
+                <Switch
+                  id={`identity-confirm-${index}`}
+                  label="已核对，确认是同一人物"
+                  checked={identity.confirmed ?? false}
+                  onChange={(confirmed) =>
+                    set(
+                      "identities",
+                      draft.identities.map((v, i) => (i === index ? { ...v, confirmed } : v))
+                    )
+                  }
+                />
+                <button
+                  className="btn-secondary"
+                  type="button"
+                  onClick={() =>
+                    set(
+                      "identities",
+                      draft.identities.filter((_, i) => i !== index)
+                    )
+                  }
+                >
+                  移除此身份
+                </button>
+              </div>
+            ))}
+            <button
+              className="btn-secondary"
+              type="button"
+              disabled={draft.identities.length >= 20}
+              onClick={() =>
+                set("identities", [
+                  ...draft.identities,
+                  { provider: "spotify", externalId: "", confirmed: false }
+                ])
+              }
+            >
+              添加来源身份
+            </button>
+          </Panel>
           <Panel title="资料">
             <Field label="原名" htmlFor="person-original" hint="母语写法，例如“宮崎駿”">
               <input
