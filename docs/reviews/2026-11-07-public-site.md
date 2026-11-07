@@ -10,7 +10,7 @@
 
 ## Validation
 
-- 330 tests in 42 files passed, including section-relative restoration, changing layout, stalled requests, storage denial, user cancellation, 30/60Hz quality recovery, background visibility, reduced motion and image prefetch recovery.
+- 332 tests in 43 files passed, including section-relative restoration, changing layout, stalled requests, storage denial, user cancellation, 30/60Hz quality recovery, background visibility, reduced motion image prefetch recovery, and rendered Flickr/uploaded-image URLs under reduced motion.
 - TypeScript checks passed for web, admin and API; ESLint and repository formatting passed.
 - Isolated Chromium checks with anonymous public API snapshots passed at 390px and 1440px widths. Reloads in About, Skills, Projects, Collection, Featured Photos and Contact retained section-relative offsets with normal animation and reduced motion, including delayed API responses and a stale URL anchor. Browser runtime errors: none.
 - Keyboard checks covered skip-link focus without route changes, language options, Escape and mobile menu focus return.

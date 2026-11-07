@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef } from "react";
 import { useLocation, useNavigationType } from "react-router";
-import { scrollToElement, scrollToPosition, scrollToTop } from "../lib/smoothScroll";
+import { layoutTop, scrollToElement, scrollToPosition, scrollToTop } from "../lib/smoothScroll";
 import { isQueryOnlyNavigation, restoreScroll } from "./restoreScroll";
 import {
   capturePosition,
@@ -82,10 +82,16 @@ export default function ScrollManager() {
       // The projects, collection and tech stack above an anchor arrive from the API after the jump
       // and push it down: keep going to it while the page grows, until the visitor scrolls themselves.
       const follow = (el: HTMLElement) => {
+        let anchorTop = layoutTop(el);
         const layout =
           typeof ResizeObserver === "undefined"
             ? null
-            : new ResizeObserver(() => scrollToElement(el, true));
+            : new ResizeObserver(() => {
+                const nextTop = layoutTop(el);
+                // An initial notification is not a shift: let ordinary smooth navigation finish.
+                if (Math.abs(nextTop - anchorTop) > 1) scrollToElement(el, true);
+                anchorTop = nextTop;
+              });
         layout?.observe(document.body);
         const stop = () => {
           layout?.disconnect();
