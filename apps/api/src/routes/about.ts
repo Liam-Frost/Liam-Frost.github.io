@@ -21,11 +21,18 @@ export function registerAboutRoutes(
   auth: AdminAuthService,
   about: AboutStore | null
 ) {
-  app.get("/api/about", async (request): Promise<PublicAbout> => {
-    if (!about) return toPublicAbout(DEFAULT_ABOUT);
+  app.get("/api/about", async (request, reply): Promise<PublicAbout> => {
+    reply.header("cache-control", "no-store");
+    if (!about) {
+      reply.header("x-snapshot-data-source", "fallback");
+      return toPublicAbout(DEFAULT_ABOUT);
+    }
     try {
-      return toPublicAbout((await about.get()).about);
+      const result = toPublicAbout((await about.get()).about);
+      reply.header("x-snapshot-data-source", "database");
+      return result;
     } catch (error) {
+      reply.header("x-snapshot-data-source", "fallback");
       request.log.warn({ error }, "About content unavailable; serving the defaults");
       return toPublicAbout(DEFAULT_ABOUT);
     }

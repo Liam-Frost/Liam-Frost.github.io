@@ -1,3 +1,4 @@
+import { genreLabel } from "@liam-frost/shared";
 import LoadingSkeleton from "../components/LoadingSkeleton";
 import type { MediaKind, MediaStatus, PublicMediaSummary } from "@liam-frost/shared";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -15,7 +16,7 @@ import { MUSIC_VIEWS, musicGroups, type MusicView } from "../data/musicGroups";
 import Reveal from "../components/Reveal";
 import { useCollection } from "../data/useCollection";
 import { cx } from "../lib/cx";
-import { pickLocalized, useI18n, type Key } from "../lib/i18n";
+import { useI18n, type Key } from "../lib/i18n";
 
 const STATUSES: MediaStatus[] = ["watching", "done", "want", "dropped"];
 const VIEW_KEY = "collectionView";
@@ -83,7 +84,7 @@ export default function CollectionPage() {
   const genres = useMemo(() => {
     const byId = new Map<string, string>();
     for (const item of ofKind)
-      for (const g of item.genres) byId.set(genreId(g), pickLocalized(g, lang));
+      for (const g of item.genres) byId.set(genreId(g), genreLabel(g, lang));
     return [...byId].sort((a, b) => a[1].localeCompare(b[1]));
   }, [ofKind, lang]);
   const years = useMemo(

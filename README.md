@@ -18,12 +18,30 @@ A personal website for photography, software projects, and a collection of films
 - **Music and game integrations** — Spotify account imports and playlist management, a music player, and Steam library synchronization.
 - **Separate admin app** — manage photos, projects, collections, uploads, and bulk actions without adding admin code to the public bundle.
 - **Multilingual interface** — English, Simplified Chinese, Traditional Chinese, Japanese, and French on the public site, with light and dark themes.
+- **Configurable homepage** — manage manifestos, gear, technology categories and contact details; hide empty sections and control each section's visibility.
+- **Collection management** — title, date, year and rating sorting, a dedicated featured-order page, and shared genre translations that preserve custom labels.
+- **Appearance controls** — independent public/admin logos and a fixed or rotating public-gallery background for admin sign-in.
+- **Visitor analytics and audit history** — content views, player requests, traffic sources, missing-page paths and a read-only administrative audit trail. Administrator visits and browser privacy preferences are respected.
+- **Adaptive loading and motion** — independent animation, filter, image and prefetch budgets, shimmer placeholders, reduced-motion support and section-aware reload restoration.
+- **Styled error pages** — an integrated 404 with home and portfolio links, while API errors retain structured responses.
+
+## Preview
+
+Public homepage:
+
+![Public homepage with the site's editorial typography and photography identity](docs/images/home-preview.png)
+
+Admin overview, shown with demonstration data:
+
+![Admin overview with quick actions, traffic cards and collection management navigation](docs/images/admin-preview.png)
 
 ### Project status
 
 The public website and preview are available at the links above and **[preview.twilightfrosty.com](https://preview.twilightfrosty.com)**. Hosting details, infrastructure configuration, credentials, diagnostics, and operational instructions are maintained privately outside this repository.
 
 This is a personal project under active development.
+
+See [admin features](docs/admin.md), [collection UX and artist-source plans](docs/collection-admin-ux.md), [authentication protections and limits](docs/admin-security-review.md), and [performance behavior](docs/performance.md). Artist/group integrations described in the collection plan are proposals, rather than currently available provider integrations.
 
 ## Technology
 

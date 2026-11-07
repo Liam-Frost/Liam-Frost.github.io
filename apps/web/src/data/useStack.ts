@@ -8,17 +8,17 @@ import { apiFetchEnabled, apiUrl } from "../lib/api";
  * The tech stack, from the API in one request. It lives only in the database: when the API is off or
  * fails, the section says so (with a retry) instead of showing an outdated built-in list.
  */
-export function useStack() {
+export function useStack(enabled = true) {
   const [categories, setCategories] = useState<PublicStackCategory[]>([]);
   const [status, setStatus] = useState<"loading" | "ready" | "error">(
     apiFetchEnabled ? "loading" : "error"
   );
   const [attempt, setAttempt] = useState(0);
 
-  useLayoutPending(status === "loading");
+  useLayoutPending(enabled && status === "loading");
 
   useEffect(() => {
-    if (!apiFetchEnabled) return;
+    if (!apiFetchEnabled || !enabled) return;
     const controller = new AbortController();
     setStatus("loading");
     fetch(apiUrl("/api/stack"), { signal: controller.signal })
@@ -35,7 +35,7 @@ export function useStack() {
         setStatus("error");
       });
     return () => controller.abort();
-  }, [attempt]);
+  }, [attempt, enabled]);
 
   const retry = useCallback(() => setAttempt((n) => n + 1), []);
   return { categories, status, retry: apiFetchEnabled ? retry : null };

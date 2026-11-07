@@ -8,6 +8,9 @@ This folder is the source of truth for the migration from a static portfolio to 
 - `repository-maintenance.md`: CI, formatting, branch rules, dependency updates and security follow-up.
 - `architecture.md`: current architecture and intended direction.
 - `admin.md`: admin authentication setup and current admin scope.
+- `admin-security-review.md`: verified authentication controls, their limits and suggested follow-up.
+- `collection-admin-ux.md`: collection sorting, genre translations, featured management and the proposed artist/group model.
+- `not-found.md`: document and hash-route 404 behavior.
 - `database.md`: PostgreSQL/Prisma setup and seed workflow.
 - `plan-admin-projects-deploy.md`: execution plan for the admin app, projects module, local run, and VPS CI/CD (Chinese).
 - `plan-collection.md`: execution plan for the collection module, Stages 11-17 (Chinese).

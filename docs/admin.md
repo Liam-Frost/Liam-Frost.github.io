@@ -24,8 +24,6 @@ Current admin features:
 - Overview (Stage 20): today's visits, things to fix, account and data source status, content counts and recent activity; see [Overview](#overview-概览).
 - Project management (Stage 8): create, edit (texts and Markdown body in five languages, slug, status, months, tech stack, links), cover and screenshots, publish/hide, home-page featured flag, reorder, delete.
 
-Photo CRUD, uploads, project management, and media collection management come in later stages.
-
 ## Configuration
 
 All settings are validated at startup (`apps/api/src/config/env.ts`); an invalid value stops the API with a list of every problem.
@@ -303,3 +301,11 @@ Codes used by admin routes: `VALIDATION`, `REQUEST_ERROR`, `CSRF`, `UNAUTHORIZED
 未保存时沿用 `ANALYTICS_*` 默认值。国别识别可选择服务器默认、关闭、可信代理请求头（Cloudflare 使用 `cf-ipcountry`）或上传 Country MMDB。上传最大 32 MiB，校验格式后保存为随机文件名，不接受服务器路径或远程下载地址；上传后还需保存设置才能启用。私有目录为 `UPLOAD_DIR/.analytics-geoip`，公开上传路由不提供下载。保留当前文件和最近两个上传草稿；该目录应随加密上传文件备份保存，预发布数据刷新必须保留预发布自身的目录，不能从生产复制。
 
 缩短保留期需要明确确认，下一次维护会永久删除过期原始记录，按天汇总保留。统计时区显示但不允许在线修改：历史日期桶不能直接转换，运维须先评估历史数据处理，再修改 `ANALYTICS_TIMEZONE`。代理信任范围、源站防火墙和备份策略仍属运维配置；填写国家请求头不会自动信任代理。只在可信代理覆盖该请求头且源站受保护时使用。MMDB 的数据许可和更新由管理员负责。
+
+## Appearance and home visibility
+
+The Appearance & Home page edits independent public/admin header logos (text or a currently public gallery photo), login background (none, fixed or rotation), and seven home-section switches. These are validated settings documents in the existing Setting table; no new SQL migration is required. Saves use revision checks, and selected image IDs must currently be public. Deleted/hidden photos no longer resolve to URLs; the logo falls back to text/default and the login background falls back to its plain surface.
+
+An enabled section still requires content: empty public stack categories, featured photos/projects, collection content, contact details, and about manifestos/gear are hidden once loading completes. The built-in introduction remains content and has its own switch. Loading and errors are distinguished from an empty successful response. If presentation settings cannot be read, the homepage offers retry rather than restoring default visibility over saved switches; the request has a bounded timeout. Older in-flight responses cannot override a refreshed settings generation. The section navigator derives its entries from rendered sections.
+
+The login background is visible before authentication, so private photos cannot be selected. Rotation respects reduced-motion and has a minimum ten-second interval. Public and admin logos share no setting values. These controls affect presentation rather than access permission. The static snapshot workflow also captures about and presentation settings so the emergency site retains the selected layout.

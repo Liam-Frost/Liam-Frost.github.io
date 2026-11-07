@@ -10,3 +10,5 @@ export * from "./about";
 export * from "./rotation";
 
 export * from "./contact";
+export * from "./presentation";
+export * from "./genre-labels";

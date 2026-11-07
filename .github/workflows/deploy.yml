@@ -105,7 +105,7 @@ jobs:
                       if member.isdir():continue
                       assert p.suffix.lower() in ALLOWED or p.name=='.nojekyll'
                       target=ROOT/p;target.parent.mkdir(parents=True,exist_ok=True);target.write_bytes(archive.extractfile(member).read())
-              paths=['/api/photos','/api/projects','/api/collection','/api/stack','/api/spotify/player','/api/contact']
+              paths=['/api/photos','/api/projects','/api/collection','/api/stack','/api/spotify/player','/api/contact','/api/about','/api/presentation']
               routes={path:get(path, database=path!='/api/spotify/player') for path in paths}
               for item in routes['/api/projects']:
                   ident=item['slug'];assert re.fullmatch('[A-Za-z0-9_-]{1,160}',ident)

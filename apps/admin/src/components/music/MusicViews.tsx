@@ -1,3 +1,4 @@
+import type { CollectionSort } from "../../lib/collectionSort";
 import type { AdminMediaItem, AdminPlaylist } from "@liam-frost/shared";
 import {
   ArrowDown,
@@ -88,10 +89,29 @@ export function groupArtists(items: AdminMediaItem[]): Group[] {
 }
 
 /** The music tab: every song, or songs by album, by artist or by playlist. The view lives in the URL. */
-export function MusicTab({ items }: { items: AdminMediaItem[] }) {
+export function MusicTab({
+  items,
+  sort = "updated"
+}: {
+  items: AdminMediaItem[];
+  sort?: CollectionSort;
+}) {
   const [params, setParams] = useSearchParams();
   const view = (VIEWS.find(([v]) => v === params.get("view"))?.[0] ?? "songs") as View;
   const open = params.get("group");
+  const rank = new Map(items.map((item, i) => [item.id, i]));
+  const sortedGroups = (groups: Group[]) =>
+    [...groups].sort((a, b) => {
+      if (sort === "title" || sort === "title-desc")
+        return (
+          a.title.localeCompare(b.title, "zh-CN", { numeric: true, sensitivity: "base" }) *
+          (sort === "title-desc" ? -1 : 1)
+        );
+      return (
+        Math.min(...a.items.map((i) => rank.get(i.id) ?? Infinity)) -
+        Math.min(...b.items.map((i) => rank.get(i.id) ?? Infinity))
+      );
+    });
 
   const go = (next: { view?: View; group?: string | null }) => {
     const value = new URLSearchParams(params);
@@ -121,7 +141,7 @@ export function MusicTab({ items }: { items: AdminMediaItem[] }) {
       {view === "songs" ? <MusicList items={items} /> : null}
       {view === "albums" || view === "artists" ? (
         <GroupView
-          groups={view === "albums" ? groupAlbums(items) : groupArtists(items)}
+          groups={sortedGroups(view === "albums" ? groupAlbums(items) : groupArtists(items))}
           open={open}
           noun={view === "albums" ? "专辑" : "艺人"}
           onOpen={(group) => go({ group })}

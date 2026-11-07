@@ -61,6 +61,14 @@ export function ContentView() {
 
   return (
     <>
+      <div className="mb-4 rounded-xl border border-line bg-surface p-4 text-[13px] leading-relaxed text-muted">
+        <strong className="text-brand-dark">测试访问为什么没有记录？</strong>
+        <p>
+          已登录管理员的访问、开启 DNT / GPC 的浏览器、自动化浏览器及排除 IP
+          均不计入访客数据。请使用未登录的独立浏览器进行验证；不要为测试关闭隐私保护。内容排行统计打开详情，不统计仅看见卡片。播放器内置示例曲目不计入收藏内容，Spotify
+          内嵌页面内部操作也无法完整观测。请同时检查统计开关与日期范围。
+        </p>
+      </div>
       <Card
         title="内容排行"
         hint="浏览：打开项目、照片、收藏条目、人物、歌单的次数；访客是每天人数之和；播放只对歌曲。"
@@ -133,7 +141,7 @@ export function ContentView() {
       <div className="grid gap-4 md:grid-cols-2">
         <Card
           title="播放器"
-          hint="网站播放器在歌曲开始时计一次（暂停后继续不算）；Spotify 播放器在歌曲载入时计一次。"
+          hint="网站播放器在歌曲开始时计一次（暂停后继续不算）；Spotify 统计从本站请求载入曲目，不代表已经实际播放；内嵌页面内部播放无法完整观测。"
         >
           <BarList rows={data.players} label={(key) => PLAYERS[key] ?? key} empty="没有播放。" />
         </Card>
