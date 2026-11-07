@@ -46,7 +46,7 @@ export function scrollToTop(smooth: boolean) {
  * Where an element sits in the page, from layout (offsetTop) rather than getBoundingClientRect: a
  * section moved by an animation (the tech stack's exit rises 150px) must not move its anchor.
  */
-function layoutTop(element: HTMLElement) {
+export function layoutTop(element: HTMLElement) {
   let top = 0;
   for (let node: HTMLElement | null = element; node; node = node.offsetParent as HTMLElement | null)
     top += node.offsetTop;

@@ -1,3 +1,4 @@
+import LoadingImage from "./LoadingImage";
 import { orderHomeWall, type PublicCollection, type PublicMediaSummary } from "@liam-frost/shared";
 import { useCallback, useMemo, useState } from "react";
 import { Link } from "react-router";
@@ -55,7 +56,7 @@ export function progressOf(
 function Cover({ item, sizes }: { item: PublicMediaSummary; sizes: string }) {
   const { lang } = useI18n();
   return item.poster ? (
-    <img
+    <LoadingImage
       src={item.poster.variants[0].url}
       srcSet={imageSrcSet(item.poster)}
       sizes={sizes}

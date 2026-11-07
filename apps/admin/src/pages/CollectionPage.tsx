@@ -1,3 +1,4 @@
+import LoadingSkeleton from "../../../web/src/components/LoadingSkeleton";
 import type {
   AdminMediaItem,
   CollectionSettings,
@@ -105,7 +106,7 @@ export function CollectionPage() {
     setParams(value, { replace: true });
   };
 
-  if (isPending) return <p className="py-10 text-center text-[13px] text-subtle">加载中…</p>;
+  if (isPending) return <LoadingSkeleton label="加载中…" variant="rows" />;
   if (error) {
     return (
       <>

@@ -36,6 +36,7 @@ export type QualityConfig = {
   // Optional cap for canvas/WebGL DPR; not used by DOM-only effects.
   dprCap: number;
 
+  filterTier?: 0 | 1 | 2;
   images: ImageQualityConfig;
 };
 
@@ -112,7 +113,7 @@ const DEFAULT_THRESHOLDS: QualityThresholds = {
   degradeHoldMs: 1500,
   degradeBadRatio: 0.25,
 
-  upgradeAvgMultiplier: 0.85,
+  upgradeAvgMultiplier: 1.05,
   upgradeHoldMs: 12_000,
   upgradeBadRatio: 0.1,
 
@@ -257,10 +258,31 @@ function mergeConfig(base: QualityConfig, overrides: QualityParamOverrides | nul
   return merged;
 }
 
-class QualityManager {
+export type DimensionOverrides = {
+  motion: QualityTier | null;
+  filters: 0 | 1 | 2 | null;
+  images: FlickrThumbSuffix | null;
+  prefetch: 0 | 1 | 2 | null;
+};
+
+export class QualityManager {
   private thresholds: QualityThresholds = { ...DEFAULT_THRESHOLDS };
 
   private listeners = new Set<Listener>();
+
+  private dimensions: Partial<DimensionOverrides> = {};
+  private filterTier: 0 | 1 | 2 = 2;
+  private filterPressureAt: number | null = null;
+  private filterRecoveryAt: number | null = null;
+
+  setDimensionOverrides(next: Partial<DimensionOverrides>) {
+    this.dimensions = { ...this.dimensions, ...next };
+    this.publish();
+  }
+
+  refreshNetworkPolicy() {
+    this.publish();
+  }
 
   private reducedMotion = false;
   private isHidden = false;
@@ -456,6 +478,32 @@ class QualityManager {
     const tier = this.getEffectiveTier();
     const base = DEFAULT_CONFIG_BY_TIER[tier];
     const config = mergeConfig(base, this.paramOverrides);
+    // Independent budgets: frame pacing never lowers a photograph's resolution.
+    const connection =
+      typeof navigator === "undefined"
+        ? undefined
+        : (navigator as Navigator & { connection?: { saveData?: boolean; effectiveType?: string } })
+            .connection;
+    const constrained =
+      connection?.saveData || ["slow-2g", "2g", "3g"].includes(connection?.effectiveType ?? "");
+    const networkBudget =
+      this.dimensions.prefetch ??
+      this.paramOverrides?.images?.maxConcurrentImagePrefetch ??
+      (constrained ? 0 : 2);
+    config.images = {
+      ...DEFAULT_CONFIG_BY_TIER[3].images,
+      ...this.paramOverrides?.images,
+      maxThumbSuffix: this.dimensions.images ?? this.paramOverrides?.images?.maxThumbSuffix ?? "b",
+      prefetchNeighborCount:
+        networkBudget > 0 ? (this.paramOverrides?.images?.prefetchNeighborCount ?? 1) : 0,
+      maxConcurrentImagePrefetch: this.isHidden || this.reducedMotion ? 0 : networkBudget
+    };
+    config.filterTier = this.isHidden ? 0 : (this.dimensions.filters ?? this.filterTier);
+    config.enableFilters = config.filterTier > 0;
+    if (this.reducedMotion || this.isHidden) {
+      config.enableDecorativeAnimations = false;
+      config.fpsCap = 0;
+    }
 
     this.metrics.autoTier = this.autoTier;
     this.metrics.manualOverride = this.manualOverride;
@@ -472,6 +520,7 @@ class QualityManager {
   private getEffectiveTier(): QualityTier {
     if (this.reducedMotion) return 0;
     if (this.isHidden) return 0;
+    if (this.dimensions.motion != null) return this.dimensions.motion;
     if (this.manualOverride !== null) return this.manualOverride;
     return this.autoTier;
   }
@@ -481,6 +530,8 @@ class QualityManager {
     const now = typeof performance !== "undefined" ? performance.now() : Date.now();
     this.lastTierChangeAt = now;
     this.autoTier = next;
+    // Evaluate the new tier using new frames, not the workload that triggered the drop.
+    this.resetSamplingState();
   }
 
   private readReducedMotion() {
@@ -612,6 +663,28 @@ class QualityManager {
     const p95Index = Math.min(count - 1, Math.floor((count - 1) * 0.95));
     const p95 = deltas[p95Index];
 
+    // Filters have their own pressure/recovery thresholds, separate from motion tiers.
+    if (count >= 20 && !this.isHidden) {
+      if (avg > 24 || p95 > 50) {
+        this.filterRecoveryAt = null;
+        this.filterPressureAt ??= now;
+        if (now - this.filterPressureAt >= 1500 && this.filterTier > 0) {
+          this.filterTier = (this.filterTier - 1) as 0 | 1;
+          this.filterPressureAt = now;
+          this.publish();
+        }
+      } else {
+        this.filterPressureAt = null;
+        if (avg < 18 && p95 < 25) {
+          this.filterRecoveryAt ??= now;
+          if (now - this.filterRecoveryAt >= 12000 && this.filterTier < 2) {
+            this.filterTier = (this.filterTier + 1) as 1 | 2;
+            this.filterRecoveryAt = now;
+            this.publish();
+          }
+        } else this.filterRecoveryAt = null;
+      }
+    }
     this.metrics.avgFrameMs = avg;
     this.metrics.p95FrameMs = p95;
     this.metrics.badFrameRatio = count > 0 ? bad / count : 0;
@@ -680,9 +753,15 @@ class QualityManager {
         const nextTargetMs = targetMsForTier(this.thresholds, nextTier);
 
         const longTaskOk = this.metrics.longTaskRate <= this.thresholds.maxLongTaskRateForUpgrade;
+        const nextBadThreshold = nextTargetMs * this.thresholds.badFrameMultiplier;
+        let nextBad = 0;
+        for (let i = 0; i < this.frameCount; i++) {
+          if (this.frameDeltas[i] > nextBadThreshold) nextBad++;
+        }
+        const nextBadRatio = this.frameCount ? nextBad / this.frameCount : 1;
         const shouldUpgrade =
           avg < nextTargetMs * this.thresholds.upgradeAvgMultiplier &&
-          badRatio < this.thresholds.upgradeBadRatio &&
+          nextBadRatio < this.thresholds.upgradeBadRatio &&
           longTaskOk;
 
         if (shouldUpgrade) {

@@ -1,3 +1,4 @@
+import LoadingSkeleton from "../../../../web/src/components/LoadingSkeleton";
 import type { AnalyticsAudience, AnalyticsCount } from "@liam-frost/shared";
 import { useQuery } from "@tanstack/react-query";
 import { useRef, useState } from "react";
@@ -149,12 +150,7 @@ export function AudienceView({ countrySource }: { countrySource: string }) {
         </button>
       </div>
     );
-  if (!data)
-    return (
-      <p className="py-8 text-center text-[13px] text-subtle" role="status">
-        加载来源与受众…
-      </p>
-    );
+  if (!data) return <LoadingSkeleton label="加载来源与受众…" count={4} />;
   return (
     <AudienceReport key={`${range}:${from}:${to}`} data={data} countrySource={countrySource} />
   );

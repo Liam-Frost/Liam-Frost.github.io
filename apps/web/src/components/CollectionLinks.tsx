@@ -1,3 +1,4 @@
+import LoadingImage from "./LoadingImage";
 import type { PublicLink, PublicMediaSummary, PublicPersonSummary } from "@liam-frost/shared";
 import { Link, type To } from "react-router";
 
@@ -40,7 +41,7 @@ function Thumb({
         .join(" ")}
     >
       {image ? (
-        <img
+        <LoadingImage
           src={image.variants[0].url}
           srcSet={imageSrcSet(image)}
           sizes="48px"

@@ -1,3 +1,4 @@
+import LoadingSkeleton from "./LoadingSkeleton";
 import { useCollectionItem } from "../data/useCollection";
 import { pickLocalized, useI18n } from "../lib/i18n";
 import { CollectionLinks, type CollectionLinkTo } from "./CollectionLinks";
@@ -50,7 +51,7 @@ export default function MediaDetail({
   return (
     <DetailDrawer id={id} labelledBy="media-detail-title" onClose={onClose}>
       {status === "loading" || status === "idle" ? (
-        <p className="sectionSubtitle">{t("collection.loading")}</p>
+        <LoadingSkeleton label={t("collection.loading")} variant="detail" count={1} />
       ) : null}
       {status === "missing" ? <p className="sectionSubtitle">{t("collection.notFound")}</p> : null}
 

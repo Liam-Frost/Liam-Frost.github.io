@@ -1,6 +1,7 @@
 import type { AdminUser } from "@liam-frost/shared";
 import {
   ChartColumn,
+  ShieldCheck,
   Clapperboard,
   FolderKanban,
   Images,
@@ -28,7 +29,8 @@ const NAV = [
   { to: "/contact", label: "联系我", icon: Mail, end: false },
   { to: "/music", label: "播放器", icon: Music, end: false },
   { to: "/integrations", label: "API 配置", icon: KeyRound, end: false },
-  { to: "/analytics", label: "统计", icon: ChartColumn, end: false }
+  { to: "/analytics", label: "统计", icon: ChartColumn, end: false },
+  { to: "/audit", label: "审计日志", icon: ShieldCheck, end: false }
 ];
 
 export function AdminLayout({ user }: { user: AdminUser }) {
@@ -113,7 +115,7 @@ export function PageHeader({
       <div className="min-w-0 flex-1">
         <h1 className="text-[22px] font-semibold text-brand-dark">{title}</h1>
         {description ? (
-          <p className="mt-1 text-[13.5px] leading-relaxed text-muted">{description}</p>
+          <p className="mt-1 text-[13.5px] leading-relaxed text-brand-secondary">{description}</p>
         ) : null}
       </div>
       {actions ? <div className="flex flex-wrap gap-2">{actions}</div> : null}

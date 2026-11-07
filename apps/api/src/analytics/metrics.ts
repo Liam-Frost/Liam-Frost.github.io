@@ -72,6 +72,7 @@ export function computeDay(
         session.pages += 1;
         counter.add("views", "");
         counter.add("page", event.path);
+        if (event.path === "*" && event.detail) counter.add("missingPage", event.detail);
         counter.add("hour", String(event.hour));
         const inHour = hourVisitors.get(event.hour) ?? new Set();
         inHour.add(event.visitor);

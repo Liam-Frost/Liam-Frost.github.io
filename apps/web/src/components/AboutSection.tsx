@@ -1,3 +1,4 @@
+import LoadingSkeleton from "./LoadingSkeleton";
 import { splitEmphasis } from "@liam-frost/shared";
 import { useMemo } from "react";
 
@@ -46,6 +47,7 @@ export default function AboutSection() {
           </div>
         </Reveal>
 
+        {!about && <LoadingSkeleton label={t("about.title")} variant="rows" count={2} />}
         {text && (
           <Reveal>
             <figure className="manifesto">

@@ -10,14 +10,55 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Manrope:wght@400;600;700;800&family=Noto+Sans+JP:wght@400;600;700;800&family=Noto+Sans+SC:wght@400;600;700;800&display=swap"
-      rel="stylesheet"
+      rel="preload"
+      as="image"
+      href="/portrait1.svg"
+      type="image/svg+xml"
+      fetchpriority="high"
     />
 
     <link rel="icon" type="image/svg+xml" href="/LOGO2.svg" />
 
     <script>
       (() => {
+        // Nested missing-page URLs must still discover the root application's assets.
+        if (
+          location.pathname !== "/" &&
+          location.pathname !== "/index.html" &&
+          !document.querySelector("base")
+        ) {
+          const base = document.createElement("base");
+          base.href = "/";
+          document.head.prepend(base);
+        }
+        const families = {
+          zh: "Noto Sans SC",
+          "zh-Hant": "Noto Sans SC",
+          ja: "Noto Sans JP",
+          en: "Inter",
+          fr: "Manrope"
+        };
+        const navLang = (navigator.language || "").toLowerCase();
+        let fontLang = navLang.startsWith("fr")
+          ? "fr"
+          : navLang.startsWith("ja")
+            ? "ja"
+            : navLang.startsWith("en")
+              ? "en"
+              : "zh";
+        try {
+          fontLang = localStorage.getItem("lang") || fontLang;
+        } catch {}
+        const fontLink = document.createElement("link");
+        fontLink.id = "site-language-font";
+        fontLink.rel = "stylesheet";
+        fontLink.href =
+          "https://fonts.googleapis.com/css2?family=" +
+          encodeURIComponent(families[fontLang] || families.zh) +
+          ":wght@400;600;700;800&display=swap";
+        document.head.appendChild(fontLink);
+        // The router restores positions through Lenis; native restoration would race it.
+        if ("scrollRestoration" in history) history.scrollRestoration = "manual";
         try {
           const savedTheme = localStorage.getItem("theme");
           if (savedTheme) document.documentElement.setAttribute("data-theme", savedTheme);

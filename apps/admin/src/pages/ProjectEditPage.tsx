@@ -1,3 +1,4 @@
+import LoadingSkeleton from "../../../web/src/components/LoadingSkeleton";
 import type {
   AdminProject,
   AdminStackTechnology,
@@ -75,7 +76,7 @@ export function ProjectEditPage() {
   const { id = "" } = useParams();
   const { data: project, isPending, error } = useProject(id);
 
-  if (isPending) return <p className="py-10 text-center text-[13px] text-subtle">加载中…</p>;
+  if (isPending) return <LoadingSkeleton label="加载中…" variant="form" />;
   if (error || !project) {
     return (
       <div className="card p-6 text-[13.5px]">

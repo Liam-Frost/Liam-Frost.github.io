@@ -1,3 +1,5 @@
+import LoadingImage from "../components/LoadingImage";
+import LoadingSkeleton from "../components/LoadingSkeleton";
 import type { ProjectImage } from "@liam-frost/shared";
 import { useEffect, useState } from "react";
 import Markdown from "react-markdown";
@@ -33,7 +35,7 @@ export default function ProjectDetailPage() {
     return (
       <section className="section">
         <div className="container">
-          <p className="sectionSubtitle">{t("projects.loading")}</p>
+          <LoadingSkeleton label={t("projects.loading")} variant="detail" />
         </div>
       </section>
     );
@@ -109,7 +111,7 @@ export default function ProjectDetailPage() {
               onClick={() => setViewing(project.cover)}
               aria-label={title}
             >
-              <img
+              <LoadingImage
                 src={project.cover.src}
                 srcSet={imageSrcSet(project.cover)}
                 sizes="(max-width: 1120px) calc(100vw - 40px), 1080px"
@@ -153,7 +155,7 @@ export default function ProjectDetailPage() {
                   onClick={() => setViewing(image)}
                   aria-label={`${title} ${index + 1}`}
                 >
-                  <img
+                  <LoadingImage
                     src={image.variants[Math.min(1, image.variants.length - 1)].url}
                     srcSet={imageSrcSet(image)}
                     sizes="(max-width: 760px) calc(100vw - 40px), 520px"

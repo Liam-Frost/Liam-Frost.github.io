@@ -28,7 +28,7 @@ Quality tier is an integer: `0 | 1 | 2 | 3`.
 
 `fpsCap` is a **max work update frequency**, not an rAF skip.
 
-- rAF still runs so we can keep sampling.
+- rAF still runs so we can keep sampling, except when the document is hidden or reduced motion is requested.
 - “Heavy update” work only happens when `now - lastWorkTs >= 1000 / fpsCap`.
 - **`fpsCap = 0` means: never do heavy decorative updates** (avoid divide-by-zero by treating interval as `Infinity`).
 
@@ -45,7 +45,7 @@ Computed metrics:
 Hysteresis:
 
 - **Degrade quickly**: if `avgFrameMs > targetMs * 1.15` for `>=1.5s`, or `badFrameRatio > 0.25`
-- **Upgrade slowly**: if `avgFrameMs < nextTargetMs * 0.85` for `>=6s` AND long-task rate is low
+- **Upgrade slowly**: if `avgFrameMs < nextTargetMs * 1.05` for `>=12s` AND long-task rate is low, fewer than 10% of frames miss the next tier budget, and at least 12 seconds have elapsed since the last tier change
 
 Visibility:
 
@@ -54,7 +54,10 @@ Visibility:
 
 Reduced motion:
 
-- `prefers-reduced-motion: reduce` forces tier 0 and disables decorative animation.
+- `prefers-reduced-motion: reduce` forces animation tier 0, disables decorative animation and frame sampling, and pauses speculative image fetching. Photograph resolution retains the underlying quality tier; a motion preference is not a low-resolution preference.
+- The typing greeting renders a complete, static phrase; its accessible text is always complete and stable. The technology stack tears down scroll timelines at tiers 0–1 as well as under reduced motion.
+- Tier changes discard old frame samples, so a single old slow window does not cascade through multiple tiers. The 1.05 upgrade tolerance lets a normal 60Hz screen recover to tier 3; 0.85 required more than 70Hz.
+- Images skipped while prefetching is paused are not cached as successfully fetched; upgrading can request them again.
 
 ## Degrade ladder (mapping to UI/animations)
 
@@ -140,3 +143,19 @@ This **does not** trigger global quality degradation.
    - confirm tier is forced to 0 and decorative animations stop
 6. Battery vs plugged in:
    - observe tier behavior and filter toggles on laptops
+
+## Independent budgets (2026-11-07)
+
+Motion keeps its 0–3 frame-pacing ladder. Filter pressure uses a separate 0–2 ladder: sustained average frames above 24ms or p95 above 50ms lower filters after 1.5 seconds; average below 18ms and p95 below 25ms for 12 seconds recover one filter level. Filter 1 removes header/background blur; filter 0 removes supported filters with readable caption backgrounds. The motion tier no longer switches header blur.
+
+Image resolution defaults to the grid's existing b-size ceiling, independent of frame pacing and motion preference. Responsive srcset still selects for rendered width and DPR. Explicit image overrides retain n/z/c/b for testing. Speculative prefetch uses a separate 0–2 budget; Save-Data and slow-2g/2g/3g disable it automatically. Hidden/reduced-motion states pause speculative work; explicitly requested images remain functional. Debug UI exposes independent motion, filter, image and prefetch controls. These policies do not infer CPU/GPU models.
+
+The HTML preloads the portrait SVG and starts only the current interface language's font family (400/600/700/800); language changes update that stylesheet. The ordinary greeting's wrapping remains unchanged. Only the Japanese greeting measures the complete two-line phrase with cursor against available width and fits when necessary; its final character and cursor cannot wrap separately.
+
+The embed player reserves a same-height lightweight Spotify entry. Automatic iframe loading waits for document load, 2.5 seconds and an idle opportunity (bounded by a further 3 seconds); Save-Data/2g wait for interaction. Clicking or a player command loads immediately. Collapsing after loading keeps the iframe mounted. This avoids starting third-party work during initial navigation but does not eliminate it for visitors who use the player. Desktop navigation hit-area changes are deferred pending the user's design decision.
+
+### Player readiness and restoration feedback
+
+The embed dock starts collapsed and may load in the background after the deferred-load gate. It expands automatically only on the iframe document load event, unless the visitor has dismissed it. Visitors can open early to see the existing placeholder; the iframe replaces that placeholder after loading. Automatic collapse begins after document load. The iframe stays mounted on collapse; pending/closed content is hidden from interaction. As a cross-origin embed, its document load event is the available readiness boundary, not a guarantee about Spotify internal playback state.
+
+The section-restoration indicator rotates continuously while restoration is active; reduced-motion preference slows the small indicator rather than leaving it frozen. The existing restoration timeout/cancellation behavior is unchanged.

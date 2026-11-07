@@ -1484,6 +1484,19 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
   const [lang, setLang] = useState<Lang>(() => detectLang());
 
   useEffect(() => {
+    const families = {
+      zh: "Noto Sans SC",
+      "zh-Hant": "Noto Sans SC",
+      ja: "Noto Sans JP",
+      en: "Inter",
+      fr: "Manrope"
+    };
+    const fontUrl =
+      "https://fonts.googleapis.com/css2?family=" +
+      encodeURIComponent(families[lang]) +
+      ":wght@400;600;700;800&display=swap";
+    const fontLink = document.getElementById("site-language-font") as HTMLLinkElement | null;
+    if (fontLink && fontLink.href !== fontUrl) fontLink.href = fontUrl;
     document.documentElement.setAttribute("data-lang", lang);
     document.documentElement.lang = langToHtmlLang(lang);
     try {

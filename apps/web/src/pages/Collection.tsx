@@ -1,3 +1,4 @@
+import LoadingSkeleton from "../components/LoadingSkeleton";
 import type { MediaKind, MediaStatus, PublicMediaSummary } from "@liam-frost/shared";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router";
@@ -160,7 +161,7 @@ export default function CollectionPage() {
         </Reveal>
 
         {loadStatus === "loading" ? (
-          <p className="sectionSubtitle">{t("collection.loading")}</p>
+          <LoadingSkeleton label={t("collection.loading")} variant="cards" />
         ) : !kind || !items.length ? (
           <p className="sectionSubtitle">{t("collection.empty")}</p>
         ) : (

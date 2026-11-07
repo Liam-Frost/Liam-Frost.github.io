@@ -1,3 +1,4 @@
+import { registerAdminAudit } from "./routes/admin-audit";
 import { registerContactRoutes } from "./routes/contact";
 import "dotenv/config";
 
@@ -449,6 +450,7 @@ export async function buildServer({
     storage: "local"
   }));
 
+  registerAdminAudit(app, auth);
   registerAdminRoutes(app, auth);
   registerIntegrationRoutes(app, auth, integrations);
   registerAdminApp(app, auth, adminDistDir);

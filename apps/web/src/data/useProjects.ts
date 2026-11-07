@@ -1,3 +1,4 @@
+import { useLayoutPending } from "../app/layoutPending";
 import type { PublicProject, PublicProjectSummary } from "@liam-frost/shared";
 import { useEffect, useState } from "react";
 
@@ -12,6 +13,8 @@ export function useProjects() {
   const [status, setStatus] = useState<"loading" | "ready" | "offline">(
     apiFetchEnabled ? "loading" : "offline"
   );
+
+  useLayoutPending(status === "loading");
 
   useEffect(() => {
     if (!apiFetchEnabled) return;
@@ -40,6 +43,7 @@ export function useProject(slug: string) {
   const [status, setStatus] = useState<"loading" | "ready" | "missing">(
     apiFetchEnabled ? "loading" : "missing"
   );
+  useLayoutPending(status === "loading");
 
   useEffect(() => {
     if (!apiFetchEnabled) return;

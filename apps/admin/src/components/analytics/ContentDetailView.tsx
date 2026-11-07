@@ -1,3 +1,4 @@
+import LoadingSkeleton from "../../../../web/src/components/LoadingSkeleton";
 import type { AnalyticsContentType } from "@liam-frost/shared";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft } from "lucide-react";
@@ -36,7 +37,7 @@ export function ContentDetailView({ type, id }: { type: AnalyticsContentType; id
         <p className="text-[13px] text-muted">这项内容还没有统计数据。</p>
       </>
     );
-  if (!data) return <p className="text-[13px] text-subtle">加载中…</p>;
+  if (!data) return <LoadingSkeleton label="加载统计…" count={3} />;
   const { item } = data;
   const isSong = item.type === "media" && item.kind === "track";
   const kpis = [

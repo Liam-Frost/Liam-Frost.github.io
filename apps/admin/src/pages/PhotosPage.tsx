@@ -1,3 +1,4 @@
+import LoadingSkeleton from "../../../web/src/components/LoadingSkeleton";
 import type { AdminPhoto, AdminPhotoImport, PhotoSourceType } from "@liam-frost/shared";
 import {
   ArrowDown,
@@ -153,7 +154,7 @@ export function PhotosPage() {
     reorder.mutate(next, { onError: (e) => toast(e.message, "error") });
   };
 
-  if (isPending) return <p className="py-10 text-center text-[13px] text-subtle">加载中…</p>;
+  if (isPending) return <LoadingSkeleton label="加载中…" variant="rows" />;
   if (error) {
     return (
       <>

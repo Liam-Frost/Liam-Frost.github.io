@@ -82,7 +82,24 @@ export function registerWebApp(app: FastifyInstance, distDir: string) {
     }
     const urlPath = pathname === "/" ? "/index.html" : pathname;
     const file = files.get(urlPath);
-    if (!file) throw notFound();
+    if (!file) {
+      const pageRequest =
+        request.headers.accept?.includes("text/html") &&
+        !/^\/(api|uploads|assets)(?:\/|$)/.test(pathname) &&
+        !pathname.split("/").some((part) => part.startsWith(".")) &&
+        !/\.[a-z0-9]+$/i.test(pathname);
+      if (!pageRequest) throw notFound();
+      const html = (await readFile(indexFile, "utf8")).replace(
+        "<head>",
+        '<head><base href="/"><meta name="robots" content="noindex">'
+      );
+      return reply
+        .code(404)
+        .header("content-type", "text/html; charset=utf-8")
+        .header("cache-control", "no-store")
+        .header("content-security-policy", csp)
+        .send(html);
+    }
 
     reply.header("content-type", contentTypeFor(file));
     reply.header("cache-control", cacheControl(urlPath));

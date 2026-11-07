@@ -21,7 +21,8 @@ export function useWaveMotion(
   maxScroll: RefObject<number>,
   enabled: boolean,
   audioEnabled: boolean,
-  fpsCap: number
+  fpsCap: number,
+  decorativeEnabled = true
 ) {
   const pointer = useRef<number | null>(null);
   const wake = useRef(() => {});
@@ -46,7 +47,7 @@ export function useWaveMotion(
       lastDraw = now;
       const dt = previous ? Math.min(0.06, (now - previous) / 1000) : 0.016;
       previous = now;
-      const reduced = motion.matches;
+      const reduced = motion.matches || !decorativeEnabled;
       const current = audioVisualization.get();
       const targetPointer = !reduced && pointer.current !== null ? 1 : 0;
       if (reduced) pointerLevel = 0;
@@ -101,6 +102,6 @@ export function useWaveMotion(
       motion.removeEventListener("change", start);
       wake.current = () => {};
     };
-  }, [svg, maxScroll, enabled, audioEnabled, fpsCap]);
+  }, [svg, maxScroll, enabled, audioEnabled, fpsCap, decorativeEnabled]);
   return { pointer, wake };
 }

@@ -1,3 +1,4 @@
+import LoadingSkeleton from "../../../web/src/components/LoadingSkeleton";
 import { type AdminContactResponse, type ContactContent } from "@liam-frost/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowDown, ArrowUp, ExternalLink, GripVertical, Pencil, Plus, Trash2 } from "lucide-react";
@@ -99,7 +100,7 @@ export function ContactPage() {
         }
       />
       {isPending ? (
-        <p className="py-10 text-center text-[13px] text-subtle">加载中…</p>
+        <LoadingSkeleton label="加载中…" variant="form" />
       ) : error ? (
         <DatabaseNotice error={error} subject="联系方式管理" />
       ) : (

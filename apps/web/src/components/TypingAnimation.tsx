@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from "react";
+import { useQuality } from "../perf/useQuality";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { cn } from "../lib/cn";
 
 type CursorStyle = "line" | "block" | "underscore";
@@ -41,6 +42,8 @@ export default function TypingAnimation({
   cursorStyle = "underscore",
   className
 }: Props) {
+  const { config } = useQuality();
+  const animate = config.enableDecorativeAnimations;
   const [displayText, setDisplayText] = useState("");
   const [wordIndex, setWordIndex] = useState(0);
   const [phase, setPhase] = useState<"typing" | "pausing" | "deleting">("typing");
@@ -48,6 +51,46 @@ export default function TypingAnimation({
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const currentWord = words[wordIndex] || "";
+  const shownWord = animate ? currentWord : (words[0] ?? "");
+  const japanese = shownWord.includes("\n");
+  const wrapper = useRef<HTMLSpanElement>(null);
+  const [fitSize, setFitSize] = useState<number | undefined>();
+  useLayoutEffect(() => {
+    const el = wrapper.current;
+    const parent = el?.closest("h1");
+    if (!japanese || !el || !parent) {
+      setFitSize(undefined);
+      return;
+    }
+    let cancelled = false;
+    const measure = () => {
+      if (cancelled) return;
+      const css = getComputedStyle(parent);
+      const size = parseFloat(css.fontSize);
+      const canvas = document.createElement("canvas");
+      const context = canvas.getContext("2d");
+      if (!context) return;
+      context.font = `${css.fontWeight} ${size}px ${css.fontFamily}`;
+      const spacing = parseFloat(css.letterSpacing) || 0;
+      const widest =
+        Math.max(
+          ...shownWord
+            .split("\n")
+            .map(
+              (line) => context.measureText(line + "_").width + Math.max(0, line.length * spacing)
+            )
+        ) + 6;
+      setFitSize(Math.min(size, (size * parent.clientWidth) / widest));
+    };
+    const observer = new ResizeObserver(measure);
+    observer.observe(parent);
+    measure();
+    void document.fonts.ready.then(measure);
+    return () => {
+      cancelled = true;
+      observer.disconnect();
+    };
+  }, [japanese, shownWord]);
 
   // Clear timeout on unmount
   useEffect(() => {
@@ -59,6 +102,8 @@ export default function TypingAnimation({
   // Main animation loop
   useEffect(() => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
+
+    if (!animate) return;
 
     if (phase === "typing") {
       if (displayText.length < currentWord.length) {
@@ -93,6 +138,7 @@ export default function TypingAnimation({
       }
     }
   }, [
+    animate,
     displayText,
     phase,
     currentWord,
@@ -106,25 +152,34 @@ export default function TypingAnimation({
 
   const cursorChar = CURSOR_CHARS[cursorStyle];
 
-  // Render text with line breaks (\n -> <br />)
-  const renderText = (text: string) => {
-    const parts = text.split("\n");
-    return parts.map((part, i) => (
-      <span key={i}>
-        {part}
-        {i < parts.length - 1 && <br />}
+  const cursor =
+    showCursor && animate ? (
+      <span className={cn("typingCursor", blinkCursor && "typingCursorBlink")} aria-hidden="true">
+        {cursorChar}
       </span>
-    ));
-  };
+    ) : null;
+  const text = animate ? displayText : (words[0] ?? "");
+  const parts = text.split("\n");
 
   return (
-    <span className={cn("typingAnimation", className)}>
-      <span className="typingText">{renderText(displayText)}</span>
-      {showCursor && (
-        <span className={cn("typingCursor", blinkCursor && "typingCursorBlink")} aria-hidden="true">
-          {cursorChar}
-        </span>
-      )}
+    <span
+      ref={wrapper}
+      className={cn("typingAnimation", japanese && "typingJapanese", className)}
+      style={japanese && fitSize ? { fontSize: fitSize } : undefined}
+    >
+      <span className="srOnly">{words[0]}</span>
+      <span className="typingText" aria-hidden="true">
+        {parts.map((part, i) => (
+          <span key={i} className={japanese ? "typingJapaneseLine" : undefined}>
+            {i > 0 && <br />}
+            {part.slice(0, -1)}
+            <span className={japanese ? "typingTail" : undefined}>
+              {part.slice(-1)}
+              {i === parts.length - 1 && cursor}
+            </span>
+          </span>
+        ))}
+      </span>
     </span>
   );
 }

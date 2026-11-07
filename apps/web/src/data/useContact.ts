@@ -1,9 +1,12 @@
+import { useLayoutPending } from "../app/layoutPending";
 import { type ContactContent } from "@liam-frost/shared";
 import { useEffect, useState } from "react";
 import { apiFetchEnabled, apiUrl } from "../lib/api";
 
-export function useContact() {
+export function useContactState() {
   const [contact, setContact] = useState<ContactContent | null>(null);
+  const [loading, setLoading] = useState(apiFetchEnabled);
+  useLayoutPending(loading);
   useEffect(() => {
     // Emergency Pages intercepts fetch with the verified, database-backed snapshot.
     if (!apiFetchEnabled) return;
@@ -16,8 +19,15 @@ export function useContact() {
       .then(setContact)
       .catch(() => {
         /* Keep removed or unavailable contact details hidden. */
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false);
       });
     return () => controller.abort();
   }, []);
-  return contact;
+  return { contact, loading };
+}
+
+export function useContact() {
+  return useContactState().contact;
 }

@@ -1,3 +1,4 @@
+import LoadingSkeleton from "../../../web/src/components/LoadingSkeleton";
 import {
   STACK_PROVIDER_LABELS,
   type AdminStackCategory,
@@ -98,7 +99,7 @@ export function StackPage() {
   const removeTechnology = useStackMutation((id: string) => api.deleteStackTechnology(id));
   const toast = useToast();
 
-  if (isPending) return <p className="py-10 text-center text-[13px] text-subtle">加载中…</p>;
+  if (isPending) return <LoadingSkeleton label="加载中…" variant="rows" />;
   if (error) {
     return (
       <>

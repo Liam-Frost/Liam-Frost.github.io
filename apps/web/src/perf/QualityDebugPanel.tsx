@@ -1,450 +1,159 @@
-import { useEffect, useMemo, useState } from "react";
-
-import {
-  qualityManager,
-  type FlickrThumbSuffix,
-  type PlaceholderStrategy,
-  type QualityParamOverrides,
-  type QualityTier
-} from "./qualityManager";
+import { useEffect, useState } from "react";
+import { qualityManager, type DimensionOverrides } from "./qualityManager";
 import { useQuality } from "./useQuality";
+import "./quality-debug.css";
 
-function getQueryParam(name: string): string | null {
-  if (typeof window === "undefined") return null;
-
-  const search = window.location.search ?? "";
-  const hash = window.location.hash ?? "";
-
-  const queryFromHash = (() => {
-    const idx = hash.indexOf("?");
-    if (idx === -1) return "";
-    return hash.slice(idx);
-  })();
-
-  const params = new URLSearchParams(search || queryFromHash);
-  return params.get(name);
+function enabled() {
+  const outer = new URLSearchParams(window.location.search);
+  const inner = new URLSearchParams(window.location.hash.split("?")[1] ?? "");
+  return import.meta.env.DEV || outer.get("debug") === "1" || inner.get("debug") === "1";
 }
-
-function shouldShowDebugPanel() {
-  if (import.meta.env.DEV) return true;
-  return getQueryParam("debug") === "1";
-}
-
-const panelStyle: React.CSSProperties = {
-  position: "fixed",
-  left: 12,
-  bottom: 12,
-  width: 360,
-  maxWidth: "calc(100vw - 24px)",
-  maxHeight: "calc(100vh - 24px)",
-  overflow: "auto",
-  zIndex: 99999,
-
-  fontFamily:
-    "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
-  fontSize: 12,
-  lineHeight: 1.35,
-
-  borderRadius: 14,
-  border: "1px solid rgba(255,255,255,0.16)",
-  background: "rgba(0,0,0,0.72)",
-  color: "rgba(255,255,255,0.92)",
-  backdropFilter: "blur(10px)",
-  padding: 12
-};
-
-const rowStyle: React.CSSProperties = {
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "space-between",
-  gap: 10,
-  marginTop: 8
-};
-
-const labelStyle: React.CSSProperties = { opacity: 0.85 };
-const valueStyle: React.CSSProperties = { opacity: 0.95 };
-
-function fmtMs(ms: number) {
-  if (!Number.isFinite(ms)) return "-";
-  return `${ms.toFixed(1)}ms`;
-}
-
-function fmtPct(v: number) {
-  if (!Number.isFinite(v)) return "-";
-  return `${Math.round(v * 100)}%`;
-}
-
-function toTierValue(v: string): QualityTier | null {
-  if (v === "null") return null;
-  const n = Number(v);
-  if (n === 0 || n === 1 || n === 2 || n === 3) return n;
-  return null;
-}
-
-function updateOverrides(
-  prev: QualityParamOverrides | null,
-  patch: QualityParamOverrides
-): QualityParamOverrides {
-  const next: QualityParamOverrides = { ...(prev ?? {}) };
-
-  if ("images" in patch && patch.images) {
-    next.images = { ...(next.images ?? {}), ...patch.images };
-  }
-
-  const { images: _images, ...rest } = patch;
-  Object.assign(next, rest);
-
-  return next;
-}
-
 export default function QualityDebugPanel() {
-  const show = shouldShowDebugPanel();
-  const { tier, config, reducedMotion, metrics, setManualOverride } = useQuality();
-
-  const [collapsed, setCollapsed] = useState(false);
-  const [overrides, setOverrides] = useState<QualityParamOverrides | null>(null);
-
-  // Keep manager in sync with local override state.
+  const { tier, config, reducedMotion, setManualOverride } = useQuality();
+  const [closed, setClosed] = useState(false);
+  const [metrics, setMetrics] = useState(() => qualityManager.getMetrics());
+  const [overrides, setOverrides] = useState<Partial<DimensionOverrides>>({});
+  const show = enabled();
   useEffect(() => {
-    qualityManager.setParamOverrides(overrides);
-  }, [overrides]);
-
-  const title = useMemo(() => {
-    const rm = reducedMotion ? "RM" : "";
-    return `Perf ${tier}${rm ? ` (${rm})` : ""}`;
-  }, [tier, reducedMotion]);
-
+    if (!show || closed) return;
+    const timer = window.setInterval(() => setMetrics(qualityManager.getMetrics()), 1000);
+    return () => clearInterval(timer);
+  }, [show, closed]);
   if (!show) return null;
-
+  const update = (key: keyof DimensionOverrides, raw: string) => {
+    const value = raw === "auto" ? null : key === "images" ? raw : Number(raw);
+    const next = { [key]: value } as Partial<DimensionOverrides>;
+    setOverrides((old) => ({ ...old, ...next }));
+    qualityManager.setDimensionOverrides(next);
+  };
+  const budgets = [
+    {
+      key: "motion" as const,
+      title: "动画",
+      value: `${["静态", "轻量", "平衡", "完整"][tier]} · 更新上限 ${config.fpsCap} fps`,
+      hint: "背景、打字与滚动装饰；不影响内容导航",
+      choices: ["0", "1", "2", "3"]
+    },
+    {
+      key: "filters" as const,
+      title: "滤镜",
+      value: ["关闭", "轻量", "完整"][config.filterTier ?? 2],
+      hint: "独立降低背景和头部模糊效果",
+      choices: ["0", "1", "2"]
+    },
+    {
+      key: "images" as const,
+      title: "图片",
+      value: `最高 ${{ n: 320, z: 640, c: 800, b: 1024 }[config.images.maxThumbSuffix]}px 长边`,
+      hint: "图片尺寸独立于动画性能调整",
+      choices: ["n", "z", "c", "b"]
+    },
+    {
+      key: "prefetch" as const,
+      title: "预加载",
+      value: `并发 ${config.images.maxConcurrentImagePrefetch}`,
+      hint: "省流、慢连接或后台状态可能暂停推测请求",
+      choices: ["0", "1", "2"]
+    }
+  ];
   return (
-    <div style={panelStyle} role="dialog" aria-label="Performance debug panel">
-      <div
-        style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}
-      >
-        <strong>{title}</strong>
-        <div style={{ display: "flex", gap: 8 }}>
-          <button
-            type="button"
-            onClick={() => setCollapsed((v) => !v)}
-            style={{
-              font: "inherit",
-              padding: "4px 8px",
-              borderRadius: 10,
-              border: "1px solid rgba(255,255,255,0.16)",
-              background: "rgba(255,255,255,0.08)",
-              color: "inherit",
-              cursor: "pointer"
-            }}
-          >
-            {collapsed ? "Expand" : "Collapse"}
-          </button>
+    <aside className={`qualityDebug ${closed ? "isCollapsed" : ""}`} aria-label="性能调试面板">
+      <header>
+        <div>
+          <strong>性能与资源预算</strong>
+          <small>四个维度独立调整</small>
         </div>
-      </div>
-
-      {collapsed ? null : (
+        <button type="button" aria-expanded={!closed} onClick={() => setClosed(!closed)}>
+          {closed ? "展开" : "收起"}
+        </button>
+      </header>
+      {!closed && (
         <>
-          <div style={{ ...rowStyle, marginTop: 10 }}>
-            <span style={labelStyle}>effectiveTier</span>
-            <span style={valueStyle}>{metrics.effectiveTier}</span>
+          {(reducedMotion || metrics.isHidden) && (
+            <p role="status" className="qualityNotice">
+              {reducedMotion
+                ? "已遵循减少动画偏好，手动设置不能强制开启动画。"
+                : "页面在后台，动画和预加载已暂停。"}
+            </p>
+          )}
+          <dl className="qualityMetrics">
+            <div>
+              <dt>平均帧耗时</dt>
+              <dd>{metrics.avgFrameMs.toFixed(1)} ms</dd>
+            </div>
+            <div>
+              <dt>P95</dt>
+              <dd>{metrics.p95FrameMs.toFixed(1)} ms</dd>
+            </div>
+            <div>
+              <dt>慢帧比例</dt>
+              <dd>{Math.round(metrics.badFrameRatio * 100)}%</dd>
+            </div>
+            <div>
+              <dt>长任务 / 10s</dt>
+              <dd>{metrics.longTaskCount10s}</dd>
+            </div>
+          </dl>
+          <div className="qualityBudgets">
+            {budgets.map((budget) => (
+              <section key={budget.key}>
+                <div>
+                  <h3>{budget.title}</h3>
+                  <strong>{budget.value}</strong>
+                  <p>{budget.hint}</p>
+                </div>
+                <label>
+                  <span className="srOnly">{budget.title}预算</span>
+                  <select
+                    aria-label={`${budget.title}预算`}
+                    value={String(overrides[budget.key] ?? "auto")}
+                    onChange={(e) => update(budget.key, e.target.value)}
+                  >
+                    <option value="auto">自动</option>
+                    {budget.choices.map((value) => (
+                      <option key={value} value={value}>
+                        {budget.key === "images"
+                          ? (
+                              { n: "320px", z: "640px", c: "800px", b: "1024px" } as Record<
+                                string,
+                                string
+                              >
+                            )[value]
+                          : budget.key === "motion"
+                            ? ["静态", "轻量", "平衡", "完整"][Number(value)]
+                            : budget.key === "filters"
+                              ? ["关闭", "轻量", "完整"][Number(value)]
+                              : ["暂停", "并发1", "并发2"][Number(value)]}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </section>
+            ))}
           </div>
-          <div style={rowStyle}>
-            <span style={labelStyle}>autoTier</span>
-            <span style={valueStyle}>{metrics.autoTier}</span>
-          </div>
-          <div style={rowStyle}>
-            <span style={labelStyle}>manualOverride</span>
-            <span style={valueStyle}>{metrics.manualOverride ?? "null"}</span>
-          </div>
-
-          <hr
-            style={{ border: 0, borderTop: "1px solid rgba(255,255,255,0.12)", margin: "10px 0" }}
-          />
-
-          <div style={rowStyle}>
-            <span style={labelStyle}>avgFrame</span>
-            <span style={valueStyle}>{fmtMs(metrics.avgFrameMs)}</span>
-          </div>
-          <div style={rowStyle}>
-            <span style={labelStyle}>p95Frame</span>
-            <span style={valueStyle}>{fmtMs(metrics.p95FrameMs)}</span>
-          </div>
-          <div style={rowStyle}>
-            <span style={labelStyle}>badRatio</span>
-            <span style={valueStyle}>{fmtPct(metrics.badFrameRatio)}</span>
-          </div>
-          <div style={rowStyle}>
-            <span style={labelStyle}>longTasks(10s)</span>
-            <span style={valueStyle}>
-              {metrics.longTaskCount10s} ({metrics.longTaskRate.toFixed(2)}/s)
+          <footer>
+            <span>
+              自动动画基准：{metrics.autoTier} · 样本 {metrics.sampleCount}
             </span>
-          </div>
-
-          <hr
-            style={{ border: 0, borderTop: "1px solid rgba(255,255,255,0.12)", margin: "10px 0" }}
-          />
-
-          <div style={rowStyle}>
-            <label style={labelStyle}>
-              override tier
-              <select
-                value={String(metrics.manualOverride ?? "null")}
-                onChange={(e) => setManualOverride(toTierValue(e.target.value))}
-                style={{
-                  marginLeft: 8,
-                  font: "inherit",
-                  borderRadius: 10,
-                  border: "1px solid rgba(255,255,255,0.16)",
-                  background: "rgba(255,255,255,0.08)",
-                  color: "inherit",
-                  padding: "4px 8px"
-                }}
-              >
-                <option value="null">auto</option>
-                <option value="0">0</option>
-                <option value="1">1</option>
-                <option value="2">2</option>
-                <option value="3">3</option>
-              </select>
-            </label>
-
             <button
               type="button"
               onClick={() => {
+                setOverrides({});
                 setManualOverride(null);
-                setOverrides(null);
-              }}
-              style={{
-                font: "inherit",
-                padding: "4px 8px",
-                borderRadius: 10,
-                border: "1px solid rgba(255,255,255,0.16)",
-                background: "rgba(255,255,255,0.08)",
-                color: "inherit",
-                cursor: "pointer"
+                qualityManager.setParamOverrides(null);
+                qualityManager.setDimensionOverrides({
+                  motion: null,
+                  filters: null,
+                  images: null,
+                  prefetch: null
+                });
               }}
             >
-              Reset
+              恢复全部自动
             </button>
-          </div>
-
-          <div style={rowStyle}>
-            <label style={{ ...labelStyle, display: "flex", alignItems: "center", gap: 8 }}>
-              <input
-                type="checkbox"
-                checked={config.enableDecorativeAnimations}
-                onChange={(e) =>
-                  setOverrides((prev) =>
-                    updateOverrides(prev, { enableDecorativeAnimations: e.target.checked })
-                  )
-                }
-              />
-              decorative
-            </label>
-
-            <label style={{ ...labelStyle, display: "flex", alignItems: "center", gap: 8 }}>
-              <input
-                type="checkbox"
-                checked={config.enableFilters}
-                onChange={(e) =>
-                  setOverrides((prev) => updateOverrides(prev, { enableFilters: e.target.checked }))
-                }
-              />
-              filters
-            </label>
-          </div>
-
-          <div style={rowStyle}>
-            <label style={labelStyle}>
-              decorativeMultiplier
-              <input
-                type="range"
-                min={0}
-                max={1}
-                step={0.05}
-                value={config.decorativeMultiplier}
-                onChange={(e) =>
-                  setOverrides((prev) =>
-                    updateOverrides(prev, { decorativeMultiplier: Number(e.target.value) })
-                  )
-                }
-                style={{ width: 150, marginLeft: 8 }}
-              />
-            </label>
-            <span style={valueStyle}>{config.decorativeMultiplier.toFixed(2)}</span>
-          </div>
-
-          <div style={rowStyle}>
-            <label style={labelStyle}>
-              updateEveryNFrames
-              <input
-                type="number"
-                min={1}
-                max={12}
-                value={config.updateEveryNFrames}
-                onChange={(e) =>
-                  setOverrides((prev) =>
-                    updateOverrides(prev, { updateEveryNFrames: Number(e.target.value) })
-                  )
-                }
-                style={{
-                  marginLeft: 8,
-                  width: 64,
-                  font: "inherit",
-                  borderRadius: 10,
-                  border: "1px solid rgba(255,255,255,0.16)",
-                  background: "rgba(255,255,255,0.08)",
-                  color: "inherit",
-                  padding: "4px 8px"
-                }}
-              />
-            </label>
-
-            <label style={labelStyle}>
-              fpsCap
-              <input
-                type="number"
-                min={0}
-                max={120}
-                value={config.fpsCap}
-                onChange={(e) =>
-                  setOverrides((prev) => updateOverrides(prev, { fpsCap: Number(e.target.value) }))
-                }
-                style={{
-                  marginLeft: 8,
-                  width: 64,
-                  font: "inherit",
-                  borderRadius: 10,
-                  border: "1px solid rgba(255,255,255,0.16)",
-                  background: "rgba(255,255,255,0.08)",
-                  color: "inherit",
-                  padding: "4px 8px"
-                }}
-              />
-            </label>
-          </div>
-
-          <hr
-            style={{ border: 0, borderTop: "1px solid rgba(255,255,255,0.12)", margin: "10px 0" }}
-          />
-
-          <div style={{ ...rowStyle, alignItems: "flex-start" }}>
-            <div style={labelStyle}>images</div>
-            <div style={{ display: "grid", gap: 8, justifyItems: "end" }}>
-              <label style={labelStyle}>
-                maxThumbSuffix
-                <select
-                  value={config.images.maxThumbSuffix}
-                  onChange={(e) =>
-                    setOverrides((prev) =>
-                      updateOverrides(prev, {
-                        images: { maxThumbSuffix: e.target.value as FlickrThumbSuffix }
-                      })
-                    )
-                  }
-                  style={{
-                    marginLeft: 8,
-                    font: "inherit",
-                    borderRadius: 10,
-                    border: "1px solid rgba(255,255,255,0.16)",
-                    background: "rgba(255,255,255,0.08)",
-                    color: "inherit",
-                    padding: "4px 8px"
-                  }}
-                >
-                  <option value="n">n (320)</option>
-                  <option value="z">z (640)</option>
-                  <option value="c">c (800)</option>
-                  <option value="b">b (1024)</option>
-                </select>
-              </label>
-
-              <label style={labelStyle}>
-                prefetchNeighborCount
-                <input
-                  type="number"
-                  min={0}
-                  max={4}
-                  value={config.images.prefetchNeighborCount}
-                  onChange={(e) =>
-                    setOverrides((prev) =>
-                      updateOverrides(prev, {
-                        images: { prefetchNeighborCount: Number(e.target.value) }
-                      })
-                    )
-                  }
-                  style={{
-                    marginLeft: 8,
-                    width: 64,
-                    font: "inherit",
-                    borderRadius: 10,
-                    border: "1px solid rgba(255,255,255,0.16)",
-                    background: "rgba(255,255,255,0.08)",
-                    color: "inherit",
-                    padding: "4px 8px"
-                  }}
-                />
-              </label>
-
-              <label style={labelStyle}>
-                maxConcurrentPrefetch
-                <input
-                  type="number"
-                  min={0}
-                  max={6}
-                  value={config.images.maxConcurrentImagePrefetch}
-                  onChange={(e) =>
-                    setOverrides((prev) =>
-                      updateOverrides(prev, {
-                        images: { maxConcurrentImagePrefetch: Number(e.target.value) }
-                      })
-                    )
-                  }
-                  style={{
-                    marginLeft: 8,
-                    width: 64,
-                    font: "inherit",
-                    borderRadius: 10,
-                    border: "1px solid rgba(255,255,255,0.16)",
-                    background: "rgba(255,255,255,0.08)",
-                    color: "inherit",
-                    padding: "4px 8px"
-                  }}
-                />
-              </label>
-
-              <label style={labelStyle}>
-                placeholder
-                <select
-                  value={config.images.placeholderStrategy}
-                  onChange={(e) =>
-                    setOverrides((prev) =>
-                      updateOverrides(prev, {
-                        images: { placeholderStrategy: e.target.value as PlaceholderStrategy }
-                      })
-                    )
-                  }
-                  style={{
-                    marginLeft: 8,
-                    font: "inherit",
-                    borderRadius: 10,
-                    border: "1px solid rgba(255,255,255,0.16)",
-                    background: "rgba(255,255,255,0.08)",
-                    color: "inherit",
-                    padding: "4px 8px"
-                  }}
-                >
-                  <option value="none">none</option>
-                  <option value="solid">solid</option>
-                </select>
-              </label>
-            </div>
-          </div>
-
-          <div style={{ marginTop: 10, opacity: 0.75 }}>
-            reduced motion forces tier 0; overrides ignored.
-          </div>
+          </footer>
         </>
       )}
-    </div>
+    </aside>
   );
 }

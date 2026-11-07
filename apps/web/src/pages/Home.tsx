@@ -1,4 +1,6 @@
-import { useContact } from "../data/useContact";
+import LoadingSkeleton from "../components/LoadingSkeleton";
+import { apiFetchEnabled } from "../lib/api";
+import { useContactState } from "../data/useContact";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { Link, useNavigate } from "react-router";
@@ -33,14 +35,14 @@ const GREETING_ORDER: GreetingLang[] = ["zh", "en", "fr", "ja"];
 
 export default function HomePage() {
   const { lang, t } = useI18n();
-  const { photos } = usePhotos();
-  const contact = useContact();
+  const { photos, status: photoStatus } = usePhotos();
+  const { contact, loading: contactLoading } = useContactState();
 
   // Featured photo IDs for homepage
   // Marked in the admin ("首页精选"); the seed content marks the original selection.
   const featured = useMemo(() => photos.filter((p) => p.featured), [photos]);
   // Between the introduction and the photos; hidden when there are no featured projects (or no API).
-  const { projects } = useProjects();
+  const { projects, status: projectStatus } = useProjects();
   const featuredProjects = useMemo(
     () => projects.filter((p) => p.featured).slice(0, 4),
     [projects]
@@ -163,7 +165,13 @@ export default function HomePage() {
         </div>
       </section>
 
-      {featuredProjects.length ? (
+      {projectStatus === "loading" ? (
+        <section className="section" id="projects">
+          <div className="container">
+            <LoadingSkeleton label={t("projects.loading")} count={2} />
+          </div>
+        </section>
+      ) : featuredProjects.length ? (
         <section className="section" id="projects">
           <div className="container">
             <Reveal intensity="subtle">
@@ -188,7 +196,15 @@ export default function HomePage() {
         </section>
       ) : null}
 
-      <HomeCollection collection={collection} />
+      {collection.status === "loading" ? (
+        <section className="section" id="watching">
+          <div className="container">
+            <LoadingSkeleton label={t("collection.loading")} />
+          </div>
+        </section>
+      ) : (
+        <HomeCollection collection={collection} />
+      )}
 
       <section className="section" id="featured">
         <div className="container">
@@ -197,15 +213,19 @@ export default function HomePage() {
             <p className="sectionSubtitle">{t("featured.subtitle")}</p>
           </Reveal>
 
-          <div className="masonry" aria-label={t("featured.title")}>
-            {featured.map((p, idx) => (
-              <div key={p.id} className="masonryItem">
-                <Reveal after stagger>
-                  <PhotoCard photo={p} onOpen={openFeatured} priority={idx < 2} />
-                </Reveal>
-              </div>
-            ))}
-          </div>
+          {apiFetchEnabled && (photoStatus === "seed" || photoStatus === "loading") ? (
+            <LoadingSkeleton label={t("featured.title")} />
+          ) : (
+            <div className="masonry" aria-label={t("featured.title")}>
+              {featured.map((p, idx) => (
+                <div key={p.id} className="masonryItem">
+                  <Reveal after stagger>
+                    <PhotoCard photo={p} onOpen={openFeatured} priority={idx < 2} />
+                  </Reveal>
+                </div>
+              ))}
+            </div>
+          )}
 
           <div style={{ marginTop: 14, display: "flex", gap: 12, flexWrap: "wrap" }}>
             <Link className="btn btnPrimary" to="/portfolio">
@@ -215,7 +235,13 @@ export default function HomePage() {
         </div>
       </section>
 
-      {contact && (contact.email || contact.links.length > 0) ? (
+      {contactLoading ? (
+        <section className="section" id="contact">
+          <div className="container">
+            <LoadingSkeleton label={t("contact.title")} variant="form" count={1} />
+          </div>
+        </section>
+      ) : contact && (contact.email || contact.links.length > 0) ? (
         <section className="section" id="contact">
           <div className="container">
             <Reveal intensity="subtle">

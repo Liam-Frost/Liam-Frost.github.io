@@ -1,3 +1,4 @@
+import { missingPagePath } from "@liam-frost/shared";
 import type { AnalyticsEventInput, AnalyticsPath } from "@liam-frost/shared";
 
 import { apiFetchEnabled, apiUrl } from "./api";
@@ -209,11 +210,16 @@ function reportVitals() {
 }
 
 /** Called on every route change: reports the time on the previous page, then counts the new one. */
-export function trackPage(path: AnalyticsPath, lang: string) {
+export function trackPage(path: AnalyticsPath, lang: string, requestedPath?: string) {
   if (!analyticsEnabled) return;
   reportEngagement();
   currentPath = path;
-  track("page_view", { lang });
+  track("page_view", {
+    lang,
+    ...(path === "*" && requestedPath
+      ? { detail: missingPagePath(requestedPath) ?? undefined }
+      : {})
+  });
   // Vitals belong to the page the visit landed on; half of the page loads measure them.
   if (vitals.path === null && !vitalsSent) {
     if (crypto.getRandomValues(new Uint8Array(1))[0]! < 128) {

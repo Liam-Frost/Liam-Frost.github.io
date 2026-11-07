@@ -1,3 +1,4 @@
+import { AuditPage } from "./pages/AuditPage";
 import { ContactPage } from "./pages/ContactPage";
 import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Navigate, Route, Routes, useParams } from "react-router";
@@ -96,6 +97,7 @@ function SessionGate() {
         <Route path="people/:id" element={<LegacyPersonRedirect />} />
         <Route path="music" element={<MusicPage />} />
         <Route path="integrations" element={<IntegrationsPage />} />
+        <Route path="audit" element={<AuditPage />} />
         <Route path="analytics" element={<AnalyticsPage view="overview" />} />
         <Route path="analytics/content" element={<AnalyticsPage view="content" />} />
         <Route path="analytics/content/:type/:id" element={<AnalyticsPage view="detail" />} />

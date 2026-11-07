@@ -1,3 +1,4 @@
+import LoadingSkeleton from "../../../../web/src/components/LoadingSkeleton";
 import {
   ANALYTICS_CONTENT_TYPES,
   type AnalyticsContentItem,
@@ -55,7 +56,7 @@ export function ContentView() {
     enabled: ready
   });
   if (error) return <p className="text-[13px] text-status-error">{error.message}</p>;
-  if (!data) return <p className="text-[13px] text-subtle">加载中…</p>;
+  if (!data) return <LoadingSkeleton label="加载统计…" count={3} />;
   const items = data.items.filter((item) => type === "all" || item.type === type);
 
   return (
