@@ -71,7 +71,7 @@ export function AuditPage() {
               <option value="failure">失败或拒绝</option>
             </select>
           </label>
-          <span className="ml-auto text-[12px] text-faint">每页50条 · 只读</span>
+          <span className="ml-auto text-[12px] text-muted">每页50条 · 只读</span>
         </div>
         {error ? (
           <p role="alert" className="text-status-error">
@@ -84,9 +84,14 @@ export function AuditPage() {
             当前筛选没有审计记录。日志从此版本上线后开始记录。
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <div
+            className="overflow-x-auto focus-visible:outline-2 focus-visible:outline-brand-secondary"
+            tabIndex={0}
+            role="region"
+            aria-label="审计记录，可横向滚动"
+          >
             <table className="w-full min-w-[720px] text-left text-[13px]">
-              <thead className="text-[12px] text-faint">
+              <thead className="text-[12px] text-muted">
                 <tr>
                   {["时间", "操作 / 资源", "操作人", "来源 IP", "结果"].map((x) => (
                     <th key={x} className="pb-3 pr-4 font-normal">
@@ -113,11 +118,11 @@ export function AuditPage() {
                     <td className="py-3 pr-4 font-mono text-[12px]">{row.ip}</td>
                     <td className="py-3">
                       <span
-                        className={row.status < 400 ? "text-status-success" : "text-status-error"}
+                        className={row.status < 400 ? "text-brand-secondary" : "text-status-error"}
                       >
                         {row.status < 400 ? "成功" : "失败 / 拒绝"}
                       </span>
-                      <span className="ml-2 text-[11px] text-faint">{row.status}</span>
+                      <span className="ml-2 text-[11px] text-muted">{row.status}</span>
                     </td>
                   </tr>
                 ))}
