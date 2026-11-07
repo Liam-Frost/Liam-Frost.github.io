@@ -1,3 +1,4 @@
+import { useLayoutPending } from "../app/layoutPending";
 import { DEFAULT_ABOUT, toPublicAbout, type PublicAbout } from "@liam-frost/shared";
 import { useEffect, useState } from "react";
 
@@ -18,6 +19,8 @@ const isAbout = (data: unknown): data is PublicAbout =>
  */
 export function useAbout(): PublicAbout | null {
   const [about, setAbout] = useState<PublicAbout | null>(apiFetchEnabled ? null : FALLBACK);
+
+  useLayoutPending(about === null);
 
   useEffect(() => {
     if (!apiFetchEnabled) return;

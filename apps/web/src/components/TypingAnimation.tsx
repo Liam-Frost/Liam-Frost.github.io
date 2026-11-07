@@ -1,3 +1,4 @@
+import { useQuality } from "../perf/useQuality";
 import { useEffect, useRef, useState } from "react";
 import { cn } from "../lib/cn";
 
@@ -41,6 +42,8 @@ export default function TypingAnimation({
   cursorStyle = "underscore",
   className
 }: Props) {
+  const { config } = useQuality();
+  const animate = config.enableDecorativeAnimations;
   const [displayText, setDisplayText] = useState("");
   const [wordIndex, setWordIndex] = useState(0);
   const [phase, setPhase] = useState<"typing" | "pausing" | "deleting">("typing");
@@ -59,6 +62,8 @@ export default function TypingAnimation({
   // Main animation loop
   useEffect(() => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
+
+    if (!animate) return;
 
     if (phase === "typing") {
       if (displayText.length < currentWord.length) {
@@ -93,6 +98,7 @@ export default function TypingAnimation({
       }
     }
   }, [
+    animate,
     displayText,
     phase,
     currentWord,
@@ -119,8 +125,11 @@ export default function TypingAnimation({
 
   return (
     <span className={cn("typingAnimation", className)}>
-      <span className="typingText">{renderText(displayText)}</span>
-      {showCursor && (
+      <span className="srOnly">{words[0]}</span>
+      <span className="typingText" aria-hidden="true">
+        {renderText(animate ? displayText : (words[0] ?? ""))}
+      </span>
+      {showCursor && animate && (
         <span className={cn("typingCursor", blinkCursor && "typingCursorBlink")} aria-hidden="true">
           {cursorChar}
         </span>

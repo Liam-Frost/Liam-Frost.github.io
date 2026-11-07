@@ -89,20 +89,20 @@ export default function QualityProvider({ children }: Props) {
 
     const onVisibilityChange = () => {
       qualityManager.onVisibilityChange();
-      if (document.hidden) stop();
+      if (document.hidden || reducedMotion) stop();
       else start();
     };
 
     document.addEventListener("visibilitychange", onVisibilityChange);
 
     // Initial run (useEffect runs post-paint).
-    if (!document.hidden) start();
+    if (!document.hidden && !reducedMotion) start();
 
     return () => {
       stop();
       document.removeEventListener("visibilitychange", onVisibilityChange);
     };
-  }, []);
+  }, [reducedMotion]);
 
   const value = useMemo<QualityContextValue>(
     () => ({

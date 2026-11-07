@@ -14,7 +14,7 @@ import PortfolioPage from "../pages/Portfolio";
 import PrivacyPage from "../pages/Privacy";
 import ProjectsPage from "../pages/Projects";
 import { useI18n } from "../lib/i18n";
-import { startSmoothScroll } from "../lib/smoothScroll";
+import { scrollToElement, startSmoothScroll } from "../lib/smoothScroll";
 import { useTheme } from "../lib/useTheme";
 
 // The Markdown renderer is only needed on project pages; keep it out of the main bundle.
@@ -30,7 +30,18 @@ export default function App() {
 
   return (
     <div className="site">
-      <a className="skipLink" href="#main">
+      <a
+        className="skipLink"
+        href="#main"
+        onClick={(event) => {
+          event.preventDefault();
+          const main = document.getElementById("main");
+          if (main) {
+            main.focus({ preventScroll: true });
+            scrollToElement(main, true);
+          }
+        }}
+      >
         {t("common.skipToContent")}
       </a>
 
@@ -44,7 +55,7 @@ export default function App() {
         </div>
       </header>
 
-      <main id="main">
+      <main id="main" tabIndex={-1}>
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/portfolio" element={<PortfolioPage />} />

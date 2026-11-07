@@ -18,6 +18,8 @@ export default function Header({ theme, onCycleTheme }: Props) {
   const [open, setOpen] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
   const langWrapRef = useRef<HTMLDivElement | null>(null);
+  const langButtonRef = useRef<HTMLButtonElement | null>(null);
+  const navButtonRef = useRef<HTMLButtonElement | null>(null);
   const location = useLocation();
 
   useEffect(() => {
@@ -38,12 +40,19 @@ export default function Header({ theme, onCycleTheme }: Props) {
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setLangOpen(false);
+      if (e.key !== "Escape") return;
+      if (langOpen) {
+        setLangOpen(false);
+        langButtonRef.current?.focus();
+      } else if (open) {
+        setOpen(false);
+        navButtonRef.current?.focus();
+      }
     };
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, []);
+  }, [langOpen, open]);
 
   const themeUi = useMemo(() => {
     if (theme === "light") return { icon: "☀", label: t("theme.light") };
@@ -58,17 +67,19 @@ export default function Header({ theme, onCycleTheme }: Props) {
       </Link>
 
       <button
+        ref={navButtonRef}
         className="navToggle"
         type="button"
         aria-label={open ? t("nav.closeMenu") : t("nav.openMenu")}
         aria-expanded={open}
+        aria-controls="primary-links"
         onClick={() => setOpen((v) => !v)}
       >
         <span className="srOnly">{open ? t("nav.closeMenu") : t("nav.openMenu")}</span>
         <span className="hamburger" aria-hidden="true" />
       </button>
 
-      <div className={cx("navLinks", open && "navLinksOpen")}>
+      <div id="primary-links" className={cx("navLinks", open && "navLinksOpen")}>
         <NavLink
           to="/"
           end
@@ -102,10 +113,12 @@ export default function Header({ theme, onCycleTheme }: Props) {
           <div ref={langWrapRef} className={cx("langWrap", langOpen && "langWrapOpen")}>
             <Tooltip content={langOpen ? "" : t("common.language")} describe={false}>
               <button
+                ref={langButtonRef}
                 className={cx("btn", "btnGhost", "langBtn")}
                 type="button"
                 aria-label={t("common.language")}
                 aria-expanded={langOpen}
+                aria-controls="language-options"
                 onClick={() => setLangOpen((v) => !v)}
               >
                 <svg
@@ -126,7 +139,13 @@ export default function Header({ theme, onCycleTheme }: Props) {
               </button>
             </Tooltip>
 
-            <div className="langPanel" role="menu" aria-label={t("common.language")}>
+            <div
+              id="language-options"
+              className="langPanel"
+              role="group"
+              hidden={!langOpen}
+              aria-label={t("common.language")}
+            >
               {(
                 [
                   { k: "zh", label: "简体中文" },
@@ -140,11 +159,12 @@ export default function Header({ theme, onCycleTheme }: Props) {
                   key={item.k}
                   className={cx("langItem", item.k === lang && "langItemActive")}
                   type="button"
-                  role="menuitemradio"
-                  aria-checked={item.k === lang}
+                  aria-pressed={item.k === lang}
+                  lang={item.k}
                   onClick={() => {
                     setLang(item.k);
                     setLangOpen(false);
+                    langButtonRef.current?.focus();
                   }}
                 >
                   <span className="langLabel">{item.label}</span>

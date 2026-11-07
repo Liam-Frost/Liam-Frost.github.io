@@ -2,8 +2,15 @@ import { useLayoutEffect, useRef } from "react";
 import { useLocation, useNavigationType } from "react-router";
 import { scrollToElement, scrollToPosition, scrollToTop } from "../lib/smoothScroll";
 import { isQueryOnlyNavigation, restoreScroll } from "./restoreScroll";
+import {
+  capturePosition,
+  readReloadPosition,
+  restoreReloadPosition,
+  saveReloadPosition
+} from "./reloadPosition";
 
 const positions = new Map<string, number>();
+const reloadPosition = readReloadPosition();
 
 /** How long an anchor is followed while the page above it is still loading. */
 const FOLLOW_MS = 5000;
@@ -19,14 +26,21 @@ export default function ScrollManager() {
     previous.current = { key, pathname: location.pathname, hash: location.hash };
     // The next route may already have shortened the document by effect cleanup time.
     let lastScroll = window.scrollY;
+    let lastPosition = capturePosition(key);
     const record = () => {
       lastScroll = window.scrollY;
     };
+    const persist = () => {
+      if (!document.documentElement.dataset.scrollRestoring) lastPosition = capturePosition(key);
+      saveReloadPosition(lastPosition);
+    };
+    window.addEventListener("pagehide", persist);
     window.addEventListener("scroll", record, { passive: true });
     // Capture the final position before a click or keyboard navigation changes the DOM.
     window.addEventListener("pointerdown", record, true);
     window.addEventListener("keydown", record, true);
     const save = () => {
+      window.removeEventListener("pagehide", persist);
       window.removeEventListener("scroll", record);
       window.removeEventListener("pointerdown", record, true);
       window.removeEventListener("keydown", record, true);
@@ -34,6 +48,14 @@ export default function ScrollManager() {
       positions.set(key, lastScroll);
       if (positions.size > 100) positions.delete(positions.keys().next().value!);
     };
+    if (reloadPosition?.key === key && (!before || before.key === key)) {
+      lastPosition = reloadPosition;
+      const cancel = restoreReloadPosition(reloadPosition);
+      return () => {
+        cancel();
+        save();
+      };
+    }
     // Query-only changes open panels, switch filters or move through photos on the same page.
     if (isQueryOnlyNavigation(before, { key, pathname: location.pathname, hash: location.hash }))
       return save;
@@ -63,7 +85,7 @@ export default function ScrollManager() {
         const layout =
           typeof ResizeObserver === "undefined"
             ? null
-            : new ResizeObserver(() => scrollToElement(el));
+            : new ResizeObserver(() => scrollToElement(el, true));
         layout?.observe(document.body);
         const stop = () => {
           layout?.disconnect();
@@ -80,7 +102,7 @@ export default function ScrollManager() {
       const scroll = () => {
         const el = document.getElementById(hash);
         if (el) {
-          scrollToElement(el);
+          scrollToElement(el, !before || before.key === key);
           follow(el);
           observer?.disconnect();
           clearTimeout(timeout);
