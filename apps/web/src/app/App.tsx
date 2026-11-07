@@ -58,7 +58,16 @@ export default function App() {
 
       <main id="main" tabIndex={-1}>
         <Routes>
-          <Route path="/" element={<HomePage />} />
+          <Route
+            path="/"
+            element={
+              window.location.pathname !== "/" && window.location.pathname !== "/index.html" ? (
+                <NotFoundPage />
+              ) : (
+                <HomePage />
+              )
+            }
+          />
           <Route path="/portfolio" element={<PortfolioPage />} />
           <Route path="/projects" element={<ProjectsPage />} />
           <Route path="/privacy" element={<PrivacyPage />} />

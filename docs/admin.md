@@ -1,5 +1,13 @@
 # Admin
 
+## Read-only audit log
+
+The Audit Log page records login outcomes, logout, matched admin write requests, rejected admin reads and authorization callbacks. Each entry contains the timestamp, authenticated actor when available, operation, HTTP method, route template and validated resource identifier, status, and source IP. It never stores request bodies, passwords, query strings, cookies or tokens. Source IP follows the existing `TRUST_PROXY` configuration.
+
+`GET /api/admin/audit` requires the normal admin session and IP guard, disables caching, and supports operation/result filters with 50 entries per page. No audit edit or delete endpoint exists. Ordinary successful reads are omitted to avoid recording every dashboard poll. The log does not reconstruct earlier events or describe which individual fields changed; an HTTP success records the request outcome, not a separate transaction guarantee.
+
+Deployment requires the additive `20261107160000_admin_audit_log` migration before the new application starts. With a database, records persist in `AdminAuditEvent`; database-free development uses a capped in-memory buffer. Persistence errors are logged without undoing the administrative request. This is an application audit trail, not an independently signed or tamper-proof archive. No automatic audit deletion is enabled; establish a retention policy before its size becomes material.
+
 ## Current Scope
 
 Stage 3 added the authentication foundation; Stage 5 hardened it and added a configurable admin path and an IP allowlist.

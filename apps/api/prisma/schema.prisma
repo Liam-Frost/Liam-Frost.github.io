@@ -433,3 +433,17 @@ enum StackProminence {
   PRIMARY  @map("primary")
   STANDARD @map("standard")
 }
+
+/// Append-only through the application; protected admin read endpoint exposes no edit/delete API.
+model AdminAuditEvent {
+ id String @id @default(uuid())
+ createdAt DateTime @default(now())
+ actor String?
+ action String
+ method String
+ resource String
+ status Int
+ ip String
+ @@index([createdAt, id])
+ @@index([action, createdAt])
+}

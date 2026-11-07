@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent } from "react";
 import { Link, NavLink, useLocation } from "react-router";
 
 import { cx } from "../lib/cx";
@@ -60,9 +60,22 @@ export default function Header({ theme, onCycleTheme }: Props) {
     return { icon: "◐", label: t("theme.system") };
   }, [theme, t]);
 
+  const goHome = (event: ReactMouseEvent<HTMLAnchorElement>) => {
+    if (
+      !["/", "/index.html"].includes(window.location.pathname) &&
+      event.button === 0 &&
+      !event.metaKey &&
+      !event.ctrlKey &&
+      !event.shiftKey &&
+      !event.altKey
+    ) {
+      event.preventDefault();
+      window.location.assign("/");
+    }
+  };
   return (
     <nav className="nav" aria-label="Primary">
-      <Link className="brand" to="/" aria-label={t("nav.home")}>
+      <Link className="brand" onClick={goHome} to="/" aria-label={t("nav.home")}>
         <span className="brandMark" aria-hidden="true" />
       </Link>
 
@@ -82,6 +95,7 @@ export default function Header({ theme, onCycleTheme }: Props) {
       <div id="primary-links" className={cx("navLinks", open && "navLinksOpen")}>
         <NavLink
           to="/"
+          onClick={goHome}
           end
           className={({ isActive }) => cx("navLink", isActive && "navLinkActive")}
         >

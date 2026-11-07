@@ -4578,3 +4578,54 @@ html[data-scroll-restoring="true"] body::after {
 .spotifyDock.isCollapsed .spotifyDockPanel {
   visibility: hidden;
 }
+
+.notFoundPage {
+  min-height: 75vh;
+  display: grid;
+  align-items: center;
+}
+.notFoundPage .reveal {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(24px, 6vw, 80px);
+  align-items: center;
+}
+.notFoundCode {
+  position: relative;
+  font-size: clamp(110px, 20vw, 260px);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.08em;
+  margin: 0;
+  color: var(--text);
+}
+.notFoundCode span {
+  position: absolute;
+  top: 0;
+  right: 0;
+  font-size: 0.2em;
+  color: var(--muted);
+}
+.notFoundBody {
+  border-top: 1px solid var(--border);
+  padding-top: 24px;
+}
+.notFoundBody h1 {
+  font-size: clamp(28px, 4vw, 44px);
+  margin: 12px 0;
+}
+.notFoundActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 28px;
+}
+@media (max-width: 650px) {
+  .notFoundPage .reveal {
+    grid-template-columns: 1fr;
+  }
+  .notFoundCode {
+    font-size: 140px;
+    max-width: 300px;
+  }
+}

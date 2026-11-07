@@ -21,6 +21,16 @@
 
     <script>
       (() => {
+        // Nested missing-page URLs must still discover the root application's assets.
+        if (
+          location.pathname !== "/" &&
+          location.pathname !== "/index.html" &&
+          !document.querySelector("base")
+        ) {
+          const base = document.createElement("base");
+          base.href = "/";
+          document.head.prepend(base);
+        }
         const families = {
           zh: "Noto Sans SC",
           "zh-Hant": "Noto Sans SC",

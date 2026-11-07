@@ -13,7 +13,7 @@ beforeAll(() => {
   mkdirSync(join(dist, "assets"));
   writeFileSync(
     join(dist, "index.html"),
-    '<!doctype html><title>site</title><script>document.documentElement.dataset.ok = "1";</script><script type="module" src="./assets/index-abc123.js"></script>'
+    '<!doctype html><head><title>site</title><script>document.documentElement.dataset.ok = "1";</script><script type="module" src="./assets/index-abc123.js"></script>'
   );
   writeFileSync(join(dist, "my photo.svg"), "<svg/>");
   writeFileSync(join(dist, "assets", "index-abc123.js"), "console.log('site');");
@@ -67,6 +67,21 @@ describe("public site hosting", () => {
     expect((await app.inject("/%E0%A4%A")).statusCode).toBe(400);
   });
 
+  it("serves an HTML 404 shell for page navigations while missing APIs/assets stay JSON", async () => {
+    const app = await buildTestServer({}, { webDistDir: dist });
+    const page = await app.inject({
+      url: "/missing/nested-page",
+      headers: { accept: "text/html" }
+    });
+    expect(page.statusCode).toBe(404);
+    expect(page.headers["content-type"]).toContain("text/html");
+    expect(page.body).toContain('<base href="/">');
+    for (const url of ["/api/missing", "/assets/missing.js", "/.env"]) {
+      const response = await app.inject({ url, headers: { accept: "text/html" } });
+      expect(response.statusCode).toBe(404);
+      expect(response.headers["content-type"]).toContain("application/json");
+    }
+  });
   it("keeps API routes and their 404s as before", async () => {
     const app = await buildTestServer({}, { webDistDir: dist });
     expect((await app.inject("/api/health")).json().ok).toBe(true);

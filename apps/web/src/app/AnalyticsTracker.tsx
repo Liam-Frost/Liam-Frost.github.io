@@ -34,8 +34,11 @@ export default function AnalyticsTracker() {
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const last = previous.current;
-    const route = routeOf(location.pathname);
-    if (last?.pathname !== location.pathname) trackPage(route, lang, location.pathname);
+    const serverMissingPage =
+      location.pathname === "/" && !["/", "/index.html"].includes(window.location.pathname);
+    const pagePath = serverMissingPage ? window.location.pathname : location.pathname;
+    const route = serverMissingPage ? "*" : routeOf(location.pathname);
+    if (last?.pathname !== pagePath) trackPage(route, lang, pagePath);
 
     const content = new Set<string>();
     for (const [type, id] of contentOf(location.pathname, params)) {
@@ -54,7 +57,7 @@ export default function AnalyticsTracker() {
       track("collection_filter", { target: kind, detail: view || undefined });
     }
 
-    previous.current = { pathname: location.pathname, content, tab };
+    previous.current = { pathname: pagePath, content, tab };
     // The language is only sent with page views; changing it is not a page view.
     // eslint-disable-next-line react-hooks/exhaustive-deps -- lang is read, not watched
   }, [location.pathname, location.search]);
