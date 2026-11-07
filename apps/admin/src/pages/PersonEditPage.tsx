@@ -98,6 +98,7 @@ function PersonEditor({ person }: { person: AdminPerson }) {
       toast(added ? `已补齐 ${added} 个关联` : "关联已完整，没有新增关联");
       void qc.invalidateQueries({ queryKey: ["admin", "people"] });
       void qc.invalidateQueries({ queryKey: ["admin", "relations"] });
+      void qc.invalidateQueries({ queryKey: ["admin", "music-candidates"] });
     },
     onError: (error) => toast(error.message, "error")
   });

@@ -60,6 +60,7 @@ export function PeoplePage() {
       );
       void qc.invalidateQueries({ queryKey: peopleKey });
       void qc.invalidateQueries({ queryKey: ["admin", "relations"] });
+      void qc.invalidateQueries({ queryKey: ["admin", "music-candidates"] });
     }
   });
 
