@@ -85,7 +85,11 @@ export function restoreReloadPosition(saved: Position) {
   const tick = () => {
     if (stopped) return;
     const next = target();
-    if (next !== previousTarget || isLayoutPending()) stableSince = performance.now();
+    const maximum = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+    // A stable requested offset is not a successful restore while the browser clamps it
+    // to a short loading page (for example a lazy project detail without a section ID).
+    if (next !== previousTarget || isLayoutPending() || maximum + 1 < next)
+      stableSince = performance.now();
     previousTarget = next;
     if (Math.abs(window.scrollY - next) > 1) scrollToPosition(next);
     if (performance.now() - stableSince >= 250 && performance.now() - started >= 300) return stop();

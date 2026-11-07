@@ -35,11 +35,12 @@ function environment() {
   const browser = Object.assign(new EventTarget(), {
     location: { href: saved.url },
     scrollY: 0,
+    innerHeight: 600,
     setTimeout
   });
   vi.stubGlobal("window", browser);
   const section = { offsetTop: 3000, offsetHeight: 800 };
-  const root = { dataset: {} as Record<string, string> };
+  const root = { dataset: {} as Record<string, string>, scrollHeight: 6000 };
   vi.stubGlobal("document", { documentElement: root, getElementById: () => section });
   vi.stubGlobal("requestAnimationFrame", (fn: () => void) => setTimeout(fn, 16));
   vi.stubGlobal("cancelAnimationFrame", clearTimeout);
@@ -73,6 +74,18 @@ describe("reload section restoration", () => {
     restoreReloadPosition(saved);
     vi.advanceTimersByTime(400);
     expect(scrollToPosition).toHaveBeenLastCalledWith(3000);
+  });
+  it("waits for a saved document offset to become reachable without a section", () => {
+    const { root } = environment();
+    vi.stubGlobal("document", { documentElement: root, getElementById: () => null });
+    root.scrollHeight = 600;
+    restoreReloadPosition({ ...saved, section: "" });
+    vi.advanceTimersByTime(512);
+    expect(root.dataset.scrollRestoring).toBe("true");
+    root.scrollHeight = 4000;
+    vi.advanceTimersByTime(400);
+    expect(scrollToPosition).toHaveBeenLastCalledWith(saved.y);
+    expect(root.dataset.scrollRestoring).toBeUndefined();
   });
   it("always reveals the page when an API stalls", () => {
     const { root } = environment();

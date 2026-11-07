@@ -43,6 +43,7 @@ export function useProject(slug: string) {
   const [status, setStatus] = useState<"loading" | "ready" | "missing">(
     apiFetchEnabled ? "loading" : "missing"
   );
+  useLayoutPending(status === "loading");
 
   useEffect(() => {
     if (!apiFetchEnabled) return;
