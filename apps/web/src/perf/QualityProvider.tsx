@@ -48,13 +48,27 @@ export default function QualityProvider({ children }: Props) {
 
     root.dataset.perfTier = String(tier);
     root.dataset.perfFilters = config.enableFilters ? "on" : "off";
+    root.dataset.perfFilterTier = String(config.filterTier ?? 2);
 
     // Helpful for future canvas/WebGL usage.
     root.style.setProperty("--perf-dpr-cap", String(config.dprCap));
 
     // Keep image prefetch concurrency in sync.
     setMaxConcurrentImagePrefetch(config.images.maxConcurrentImagePrefetch);
-  }, [tier, config.enableFilters, config.dprCap, config.images.maxConcurrentImagePrefetch]);
+  }, [
+    tier,
+    config.enableFilters,
+    config.filterTier,
+    config.dprCap,
+    config.images.maxConcurrentImagePrefetch
+  ]);
+
+  useEffect(() => {
+    const connection = (navigator as Navigator & { connection?: EventTarget }).connection;
+    const update = () => qualityManager.refreshNetworkPolicy();
+    connection?.addEventListener("change", update);
+    return () => connection?.removeEventListener("change", update);
+  }, []);
 
   // rAF sampling loop + visibility handling.
   useEffect(() => {

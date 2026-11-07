@@ -36,6 +36,7 @@ export type QualityConfig = {
   // Optional cap for canvas/WebGL DPR; not used by DOM-only effects.
   dprCap: number;
 
+  filterTier?: 0 | 1 | 2;
   images: ImageQualityConfig;
 };
 
@@ -257,10 +258,31 @@ function mergeConfig(base: QualityConfig, overrides: QualityParamOverrides | nul
   return merged;
 }
 
+export type DimensionOverrides = {
+  motion: QualityTier | null;
+  filters: 0 | 1 | 2 | null;
+  images: FlickrThumbSuffix | null;
+  prefetch: 0 | 1 | 2 | null;
+};
+
 export class QualityManager {
   private thresholds: QualityThresholds = { ...DEFAULT_THRESHOLDS };
 
   private listeners = new Set<Listener>();
+
+  private dimensions: Partial<DimensionOverrides> = {};
+  private filterTier: 0 | 1 | 2 = 2;
+  private filterPressureAt: number | null = null;
+  private filterRecoveryAt: number | null = null;
+
+  setDimensionOverrides(next: Partial<DimensionOverrides>) {
+    this.dimensions = { ...this.dimensions, ...next };
+    this.publish();
+  }
+
+  refreshNetworkPolicy() {
+    this.publish();
+  }
 
   private reducedMotion = false;
   private isHidden = false;
@@ -456,14 +478,29 @@ export class QualityManager {
     const tier = this.getEffectiveTier();
     const base = DEFAULT_CONFIG_BY_TIER[tier];
     const config = mergeConfig(base, this.paramOverrides);
-    // Motion preference is not a request for blurry photographs.
-    if (this.reducedMotion && !this.isHidden) {
-      config.images = {
-        ...DEFAULT_CONFIG_BY_TIER[this.manualOverride ?? this.autoTier].images,
-        ...this.paramOverrides?.images,
-        prefetchNeighborCount: 0,
-        maxConcurrentImagePrefetch: 0
-      };
+    // Independent budgets: frame pacing never lowers a photograph's resolution.
+    const connection =
+      typeof navigator === "undefined"
+        ? undefined
+        : (navigator as Navigator & { connection?: { saveData?: boolean; effectiveType?: string } })
+            .connection;
+    const constrained =
+      connection?.saveData || ["slow-2g", "2g", "3g"].includes(connection?.effectiveType ?? "");
+    const networkBudget =
+      this.dimensions.prefetch ??
+      this.paramOverrides?.images?.maxConcurrentImagePrefetch ??
+      (constrained ? 0 : 2);
+    config.images = {
+      ...DEFAULT_CONFIG_BY_TIER[3].images,
+      ...this.paramOverrides?.images,
+      maxThumbSuffix: this.dimensions.images ?? this.paramOverrides?.images?.maxThumbSuffix ?? "b",
+      prefetchNeighborCount:
+        networkBudget > 0 ? (this.paramOverrides?.images?.prefetchNeighborCount ?? 1) : 0,
+      maxConcurrentImagePrefetch: this.isHidden || this.reducedMotion ? 0 : networkBudget
+    };
+    config.filterTier = this.isHidden ? 0 : (this.dimensions.filters ?? this.filterTier);
+    config.enableFilters = config.filterTier > 0;
+    if (this.reducedMotion || this.isHidden) {
       config.enableDecorativeAnimations = false;
       config.fpsCap = 0;
     }
@@ -483,6 +520,7 @@ export class QualityManager {
   private getEffectiveTier(): QualityTier {
     if (this.reducedMotion) return 0;
     if (this.isHidden) return 0;
+    if (this.dimensions.motion != null) return this.dimensions.motion;
     if (this.manualOverride !== null) return this.manualOverride;
     return this.autoTier;
   }
@@ -625,6 +663,28 @@ export class QualityManager {
     const p95Index = Math.min(count - 1, Math.floor((count - 1) * 0.95));
     const p95 = deltas[p95Index];
 
+    // Filters have their own pressure/recovery thresholds, separate from motion tiers.
+    if (count >= 20 && !this.isHidden) {
+      if (avg > 24 || p95 > 50) {
+        this.filterRecoveryAt = null;
+        this.filterPressureAt ??= now;
+        if (now - this.filterPressureAt >= 1500 && this.filterTier > 0) {
+          this.filterTier = (this.filterTier - 1) as 0 | 1;
+          this.filterPressureAt = now;
+          this.publish();
+        }
+      } else {
+        this.filterPressureAt = null;
+        if (avg < 18 && p95 < 25) {
+          this.filterRecoveryAt ??= now;
+          if (now - this.filterRecoveryAt >= 12000 && this.filterTier < 2) {
+            this.filterTier = (this.filterTier + 1) as 1 | 2;
+            this.filterRecoveryAt = now;
+            this.publish();
+          }
+        } else this.filterRecoveryAt = null;
+      }
+    }
     this.metrics.avgFrameMs = avg;
     this.metrics.p95FrameMs = p95;
     this.metrics.badFrameRatio = count > 0 ? bad / count : 0;

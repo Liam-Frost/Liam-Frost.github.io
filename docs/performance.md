@@ -143,3 +143,13 @@ This **does not** trigger global quality degradation.
    - confirm tier is forced to 0 and decorative animations stop
 6. Battery vs plugged in:
    - observe tier behavior and filter toggles on laptops
+
+## Independent budgets (2026-11-07)
+
+Motion keeps its 0–3 frame-pacing ladder. Filter pressure uses a separate 0–2 ladder: sustained average frames above 24ms or p95 above 50ms lower filters after 1.5 seconds; average below 18ms and p95 below 25ms for 12 seconds recover one filter level. Filter 1 removes header/background blur; filter 0 removes supported filters with readable caption backgrounds. The motion tier no longer switches header blur.
+
+Image resolution defaults to the grid's existing b-size ceiling, independent of frame pacing and motion preference. Responsive srcset still selects for rendered width and DPR. Explicit image overrides retain n/z/c/b for testing. Speculative prefetch uses a separate 0–2 budget; Save-Data and slow-2g/2g/3g disable it automatically. Hidden/reduced-motion states pause speculative work; explicitly requested images remain functional. Debug UI exposes independent motion, filter, image and prefetch controls. These policies do not infer CPU/GPU models.
+
+The HTML preloads the portrait SVG and starts only the current interface language's font family (400/600/700/800); language changes update that stylesheet. The ordinary greeting's wrapping remains unchanged. Only the Japanese greeting measures the complete two-line phrase with cursor against available width and fits when necessary; its final character and cursor cannot wrap separately.
+
+The embed player reserves a same-height lightweight Spotify entry. Automatic iframe loading waits for document load, 2.5 seconds and an idle opportunity (bounded by a further 3 seconds); Save-Data/2g wait for interaction. Clicking or a player command loads immediately. Collapsing after loading keeps the iframe mounted. This avoids starting third-party work during initial navigation but does not eliminate it for visitors who use the player. Desktop navigation hit-area changes are deferred pending the user's design decision.

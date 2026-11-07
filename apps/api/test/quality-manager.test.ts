@@ -21,6 +21,35 @@ function frames() {
 }
 
 describe("adaptive quality recovery", () => {
+  it("keeps image and filter budgets independent of a forced motion tier", () => {
+    const { manager } = frames();
+    manager.setDimensionOverrides({ motion: 0, filters: 2, images: "b", prefetch: 1 });
+    expect(manager.getConfig().enableDecorativeAnimations).toBe(false);
+    expect(manager.getConfig().enableFilters).toBe(true);
+    expect(manager.getConfig().images.maxThumbSuffix).toBe("b");
+    expect(manager.getConfig().images.maxConcurrentImagePrefetch).toBe(1);
+    manager.setDimensionOverrides({ motion: 3, filters: 0, images: "z", prefetch: 0 });
+    expect(manager.getConfig().enableDecorativeAnimations).toBe(true);
+    expect(manager.getConfig().enableFilters).toBe(false);
+    expect(manager.getConfig().images.maxThumbSuffix).toBe("z");
+    expect(manager.getConfig().images.maxConcurrentImagePrefetch).toBe(0);
+  });
+  it("uses slow-network policy only for speculative requests", () => {
+    vi.stubGlobal("navigator", { connection: { saveData: true, effectiveType: "2g" } });
+    const { manager } = frames();
+    expect(manager.getConfig().images.maxConcurrentImagePrefetch).toBe(0);
+    expect(manager.getConfig().images.maxThumbSuffix).toBe("b");
+    expect(manager.getConfig().enableDecorativeAnimations).toBe(true);
+  });
+  it("degrades filters independently and recovers with hysteresis", () => {
+    const { manager, run } = frames();
+    manager.setDimensionOverrides({ motion: 3 });
+    run(70, 7000);
+    expect(manager.getConfig().filterTier).toBe(0);
+    expect(manager.getConfig().images.maxThumbSuffix).toBe("b");
+    run(1000 / 60, 30000);
+    expect(manager.getConfig().filterTier).toBe(2);
+  });
   it("recovers to the highest tier on a stable 60Hz display", () => {
     const { manager, run } = frames();
     run(1000 / 60, 15000);

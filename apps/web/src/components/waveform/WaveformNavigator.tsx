@@ -38,7 +38,7 @@ export default function WaveformNavigator() {
   const location = useLocation();
   const navigate = useNavigate();
   const { lang } = useI18n();
-  const { tier } = useQuality();
+  const { tier, config } = useQuality();
   const copy = labels[lang];
   const [available, setAvailable] = useState(false);
   const [preview, setPreview] = useState<number | null>(null);
@@ -53,7 +53,8 @@ export default function WaveformNavigator() {
     maxScroll,
     enabled && sections.length > 1,
     true,
-    tier < 2 ? 15 : 30
+    tier < 2 ? 15 : 30,
+    config.enableDecorativeAnimations
   );
 
   useEffect(() => {

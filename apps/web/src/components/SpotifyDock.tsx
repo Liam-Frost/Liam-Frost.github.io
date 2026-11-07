@@ -50,6 +50,30 @@ function EmbedDock({ player, src }: { player: PublicSpotifyPlayer; src: string }
   // A song chosen on the page replaces the configured link. Spotify's iframe cannot be started from the
   // page, so the visitor presses play in it.
   const [shown, setShown] = useState(src);
+  const [embedReady, setEmbedReady] = useState(false);
+  useEffect(() => {
+    if (embedReady || !isExpanded) return;
+    const connection = (
+      navigator as Navigator & { connection?: { saveData?: boolean; effectiveType?: string } }
+    ).connection;
+    if (connection?.saveData || ["slow-2g", "2g"].includes(connection?.effectiveType ?? "")) return;
+    let idle = 0;
+    let timer = 0;
+    const schedule = () => {
+      timer = window.setTimeout(() => {
+        if (window.requestIdleCallback)
+          idle = window.requestIdleCallback(() => setEmbedReady(true), { timeout: 3000 });
+        else setEmbedReady(true);
+      }, 2500);
+    };
+    if (document.readyState === "complete") schedule();
+    else window.addEventListener("load", schedule, { once: true });
+    return () => {
+      window.removeEventListener("load", schedule);
+      clearTimeout(timer);
+      if (idle) window.cancelIdleCallback(idle);
+    };
+  }, [embedReady, isExpanded]);
   const frame = useRef<HTMLIFrameElement>(null);
   useEffect(() => observeSpotifyEmbed(() => frame.current), []);
 
@@ -77,6 +101,7 @@ function EmbedDock({ player, src }: { player: PublicSpotifyPlayer; src: string }
             target: "spotify",
             detail: command.type === "play" ? "button" : "all"
           });
+        setEmbedReady(true);
         setShown(chosen);
         setIsExpanded(true);
         setHasAutoCollapsed(true);
@@ -107,15 +132,27 @@ function EmbedDock({ player, src }: { player: PublicSpotifyPlayer; src: string }
       onMouseLeave={() => setIsHovering(false)}
     >
       <div className="spotifyDockPanel">
-        <iframe
-          ref={frame}
-          title="Spotify"
-          src={shown}
-          width="100%"
-          height="152"
-          allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-          loading="lazy"
-        />
+        {embedReady ? (
+          <iframe
+            ref={frame}
+            title="Spotify"
+            src={shown}
+            width="100%"
+            height="152"
+            allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+            loading="lazy"
+          />
+        ) : (
+          <button
+            type="button"
+            className="spotifyLoadEmbed"
+            onClick={() => setEmbedReady(true)}
+            aria-label="Load Spotify player"
+          >
+            <SpotifyLogo />
+            <span>Spotify</span>
+          </button>
+        )}
       </div>
 
       <button
@@ -131,7 +168,10 @@ function EmbedDock({ player, src }: { player: PublicSpotifyPlayer; src: string }
         className="spotifyDockButton"
         type="button"
         aria-label="Show Spotify player"
-        onClick={() => setIsExpanded(true)}
+        onClick={() => {
+          setEmbedReady(true);
+          setIsExpanded(true);
+        }}
       >
         <SpotifyLogo />
       </button>

@@ -302,19 +302,19 @@ html[data-perf-filters="off"] .navLinks {
 }
 
 /* Keep header looking intentional: only fully remove blur at tier 0. */
-html[data-perf-tier="0"] .siteHeader {
+html[data-perf-filter-tier="0"] .siteHeader {
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
   background: rgba(33, 52, 72, 0.92);
 }
 
 @media (prefers-color-scheme: light) {
-  html[data-theme="system"][data-perf-tier="0"] .siteHeader {
+  html[data-theme="system"][data-perf-filter-tier="0"] .siteHeader {
     background: rgba(234, 224, 207, 0.95);
   }
 }
 
-html[data-theme="light"][data-perf-tier="0"] .siteHeader {
+html[data-theme="light"][data-perf-filter-tier="0"] .siteHeader {
   background: rgba(234, 224, 207, 0.95);
 }
 
@@ -4511,4 +4511,40 @@ html[data-perf-tier="1"] .heroScroll {
 /* Without blur, photo captions need a predictable background in both themes. */
 html[data-theme][data-perf-filters="off"] .photoOverlay {
   background: var(--popover);
+}
+
+.typingTail {
+  white-space: nowrap;
+}
+.typingJapanese {
+  display: inline-block;
+  max-width: 100%;
+}
+.typingJapaneseLine {
+  white-space: nowrap;
+}
+
+html[data-perf-filter-tier="1"] .siteHeader,
+html[data-perf-filter-tier="1"] .bgFx::before {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  filter: none;
+}
+
+.spotifyLoadEmbed {
+  width: 100%;
+  height: 152px;
+  border: 0;
+  border-radius: inherit;
+  background: var(--popover);
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  cursor: pointer;
+}
+.spotifyLoadEmbed svg {
+  width: 32px;
+  height: 32px;
 }

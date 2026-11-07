@@ -5,6 +5,7 @@ import {
   type FlickrThumbSuffix,
   type PlaceholderStrategy,
   type QualityParamOverrides,
+  type DimensionOverrides,
   type QualityTier
 } from "./qualityManager";
 import { useQuality } from "./useQuality";
@@ -100,6 +101,7 @@ function updateOverrides(
 export default function QualityDebugPanel() {
   const show = shouldShowDebugPanel();
   const { tier, config, reducedMotion, metrics, setManualOverride } = useQuality();
+  const [dimensions, setDimensions] = useState<Partial<DimensionOverrides>>({});
 
   const [collapsed, setCollapsed] = useState(false);
   const [overrides, setOverrides] = useState<QualityParamOverrides | null>(null);
@@ -185,7 +187,7 @@ export default function QualityDebugPanel() {
 
           <div style={rowStyle}>
             <label style={labelStyle}>
-              override tier
+              motion budget
               <select
                 value={String(metrics.manualOverride ?? "null")}
                 onChange={(e) => setManualOverride(toTierValue(e.target.value))}
@@ -211,6 +213,13 @@ export default function QualityDebugPanel() {
               type="button"
               onClick={() => {
                 setManualOverride(null);
+                setDimensions({});
+                qualityManager.setDimensionOverrides({
+                  motion: null,
+                  filters: null,
+                  images: null,
+                  prefetch: null
+                });
                 setOverrides(null);
               }}
               style={{
@@ -226,6 +235,29 @@ export default function QualityDebugPanel() {
               Reset
             </button>
           </div>
+
+          {(["filters", "images", "prefetch"] as const).map((dimension) => (
+            <label key={dimension} style={{ display: "block", marginTop: 8 }}>
+              {dimension} budget
+              <select
+                value={String(dimensions[dimension] ?? "auto")}
+                onChange={(event) => {
+                  const raw = event.target.value;
+                  const value = raw === "auto" ? null : dimension === "images" ? raw : Number(raw);
+                  const next = { [dimension]: value } as Partial<DimensionOverrides>;
+                  setDimensions((old) => ({ ...old, ...next }));
+                  qualityManager.setDimensionOverrides(next);
+                }}
+              >
+                <option value="auto">auto</option>
+                {(dimension === "images" ? ["n", "z", "c", "b"] : ["0", "1", "2"]).map((value) => (
+                  <option key={value} value={value}>
+                    {value}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ))}
 
           <div style={rowStyle}>
             <label style={{ ...labelStyle, display: "flex", alignItems: "center", gap: 8 }}>
@@ -245,9 +277,11 @@ export default function QualityDebugPanel() {
               <input
                 type="checkbox"
                 checked={config.enableFilters}
-                onChange={(e) =>
-                  setOverrides((prev) => updateOverrides(prev, { enableFilters: e.target.checked }))
-                }
+                onChange={(e) => {
+                  const filters = e.target.checked ? 2 : 0;
+                  setDimensions((old) => ({ ...old, filters }));
+                  qualityManager.setDimensionOverrides({ filters });
+                }}
               />
               filters
             </label>
