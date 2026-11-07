@@ -18,6 +18,8 @@
 
     <script>
       (() => {
+        // The router restores positions through Lenis; native restoration would race it.
+        if ("scrollRestoration" in history) history.scrollRestoration = "manual";
         try {
           const savedTheme = localStorage.getItem("theme");
           if (savedTheme) document.documentElement.setAttribute("data-theme", savedTheme);

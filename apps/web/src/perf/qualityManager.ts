@@ -112,7 +112,7 @@ const DEFAULT_THRESHOLDS: QualityThresholds = {
   degradeHoldMs: 1500,
   degradeBadRatio: 0.25,
 
-  upgradeAvgMultiplier: 0.85,
+  upgradeAvgMultiplier: 1.05,
   upgradeHoldMs: 12_000,
   upgradeBadRatio: 0.1,
 
@@ -257,7 +257,7 @@ function mergeConfig(base: QualityConfig, overrides: QualityParamOverrides | nul
   return merged;
 }
 
-class QualityManager {
+export class QualityManager {
   private thresholds: QualityThresholds = { ...DEFAULT_THRESHOLDS };
 
   private listeners = new Set<Listener>();
@@ -456,6 +456,17 @@ class QualityManager {
     const tier = this.getEffectiveTier();
     const base = DEFAULT_CONFIG_BY_TIER[tier];
     const config = mergeConfig(base, this.paramOverrides);
+    // Motion preference is not a request for blurry photographs.
+    if (this.reducedMotion && !this.isHidden) {
+      config.images = {
+        ...DEFAULT_CONFIG_BY_TIER[this.manualOverride ?? this.autoTier].images,
+        ...this.paramOverrides?.images,
+        prefetchNeighborCount: 0,
+        maxConcurrentImagePrefetch: 0
+      };
+      config.enableDecorativeAnimations = false;
+      config.fpsCap = 0;
+    }
 
     this.metrics.autoTier = this.autoTier;
     this.metrics.manualOverride = this.manualOverride;
@@ -481,6 +492,8 @@ class QualityManager {
     const now = typeof performance !== "undefined" ? performance.now() : Date.now();
     this.lastTierChangeAt = now;
     this.autoTier = next;
+    // Evaluate the new tier using new frames, not the workload that triggered the drop.
+    this.resetSamplingState();
   }
 
   private readReducedMotion() {
@@ -680,9 +693,15 @@ class QualityManager {
         const nextTargetMs = targetMsForTier(this.thresholds, nextTier);
 
         const longTaskOk = this.metrics.longTaskRate <= this.thresholds.maxLongTaskRateForUpgrade;
+        const nextBadThreshold = nextTargetMs * this.thresholds.badFrameMultiplier;
+        let nextBad = 0;
+        for (let i = 0; i < this.frameCount; i++) {
+          if (this.frameDeltas[i] > nextBadThreshold) nextBad++;
+        }
+        const nextBadRatio = this.frameCount ? nextBad / this.frameCount : 1;
         const shouldUpgrade =
           avg < nextTargetMs * this.thresholds.upgradeAvgMultiplier &&
-          badRatio < this.thresholds.upgradeBadRatio &&
+          nextBadRatio < this.thresholds.upgradeBadRatio &&
           longTaskOk;
 
         if (shouldUpgrade) {

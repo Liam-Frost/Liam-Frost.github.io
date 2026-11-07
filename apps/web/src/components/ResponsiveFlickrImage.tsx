@@ -155,7 +155,7 @@ export default function ResponsiveFlickrImage({
   fit = "contain",
   variants
 }: Props) {
-  const { config, tier } = useQuality();
+  const { config } = useQuality();
 
   const ow = safeNumber(originalWidth, 1);
   const oh = safeNumber(originalHeight, 1);
@@ -167,18 +167,11 @@ export default function ResponsiveFlickrImage({
   const sized = !isFlickr && variants && variants.length > 0 ? variants : null;
 
   // --- GRID ---
-  const maxThumbSuffix: ThumbSuffix = useMemo(() => {
-    // Tier-aware cap.
-    // Tier0 uses n; Tier1 uses z; Tier2 uses c; Tier3 uses b.
-    const tierCap: ThumbSuffix = tier >= 3 ? "b" : tier === 2 ? "c" : tier === 1 ? "z" : "n";
-
-    // Config can further reduce it.
-    const configCap = config.images.maxThumbSuffix;
-
-    const order: ThumbSuffix[] = ["n", "z", "c", "b"];
-    const cap = order[Math.min(order.indexOf(tierCap), order.indexOf(configCap))] ?? "n";
-    return capThumbSuffix(cap, originalLongest);
-  }, [tier, config.images.maxThumbSuffix, originalLongest]);
+  // Motion preference does not reduce image resolution; the manager owns this cap.
+  const maxThumbSuffix: ThumbSuffix = useMemo(
+    () => capThumbSuffix(config.images.maxThumbSuffix, originalLongest),
+    [config.images.maxThumbSuffix, originalLongest]
+  );
 
   const thumbCandidates = useMemo(() => {
     if (!isFlickr) return [];

@@ -1,3 +1,4 @@
+import { useQuality } from "../perf/useQuality";
 import { type RefObject, useEffect } from "react";
 
 /**
@@ -25,9 +26,11 @@ export function useStackScrub(
   active: boolean,
   key: unknown
 ) {
+  const { config } = useQuality();
+  const enabled = active && config.enableDecorativeAnimations;
   useEffect(() => {
     const list = listRef.current;
-    if (!active || !list) return;
+    if (!enabled || !list) return;
     const section = list.closest<HTMLElement>("section") ?? list;
     const items = [...list.querySelectorAll<HTMLElement>(ITEMS)];
     if (!items.length) return;
@@ -112,5 +115,5 @@ export function useStackScrub(
       cancelled = true;
       cleanup();
     };
-  }, [listRef, active, key]);
+  }, [listRef, enabled, key]);
 }

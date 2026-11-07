@@ -28,7 +28,7 @@ Quality tier is an integer: `0 | 1 | 2 | 3`.
 
 `fpsCap` is a **max work update frequency**, not an rAF skip.
 
-- rAF still runs so we can keep sampling.
+- rAF still runs so we can keep sampling, except when the document is hidden or reduced motion is requested.
 - “Heavy update” work only happens when `now - lastWorkTs >= 1000 / fpsCap`.
 - **`fpsCap = 0` means: never do heavy decorative updates** (avoid divide-by-zero by treating interval as `Infinity`).
 
@@ -45,7 +45,7 @@ Computed metrics:
 Hysteresis:
 
 - **Degrade quickly**: if `avgFrameMs > targetMs * 1.15` for `>=1.5s`, or `badFrameRatio > 0.25`
-- **Upgrade slowly**: if `avgFrameMs < nextTargetMs * 0.85` for `>=6s` AND long-task rate is low
+- **Upgrade slowly**: if `avgFrameMs < nextTargetMs * 1.05` for `>=12s` AND long-task rate is low, fewer than 10% of frames miss the next tier budget, and at least 12 seconds have elapsed since the last tier change
 
 Visibility:
 
@@ -54,7 +54,10 @@ Visibility:
 
 Reduced motion:
 
-- `prefers-reduced-motion: reduce` forces tier 0 and disables decorative animation.
+- `prefers-reduced-motion: reduce` forces animation tier 0, disables decorative animation and frame sampling, and pauses speculative image fetching. Photograph resolution retains the underlying quality tier; a motion preference is not a low-resolution preference.
+- The typing greeting renders a complete, static phrase; its accessible text is always complete and stable. The technology stack tears down scroll timelines at tiers 0–1 as well as under reduced motion.
+- Tier changes discard old frame samples, so a single old slow window does not cascade through multiple tiers. The 1.05 upgrade tolerance lets a normal 60Hz screen recover to tier 3; 0.85 required more than 70Hz.
+- Images skipped while prefetching is paused are not cached as successfully fetched; upgrading can request them again.
 
 ## Degrade ladder (mapping to UI/animations)
 

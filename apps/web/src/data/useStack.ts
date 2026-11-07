@@ -1,3 +1,4 @@
+import { useLayoutPending } from "../app/layoutPending";
 import type { PublicStackCategory, PublicStackResponse } from "@liam-frost/shared";
 import { useCallback, useEffect, useState } from "react";
 
@@ -13,6 +14,8 @@ export function useStack() {
     apiFetchEnabled ? "loading" : "error"
   );
   const [attempt, setAttempt] = useState(0);
+
+  useLayoutPending(status === "loading");
 
   useEffect(() => {
     if (!apiFetchEnabled) return;

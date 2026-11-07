@@ -53,9 +53,8 @@ export function prefetchImage(url: string): Promise<void> {
   if (existing) return existing;
 
   if (maxConcurrent <= 0) {
-    const noop = Promise.resolve();
-    cache.set(url, noop);
-    return noop;
+    // Nothing was fetched: allow a real request if quality improves later.
+    return Promise.resolve();
   }
 
   const promise = new Promise<void>((resolve, reject) => {

@@ -1,3 +1,4 @@
+import { useLayoutPending } from "../app/layoutPending";
 import { startTransition, useEffect, useState } from "react";
 import { photos as seedPhotos, type Photo } from "@liam-frost/content";
 
@@ -8,6 +9,8 @@ type PhotoDataStatus = "seed" | "loading" | "ready" | "offline";
 export function usePhotos() {
   const [photos, setPhotos] = useState<Photo[]>(seedPhotos);
   const [status, setStatus] = useState<PhotoDataStatus>("seed");
+
+  useLayoutPending(apiFetchEnabled && (status === "seed" || status === "loading"));
 
   useEffect(() => {
     if (!apiFetchEnabled) {
