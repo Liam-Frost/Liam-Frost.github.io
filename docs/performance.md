@@ -153,3 +153,9 @@ Image resolution defaults to the grid's existing b-size ceiling, independent of 
 The HTML preloads the portrait SVG and starts only the current interface language's font family (400/600/700/800); language changes update that stylesheet. The ordinary greeting's wrapping remains unchanged. Only the Japanese greeting measures the complete two-line phrase with cursor against available width and fits when necessary; its final character and cursor cannot wrap separately.
 
 The embed player reserves a same-height lightweight Spotify entry. Automatic iframe loading waits for document load, 2.5 seconds and an idle opportunity (bounded by a further 3 seconds); Save-Data/2g wait for interaction. Clicking or a player command loads immediately. Collapsing after loading keeps the iframe mounted. This avoids starting third-party work during initial navigation but does not eliminate it for visitors who use the player. Desktop navigation hit-area changes are deferred pending the user's design decision.
+
+### Player readiness and restoration feedback
+
+The embed dock starts collapsed and may load in the background after the deferred-load gate. It expands automatically only on the iframe document load event, unless the visitor has dismissed it. Visitors can open early to see the existing placeholder; the iframe replaces that placeholder after loading. Automatic collapse begins after document load. The iframe stays mounted on collapse; pending/closed content is hidden from interaction. As a cross-origin embed, its document load event is the available readiness boundary, not a guarantee about Spotify internal playback state.
+
+The section-restoration indicator rotates continuously while restoration is active; reduced-motion preference slows the small indicator rather than leaving it frozen. The existing restoration timeout/cancellation behavior is unchanged.

@@ -4553,3 +4553,28 @@ html[data-perf-filter-tier="1"] .bgFx::before {
 .photoOverlay .tag {
   background: transparent;
 }
+
+@keyframes restoreSpinner {
+  to {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+}
+html[data-scroll-restoring="true"] body::after {
+  transform: translate(-50%, -50%);
+  animation: restoreSpinner 800ms linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  html[data-scroll-restoring="true"] body::after {
+    animation-duration: 1800ms;
+  }
+}
+.spotifyEmbedPending iframe {
+  visibility: hidden;
+}
+.spotifyEmbedPending .spotifyLoadEmbed {
+  position: absolute;
+  inset: 0;
+}
+.spotifyDock.isCollapsed .spotifyDockPanel {
+  visibility: hidden;
+}
