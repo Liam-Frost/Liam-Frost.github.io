@@ -43,7 +43,7 @@ The public website and preview are available at the links above and **[preview.t
 
 This is a personal project under active development.
 
-See [admin features](docs/admin.md), [collection UX and artist-source plans](docs/collection-admin-ux.md), [authentication protections and limits](docs/admin-security-review.md), and [performance behavior](docs/performance.md). The current source includes MusicBrainz artist imports, editable person/group identities, confirmed-ID music matching, and explicit name-match suggestions. The unified website-settings design is documented in [the proposal](docs/archive/plans/website-settings-proposal.zh-CN.md); account and route changes remain proposals. Features reach production through the normal release process.
+See [admin features](docs/admin.md), [collection UX and artist-source plans](docs/collection-admin-ux.md), [authentication protections and limits](docs/admin-security-review.md), and [performance behavior](docs/performance.md). The current source includes MusicBrainz artist imports, editable person/group identities, confirmed-ID music matching, and explicit name-match suggestions. The unified website-settings design is documented in [the proposal](docs/website-settings-ui.zh-CN.md); account and route changes remain proposals. Features reach production through the normal release process.
 
 ## Technology
 
