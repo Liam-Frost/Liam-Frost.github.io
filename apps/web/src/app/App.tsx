@@ -1,6 +1,8 @@
 import SiteMetadata from "../components/SiteMetadata";
 import { useSiteSettings, refreshSiteSettings } from "../data/useSiteSettings";
 import LoadingSkeleton from "../components/LoadingSkeleton";
+import PageLoading from "../components/PageLoading";
+import { usePresentation } from "../data/usePresentation";
 import { lazy, Suspense, useEffect } from "react";
 import { Route, Routes } from "react-router";
 
@@ -28,11 +30,12 @@ const CollectionPage = lazy(() => import("../pages/Collection"));
 export default function App() {
   const { t } = useI18n();
   const settings = useSiteSettings();
+  const presentation = usePresentation();
   const { theme, cycleTheme } = useTheme();
   // Smooth scrolling for the whole site (lib/smoothScroll.ts).
   useEffect(() => startSmoothScroll(), []);
 
-  if (!settings) return <LoadingSkeleton label={t("nav.home")} />;
+  if (!settings || !presentation) return <PageLoading />;
   if (settings.unavailable)
     return (
       <section className="section container" role="alert">

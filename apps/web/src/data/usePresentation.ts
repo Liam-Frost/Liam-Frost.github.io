@@ -7,6 +7,7 @@ const fallback: PublicPresentation = { ...DEFAULT_PRESENTATION, images: {}, logo
 type LoadedPresentation = PublicPresentation & { unavailable?: boolean };
 const unavailable: LoadedPresentation = { ...fallback, unavailable: true };
 let pending: Promise<LoadedPresentation> | null = null;
+let resolved: LoadedPresentation | null = null;
 let generation = 0;
 function loadPresentation(): Promise<LoadedPresentation> {
   const controller = new AbortController();
@@ -25,18 +26,24 @@ function loadPresentation(): Promise<LoadedPresentation> {
 export function refreshPresentation() {
   generation++;
   pending = null;
+  resolved = null;
   window.dispatchEvent(new Event("lf:presentation"));
 }
 export function usePresentation() {
-  const [value, setValue] = useState<LoadedPresentation | null>(apiFetchEnabled ? null : fallback);
+  const [value, setValue] = useState<LoadedPresentation | null>(
+    apiFetchEnabled ? resolved : fallback
+  );
   useLayoutPending(value === null);
   useEffect(() => {
     if (!apiFetchEnabled) return;
     let active = true;
     const load = () => {
       const expected = generation;
-      setValue(null);
-      pending ??= loadPresentation();
+      if (!resolved) setValue(null);
+      pending ??= loadPresentation().then((value) => {
+        if (expected === generation) resolved = value;
+        return value;
+      });
       void pending.then((v) => {
         if (active && expected === generation) setValue(v);
       });

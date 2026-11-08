@@ -2,7 +2,9 @@
 
 ## Website settings
 
-Website Settings groups public identity, gallery avatar, public logo/home visibility, footer, default theme/language, localized privacy text and collection-tag translations separately from admin branding, login backgrounds, site favicon, integrations, statistics and audit history. Existing appearance and integration URLs redirect with their query/hash intact, including account callbacks.
+Website Settings uses task-based groups: Site & Brand, Pages & Experience, Privacy & Integrations, and Administration. Public/admin logos and the site favicon share a branding page; home modules and login appearance have separate editors. Default display also reports the currently supported admin language. Analytics settings and audit history remain in their independent global sections. Legacy appearance/integration and grouped setting URLs redirect with query/hash intact.
+
+Shared compact/standard/wide layouts, searchable public-gallery selectors, contextual save controls and compact list editors follow the existing technology-stack visual style. Session-memory drafts survive route changes and back/forward; logout or session expiry clears them. Reload/close still warns. See the [UI architecture and phase status](website-settings-ui.zh-CN.md).
 
 Each new setting group has its own save/revision. Failed saves preserve the draft; conflicting writes show the latest saved value alongside the draft before an explicit decision and another save. Privacy retains ten previous saved versions. Referenced dictionary aliases cannot be removed, including references from private collection items. Existing visitor theme/language choices take precedence over site defaults.
 

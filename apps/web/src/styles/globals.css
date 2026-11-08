@@ -4476,7 +4476,8 @@ html[data-theme="light"] .stackDetail {
 html[data-scroll-restoring="true"] #root {
   visibility: hidden;
 }
-html[data-scroll-restoring="true"] body::after {
+html[data-scroll-restoring="true"] body::after,
+.pageLoadingSpinner {
   content: "";
   position: fixed;
   top: 50%;
@@ -4486,6 +4487,12 @@ html[data-scroll-restoring="true"] body::after {
   border: 2px solid var(--muted);
   border-top-color: transparent;
   border-radius: 50%;
+}
+.pageLoading {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: var(--bg);
 }
 .langPanel[hidden] {
   display: none;
@@ -4559,12 +4566,14 @@ html[data-perf-filter-tier="1"] .bgFx::before {
     transform: translate(-50%, -50%) rotate(360deg);
   }
 }
-html[data-scroll-restoring="true"] body::after {
+html[data-scroll-restoring="true"] body::after,
+.pageLoadingSpinner {
   transform: translate(-50%, -50%);
   animation: restoreSpinner 800ms linear infinite;
 }
 @media (prefers-reduced-motion: reduce) {
-  html[data-scroll-restoring="true"] body::after {
+  html[data-scroll-restoring="true"] body::after,
+  .pageLoadingSpinner {
     animation-duration: 1800ms;
   }
 }

@@ -2,6 +2,7 @@ import { useSiteSettings } from "../data/useSiteSettings";
 import { refreshPresentation, usePresentation } from "../data/usePresentation";
 import { useStack } from "../data/useStack";
 import LoadingSkeleton from "../components/LoadingSkeleton";
+import PageLoading from "../components/PageLoading";
 import { apiFetchEnabled } from "../lib/api";
 import { useContactState } from "../data/useContact";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -105,7 +106,7 @@ export default function HomePage() {
     }
   };
 
-  if (!presentation) return <LoadingSkeleton label={t("nav.home")} />;
+  if (!presentation) return <PageLoading />;
   if (presentation.unavailable)
     return (
       <section className="section">

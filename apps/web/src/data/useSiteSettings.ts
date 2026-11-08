@@ -6,20 +6,22 @@ type Result = PublicSiteSettings & { unavailable?: boolean };
 const { favicon: _favicon, ...groups } = DEFAULT_SITE_SETTINGS;
 const defaults: Result = { ...groups, avatarUrl: null, faviconUrl: null };
 let pending: Promise<Result> | null = null;
+let resolved: Result | null = null;
 let generation = 0;
 export function refreshSiteSettings() {
   generation++;
   pending = null;
+  resolved = null;
   window.dispatchEvent(new Event("lf:site-settings"));
 }
 export function useSiteSettings() {
-  const [value, setValue] = useState<Result | null>(apiFetchEnabled ? null : defaults);
+  const [value, setValue] = useState<Result | null>(apiFetchEnabled ? resolved : defaults);
   useEffect(() => {
     if (!apiFetchEnabled) return;
     let active = true;
     const load = () => {
       const expected = generation;
-      setValue(null);
+      if (!resolved) setValue(null);
       pending ??= (async () => {
         const controller = new AbortController(),
           timer = window.setTimeout(() => controller.abort(), 8000);
@@ -41,7 +43,10 @@ export function useSiteSettings() {
         } finally {
           window.clearTimeout(timer);
         }
-      })();
+      })().then((value) => {
+        if (expected === generation) resolved = value;
+        return value;
+      });
       void pending.then((next) => {
         if (active && expected === generation) setValue(next);
       });

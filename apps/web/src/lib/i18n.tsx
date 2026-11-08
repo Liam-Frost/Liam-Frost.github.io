@@ -17,6 +17,7 @@ export function pickLocalized(value: Partial<LocalizedString> | undefined, lang:
 const zh = {
   // Common
   "common.skipToContent": "跳到主要内容",
+  "common.loading": "加载中…",
   "common.theme": "主题",
   "common.language": "语言",
   "common.reset": "重置",
@@ -309,6 +310,7 @@ export type Key = keyof typeof zh;
 
 const en: Record<Key, string> = {
   "common.skipToContent": "Skip to content",
+  "common.loading": "Loading…",
   "common.theme": "Theme",
   "common.language": "Language",
   "common.reset": "Reset",
@@ -591,6 +593,7 @@ const en: Record<Key, string> = {
 
 const fr: Record<Key, string> = {
   "common.skipToContent": "Aller au contenu",
+  "common.loading": "Chargement…",
   "common.theme": "Thème",
   "common.language": "Langue",
   "common.reset": "Réinitialiser",
@@ -874,6 +877,7 @@ const fr: Record<Key, string> = {
 
 const ja: Record<Key, string> = {
   "common.skipToContent": "本文へスキップ",
+  "common.loading": "読み込み中…",
   "common.theme": "テーマ",
   "common.language": "言語",
   "common.reset": "リセット",
@@ -1155,6 +1159,7 @@ const ja: Record<Key, string> = {
 const zhHant: Record<Key, string> = {
   // Common
   "common.skipToContent": "跳到主要內容",
+  "common.loading": "載入中…",
   "common.theme": "主題",
   "common.language": "語言",
   "common.reset": "重置",

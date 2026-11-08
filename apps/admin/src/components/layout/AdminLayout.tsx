@@ -1,3 +1,5 @@
+import { useUnsavedChanges } from "../../hooks/useUnsavedChanges";
+import { useSettingsDraftCount } from "../settings/drafts";
 import type { AdminUser } from "@liam-frost/shared";
 import {
   ChartColumn,
@@ -13,7 +15,7 @@ import {
   Quote
 } from "lucide-react";
 import type { ReactNode } from "react";
-import { NavLink, Outlet } from "react-router";
+import { NavLink, Outlet, useLocation } from "react-router";
 
 import { useLogout } from "../../hooks/useSession";
 import { useToast } from "../ui/Toast";
@@ -35,6 +37,8 @@ const NAV = [
 ];
 
 export function AdminLayout({ user }: { user: AdminUser }) {
+  const isSettings = useLocation().pathname.startsWith("/settings");
+  useUnsavedChanges(useSettingsDraftCount() > 0);
   const logout = useLogout();
   const toast = useToast();
 
@@ -44,7 +48,7 @@ export function AdminLayout({ user }: { user: AdminUser }) {
     });
 
   return (
-    <div className="min-h-dvh md:grid md:grid-cols-[220px_1fr]">
+    <div className="min-h-dvh md:grid md:grid-cols-[220px_minmax(0,1fr)]">
       <aside className="flex items-center gap-3 border-b border-line bg-brand-dark px-4 py-3 text-white md:sticky md:top-0 md:h-dvh md:flex-col md:items-stretch md:gap-6 md:border-r md:border-b-0 md:px-4 md:py-6">
         <div className="flex items-center gap-2.5 md:px-2">
           <SiteMark admin />
@@ -86,7 +90,9 @@ export function AdminLayout({ user }: { user: AdminUser }) {
         </div>
       </aside>
 
-      <main className="mx-auto w-full max-w-[1080px] px-4 pt-8 pb-12 sm:px-6">
+      <main
+        className={`mx-auto min-w-0 w-full px-4 pt-8 pb-12 sm:px-6 ${isSettings ? "max-w-[1440px]" : "max-w-[1080px]"}`}
+      >
         <Outlet />
       </main>
     </div>

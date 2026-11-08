@@ -1,6 +1,7 @@
 import { hashKey, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { clearIntegrationDrafts } from "../components/integrations/drafts";
+import { clearSettingsDrafts } from "../components/settings/drafts";
 import { api } from "../lib/api";
 
 export const sessionKey = ["admin", "session"] as const;
@@ -14,7 +15,11 @@ export function useLogin() {
   return useMutation({
     mutationFn: ({ username, password }: { username: string; password: string }) =>
       api.login(username, password),
-    onSuccess: (session) => qc.setQueryData(sessionKey, session)
+    onSuccess: (session) => {
+      clearIntegrationDrafts();
+      clearSettingsDrafts();
+      qc.setQueryData(sessionKey, session);
+    }
   });
 }
 
@@ -28,6 +33,7 @@ export function useLogout() {
       // notice the logout.
       qc.removeQueries({ predicate: (query) => query.queryHash !== hashKey(sessionKey) });
       clearIntegrationDrafts();
+      clearSettingsDrafts();
       qc.setQueryData(sessionKey, { authenticated: false, configured: true, user: null });
     }
   });

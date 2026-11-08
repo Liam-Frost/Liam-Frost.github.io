@@ -1,45 +1,87 @@
-import { NavLink, Outlet, useLocation, Navigate } from "react-router";
-const sections = [
+import { useEffect, useRef } from "react";
+import {
+  NavLink,
+  Outlet,
+  useLocation,
+  Navigate,
+  useNavigate,
+  useNavigationType
+} from "react-router";
+import { settingsCopy as copy } from "./copy";
+import { useSettingsDraftCount } from "./drafts";
+
+export const SETTINGS_NAV: {
+  title: string;
+  items: [string, string, "compact" | "standard" | "wide"][];
+}[] = [
   {
-    title: "前台设置",
+    title: copy.groups.brand,
     items: [
-      ["frontend/identity", "基本资料"],
-      ["frontend/appearance", "Logo 与首页板块"],
-      ["frontend/footer", "页脚版权"],
-      ["frontend/preferences", "默认显示"],
-      ["frontend/privacy", "隐私说明"],
-      ["frontend/dictionary", "标签词典"]
+      ["site/identity", "基本资料", "standard"],
+      ["site/branding", "Logo 与网站图标", "standard"],
+      ["site/footer", "页脚与版权", "compact"]
     ]
   },
   {
-    title: "后台设置",
+    title: copy.groups.experience,
     items: [
-      ["backend/appearance", "Logo 与登录背景"],
-      ["backend/favicon", "网站图标"],
-      ["backend/integrations", "集成与 API"],
-      ["backend/security", "账号与安全"],
-      ["backend/language", "语言与格式"],
-      ["backend/statistics", "统计设置"],
-      ["backend/audit", "审计日志"]
+      ["experience/home", "首页模块", "wide"],
+      ["experience/preferences", "默认显示与语言", "compact"],
+      ["experience/dictionary", "标签词典", "wide"]
+    ]
+  },
+  {
+    title: copy.groups.privacy,
+    items: [
+      ["privacy/content", "隐私说明", "standard"],
+      ["privacy/integrations", "集成与 API", "standard"]
+    ]
+  },
+  {
+    title: copy.groups.admin,
+    items: [
+      ["admin/login", "登录外观", "wide"],
+      ["admin/security", "账号与安全", "compact"]
     ]
   }
 ];
 export function SettingsLayout() {
+  const location = useLocation(),
+    navigate = useNavigate(),
+    navigation = useNavigationType(),
+    draftCount = useSettingsDraftCount();
+  const pages = SETTINGS_NAV.flatMap((group) => group.items),
+    current = pages.find(([path]) => location.pathname === `/settings/${path}`) ?? pages[0]!;
+  const positions = useRef(new Map<string, number>()),
+    previous = useRef(location.key),
+    heading = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const old = previous.current;
+    previous.current = location.key;
+    if (old !== location.key) {
+      window.scrollTo({
+        top: navigation === "POP" ? (positions.current.get(location.key) ?? 0) : 0,
+        behavior: "instant"
+      });
+      if (navigation !== "POP") heading.current?.focus({ preventScroll: true });
+    }
+    const save = () => positions.current.set(location.key, window.scrollY);
+    window.addEventListener("scroll", save, { passive: true });
+    return () => window.removeEventListener("scroll", save);
+  }, [location.key, navigation]);
   return (
-    <div className="grid items-start gap-6 xl:grid-cols-[190px_minmax(0,1fr)]">
-      <nav
-        className="card grid gap-4 p-4 sm:grid-cols-2 xl:sticky xl:top-5 xl:grid-cols-1"
-        aria-label="网站设置分类"
-      >
-        {sections.map((section) => (
-          <div key={section.title}>
-            <h2 className="mb-2 text-xs font-semibold text-brand-dark">{section.title}</h2>
-            <ul className="flex flex-wrap gap-1 xl:block">
-              {section.items.map(([path, label]) => (
+    <div className="settings-layout">
+      <nav className="settings-navigation" aria-label={copy.navigation}>
+        <p className="mb-4 text-sm font-semibold text-brand-dark">网站设置</p>
+        {SETTINGS_NAV.map((group) => (
+          <div className="mb-5 last:mb-0" key={group.title}>
+            <h2 className="mb-1.5 px-2 text-[11px] font-medium text-muted">{group.title}</h2>
+            <ul className="space-y-0.5">
+              {group.items.map(([path, label]) => (
                 <li key={path}>
                   <NavLink
                     className={({ isActive }) =>
-                      `block rounded-lg px-3 py-2 text-[13px] ${isActive ? "bg-brand text-white" : "text-muted hover:bg-canvas"}`
+                      `block rounded-lg px-3 py-2 text-[13px] ${isActive ? "bg-brand text-white" : "text-muted hover:bg-white"}`
                     }
                     to={`/settings/${path}`}
                   >
@@ -50,9 +92,46 @@ export function SettingsLayout() {
             </ul>
           </div>
         ))}
+        {draftCount ? (
+          <p className="mt-4 border-t border-line pt-3 text-xs text-status-warn" role="status">
+            {draftCount} 组未保存草稿
+          </p>
+        ) : null}
       </nav>
       <div className="min-w-0">
-        <Outlet />
+        <div className="mb-5 xl:hidden">
+          <label className="mb-1.5 block text-xs text-muted" htmlFor="settings-page-selector">
+            {copy.choosePage}
+          </label>
+          <select
+            id="settings-page-selector"
+            className="field"
+            value={current[0]}
+            onChange={(event) => navigate(`/settings/${event.target.value}`)}
+          >
+            {SETTINGS_NAV.map((group) => (
+              <optgroup label={group.title} key={group.title}>
+                {group.items.map(([path, label]) => (
+                  <option key={path} value={path}>
+                    {label}
+                  </option>
+                ))}
+              </optgroup>
+            ))}
+          </select>
+          {draftCount ? (
+            <p className="mt-2 text-xs text-status-warn">
+              {draftCount} 组草稿保留在本次登录中；刷新前请保存。
+            </p>
+          ) : null}
+        </div>
+        <div
+          ref={heading}
+          tabIndex={-1}
+          className={`settings-content settings-content-${current[2]}`}
+        >
+          <Outlet />
+        </div>
       </div>
     </div>
   );

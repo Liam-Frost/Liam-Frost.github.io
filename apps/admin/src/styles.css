@@ -61,6 +61,43 @@
 }
 
 @layer components {
+  .settings-layout {
+    @apply grid items-start gap-6 xl:grid-cols-[176px_minmax(0,1fr)];
+  }
+  .settings-navigation {
+    @apply sticky top-6 hidden max-h-[calc(100dvh-48px)] overflow-y-auto pr-2 xl:block;
+    scrollbar-gutter: stable;
+  }
+  .settings-content {
+    @apply min-w-0 w-full;
+  }
+  .settings-content-compact {
+    max-width: 640px;
+  }
+  .settings-content-standard {
+    max-width: 880px;
+  }
+  .settings-content-wide {
+    max-width: 1100px;
+  }
+  .settings-body {
+    @apply min-w-0 space-y-5;
+    padding-bottom: calc(72px + env(safe-area-inset-bottom));
+  }
+  .settings-section {
+    @apply min-w-0 rounded-[var(--radius-card)] border border-line bg-surface p-4 sm:p-5;
+  }
+  .settings-actions {
+    @apply sticky z-10 mt-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line bg-surface p-3 shadow-card;
+    bottom: max(12px, env(safe-area-inset-bottom));
+  }
+  .settings-actions-inline {
+    position: static;
+    box-shadow: none;
+  }
+  .settings-list {
+    @apply divide-y divide-line-soft overflow-hidden rounded-xl border border-line bg-surface;
+  }
   .btn-primary {
     @apply inline-flex items-center justify-center gap-1.5 rounded-full bg-brand px-4 py-2.5 text-[13px] font-semibold text-white transition-colors duration-200 hover:bg-brand-secondary disabled:cursor-not-allowed disabled:opacity-50;
   }
@@ -79,6 +116,24 @@
   .chip {
     @apply rounded-md bg-brand-secondary/12 px-2 py-1 text-[11px] leading-none text-brand;
   }
+}
+
+@media (max-height: 500px) {
+  .settings-actions {
+    position: static;
+  }
+}
+
+/* Settings reserve the bottom edge for saving. Other admin pages retain their toast position. */
+body:has(.settings-layout) [data-admin-toasts] {
+  top: max(12px, env(safe-area-inset-top));
+  bottom: auto;
+}
+html:has(.settings-layout) {
+  scroll-padding-bottom: 112px;
+}
+.settings-body :is(input, select, textarea, button, summary) {
+  scroll-margin-block: 96px;
 }
 
 /*

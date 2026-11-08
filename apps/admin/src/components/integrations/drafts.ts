@@ -1,5 +1,5 @@
 import type { IntegrationProvider, IntegrationValues } from "@liam-frost/shared";
-import { useCallback, useState } from "react";
+import { useCallback, useSyncExternalStore } from "react";
 
 export type IntegrationDrafts = Partial<Record<IntegrationProvider, IntegrationValues>>;
 
@@ -10,18 +10,23 @@ export type IntegrationDrafts = Partial<Record<IntegrationProvider, IntegrationV
  */
 let stored: IntegrationDrafts = {};
 
+const listeners = new Set<() => void>();
+const emit = () => listeners.forEach((listener) => listener());
+const subscribe = (listener: () => void) => {
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
+};
 export function clearIntegrationDrafts() {
   stored = {};
+  emit();
 }
-
 export function useIntegrationDrafts() {
-  const [drafts, setDrafts] = useState<IntegrationDrafts>(() => stored);
+  const drafts = useSyncExternalStore(subscribe, () => stored);
   const setDraft = useCallback((provider: IntegrationProvider, values: IntegrationValues) => {
-    setDrafts((current) => {
-      const next = { ...current, [provider]: values };
-      stored = next;
-      return next;
-    });
+    stored = { ...stored, [provider]: values };
+    emit();
   }, []);
   return { drafts, setDraft };
 }
