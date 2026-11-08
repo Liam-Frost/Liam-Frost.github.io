@@ -14,6 +14,7 @@ import type { PlaylistRepository } from "../src/playlists/types";
 import type { PhotoRepository } from "../src/photos/types";
 import type { ProjectRepository } from "../src/projects/types";
 import { buildServer } from "../src/server";
+import type { AdminAccountRepository } from "../src/auth/account-repository";
 import type { SettingsRepository } from "../src/settings/types";
 import type { StackRepository } from "../src/stack/types";
 import type { SpotifyAccount } from "../src/spotify/account";
@@ -73,6 +74,7 @@ export type TestServerOptions = {
   mediaSources?: MediaSources | null;
   /** Defaults to none (in-memory defaults). */
   settings?: SettingsRepository | null;
+  adminAccount?: AdminAccountRepository | null;
   /** Defaults to one that fails, so tests never reach Spotify. */
   fetchPlaylist?: PlaylistFetcher;
   /** Defaults to one that fails, so tests never reach iTunes. */
@@ -123,6 +125,7 @@ export async function buildTestServer(
     mediaSources:
       options.mediaSources === null ? undefined : (options.mediaSources ?? offlineMediaSources),
     settings: options.settings ?? null,
+    adminAccount: options.adminAccount ?? null,
     fetchPlaylist:
       options.fetchPlaylist ?? (() => Promise.reject(new Error("no network in tests"))),
     musicSource: options.musicSource ?? {

@@ -1,4 +1,4 @@
-import { ADMIN_PATH_META } from "@liam-frost/shared";
+import { ADMIN_PATH_META, isAdminPagePath } from "@liam-frost/shared";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
@@ -59,11 +59,13 @@ export function registerAdminApp(app: FastifyInstance, auth: AdminAuthService, d
     return;
   }
 
-  const adminPath = auth.config.path;
-
-  const handler = async (request: FastifyRequest, reply: FastifyReply) => {
+  const serve = async (
+    request: FastifyRequest,
+    reply: FastifyReply,
+    adminPath: string,
+    rest: string
+  ) => {
     auth.assertIpAllowed(request);
-    const rest = (request.params as { "*"?: string })["*"] ?? "";
 
     const asset = assetPath(rest);
     if (asset) {
@@ -98,6 +100,23 @@ export function registerAdminApp(app: FastifyInstance, auth: AdminAuthService, d
     return reply.send(html);
   };
 
-  app.get(adminPath, handler);
-  app.get(`${adminPath}/*`, handler);
+  // A hook, not routes: the address can change while the server runs, and the old one must then stop
+  // answering. Requests that do not match carry on to the usual handling, 404 included.
+  app.addHook("onRequest", async (request, reply) => {
+    if (request.method !== "GET" && request.method !== "HEAD") return;
+    const pathname = request.url.split("?")[0]!;
+    const served = [auth.path, auth.pendingPath].find(
+      (path): path is string => path !== null && isAdminPagePath(pathname, path)
+    );
+    if (served) {
+      await serve(request, reply, served, pathname.slice(served.length).replace(/^\//, ""));
+      return reply;
+    }
+    // Only a signed-in admin learns where the admin went; anyone else gets the usual response.
+    const retiring = auth.retiringPath;
+    if (retiring && isAdminPagePath(pathname, retiring) && auth.identify(request)) {
+      await reply.redirect(auth.path + pathname.slice(retiring.length));
+      return reply;
+    }
+  });
 }

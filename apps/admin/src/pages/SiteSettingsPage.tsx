@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useIsMutating, useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
-import { ChevronDown, Plus, ShieldCheck } from "lucide-react";
+import { ChevronDown, Plus } from "lucide-react";
 import type {
   LocalizedText,
   SiteSettingsGroup,
@@ -708,56 +708,6 @@ export function SiteSettingsPage({
   ) : (
     <SettingsPage title={titles[group]} description={descriptions[group]}>
       {body}
-    </SettingsPage>
-  );
-}
-export function RuntimeSettingsPage() {
-  const q = useQuery({
-    queryKey: ["admin", "settings", "security-status"],
-    queryFn: () =>
-      request<{
-        username: string;
-        security: { csrf: boolean; signedSessions: boolean; loginRateLimit: boolean };
-      }>("/api/admin/site-settings/security/status")
-  });
-  return (
-    <SettingsPage title="账号与安全" description="查看当前账号及实际生效的登录保护。">
-      <SettingsSection title="当前状态">
-        {q.isPending ? (
-          <LoadingSkeleton label="读取安全状态…" variant="rows" count={1} />
-        ) : q.error ? (
-          <SettingsState error={q.error.message} onRetry={() => void q.refetch()} />
-        ) : q.data ? (
-          <>
-            <dl className="flex items-center justify-between gap-3 border-b border-line-soft pb-3 text-sm">
-              <dt className="text-muted">登录账号</dt>
-              <dd className="break-all font-medium text-brand-dark">{q.data.username}</dd>
-            </dl>
-            <ul className="space-y-3">
-              {[
-                ["登录尝试限制", q.data.security.loginRateLimit],
-                ["CSRF 校验", q.data.security.csrf],
-                ["签名会话", q.data.security.signedSessions]
-              ].map(([label, enabled]) => (
-                <li key={String(label)} className="flex items-center gap-2 text-sm">
-                  <ShieldCheck aria-hidden="true" className="size-4 text-brand" />
-                  <span className="flex-1">{String(label)}</span>
-                  <span className="text-xs text-muted">{enabled ? "已启用" : "未启用"}</span>
-                </li>
-              ))}
-            </ul>
-            <p className="text-xs leading-relaxed text-muted">
-              账号、密码和后台路径由受保护的运行配置管理。此页当前为只读状态。
-            </p>
-            <details className="text-xs text-muted">
-              <summary className="cursor-pointer">后续安全功能</summary>
-              <p className="mt-2 leading-relaxed">
-                在线改密、会话撤销、TOTP及恢复码属于账号安全阶段；后台地址切换最后单独实施。当前没有修改凭据或地址的控件。
-              </p>
-            </details>
-          </>
-        ) : null}
-      </SettingsSection>
     </SettingsPage>
   );
 }

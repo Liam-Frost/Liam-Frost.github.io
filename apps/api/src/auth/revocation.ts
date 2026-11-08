@@ -9,6 +9,12 @@ export class SessionRevocations {
     this.revoked.set(session.jti, session.exp);
   }
 
+  /** For a session known only by id (`expiresAt` in seconds). */
+  revokeId(id: string, expiresAt: number) {
+    this.prune();
+    this.revoked.set(id, expiresAt);
+  }
+
   isRevoked(session: AdminSession) {
     this.prune();
     return this.revoked.has(session.jti);

@@ -13,3 +13,4 @@ export * from "./contact";
 export * from "./presentation";
 export * from "./genre-labels";
 export * from "./site-settings";
+export * from "./account";

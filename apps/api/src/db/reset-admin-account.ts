@@ -1,0 +1,52 @@
+import "dotenv/config";
+
+import { createPrismaClient } from "./client";
+
+/**
+ * Recovery for an admin locked out of the sign-in page, run on the server:
+ *   npm run admin:reset -w apps/api -- --all    back to ADMIN_USERNAME / ADMIN_PASSWORD_HASH
+ *   npm run admin:reset -w apps/api -- --totp   turn two-step sign-in off
+ *   npm run admin:reset -w apps/api -- --path   back to ADMIN_PATH
+ * Every option also ends all sessions. Restart the application afterwards.
+ */
+const flags = new Set(process.argv.slice(2));
+const databaseUrl = process.env.DATABASE_URL?.trim();
+if (!databaseUrl) throw new Error("DATABASE_URL is required (see apps/api/.env.example)");
+if (!["--all", "--totp", "--path"].some((flag) => flags.has(flag)))
+  throw new Error("Choose what to reset: --all, --totp or --path");
+
+const prisma = createPrismaClient(databaseUrl);
+const id = "admin";
+try {
+  if (flags.has("--all")) {
+    await prisma.adminCredential.deleteMany({ where: { id } });
+  } else {
+    await prisma.adminCredential.updateMany({
+      where: { id },
+      data: {
+        ...(flags.has("--totp")
+          ? {
+              totpSecret: null,
+              totpPendingSecret: null,
+              totpPendingAt: null,
+              totpEnabledAt: null,
+              totpLastStep: null,
+              recoveryCodes: []
+            }
+          : {}),
+        ...(flags.has("--path")
+          ? {
+              adminPath: null,
+              adminPathPending: null,
+              adminPathRetiring: null,
+              adminPathRetireUntil: null
+            }
+          : {})
+      }
+    });
+  }
+  await prisma.adminSession.deleteMany({});
+  console.log("Done. Restart the application for this to take effect.");
+} finally {
+  await prisma.$disconnect();
+}

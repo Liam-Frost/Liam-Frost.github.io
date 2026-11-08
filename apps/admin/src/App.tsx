@@ -3,7 +3,7 @@ import { AdminDocumentTitle } from "./hooks/useAdminTitle";
 import { clearSettingsDrafts } from "./components/settings/drafts";
 import { clearIntegrationDrafts } from "./components/integrations/drafts";
 import { SettingsLayout, SettingsRedirect } from "./components/settings/SettingsLayout";
-import { SiteSettingsPage, RuntimeSettingsPage } from "./pages/SiteSettingsPage";
+import { SiteSettingsPage } from "./pages/SiteSettingsPage";
 import { AuditPage } from "./pages/AuditPage";
 import { AppearancePage } from "./pages/AppearancePage";
 import { FeaturedPage } from "./pages/FeaturedPage";
@@ -29,6 +29,7 @@ import { PhotosPage } from "./pages/PhotosPage";
 import { ProjectEditPage } from "./pages/ProjectEditPage";
 import { ProjectsPage } from "./pages/ProjectsPage";
 import { AboutPage } from "./pages/AboutPage";
+import { AccountSecurityPage } from "./pages/AccountSecurityPage";
 import { StackPage } from "./pages/StackPage";
 import { NotFoundPage, OverviewPage, SectionNotFound } from "./pages/OverviewPage";
 
@@ -138,7 +139,7 @@ function SessionGate() {
           />
           <Route path="privacy/integrations" element={<IntegrationsPage />} />
           <Route path="admin/login" element={<AppearancePage key="login" mode="login" />} />
-          <Route path="admin/security" element={<RuntimeSettingsPage />} />
+          <Route path="admin/security" element={<AccountSecurityPage />} />
           <Route
             path="frontend/identity"
             element={<SettingsRedirect to="/settings/site/identity" />}
