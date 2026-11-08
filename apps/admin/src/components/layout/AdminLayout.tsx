@@ -17,6 +17,7 @@ import {
 import type { ReactNode } from "react";
 import { NavLink, Outlet, useLocation } from "react-router";
 
+import { useAdminTitle } from "../../hooks/useAdminTitle";
 import { useLogout } from "../../hooks/useSession";
 import { useToast } from "../ui/Toast";
 import SiteMark from "../../../../web/src/components/SiteMark";
@@ -40,6 +41,7 @@ export function AdminLayout({ user }: { user: AdminUser }) {
   const isSettings = useLocation().pathname.startsWith("/settings");
   useUnsavedChanges(useSettingsDraftCount() > 0);
   const logout = useLogout();
+  const adminTitle = useAdminTitle();
   const toast = useToast();
 
   const onLogout = () =>
@@ -52,7 +54,7 @@ export function AdminLayout({ user }: { user: AdminUser }) {
       <aside className="flex items-center gap-3 border-b border-line bg-brand-dark px-4 py-3 text-white md:sticky md:top-0 md:h-dvh md:flex-col md:items-stretch md:gap-6 md:border-r md:border-b-0 md:px-4 md:py-6">
         <div className="flex items-center gap-2.5 md:px-2">
           <SiteMark admin />
-          <span className="text-[15px] font-semibold">管理后台</span>
+          <span className="truncate text-[15px] font-semibold">{adminTitle}</span>
         </div>
 
         <nav aria-label="管理后台" className="flex flex-1 gap-1 overflow-x-auto md:flex-col">

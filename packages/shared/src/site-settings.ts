@@ -1,24 +1,36 @@
 import type { LocalizedText, PublicCollection } from "./api";
 
+/** A link in the footer: an https address, a mail address, or a page of the site ("/privacy"). */
+export type FooterLink = { label: LocalizedText; url: string };
 export type DictionaryEntry = { id: string; aliases: string[]; labels: LocalizedText };
 export type SiteSettingsGroups = {
-  identity: { name: LocalizedText; title: LocalizedText; avatarPhotoId: string | null };
-  footer: { owner: LocalizedText; startYear: number | null; showRole: boolean };
+  identity: {
+    name: LocalizedText;
+    /** The browser tab title of the public site. */
+    title: LocalizedText;
+    /** The browser tab title and name of the admin. */
+    adminTitle: LocalizedText;
+    avatarPhotoId: string | null;
+  };
+  footer: {
+    owner: LocalizedText;
+    startYear: number | null;
+    showRole: boolean;
+    links: FooterLink[];
+  };
   preferences: {
     theme: "system" | "light" | "dark";
     language: "auto" | "zh" | "zh-Hant" | "en" | "ja" | "fr";
   };
   privacy: { title: LocalizedText; body: LocalizedText; effectiveDate: string | null };
   dictionary: { entries: DictionaryEntry[] };
-  favicon: { photoId: string | null };
 };
 export const DEFAULT_SITE_SETTINGS: SiteSettingsGroups = {
-  identity: { name: {}, title: {}, avatarPhotoId: null },
-  footer: { owner: {}, startYear: null, showRole: true },
+  identity: { name: {}, title: {}, adminTitle: {}, avatarPhotoId: null },
+  footer: { owner: {}, startYear: null, showRole: true, links: [] },
   preferences: { theme: "system", language: "auto" },
   privacy: { title: {}, body: {}, effectiveDate: null },
-  dictionary: { entries: [] },
-  favicon: { photoId: null }
+  dictionary: { entries: [] }
 };
 export type SiteSettingsGroup = keyof SiteSettingsGroups;
 export type SiteSettingsDocument<K extends SiteSettingsGroup = SiteSettingsGroup> = {
@@ -26,7 +38,7 @@ export type SiteSettingsDocument<K extends SiteSettingsGroup = SiteSettingsGroup
   revision: string;
   saved: boolean;
 };
-export type PublicSiteSettings = Omit<SiteSettingsGroups, "favicon"> & {
+export type PublicSiteSettings = SiteSettingsGroups & {
   avatarUrl: string | null;
   faviconUrl: string | null;
 };

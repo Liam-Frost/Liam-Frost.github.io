@@ -3,8 +3,7 @@ import { useEffect, useState } from "react";
 import { apiFetchEnabled, apiUrl } from "../lib/api";
 
 type Result = PublicSiteSettings & { unavailable?: boolean };
-const { favicon: _favicon, ...groups } = DEFAULT_SITE_SETTINGS;
-const defaults: Result = { ...groups, avatarUrl: null, faviconUrl: null };
+const defaults: Result = { ...DEFAULT_SITE_SETTINGS, avatarUrl: null, faviconUrl: null };
 let pending: Promise<Result> | null = null;
 let resolved: Result | null = null;
 let generation = 0;

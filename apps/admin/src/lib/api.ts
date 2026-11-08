@@ -1,5 +1,7 @@
 import {
   ADMIN_REQUEST_HEADER,
+  type AdminBranding,
+  type BrandSlot,
   type AdminAboutResponse,
   type AdminAboutUpdate,
   type AnalyticsAudience,
@@ -446,6 +448,11 @@ export const api = {
       method: "PUT",
       json: settings
     }),
+  branding: () => request<AdminBranding>("/api/admin/branding"),
+  uploadBranding: (slot: BrandSlot, file: File) =>
+    uploadFile<AdminBranding>(`/api/admin/branding/${slot}`, file),
+  removeBranding: (slot: BrandSlot) =>
+    request<AdminBranding>(`/api/admin/branding/${slot}`, { method: "DELETE" }),
   about: () => request<AdminAboutResponse>("/api/admin/about"),
   saveAbout: (body: AdminAboutUpdate) =>
     request<AdminAboutResponse>("/api/admin/about", { method: "PUT", json: body })

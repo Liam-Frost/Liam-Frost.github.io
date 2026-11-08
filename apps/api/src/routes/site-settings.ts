@@ -9,6 +9,7 @@ import type { SettingsRepository } from "../settings/types";
 import type { PhotoRepository } from "../photos/types";
 import type { LocalImageStore } from "../storage/local";
 import { toPublicPhoto } from "../photos/mapping";
+import { brandFileName, brandKey, type BrandAsset, type BrandingStore } from "../site/branding";
 import { KeyedLock } from "../lib/keyed-lock";
 import { HttpError } from "../lib/errors";
 import { parseInput } from "../lib/validation";
@@ -30,12 +31,37 @@ const photoId = z
   .regex(/^[A-Za-z0-9_-]+$/)
   .nullable();
 const schemas = {
-  identity: z.object({ name: text(120), title: text(160), avatarPhotoId: photoId }).strict(),
+  identity: z
+    .object({
+      name: text(120),
+      title: text(160),
+      adminTitle: text(80).default({}),
+      avatarPhotoId: photoId
+    })
+    .strict(),
   footer: z
     .object({
       owner: text(120),
       startYear: z.number().int().min(1900).max(3000).nullable(),
-      showRole: z.boolean()
+      showRole: z.boolean(),
+      links: z
+        .array(
+          z
+            .object({
+              label: text(40).refine(
+                (v) => Object.values(v).some((s) => s?.trim()),
+                "请填写链接文字"
+              ),
+              url: z
+                .string()
+                .trim()
+                .max(300)
+                .regex(/^(https:\/\/\S+|mailto:\S+|\/[^\s/]\S*)$/, "链接地址无效")
+            })
+            .strict()
+        )
+        .max(8)
+        .default([])
     })
     .strict(),
   preferences: z
@@ -75,8 +101,7 @@ const schemas = {
           aliases.add(key);
         }
       }
-    }),
-  favicon: z.object({ photoId }).strict()
+    })
 };
 const digest = (value: unknown) => createHash("sha256").update(JSON.stringify(value)).digest("hex");
 
@@ -86,7 +111,8 @@ export function registerSiteSettingsRoutes(
   repo: SettingsRepository | null,
   photos: PhotoRepository | null,
   store: LocalImageStore,
-  media: MediaRepository | null
+  media: MediaRepository | null,
+  branding: BrandingStore
 ) {
   const lock = new KeyedLock();
   const groupOf = (params: unknown) =>
@@ -107,37 +133,21 @@ export function registerSiteSettingsRoutes(
     const photo = await photos.get(id);
     return photo?.visibility === "public" ? photo : null;
   };
-  const faviconPhoto = async () => {
-    const value = (await read("favicon")).value as { photoId: string | null };
-    const p = await publicPhoto(value.photoId);
-    return p?.storage === "local" && p.storageKey && p.variants?.length ? p : null;
-  };
-  const faviconVersion = (p: NonNullable<Awaited<ReturnType<typeof faviconPhoto>>>) =>
-    digest([p.id, p.storageKey, p.updatedAt.toISOString()]).slice(0, 24);
+  const faviconVersion = (image: BrandAsset) => digest(image.id).slice(0, 24);
   app.get("/api/site-settings", async (_request, reply) => {
     reply.header("cache-control", "no-store");
     reply.header("x-snapshot-data-source", repo ? "database" : "fallback");
-    const [identityDoc, footerDoc, preferencesDoc, privacyDoc, dictionaryDoc, iconDoc] =
+    const [identityDoc, footerDoc, preferencesDoc, privacyDoc, dictionaryDoc, assets] =
       await Promise.all([
         read("identity"),
         read("footer"),
         read("preferences"),
         read("privacy"),
         read("dictionary"),
-        read("favicon")
+        branding.get()
       ]);
-    const identity = identityDoc.value as typeof DEFAULT_SITE_SETTINGS.identity,
-      icon = iconDoc.value as typeof DEFAULT_SITE_SETTINGS.favicon;
-    const ids = [
-      ...new Set([identity.avatarPhotoId, icon.photoId].filter((id): id is string => Boolean(id)))
-    ];
-    const selected = await Promise.all(ids.map(publicPhoto));
-    const avatar = selected.find((p) => p?.id === identity.avatarPhotoId),
-      candidate = selected.find((p) => p?.id === icon.photoId);
-    const favicon =
-      candidate?.storage === "local" && candidate.storageKey && candidate.variants?.length
-        ? candidate
-        : null;
+    const identity = identityDoc.value as typeof DEFAULT_SITE_SETTINGS.identity;
+    const avatar = await publicPhoto(identity.avatarPhotoId);
     return {
       identity,
       footer: footerDoc.value,
@@ -145,7 +155,9 @@ export function registerSiteSettingsRoutes(
       privacy: privacyDoc.value,
       dictionary: dictionaryDoc.value,
       avatarUrl: avatar ? toPublicPhoto(avatar, store).src : null,
-      faviconUrl: favicon ? `/api/site-favicon/${faviconVersion(favicon)}/32.png` : null
+      faviconUrl: assets.favicon
+        ? `/api/site-favicon/${faviconVersion(assets.favicon)}/32.png`
+        : null
     };
   });
   app.get("/api/site-favicon/:version/:file", async (request, reply) => {
@@ -156,11 +168,10 @@ export function registerSiteSettingsRoutes(
       }),
       request.params
     );
-    const p = await faviconPhoto();
-    if (!p || faviconVersion(p) !== version)
+    const image = (await branding.get()).favicon;
+    if (!image || faviconVersion(image) !== version)
       throw new HttpError(404, "NOT_FOUND", "Icon not found");
-    const variant = p.variants!.find((v) => v.width >= 512) ?? p.variants![p.variants!.length - 1]!;
-    const source = await store.readPublic(p.storageKey!, `${variant.width}.webp`);
+    const source = await store.readPublic(brandKey("favicon", image.id), brandFileName(image));
     if (!source) throw new HttpError(404, "NOT_FOUND", "Icon not found");
     const size = file === "favicon.ico" ? 32 : parseInt(file, 10),
       png = await sharp(source)
@@ -203,18 +214,10 @@ export function registerSiteSettingsRoutes(
           "SETTINGS_OUT_OF_DATE",
           "设置已被其他页面修改；请先保留草稿再重新读取"
         );
-      if (group === "identity" || group === "favicon") {
-        const id =
-          (body.value as { avatarPhotoId?: string | null; photoId?: string | null })
-            .avatarPhotoId ?? (body.value as { photoId?: string | null }).photoId;
-        const photo = id ? await publicPhoto(id) : null;
-        if (id && !photo) throw new HttpError(400, "INVALID_PHOTO", "只能选择当前公开的图库照片");
-        if (group === "favicon" && photo?.storage !== "local" && id)
-          throw new HttpError(
-            400,
-            "LOCAL_ICON_REQUIRED",
-            "图标请使用图库中本站托管的图片，生成多尺寸 PNG 与 ICO"
-          );
+      if (group === "identity") {
+        const id = (body.value as { avatarPhotoId?: string | null }).avatarPhotoId;
+        if (id && !(await publicPhoto(id)))
+          throw new HttpError(400, "INVALID_PHOTO", "只能选择当前公开的图库照片");
       }
       if (group === "dictionary") {
         const normalize = (v: string) => v.normalize("NFKC").trim().toLowerCase();

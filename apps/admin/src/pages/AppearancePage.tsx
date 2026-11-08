@@ -21,14 +21,13 @@ import { clearSettingsDraftIfUnchanged, useSettingsDraft } from "../components/s
 import {
   SettingsBrandPreview,
   SettingsActions,
-  SettingsAssetPicker,
   SettingsConflict,
   SettingsPage,
   SettingsPreview,
   SettingsSection,
   SettingsState
 } from "../components/settings/SettingsUI";
-import { SiteSettingsPage } from "./SiteSettingsPage";
+import { BrandUpload, useBranding } from "../components/settings/BrandUpload";
 
 const labels = {
   top: "首屏介绍",
@@ -66,6 +65,7 @@ export function AppearancePage({ mode }: { mode: Mode }) {
     queryKey: key,
     queryFn: () => request<AdminPresentation>("/api/admin/presentation")
   });
+  const branding = useBranding();
   const content = useHomeContentCounts(mode === "home"),
     photoQuery = usePhotos(),
     photos = photoQuery.data ?? [],
@@ -144,10 +144,9 @@ export function AppearancePage({ mode }: { mode: Mode }) {
   if (q.isPending) return <LoadingSkeleton label="加载外观设置…" variant="form" />;
   if (q.error) return <SettingsState error={q.error.message} onRetry={() => void q.refetch()} />;
   const logoPreview = (logo: SiteLogo, admin = true) => {
-    const photo = available.find((photo) => photo.id === logo.photoId);
     return (
       <SettingsBrandPreview
-        src={photo?.variants[0]?.url ?? photo?.src}
+        src={branding.data?.[admin ? "adminLogo" : "publicLogo"] ?? undefined}
         text={logo.text}
         alt={logo.alt}
         defaultSrc={admin ? new URL("favicon.svg", document.baseURI).href : "/LOGO2.svg"}
@@ -166,15 +165,10 @@ export function AppearancePage({ mode }: { mode: Mode }) {
       >
         <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_160px]">
           <div className="min-w-0 space-y-4">
-            <SettingsAssetPicker
+            <BrandUpload
+              slot={name}
               label={`${title}图片`}
-              photos={available}
-              selected={logo.photoId}
-              onChange={(photoId) => update({ photoId })}
-              loading={photoQuery.isPending}
-              error={photoQuery.error?.message}
-              onRetry={() => void photoQuery.refetch()}
-              defaultLabel="不使用图片"
+              hint="SVG、PNG、WebP 或 JPEG，不超过 2 MB，建议使用透明背景。上传后立即生效。"
             />
             <Field
               label="文字标记"
@@ -216,8 +210,8 @@ export function AppearancePage({ mode }: { mode: Mode }) {
         <details className="text-xs text-muted">
           <summary className="cursor-pointer">图片与文字的回退规则</summary>
           <p className="mt-2">
-            图片优先；图片隐藏或删除后使用文字，文字为空则使用默认
-            Logo。此处预览不修改公开站点，保存后生效。
+            有上传的图片时显示图片；没有图片时显示文字标记，文字也为空则使用默认
+            Logo。文字和替代文字需要点“保存 Logo”。
           </p>
         </details>
       </SettingsSection>
@@ -613,7 +607,30 @@ export function AppearancePage({ mode }: { mode: Mode }) {
         }}
         onSave={() => draft && save.mutate(draft)}
       />
-      {mode === "branding" ? <SiteSettingsPage group="favicon" embedded /> : null}
+      {mode === "branding" ? (
+        <SettingsSection title="网站图标" description="同时用于前台和后台的浏览器标签页。">
+          <div className="grid items-start gap-5 lg:grid-cols-2">
+            <BrandUpload
+              slot="favicon"
+              label="图标图片"
+              hint="建议使用正方形图片；非正方形会完整缩放并留出透明边。SVG、PNG、WebP 或 JPEG，不超过 2 MB。上传后自动生成 32 / 180 / 192 / 512 PNG 和 ICO，立即生效。"
+            />
+            <SettingsPreview title="浏览器标签页预览">
+              <div className="flex min-w-0 items-center gap-2 rounded-t-lg border border-line bg-white px-3 py-2">
+                <img
+                  className="size-4 shrink-0 object-contain"
+                  src={branding.data?.favicon ?? new URL("favicon.svg", document.baseURI).href}
+                  alt=""
+                />
+                <span className="truncate text-xs text-brand">网站标题</span>
+                <span className="ml-auto text-xs text-muted" aria-hidden="true">
+                  ×
+                </span>
+              </div>
+            </SettingsPreview>
+          </div>
+        </SettingsSection>
+      ) : null}
     </SettingsPage>
   );
 }
