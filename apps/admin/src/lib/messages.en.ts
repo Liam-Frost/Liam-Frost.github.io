@@ -280,7 +280,6 @@ export const en: Record<string, string> = {
   待改进: "Needs improvement",
   待核验: "To verify",
   "当前地址：": "Current address: ",
-  "当前第 {0} / {1} 张": "Photo {0} of {1}",
   "当前范围 · {0}": "Current range · {0}",
   "当前范围没有记录。": "No records in the current range.",
   "当前范围没有具体的不存在页面路径记录。":
@@ -459,7 +458,6 @@ export const en: Record<string, string> = {
   购入日期: "Purchase date",
   固定: "Fixed",
   固定显示: "Shown as fixed",
-  固定照片: "Fixed photo",
   关闭: "Close",
   关闭国家识别: "Turn off country detection",
   "关闭后，所有“想看”条目都不在网站上显示；打开时，每个条目再按自己的“公开”设置决定。":
@@ -747,8 +745,6 @@ export const en: Record<string, string> = {
     "Empty shows only the current year; when filled in it runs to the current year.",
   六: "Sat",
   轮换方式: "Rotation",
-  "轮换间隔（秒）": "Rotation interval (seconds)",
-  轮换照片: "Rotating photos",
   漫画: "Comics",
   "没填写的语言会在网站上回退到其它语言。标签后带 ✓ 表示该语言已写短评。":
     "Empty languages fall back to the others on the site. A ✓ on a tab means that language has a review.",
@@ -1850,7 +1846,6 @@ export const en: Record<string, string> = {
     "Contact details were changed on another page; reload and save again",
   外观管理需要数据库: "Appearance management needs a database",
   只能选择图库中当前公开的照片: "Only currently public gallery photos can be chosen",
-  请选择至少一张背景图: "Choose at least one background",
   品牌素材管理需要数据库: "Brand asset management needs a database",
   请填写链接文字: "Enter the link text",
   链接地址无效: "Invalid link address",
@@ -1944,7 +1939,6 @@ export const en: Record<string, string> = {
   立即生效: "Live at once",
   未设置: "Not set",
   开启: "On",
-  "轮换 {0} 张，每 {1} 秒": "Rotating {0} photos every {1} s",
   "默认 Logo": "Default logo",
   "开启 {0} / {1} 项": "{0} of {1} on",
   有设置已在别处被修改: "Some settings were changed elsewhere",
@@ -1967,12 +1961,21 @@ export const en: Record<string, string> = {
     "A square image works best; others are scaled to fit with transparent margins. SVG, PNG, WebP or JPEG, up to 2 MB.",
   "保存文字标记和页面标题；已上传的图片已生效，不受影响。":
     "Saves the text marks and page titles. Uploaded images are already live and are not affected.",
-  "仅使用公开图库照片。": "Only public gallery photos can be used.",
-  "10–3600 秒。减少动态效果时保持第一张照片。":
-    "10–3600 seconds. With reduced motion, the first photo stays.",
+  "仅使用公开图库照片；不选照片时为纯色背景。":
+    "Only public gallery photos can be used. With no photo chosen, the background is plain.",
   当前照片: "Current photo",
   "已选照片 · {0} / {1}": "Selected · {0} / {1}",
-  "按此顺序轮换。": "Rotates in this order.",
+  "按此顺序每天换一张。": "One photo a day, in this order.",
+  一直显示选定的一张: "Always shows the chosen photo",
+  "按所选顺序每天换一张，同一天所有访客一致":
+    "Changes daily in the chosen order; the same for every visitor that day",
+  "每次打开登录页换一张，不会连续两次相同":
+    "A new photo each time the login page opens, never the same twice in a row",
+  "同一个标签页里保持不变，下次打开换一张": "Stays the same in one tab; a new photo next time",
+  "今天显示第 {0} / {1} 张": "Today: photo {0} of {1}",
+  "访客会看到其中一张，这里显示第一张": "Visitors see one of these; the first is shown here",
+  "最多选择 {0} 张。": "Up to {0}.",
+  "{0} · {1} 张": "{0} · {1} photos",
   从下方公开图库选择照片: "Choose photos from the public gallery below",
   "选择一张作为登录背景。": "Choose one as the login background.",
   "显示更多（还有 {0} 张）": "Show more ({0} left)",

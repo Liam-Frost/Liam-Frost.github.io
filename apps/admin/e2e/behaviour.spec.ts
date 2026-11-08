@@ -1,3 +1,4 @@
+import { ADMIN_PATH } from "./constants";
 import { apiPatch, expect, open, settingsNav, test, watchDialogs } from "./helpers";
 
 const nameInput = (page: import("@playwright/test").Page) => page.getByLabel("显示姓名");
@@ -296,7 +297,7 @@ test.describe("login appearance", () => {
 
     await open(page, "/settings/admin/login");
     await expect(page.getByText("照片已隐藏或删除")).toBeVisible();
-    await page.locator("#background-interval").fill("20");
+    await page.getByRole("radio", { name: /^每次访问/ }).check();
     await page.getByRole("button", { name: "保存更改" }).click();
     await expect(page.getByText("更改已保存")).toBeVisible();
 
@@ -321,15 +322,59 @@ test.describe("login appearance", () => {
 
   test("only what the mode uses is shown", async ({ page }) => {
     await open(page, "/settings/admin/login");
-    const mode = page.locator("#background-mode");
-    await expect(page.locator("#background-interval")).toBeVisible();
-    await mode.click();
-    await page.getByRole("option", { name: "固定照片" }).click();
-    await expect(page.locator("#background-interval")).toHaveCount(0);
+    const modes = page.getByRole("group", { name: "展示方式" }).getByRole("radio");
+    await expect(modes).toHaveCount(4);
+    const moveDown = page.getByRole("button", { name: "下移第1张背景" });
+    await expect(moveDown).toBeVisible();
+    await page.getByRole("radio", { name: /^每次访问/ }).check();
+    await expect(moveDown).toHaveCount(0);
+    await expect(page.getByRole("heading", { name: /已选照片/ })).toBeVisible();
+    await page.getByRole("radio", { name: /^固定/ }).check();
     await expect(page.getByRole("heading", { name: "当前照片" })).toBeVisible();
-    await mode.click();
-    await page.getByRole("option", { name: "纯色背景" }).click();
-    await expect(page.getByRole("heading", { name: "公开图库" })).toHaveCount(0);
+    await expect(page.getByRole("heading", { name: "公开图库" })).toBeVisible();
+  });
+
+  test("the login page follows the mode", async ({ page, browser }) => {
+    const shown = async (mode: RegExp, loads: number) => {
+      await open(page, "/settings/admin/login");
+      await page.getByRole("radio", { name: mode }).check();
+      await page.getByRole("button", { name: "保存更改" }).click();
+      await expect(page.getByText("更改已保存")).toBeVisible();
+      const visitor = await browser.newContext({ storageState: { cookies: [], origins: [] } });
+      const tab = await visitor.newPage();
+      const seen: (string | null)[] = [];
+      for (let load = 0; load < loads; load++) {
+        await tab.goto(`${ADMIN_PATH}/`);
+        const photo = tab.locator("img.-z-20");
+        await expect(photo).toHaveCount(1);
+        seen.push(await photo.getAttribute("src"));
+      }
+      await visitor.close();
+      return seen;
+    };
+    const fixed = await shown(/^固定/, 3);
+    expect(new Set(fixed).size).toBe(1);
+    expect(fixed[0]).toContain("/image/0/");
+    const daily = await shown(/^每天/, 3);
+    expect(new Set(daily).size).toBe(1);
+    const session = await shown(/^每个浏览会话/, 3);
+    expect(new Set(session).size).toBe(1);
+    const visit = await shown(/^每次访问/, 3);
+    expect(visit[1]).not.toBe(visit[0]);
+    expect(visit[2]).not.toBe(visit[1]);
+  });
+
+  test("with no photos the login page has a plain background", async ({ page, browser }) => {
+    await open(page, "/settings/admin/login");
+    await page.getByRole("button", { name: "清空选择" }).click();
+    await page.getByRole("button", { name: "保存更改" }).click();
+    await expect(page.getByText("更改已保存")).toBeVisible();
+    const visitor = await browser.newContext({ storageState: { cookies: [], origins: [] } });
+    const tab = await visitor.newPage();
+    await tab.goto(`${ADMIN_PATH}/`);
+    await expect(tab.locator("#admin-username")).toBeVisible();
+    await expect(tab.locator("img.-z-20")).toHaveCount(0);
+    await visitor.close();
   });
 
   test("the limit of twenty is enforced", async ({ page }) => {
@@ -343,8 +388,7 @@ test.describe("login appearance", () => {
   test("choosing a fixed photo stays within the limit", async ({ page }) => {
     await page.request.post("/__e2e/seed", { data: { scenario: "large" } });
     await open(page, "/settings/admin/login");
-    await page.locator("#background-mode").click();
-    await page.getByRole("option", { name: "固定照片" }).click();
+    await page.getByRole("radio", { name: /^固定/ }).check();
     await page.locator(".photo-option", { hasText: "示例照片 24" }).click();
     await page.getByRole("button", { name: "保存更改" }).click();
     await expect(page.getByText("更改已保存")).toBeVisible();
@@ -377,9 +421,7 @@ test.describe("login appearance", () => {
     ).toHaveCount(1);
     const frame = await preview.locator(".aspect-\\[16\\/10\\]").boundingBox();
     expect(Math.abs(frame!.width / frame!.height - 1.6)).toBeLessThan(0.02);
-    await expect(preview).toContainText("当前第 1 / 6 张");
-    await page.waitForTimeout(10_500);
-    await expect(preview).toContainText("当前第 2 / 6 张");
+    await expect(preview).toContainText(/今天显示第 \d \/ 6 张/);
   });
 });
 

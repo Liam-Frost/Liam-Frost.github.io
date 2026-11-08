@@ -1,6 +1,6 @@
 /**
  * How the site chooses among several candidates (the about section's manifestos, the home page's
- * featured collection entries):
+ * featured collection entries, the login page's background photos):
  * - fixed: the admin's choice or order;
  * - daily: changes once a day, the same for every visitor;
  * - visit: draws on each visit to the page (weighted manifestos may repeat);

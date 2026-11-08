@@ -1,6 +1,7 @@
 import { Lock } from "lucide-react";
-import { useEffect, useState, type FormEvent } from "react";
+import { useMemo, useState, type FormEvent } from "react";
 import { usePresentation } from "../../../web/src/data/usePresentation";
+import { rotationTurn } from "../../../web/src/lib/rotation";
 
 import { Field } from "../components/ui/Field";
 import { useLogin } from "../hooks/useSession";
@@ -160,34 +161,16 @@ export function NotConfiguredPage() {
 
 export function CenteredCard({ children }: { children: React.ReactNode }) {
   const settings = usePresentation();
-  const background = settings?.loginBackground;
-  const images =
-    background?.photoIds.map((id) => settings?.images[id]).filter((v): v is string => Boolean(v)) ??
-    [];
-  const [index, setIndex] = useState(0);
+  // Only currently public photos have an image. This visit's photo comes first, the rest stand by.
+  const images = useMemo(() => {
+    if (!settings) return [];
+    const { mode, photoIds } = settings.loginBackground;
+    const ids = photoIds.filter((id) => settings.images[id]);
+    const turn = mode === "fixed" ? 0 : rotationTurn(ids, mode, "login-background");
+    return [...ids.slice(turn), ...ids.slice(0, turn)].map((id) => settings.images[id]!);
+  }, [settings]);
   const [failed, setFailed] = useState<string[]>([]);
-  const validImages = images.filter((src) => !failed.includes(src));
-  const image =
-    background?.mode !== "none" ? validImages[index % Math.max(1, validImages.length)] : undefined;
-  useEffect(() => {
-    const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
-    let timer: ReturnType<typeof setInterval> | undefined;
-    const update = () => {
-      clearInterval(timer);
-      if (background?.mode === "rotate" && !motion.matches && images.length > 1)
-        timer = setInterval(
-          () => setIndex((i) => (i + 1) % images.length),
-          background.intervalSeconds * 1000
-        );
-      else setIndex(0);
-    };
-    update();
-    motion.addEventListener("change", update);
-    return () => {
-      clearInterval(timer);
-      motion.removeEventListener("change", update);
-    };
-  }, [background?.mode, background?.intervalSeconds, images.length]);
+  const image = images.find((src) => !failed.includes(src));
   return (
     <LoginStage image={image} onImageError={() => setFailed((v) => [...v, image!])}>
       {children}

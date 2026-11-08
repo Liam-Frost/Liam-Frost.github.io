@@ -156,6 +156,15 @@ React and related dependencies should be upgraded to the latest versions. This u
 
 The model chose: a new folder per hosted image (`photos/<photo folder>/<imageId>`) found by its storage key, because public image URLs are cached as immutable and a replaced image must get new URLs; older photos keep their flat folder until replaced. Server folder imports are always hosted (the folders are not served). Links are checked for https and public addresses before every request and redirect, with Node's fetch so a configured HTTPS_PROXY still applies; a name could resolve differently between check and request (DNS rebinding), which is accepted for an admin-only feature. 198.18.0.0/15 is allowed because proxies in fake-IP mode use it. Flickr pages use oEmbed (no key). No storage interface yet: it comes with the R2 backend in 19c.
 
+### 2026-11-09: Login Background Uses the Shared Rotation Modes
+
+The user asked for the login background to offer the same four modes as the other modules: fixed, daily, each visit and each browsing session. The model chose to:
+
+- Drop the timer and its interval, since the photo is now chosen once per mode.
+- Have no separate plain-background option, so there are exactly four choices: no photos chosen means a plain background.
+- Read older saves without a migration: `none` becomes `fixed` with no photos, and `rotate` becomes `visit`, the closest to a photo that keeps changing.
+- Show the numbering and move buttons only in the daily mode, the only one that follows the order.
+
 ### 2026-11-08: Admin Language Has One Entry
 
 The user asked for the admin language to be set only from the sidebar, with no switch on the login page or in Website Settings, and for three choices: follow the system, Simplified Chinese and English. The model chose to store nothing when following the system, and to skip the reload and the unsaved-work prompt when a choice does not change the language in use.

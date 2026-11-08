@@ -1,4 +1,5 @@
 import { useId, type ReactNode } from "react";
+import type { PresentationSettings } from "@liam-frost/shared";
 import { Check } from "lucide-react";
 import { PageHeader } from "../layout/AdminLayout";
 import { LANG_LABELS, type Lang } from "../../lib/i18n";
@@ -223,11 +224,15 @@ function describeValue(value: unknown): string {
   if (Array.isArray(value)) return tr("{0} 项", value.length);
   const record = value as Record<string, unknown>;
   if ("mode" in record) {
-    const background = record as { mode: string; photoIds: string[]; intervalSeconds: number };
-    if (background.mode === "none") return tr("纯色背景");
-    return background.mode === "fixed"
-      ? tr("固定照片")
-      : tr("轮换 {0} 张，每 {1} 秒", background.photoIds.length, background.intervalSeconds);
+    const background = record as PresentationSettings["loginBackground"];
+    if (!background.photoIds.length) return tr("纯色背景");
+    const mode = {
+      fixed: tr("固定"),
+      daily: tr("每天"),
+      visit: tr("每次访问"),
+      session: tr("每个浏览会话")
+    }[background.mode];
+    return tr("{0} · {1} 张", mode, background.photoIds.length);
   }
   if ("text" in record) return String(record.text || tr("默认 Logo"));
   const values = Object.values(record);

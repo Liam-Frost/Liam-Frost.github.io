@@ -127,7 +127,7 @@ describe("saving settings field by field", () => {
 describe("presentation settings and hidden login photos", () => {
   const stored = (photoIds: string[]) => ({
     ...DEFAULT_PRESENTATION,
-    loginBackground: { mode: "rotate" as const, photoIds, intervalSeconds: 30 }
+    loginBackground: { mode: "daily" as const, photoIds }
   });
 
   it("saves unrelated fields when a login photo has since been hidden", async () => {
@@ -155,13 +155,13 @@ describe("presentation settings and hidden login photos", () => {
       photos.rows.set("open", photo("open", "public"));
       await settings.set("presentation.v1", stored(["hidden"]));
       const base = { loginBackground: stored(["hidden"]).loginBackground };
-      const interval = await patch(
+      const mode = await patch(
         PRESENTATION,
-        { loginBackground: { ...base.loginBackground, intervalSeconds: 60 } },
+        { loginBackground: { ...base.loginBackground, mode: "visit" } },
         base
       );
-      expect(interval.statusCode).toBe(200);
-      const next = { ...base.loginBackground, intervalSeconds: 60 };
+      expect(mode.statusCode).toBe(200);
+      const next = { ...base.loginBackground, mode: "visit" };
       const added = await patch(
         PRESENTATION,
         { loginBackground: { ...next, photoIds: ["hidden", "other-private"] } },
@@ -217,15 +217,59 @@ describe("presentation settings and hidden login photos", () => {
     }
   });
 
-  it("still requires a photo for a photo background", async () => {
-    const { app, patch } = await setup();
+  it("saves any rotation mode, with no photos meaning a plain background", async () => {
+    const { app, settings, photos, patch, get } = await setup();
     try {
-      const response = await patch(
+      photos.rows.set("open", photo("open", "public"));
+      await settings.set("presentation.v1", stored(["open"]));
+      for (const [from, mode] of [
+        ["daily", "session"],
+        ["session", "fixed"]
+      ] as const) {
+        const response = await patch(
+          PRESENTATION,
+          { loginBackground: { mode, photoIds: ["open"] } },
+          { loginBackground: { mode: from, photoIds: ["open"] } }
+        );
+        expect(response.statusCode).toBe(200);
+      }
+      const cleared = await patch(
         PRESENTATION,
-        { loginBackground: { mode: "fixed", photoIds: [], intervalSeconds: 30 } },
-        { loginBackground: DEFAULT_PRESENTATION.loginBackground }
+        { loginBackground: { mode: "fixed", photoIds: [] } },
+        { loginBackground: { mode: "fixed", photoIds: ["open"] } }
       );
-      expect(response.statusCode).toBe(400);
+      expect(cleared.statusCode).toBe(200);
+      expect((await get(PRESENTATION)).settings.loginBackground.photoIds).toEqual([]);
+      const unknown = await patch(
+        PRESENTATION,
+        { loginBackground: { mode: "weekly", photoIds: [] } },
+        { loginBackground: { mode: "fixed", photoIds: [] } }
+      );
+      expect(unknown.statusCode).toBe(400);
+    } finally {
+      await app.close();
+    }
+  });
+
+  it("reads backgrounds saved with the old modes", async () => {
+    const { app, settings, get } = await setup();
+    try {
+      await settings.set("presentation.v1", {
+        ...DEFAULT_PRESENTATION,
+        loginBackground: { mode: "rotate", photoIds: ["a", "b"], intervalSeconds: 30 }
+      });
+      expect((await get(PRESENTATION)).settings.loginBackground).toEqual({
+        mode: "visit",
+        photoIds: ["a", "b"]
+      });
+      await settings.set("presentation.v1", {
+        ...DEFAULT_PRESENTATION,
+        loginBackground: { mode: "none", photoIds: ["a"], intervalSeconds: 30 }
+      });
+      expect((await get(PRESENTATION)).settings.loginBackground).toEqual({
+        mode: "fixed",
+        photoIds: []
+      });
     } finally {
       await app.close();
     }
