@@ -70,6 +70,8 @@ export async function processIcon(input: Buffer, mimeType: string, options: Icon
     animated: false,
     ...(density ? { density } : {})
   })
+    // Applies EXIF orientation; the metadata itself is not kept in the output.
+    .rotate()
     .resize(
       size,
       size,

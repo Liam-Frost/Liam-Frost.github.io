@@ -173,7 +173,13 @@ export function SiteSettingsPage({
           id={`settings-${group}-${label}-${suffix}`}
           className="field"
           maxLength={
-            group === "identity" && label === "站点标题" ? 160 : group === "privacy" ? 160 : 120
+            group === "identity" && label === "后台页面标题"
+              ? 80
+              : group === "identity" && label === "前台页面标题"
+                ? 160
+                : group === "privacy"
+                  ? 160
+                  : 120
           }
           value={data[lang] ?? ""}
           onChange={(event) => onChange({ ...data, [lang]: event.target.value })}
