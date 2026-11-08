@@ -5,11 +5,12 @@ import {
   type AboutManifesto,
   type LocalizedText
 } from "@liam-frost/shared";
-import { useState, type FormEvent, type ReactNode } from "react";
+import { useState, type FormEvent, type ReactNode, useId } from "react";
 
-import { LANG_LABELS, LANGS, type Lang } from "../../lib/i18n";
+import type { Lang } from "../../lib/i18n";
 import { DiscardBar } from "../stack/DiscardBar";
 import { Dialog } from "../ui/Dialog";
+import { LanguageTabPanel, LanguageTabs } from "../ui/LanguageTabs";
 import { Field, Switch } from "../ui/Field";
 import { tr } from "../../lib/messages";
 
@@ -35,39 +36,6 @@ export function Emphasis({ text }: { text: string }) {
         )
       )}
     </>
-  );
-}
-
-/** Language tabs; a dot marks a language with nothing filled in yet. */
-function LangTabs({
-  lang,
-  onChange,
-  filled
-}: {
-  lang: Lang;
-  onChange: (lang: Lang) => void;
-  filled: (lang: Lang) => boolean;
-}) {
-  return (
-    <div role="tablist" aria-label={tr("语言")} className="flex flex-wrap gap-1.5">
-      {LANGS.map((l) => (
-        <button
-          key={l}
-          type="button"
-          role="tab"
-          aria-selected={lang === l}
-          onClick={() => onChange(l)}
-          className={`rounded-full px-2.5 py-1 text-[12px] whitespace-nowrap transition-colors ${
-            lang === l
-              ? "bg-brand text-white"
-              : "bg-brand-secondary/10 text-brand hover:bg-brand-secondary/18"
-          }`}
-        >
-          {LANG_LABELS[l]}
-          {filled(l) ? "" : " ·"}
-        </button>
-      ))}
-    </div>
   );
 }
 
@@ -131,6 +99,7 @@ export function ManifestoDialog({
   const [visible, setVisible] = useState(manifesto?.visible ?? true);
   const [weight, setWeight] = useState(manifesto?.weight ?? 1);
   const [lang, setLang] = useState<Lang>("zh");
+  const languageTabs = useId();
   const [error, setError] = useState("");
   const dirty =
     JSON.stringify([trimmed(text), trimmed(attribution), visible, weight]) !==
@@ -164,46 +133,53 @@ export function ManifestoDialog({
       onClose={onClose}
     >
       <form id="about-manifesto" onSubmit={submit} noValidate className="space-y-3.5">
-        <LangTabs lang={lang} onChange={setLang} filled={(l) => !!text[l]?.trim()} />
+        <LanguageTabs
+          id={languageTabs}
+          value={lang}
+          onChange={setLang}
+          isFilled={(l) => !!text[l]?.trim()}
+        />
         <p className="text-[11.5px] text-faint">
           {tr("没填写的语言在网站上回退到其它语言；带 · 的语言还没有宣言。")}
         </p>
-        <Field
-          label={tr("宣言")}
-          htmlFor="manifesto-text"
-          hint={
-            <>
-              {tr("用")} <code>{tr("*星号*")}</code>{" "}
-              {tr(
-                "包住要强调的词，网站上会用强调色显示。最多 {0} 字。",
-                ABOUT_LIMITS.manifestoText
-              )}
-            </>
-          }
-        >
-          <textarea
-            id="manifesto-text"
-            className="field min-h-24"
-            data-autofocus
-            value={text[lang] ?? ""}
-            maxLength={ABOUT_LIMITS.manifestoText}
-            placeholder={tr("例如：变则善，*常变则至善*。")}
-            onChange={(e) => setText((t) => ({ ...t, [lang]: e.target.value }))}
-          />
-        </Field>
-        <Field
-          label={tr("署名（可选）")}
-          htmlFor="manifesto-attribution"
-          hint={tr("引用别人的话时填写，例如 温斯顿·丘吉尔；自己的话留空")}
-        >
-          <input
-            id="manifesto-attribution"
-            className="field"
-            value={attribution[lang] ?? ""}
-            maxLength={ABOUT_LIMITS.attribution}
-            onChange={(e) => setAttribution((a) => ({ ...a, [lang]: e.target.value }))}
-          />
-        </Field>
+        <LanguageTabPanel id={languageTabs} lang={lang} className="space-y-3.5">
+          <Field
+            label={tr("宣言")}
+            htmlFor="manifesto-text"
+            hint={
+              <>
+                {tr("用")} <code>{tr("*星号*")}</code>{" "}
+                {tr(
+                  "包住要强调的词，网站上会用强调色显示。最多 {0} 字。",
+                  ABOUT_LIMITS.manifestoText
+                )}
+              </>
+            }
+          >
+            <textarea
+              id="manifesto-text"
+              className="field min-h-24"
+              data-autofocus
+              value={text[lang] ?? ""}
+              maxLength={ABOUT_LIMITS.manifestoText}
+              placeholder={tr("例如：变则善，*常变则至善*。")}
+              onChange={(e) => setText((t) => ({ ...t, [lang]: e.target.value }))}
+            />
+          </Field>
+          <Field
+            label={tr("署名（可选）")}
+            htmlFor="manifesto-attribution"
+            hint={tr("引用别人的话时填写，例如 温斯顿·丘吉尔；自己的话留空")}
+          >
+            <input
+              id="manifesto-attribution"
+              className="field"
+              value={attribution[lang] ?? ""}
+              maxLength={ABOUT_LIMITS.attribution}
+              onChange={(e) => setAttribution((a) => ({ ...a, [lang]: e.target.value }))}
+            />
+          </Field>
+        </LanguageTabPanel>
         <div className="rounded-xl border border-line-soft bg-brand-secondary/5 p-4">
           <p className="mb-2 text-[11px] font-bold tracking-[1px] text-brand-secondary">
             {tr("预览")}
@@ -265,6 +241,7 @@ export function GearCategoryDialog({
 }) {
   const [name, setName] = useState<LocalizedText>(category?.name ?? {});
   const [lang, setLang] = useState<Lang>("zh");
+  const languageTabs = useId();
   const [error, setError] = useState("");
   const dirty = JSON.stringify(trimmed(name)) !== JSON.stringify(trimmed(category?.name ?? {}));
 
@@ -283,18 +260,25 @@ export function GearCategoryDialog({
       onClose={onClose}
     >
       <form id="about-gear-category" onSubmit={submit} noValidate className="space-y-3.5">
-        <LangTabs lang={lang} onChange={setLang} filled={(l) => !!name[l]?.trim()} />
-        <Field label={tr("分类名称")} htmlFor="gear-category-name">
-          <input
-            id="gear-category-name"
-            className="field"
-            data-autofocus
-            value={name[lang] ?? ""}
-            maxLength={ABOUT_LIMITS.gearCategoryName}
-            placeholder={tr("例如 相机、镜头、后期")}
-            onChange={(e) => setName((n) => ({ ...n, [lang]: e.target.value }))}
-          />
-        </Field>
+        <LanguageTabs
+          id={languageTabs}
+          value={lang}
+          onChange={setLang}
+          isFilled={(l) => !!name[l]?.trim()}
+        />
+        <LanguageTabPanel id={languageTabs} lang={lang} className="space-y-3.5">
+          <Field label={tr("分类名称")} htmlFor="gear-category-name">
+            <input
+              id="gear-category-name"
+              className="field"
+              data-autofocus
+              value={name[lang] ?? ""}
+              maxLength={ABOUT_LIMITS.gearCategoryName}
+              placeholder={tr("例如 相机、镜头、后期")}
+              onChange={(e) => setName((n) => ({ ...n, [lang]: e.target.value }))}
+            />
+          </Field>
+        </LanguageTabPanel>
         {error ? (
           <p role="alert" className="text-[12.5px] text-status-error">
             {error}

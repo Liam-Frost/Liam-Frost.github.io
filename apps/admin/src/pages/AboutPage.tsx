@@ -11,7 +11,7 @@ import {
 } from "@liam-frost/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowDown, ArrowUp, ExternalLink, Eye, EyeOff, Pencil, Plus, Trash2 } from "lucide-react";
-import { useEffect, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 
 import { PageHeader } from "../components/layout/AdminLayout";
 import { Emphasis, GearCategoryDialog, ManifestoDialog } from "../components/about/dialogs";
@@ -22,6 +22,8 @@ import { useToast } from "../components/ui/Toast";
 import { api } from "../lib/api";
 import { LANGS, pickText } from "../lib/i18n";
 import { tr } from "../lib/messages";
+import { Select } from "../components/ui/Select";
+import { useUnsaved } from "../lib/unsaved";
 
 const aboutKey = ["admin", "about"] as const;
 
@@ -104,12 +106,7 @@ export function AboutPage() {
   const about = draft?.about ?? data?.about ?? null;
   const dirty = draft !== null && JSON.stringify(draft.about) !== JSON.stringify(data?.about);
 
-  useEffect(() => {
-    if (!dirty) return;
-    const warn = (event: BeforeUnloadEvent) => event.preventDefault();
-    window.addEventListener("beforeunload", warn);
-    return () => window.removeEventListener("beforeunload", warn);
-  }, [dirty]);
+  useUnsaved(dirty, "page");
 
   if (isPending) return <LoadingSkeleton label={tr("加载中…")} variant="form" />;
   if (error || !data || !about) {
@@ -206,24 +203,23 @@ export function AboutPage() {
           {about.rotation.mode === "fixed" ? (
             <label className="block text-[12.5px] font-medium text-brand-dark">
               {tr("固定显示")}
-              <select
-                className="field mt-1.5"
+              <Select
                 value={about.rotation.fixedId ?? ""}
-                onChange={(e) =>
+                onChange={(value) =>
                   change((a) => ({
                     ...a,
-                    rotation: { ...a.rotation, fixedId: e.target.value || null }
+                    rotation: { ...a.rotation, fixedId: value || null }
                   }))
                 }
-              >
-                <option value="">{tr("第一条可见的宣言")}</option>
-                {about.manifestos.map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {pickText(m.text).replaceAll("*", "")}
-                    {m.visible ? "" : tr("（已隐藏）")}
-                  </option>
-                ))}
-              </select>
+                className="mt-1.5"
+                options={[
+                  { value: "", label: tr("第一条可见的宣言") },
+                  ...about.manifestos.map((m) => ({
+                    value: m.id,
+                    label: `${pickText(m.text).replaceAll("*", "")}${m.visible ? "" : tr("（已隐藏）")}`
+                  }))
+                ]}
+              />
             </label>
           ) : null}
           {fixed && !fixed.visible && about.rotation.mode === "fixed" ? (

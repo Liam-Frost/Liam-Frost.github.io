@@ -10,6 +10,7 @@ import {
 import { settingsCopy as copy } from "./copy";
 import { useSettingsDraftCount } from "./drafts";
 import { tr } from "../../lib/messages";
+import { Select } from "../ui/Select";
 
 export const SETTINGS_NAV: {
   title: string;
@@ -104,22 +105,15 @@ export function SettingsLayout() {
           <label className="mb-1.5 block text-xs text-muted" htmlFor="settings-page-selector">
             {copy.choosePage}
           </label>
-          <select
+          <Select
             id="settings-page-selector"
-            className="field"
             value={current[0]}
-            onChange={(event) => navigate(`/settings/${event.target.value}`)}
-          >
-            {SETTINGS_NAV.map((group) => (
-              <optgroup label={group.title} key={group.title}>
-                {group.items.map(([path, label]) => (
-                  <option key={path} value={path}>
-                    {label}
-                  </option>
-                ))}
-              </optgroup>
-            ))}
-          </select>
+            onChange={(value) => navigate(`/settings/${value}`)}
+            options={SETTINGS_NAV.map((group) => ({
+              label: group.title,
+              options: group.items.map(([value, label]) => ({ value, label }))
+            }))}
+          />
           {draftCount ? (
             <p className="mt-2 text-xs text-status-warn">
               {tr("{0} 组草稿保留在本次登录中；刷新前请保存。", draftCount)}

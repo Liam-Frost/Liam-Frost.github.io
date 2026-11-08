@@ -91,7 +91,8 @@ export class ApiError extends Error {
   constructor(
     readonly status: number,
     readonly code: string,
-    message: string
+    message: string,
+    readonly details?: unknown
   ) {
     super(message);
     this.name = "ApiError";
@@ -162,7 +163,8 @@ function apiError(status: number, data: Partial<ApiErrorBody> | undefined) {
   return new ApiError(
     status,
     code,
-    data?.error?.message ? apiMessage(data.error.message) : tr("请求失败（HTTP {0}）", status)
+    data?.error?.message ? apiMessage(data.error.message) : tr("请求失败（HTTP {0}）", status),
+    data?.error?.details
   );
 }
 

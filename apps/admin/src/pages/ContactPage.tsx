@@ -2,7 +2,7 @@ import LoadingSkeleton from "../../../web/src/components/LoadingSkeleton";
 import { type AdminContactResponse, type ContactContent } from "@liam-frost/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowDown, ArrowUp, ExternalLink, GripVertical, Pencil, Plus, Trash2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { PageHeader } from "../components/layout/AdminLayout";
 import { TechIcon } from "../components/stack/TechIcon";
 import { Dialog } from "../components/ui/Dialog";
@@ -13,6 +13,7 @@ import { DatabaseNotice } from "../components/ui/DatabaseNotice";
 import { useToast } from "../components/ui/Toast";
 import { request } from "../lib/api";
 import { tr } from "../lib/messages";
+import { useUnsaved } from "../lib/unsaved";
 
 const key = ["admin", "contact"];
 type ContactLink = ContactContent["links"][number];
@@ -59,12 +60,7 @@ export function ContactPage() {
     },
     onError: (e: Error) => toast(e.message, "error")
   });
-  useEffect(() => {
-    if (!dirty) return;
-    const warn = (event: BeforeUnloadEvent) => event.preventDefault();
-    window.addEventListener("beforeunload", warn);
-    return () => window.removeEventListener("beforeunload", warn);
-  }, [dirty]);
+  useUnsaved(dirty, "page");
   const change = (contact: ContactContent) =>
     value && setDraft({ contact, revision: value.revision });
   const move = (from: number, to: number) => {

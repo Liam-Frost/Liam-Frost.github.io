@@ -9,10 +9,18 @@ import { AppearancePage } from "./pages/AppearancePage";
 import { FeaturedPage } from "./pages/FeaturedPage";
 import { ContactPage } from "./pages/ContactPage";
 import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Navigate, Route, Routes, useParams } from "react-router";
+import {
+  createBrowserRouter,
+  Navigate,
+  Route,
+  RouterProvider,
+  Routes,
+  useParams
+} from "react-router";
 
 import { AdminLayout } from "./components/layout/AdminLayout";
 import { CollectionLayout } from "./components/collection/CollectionLayout";
+import { ConfirmProvider } from "./components/ui/Confirm";
 import { ToastProvider } from "./components/ui/Toast";
 import { sessionKey, useSession } from "./hooks/useSession";
 import { ApiError } from "./lib/api";
@@ -56,6 +64,21 @@ const queryClient: QueryClient = new QueryClient({
   }
 });
 
+function Root() {
+  return (
+    <>
+      <SiteFavicon />
+      <AdminDocumentTitle />
+      <SessionGate />
+    </>
+  );
+}
+
+// A data router, for its navigation blocking; the routes themselves stay declared in SessionGate.
+const router = ADMIN_BASE
+  ? createBrowserRouter([{ path: "*", element: <Root /> }], { basename: ADMIN_BASE })
+  : null;
+
 export function App() {
   // No admin path in the page means it was not served as the admin app: show nothing about the admin.
   if (!ADMIN_BASE) return <NotFoundPage />;
@@ -63,11 +86,9 @@ export function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <ToastProvider>
-        <BrowserRouter basename={ADMIN_BASE}>
-          <SiteFavicon />
-          <AdminDocumentTitle />
-          <SessionGate />
-        </BrowserRouter>
+        <ConfirmProvider>
+          <RouterProvider router={router!} />
+        </ConfirmProvider>
       </ToastProvider>
     </QueryClientProvider>
   );

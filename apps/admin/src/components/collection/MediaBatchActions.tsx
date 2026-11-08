@@ -12,6 +12,7 @@ import { describeBatch } from "../ui/BatchBar";
 import { Dialog } from "../ui/Dialog";
 import { useToast } from "../ui/Toast";
 import { tr } from "../../lib/messages";
+import { Select } from "../ui/Select";
 
 /** Bulk actions for collection entries of one kind; songs also go in and out of the player. */
 export function MediaBatchActions({ kind, selection }: { kind: string; selection: Selection }) {
@@ -120,44 +121,41 @@ export function MediaBatchActions({ kind, selection }: { kind: string; selection
             {tr("移出播放器")}
           </button>
           {playlists?.length ? (
-            <select
-              className="field w-auto"
+            <Select
               aria-label={tr("加入歌单")}
               value=""
               disabled={disabled}
-              onChange={(e) => {
-                if (e.target.value) void addToPlaylist(e.target.value);
+              onChange={(value) => {
+                if (value) void addToPlaylist(value);
               }}
-            >
-              <option value="">{tr("加入歌单…")}</option>
-              {playlists.map((playlist) => (
-                <option key={playlist.id} value={playlist.id}>
-                  {pickText(playlist.name, tr("未命名歌单"))}
-                </option>
-              ))}
-            </select>
+              className="w-auto"
+              options={[
+                { value: "", label: tr("加入歌单…") },
+                ...playlists.map((playlist) => ({
+                  value: playlist.id,
+                  label: pickText(playlist.name, tr("未命名歌单"))
+                }))
+              ]}
+            />
           ) : null}
         </>
       ) : (
-        <select
-          className="field w-auto"
+        <Select
           aria-label={tr("改状态")}
           value=""
           disabled={disabled}
-          onChange={(e) => {
-            const status = e.target.value as MediaStatus;
+          onChange={(value) => {
+            const status = value as MediaStatus;
             if (status) update({ status }, tr("改为“{0}”", statusLabels(kind)[status]));
           }}
-        >
-          <option value="">{tr("改状态…")}</option>
-          {(Object.entries(statusLabels(kind)) as [MediaStatus, string][]).map(
-            ([status, label]) => (
-              <option key={status} value={status}>
-                {label}
-              </option>
+          className="w-auto"
+          options={[
+            { value: "", label: tr("改状态…") },
+            ...(Object.entries(statusLabels(kind)) as [MediaStatus, string][]).map(
+              ([status, label]) => ({ value: status, label: label })
             )
-          )}
-        </select>
+          ]}
+        />
       )}
       <button
         type="button"

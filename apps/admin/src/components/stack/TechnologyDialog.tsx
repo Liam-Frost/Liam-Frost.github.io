@@ -26,6 +26,7 @@ import { IconCombobox } from "./IconCombobox";
 import { projectOptions } from "./linkOptions";
 import { TechIcon } from "./TechIcon";
 import { tr } from "../../lib/messages";
+import { Select } from "../ui/Select";
 
 type IconDraft = { provider: StackIconProvider; key: string | null; url: string | null };
 
@@ -305,18 +306,14 @@ export function TechnologyDialog({
         </Field>
 
         <Field label={tr("分类")} htmlFor="tech-category">
-          <select
+          <Select
             id="tech-category"
-            className="field"
             value={draft.categoryId}
-            onChange={(e) => set("categoryId", e.target.value)}
-          >
-            {categories.map((c) => (
-              <option key={c.id} value={c.id}>
-                {pickText(c.name, tr("未命名分类"))}
-              </option>
-            ))}
-          </select>
+            onChange={(value) => set("categoryId", value)}
+            options={[
+              ...categories.map((c) => ({ value: c.id, label: pickText(c.name, tr("未命名分类")) }))
+            ]}
+          />
         </Field>
 
         <div>
@@ -328,7 +325,7 @@ export function TechnologyDialog({
               <div className="mt-1.5 flex flex-wrap gap-1.5">
                 <button
                   type="button"
-                  className="btn-secondary !px-2.5 !py-1 !text-[12px]"
+                  className="btn-secondary btn-sm"
                   onClick={() => fileInput.current?.click()}
                 >
                   <ImageUp aria-hidden="true" className="size-3.5" />
@@ -337,7 +334,7 @@ export function TechnologyDialog({
                 {draft.icon.provider !== "none" ? (
                   <button
                     type="button"
-                    className="btn-secondary !px-2.5 !py-1 !text-[12px]"
+                    className="btn-secondary btn-sm"
                     onClick={() => {
                       setFile(null);
                       set("icon", { provider: "none", key: null, url: null });

@@ -121,7 +121,7 @@ export function IconCombobox({
           id={listId}
           role="listbox"
           aria-label={tr("图标库搜索结果")}
-          className="absolute top-full right-0 left-0 z-40 mt-1 max-h-72 overflow-y-auto rounded-xl border border-line bg-surface py-1 shadow-card-hover"
+          className="surface-overlay absolute top-full right-0 left-0 z-40 mt-1 max-h-72 overflow-y-auto py-1"
         >
           {icons.map((icon, index) => (
             <li

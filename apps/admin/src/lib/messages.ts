@@ -1,4 +1,5 @@
 import { en } from "./messages.en";
+import { allowUnload, hasUnsaved, onUnsavedChange } from "./unsaved";
 
 export const ADMIN_LOCALES = ["zh", "en"] as const;
 export type AdminLocale = (typeof ADMIN_LOCALES)[number];
@@ -30,6 +31,7 @@ export const intlLocale = locale === "en" ? "en-CA" : "zh-CN";
 
 if (typeof document !== "undefined") document.documentElement.lang = intlLocale;
 
+/** Callers settle unsaved work first: by the time this runs, the reload is already agreed. */
 export function setLocale(next: AdminLocale) {
   if (next === locale) return;
   try {
@@ -37,7 +39,24 @@ export function setLocale(next: AdminLocale) {
   } catch {
     return;
   }
+  allowUnload();
   window.location.reload();
+}
+
+/** Another tab changed the language: follow it as soon as nothing here would be lost. */
+if (typeof window !== "undefined") {
+  let pending = false;
+  const follow = () => {
+    if (!pending || hasUnsaved() || document.querySelector("dialog[open]")) return;
+    window.location.reload();
+  };
+  window.addEventListener("storage", (event) => {
+    if (event.key !== STORAGE_KEY || event.newValue === locale) return;
+    pending = event.newValue === "zh" || event.newValue === "en";
+    follow();
+  });
+  window.addEventListener("focus", follow);
+  onUnsavedChange(follow);
 }
 
 type Arg = string | number | boolean | null | undefined;

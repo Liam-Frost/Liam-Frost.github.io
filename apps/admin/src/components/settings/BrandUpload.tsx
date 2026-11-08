@@ -6,8 +6,10 @@ import { useId, useRef, type ChangeEvent } from "react";
 import { refreshPresentation } from "../../../../web/src/data/usePresentation";
 import { refreshSiteSettings } from "../../../../web/src/data/useSiteSettings";
 import { api } from "../../lib/api";
+import { useConfirm } from "../ui/Confirm";
 import { useToast } from "../ui/Toast";
 import { tr } from "../../lib/messages";
+import { ImmediateBadge } from "./SettingsUI";
 
 const brandingKey = ["admin", "branding"] as const;
 
@@ -28,6 +30,7 @@ export function BrandUpload({
   const inputId = useId();
   const input = useRef<HTMLInputElement>(null);
   const toast = useToast();
+  const confirm = useConfirm();
   const qc = useQueryClient();
   const { data } = useBranding();
   const done = (result: AdminBranding, message: string) => {
@@ -53,10 +56,23 @@ export function BrandUpload({
     if (file) upload.mutate(file);
   };
 
+  const restore = async () => {
+    if (
+      await confirm({
+        title: tr("恢复默认？"),
+        message: tr("当前图片会被删除，网站上立刻改回默认，无法撤销。"),
+        confirmLabel: tr("恢复默认"),
+        danger: true
+      })
+    )
+      remove.mutate();
+  };
+
   return (
     <div>
       <label htmlFor={inputId} className="mb-1.5 block text-[12.5px] font-medium text-brand-dark">
         {label}
+        <ImmediateBadge />
       </label>
       <input
         ref={input}
@@ -82,7 +98,7 @@ export function BrandUpload({
             type="button"
             className="btn-secondary"
             disabled={busy}
-            onClick={() => remove.mutate()}
+            onClick={() => void restore()}
           >
             <Trash2 aria-hidden="true" className="size-4" />
             {remove.isPending ? tr("移除中…") : tr("恢复默认")}
@@ -110,7 +126,7 @@ export function AvatarUpload() {
         <BrandUpload
           slot="avatar"
           label={tr("头像图片")}
-          hint={tr("建议使用正方形图片。SVG、PNG、WebP 或 JPEG，不超过 2 MB。上传后立即生效。")}
+          hint={tr("建议使用正方形图片。SVG、PNG、WebP 或 JPEG，不超过 2 MB。")}
         />
       </div>
     </div>

@@ -154,7 +154,7 @@ export function MultiCombobox({
             role="listbox"
             aria-multiselectable="true"
             aria-label={listLabel}
-            className="absolute top-full right-0 left-0 z-40 mt-1 max-h-72 overflow-y-auto rounded-xl border border-line bg-surface py-1 shadow-card-hover"
+            className="surface-overlay absolute top-full right-0 left-0 z-40 mt-1 max-h-72 overflow-y-auto py-1"
           >
             {shown.map((option, index) => {
               const selected = chosen.has(option.id);

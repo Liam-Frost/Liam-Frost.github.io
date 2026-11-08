@@ -6,7 +6,7 @@ import type {
   MediaStatus
 } from "@liam-frost/shared";
 import { ArrowLeft, Clapperboard, ExternalLink, ImagePlus, Trash2, X } from "lucide-react";
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent, useId } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 
 import { FixPreviewDialog, PreviewButton, usePreview } from "../components/music/MusicTools";
@@ -28,7 +28,6 @@ import {
   formatDuration,
   isReadKind,
   LANG_LABELS,
-  LANGS,
   MEDIA_STATUS_LABELS,
   pickText,
   SOURCE_LABELS,
@@ -38,6 +37,10 @@ import {
 } from "../lib/i18n";
 import { RecentStats } from "../components/analytics/RecentStats";
 import { tr } from "../lib/messages";
+import { Select } from "../components/ui/Select";
+import { LanguageTabPanel, LanguageTabs } from "../components/ui/LanguageTabs";
+import { useUnsaved } from "../lib/unsaved";
+import { skipNavigationGuard } from "../lib/unsaved";
 
 const ACCEPT = "image/jpeg,image/png,image/webp,image/avif,image/tiff";
 
@@ -132,6 +135,7 @@ function MediaEditor({ item }: { item: AdminMediaItem }) {
   const [saved, setSaved] = useState(draft);
   const dirty = JSON.stringify(draft) !== JSON.stringify(saved);
   const [lang, setLang] = useState<Lang>("zh");
+  const languageTabs = useId();
   const [error, setError] = useState("");
   const [genreInput, setGenreInput] = useState("");
   const [creditInput, setCreditInput] = useState("");
@@ -155,12 +159,7 @@ function MediaEditor({ item }: { item: AdminMediaItem }) {
   const preview = usePreview();
   const backTo = `/collection?kind=${kind}`;
 
-  useEffect(() => {
-    if (!dirty) return;
-    const onBeforeUnload = (event: BeforeUnloadEvent) => event.preventDefault();
-    window.addEventListener("beforeunload", onBeforeUnload);
-    return () => window.removeEventListener("beforeunload", onBeforeUnload);
-  }, [dirty]);
+  useUnsaved(dirty, "page");
 
   const set = <K extends keyof Draft>(key: K, value: Draft[K]) =>
     setDraft((d) => ({ ...d, [key]: value }));
@@ -281,9 +280,6 @@ function MediaEditor({ item }: { item: AdminMediaItem }) {
           to={backTo}
           className="rounded-full p-1.5 text-subtle hover:bg-brand-secondary/12 hover:text-brand"
           aria-label={tr("返回收藏")}
-          onClick={(e) => {
-            if (dirty && !window.confirm(tr("有未保存的修改，确定离开吗？"))) e.preventDefault();
-          }}
         >
           <ArrowLeft aria-hidden="true" className="size-5" />
         </Link>
@@ -339,18 +335,17 @@ function MediaEditor({ item }: { item: AdminMediaItem }) {
             <Panel title={tr("我的记录")}>
               <div className="grid gap-3.5 sm:grid-cols-2">
                 <Field label={tr("状态")} htmlFor="media-status">
-                  <select
+                  <Select
                     id="media-status"
-                    className="field"
                     value={draft.status}
-                    onChange={(e) => set("status", e.target.value as MediaStatus)}
-                  >
-                    {(Object.keys(MEDIA_STATUS_LABELS) as MediaStatus[]).map((status) => (
-                      <option key={status} value={status}>
-                        {statusLabels(kind)[status]}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(value) => set("status", value as MediaStatus)}
+                    options={[
+                      ...(Object.keys(MEDIA_STATUS_LABELS) as MediaStatus[]).map((status) => ({
+                        value: status,
+                        label: statusLabels(kind)[status]
+                      }))
+                    ]}
+                  />
                 </Field>
                 <div>
                   <p className="mb-1.5 text-[12.5px] font-medium text-brand-dark">{tr("评分")}</p>
@@ -468,25 +463,18 @@ function MediaEditor({ item }: { item: AdminMediaItem }) {
           )}
 
           <section className="card min-w-0 p-5" aria-label={tr("文字")}>
-            <div role="tablist" aria-label={tr("语言")} className="mb-3 flex flex-wrap gap-1.5">
-              {LANGS.map((l) => (
-                <button
-                  key={l}
-                  type="button"
-                  role="tab"
-                  aria-selected={lang === l}
-                  onClick={() => setLang(l)}
-                  className={`rounded-full px-3 py-1.5 text-[12.5px] transition-colors ${lang === l ? "bg-brand text-white" : "bg-brand-secondary/10 text-brand hover:bg-brand-secondary/18"}`}
-                >
-                  {LANG_LABELS[l]}
-                  {draft.review[l]?.trim() ? " ✓" : ""}
-                </button>
-              ))}
-            </div>
+            <LanguageTabs
+              id={languageTabs}
+              value={lang}
+              onChange={setLang}
+              isFilled={(l) => Boolean(draft.review[l]?.trim())}
+              mark="filled"
+              className="mb-3"
+            />
             <p className="mb-4 text-[11.5px] text-faint">
               {tr("没填写的语言会在网站上回退到其它语言。标签后带 ✓ 表示该语言已写短评。")}
             </p>
-            <div className="space-y-3.5">
+            <LanguageTabPanel id={languageTabs} lang={lang} className="space-y-3.5">
               <Field label={tr("标题")} htmlFor="media-title">
                 <input
                   id="media-title"
@@ -530,7 +518,7 @@ function MediaEditor({ item }: { item: AdminMediaItem }) {
                   />
                 </Field>
               )}
-            </div>
+            </LanguageTabPanel>
           </section>
 
           <RelationsPanel subject={{ type: "media", id: item.id, kind: item.kind }} />
@@ -667,16 +655,16 @@ function MediaEditor({ item }: { item: AdminMediaItem }) {
                       />
                     </Field>
                     <Field label={tr("连载")} htmlFor="media-ongoing">
-                      <select
+                      <Select
                         id="media-ongoing"
-                        className="field"
                         value={draft.ongoing}
-                        onChange={(e) => set("ongoing", e.target.value as Draft["ongoing"])}
-                      >
-                        <option value="">{tr("不注明")}</option>
-                        <option value="yes">{tr("连载中")}</option>
-                        <option value="no">{tr("已完结")}</option>
-                      </select>
+                        onChange={(value) => set("ongoing", value as Draft["ongoing"])}
+                        options={[
+                          { value: "", label: tr("不注明") },
+                          { value: "yes", label: tr("连载中") },
+                          { value: "no", label: tr("已完结") }
+                        ]}
+                      />
                     </Field>
                   </div>
                 )}
@@ -818,6 +806,7 @@ function MediaEditor({ item }: { item: AdminMediaItem }) {
                 remove.mutate(item.id, {
                   onSuccess: () => {
                     toast(tr("已删除"));
+                    skipNavigationGuard();
                     navigate(backTo);
                   },
                   onError: (e) => toast(e.message, "error")

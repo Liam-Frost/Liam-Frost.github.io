@@ -124,7 +124,7 @@ export function RangePicker({ firstDay }: { firstDay: string | null }) {
           <input
             type="date"
             aria-label={tr("开始日期")}
-            className="field !w-auto !py-1.5"
+            className="field field-sm w-auto"
             value={draft.from}
             max={draft.to}
             onChange={(e) => setDraft({ ...draft, from: e.target.value })}
@@ -133,13 +133,13 @@ export function RangePicker({ firstDay }: { firstDay: string | null }) {
           <input
             type="date"
             aria-label={tr("结束日期")}
-            className="field !w-auto !py-1.5"
+            className="field field-sm w-auto"
             value={draft.to}
             min={draft.from}
             max={today}
             onChange={(e) => setDraft({ ...draft, to: e.target.value })}
           />
-          <button type="submit" className="btn-secondary !py-1.5">
+          <button type="submit" className="btn-secondary btn-sm">
             {tr("应用")}
           </button>
         </form>
@@ -292,7 +292,7 @@ export function ColumnChart({
                 onClick={() => setMetric(key)}
                 className={
                   metric === key
-                    ? "chip !px-2.5 !py-1.5 font-semibold"
+                    ? "chip chip-lg font-semibold"
                     : "rounded-md px-2.5 py-1.5 text-[11px] text-muted hover:bg-brand-secondary/8"
                 }
               >

@@ -19,7 +19,7 @@
   --color-subtle: #596d7b;
   --color-faint: #60717e;
 
-  --color-status-ok: #3f8f6b;
+  --color-status-ok: #2f7d5a;
   --color-status-warn: #876015;
   --color-status-error: #b5573f;
 
@@ -35,6 +35,12 @@
 
   --radius-card: 16px;
   --radius-feature: 20px;
+  --radius-control: 12px;
+
+  /* Control heights. Small: filters, toolbars. Default: forms. Large: primary touch targets. */
+  --size-control-sm: 32px;
+  --size-control-md: 38px;
+  --size-control-lg: 44px;
 }
 
 @layer base {
@@ -61,6 +67,10 @@
 }
 
 @layer components {
+  /*
+   * Settings layout. SettingsLayout sets the page's width variant; everything inside it lays out against
+   * the width it actually has, through container queries, so the sidebars are already accounted for.
+   */
   .settings-layout {
     @apply grid items-start gap-6 xl:grid-cols-[176px_minmax(0,1fr)];
   }
@@ -70,6 +80,7 @@
   }
   .settings-content {
     @apply min-w-0 w-full;
+    container-type: inline-size;
   }
   .settings-content-compact {
     max-width: 640px;
@@ -77,44 +88,275 @@
   .settings-content-standard {
     max-width: 880px;
   }
+  /* The width of an ordinary admin page's content, so wide settings pages share its edges. */
   .settings-content-wide {
-    max-width: 1100px;
+    max-width: 1032px;
   }
   .settings-body {
     @apply min-w-0 space-y-5;
-    padding-bottom: calc(72px + env(safe-area-inset-bottom));
+  }
+
+  /* SettingsGrid: the only ways settings content is arranged in columns. */
+  .settings-grid {
+    @apply grid min-w-0 items-start gap-5;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .settings-link-row {
+    @apply grid gap-2;
+  }
+  .settings-definitions {
+    @apply grid gap-x-4 gap-y-1.5;
+  }
+
+  .home-module-row {
+    @apply grid items-center gap-3;
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .home-module-head {
+    @apply hidden bg-canvas px-4 py-2 text-[11px] text-muted;
+  }
+  .photo-grid {
+    @apply grid gap-3;
+    grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+  }
+  .photo-option {
+    @apply relative block cursor-pointer rounded-xl border border-line p-1.5 transition-colors hover:bg-canvas/70 has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-50 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-brand-secondary;
+  }
+  .photo-option[data-selected="true"] {
+    @apply border-brand bg-brand/5;
+  }
+  .photo-option-mark {
+    @apply absolute top-3 left-3 inline-flex size-6 items-center justify-center rounded-full bg-brand text-[12px] font-semibold text-white;
+  }
+  /* The public site's default mark, for the logo preview. */
+  .brandMark {
+    width: 28px;
+    height: 28px;
+    background: linear-gradient(135deg, #547792, #94b4c1);
+    mask: url("/LOGO2.svg") center / contain no-repeat;
+  }
+
+  /* Field widths by what the field holds, capped by the column it is in. */
+  .field-width-meta {
+    max-width: 176px;
+  }
+  .field-width-short {
+    max-width: 320px;
+  }
+  .field-width-long {
+    max-width: 560px;
+  }
+
+  /*
+   * Surfaces. Form and list surfaces hold content on the page and are the same object; media surfaces
+   * sit inside them (previews); overlay surfaces float above the page.
+   */
+  .card,
+  .settings-section,
+  .settings-list {
+    @apply min-w-0 rounded-[var(--radius-card)] border border-line bg-surface shadow-card;
   }
   .settings-section {
-    @apply min-w-0 rounded-[var(--radius-card)] border border-line bg-surface p-4 sm:p-5;
-  }
-  .settings-actions {
-    @apply sticky z-10 mt-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line bg-surface p-3 shadow-card;
-    bottom: max(12px, env(safe-area-inset-bottom));
-  }
-  .settings-actions-inline {
-    position: static;
-    box-shadow: none;
+    @apply p-4;
+    container-type: inline-size;
   }
   .settings-list {
-    @apply divide-y divide-line-soft overflow-hidden rounded-xl border border-line bg-surface;
+    @apply divide-y divide-line-soft overflow-hidden;
+  }
+  .surface-row {
+    @apply px-4 py-2 transition-colors hover:bg-canvas/70;
+  }
+  .surface-media {
+    @apply min-w-0 rounded-xl border border-line-soft bg-canvas p-3;
+  }
+  .surface-overlay {
+    @apply rounded-xl border border-line bg-surface shadow-card-hover;
+  }
+  .surface-header {
+    @apply mb-4 flex flex-wrap items-start justify-between gap-3;
+  }
+  .surface-title {
+    @apply text-[15px] font-semibold text-brand-dark;
+  }
+  .surface-description {
+    @apply mt-1 text-[12px] leading-relaxed text-muted;
+  }
+  /* A labelled group inside a dense editor. */
+  .surface-title-dense {
+    @apply text-[11px] font-bold tracking-[1px] text-brand-secondary;
+  }
+
+  .settings-actions {
+    @apply sticky z-10 mt-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line bg-surface p-3 shadow-card-hover;
+    bottom: max(12px, env(safe-area-inset-bottom));
+  }
+
+  /* Controls: same height and shape for the same job. */
+  .btn-primary,
+  .btn-secondary,
+  .btn-danger {
+    @apply inline-flex items-center justify-center gap-1.5 rounded-full px-4 py-1.5 text-[13px] font-semibold transition-colors duration-200 disabled:cursor-not-allowed disabled:opacity-50;
+    min-height: var(--size-control-md);
   }
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-1.5 rounded-full bg-brand px-4 py-2.5 text-[13px] font-semibold text-white transition-colors duration-200 hover:bg-brand-secondary disabled:cursor-not-allowed disabled:opacity-50;
+    @apply bg-brand text-white hover:bg-brand-secondary;
   }
   .btn-secondary {
-    @apply inline-flex items-center justify-center gap-1.5 rounded-full bg-brand-secondary/12 px-4 py-2.5 text-[13px] font-semibold text-brand transition-colors duration-200 hover:bg-brand-secondary/20 disabled:cursor-not-allowed disabled:opacity-50;
+    @apply bg-brand-secondary/12 text-brand hover:bg-brand-secondary/20;
   }
   .btn-danger {
-    @apply inline-flex items-center justify-center gap-1.5 rounded-full bg-status-error px-4 py-2.5 text-[13px] font-semibold text-white transition-opacity duration-200 hover:opacity-90 disabled:opacity-50;
+    @apply bg-status-error text-white hover:opacity-90;
+  }
+  .btn-sm {
+    @apply px-3 py-1 text-[12.5px];
+    min-height: var(--size-control-sm);
+  }
+  .btn-lg {
+    @apply px-5 py-2 text-[14px];
+    min-height: var(--size-control-lg);
   }
   .field {
-    @apply w-full rounded-xl border border-line bg-white px-3 py-2 text-sm text-ink placeholder:text-faint transition-colors focus:border-brand-secondary focus:outline-none focus:ring-2 focus:ring-brand-secondary/20;
+    @apply w-full rounded-[var(--radius-control)] border border-line bg-white px-3 py-1.5 text-sm text-ink placeholder:text-faint transition-colors focus:border-brand-secondary focus:outline-none focus:ring-2 focus:ring-brand-secondary/20 disabled:cursor-not-allowed disabled:opacity-60;
+    min-height: var(--size-control-md);
   }
-  .card {
-    @apply rounded-[var(--radius-card)] border border-line bg-surface shadow-card;
+  .field-sm {
+    @apply rounded-[10px] px-2.5 py-1 text-[12.5px];
+    min-height: var(--size-control-sm);
+  }
+  .icon-btn {
+    @apply relative inline-flex size-7 items-center justify-center rounded-full text-faint transition-colors hover:bg-brand-secondary/12 hover:text-brand disabled:opacity-30;
+  }
+  .icon-btn-md {
+    @apply size-8;
+  }
+  .icon-btn-danger {
+    @apply hover:bg-status-error/10 hover:text-status-error;
   }
   .chip {
     @apply rounded-md bg-brand-secondary/12 px-2 py-1 text-[11px] leading-none text-brand;
+  }
+  .chip-lg {
+    @apply px-2.5 py-1.5;
+  }
+
+  /* Single-select: the trigger is a field, the list an overlay surface. */
+  .select-trigger {
+    @apply inline-flex w-full cursor-pointer items-center justify-between gap-2 text-left;
+  }
+  .select-trigger[data-popup-open] .select-chevron {
+    rotate: 180deg;
+  }
+  .select-chevron {
+    @apply size-[15px] shrink-0 text-faint;
+    transition: rotate 180ms ease;
+  }
+  .select-dark {
+    @apply border-white/25 bg-white/8 text-white hover:bg-white/14 focus:border-white/60 focus:ring-white/20;
+  }
+  .select-dark .select-chevron {
+    @apply text-white/70;
+  }
+  .select-popup {
+    @apply overflow-y-auto p-1 outline-none;
+    min-width: var(--anchor-width);
+    max-height: min(var(--available-height), 320px);
+  }
+  .select-popup-dark {
+    @apply border-white/15 bg-brand-dark text-white;
+  }
+  .select-group-label {
+    @apply px-2.5 pt-2 pb-1 text-[11px] font-medium text-muted;
+  }
+  .select-item {
+    @apply flex cursor-pointer items-center justify-between gap-3 rounded-lg px-2.5 py-1.5 text-sm text-ink outline-none select-none;
+  }
+  .select-item[data-highlighted] {
+    background: color-mix(in srgb, var(--color-brand-secondary) 12%, transparent);
+  }
+  .select-item[data-selected] {
+    @apply font-semibold text-brand;
+  }
+  .select-item[data-disabled] {
+    @apply cursor-not-allowed opacity-50;
+  }
+  .select-popup-dark .select-group-label {
+    @apply text-white/60;
+  }
+  .select-popup-dark .select-item {
+    @apply text-white;
+  }
+  .select-popup-dark .select-item[data-highlighted] {
+    @apply bg-white/14;
+  }
+
+  /* Tabs for the language a field is being edited in. */
+  .language-tab {
+    @apply inline-flex items-center rounded-full px-3 py-1 text-[12.5px] whitespace-nowrap transition-colors;
+    min-height: var(--size-control-sm);
+  }
+  .language-tab-sm {
+    @apply px-2.5 py-0.5 text-[12px];
+    min-height: 26px;
+  }
+  .language-tab[aria-selected="true"] {
+    @apply bg-brand text-white;
+  }
+  .language-tab[aria-selected="false"] {
+    @apply bg-brand-secondary/10 text-brand hover:bg-brand-secondary/18;
+  }
+}
+
+/* Queried against the nearest settings container: the page's content, or the section it is in. */
+@container (min-width: 540px) {
+  .settings-grid-equal {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .settings-section {
+    padding: 20px;
+  }
+}
+@container (min-width: 620px) {
+  .settings-grid-aside {
+    grid-template-columns: minmax(0, 1fr) clamp(260px, 32%, 320px);
+  }
+}
+/* The main column of an aside layout decides for what is inside it. */
+.settings-grid-aside > * {
+  container-type: inline-size;
+}
+
+@container (min-width: 480px) {
+  .settings-definitions {
+    grid-template-columns: 6.5rem minmax(0, 1fr);
+  }
+  .settings-link-row {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) auto;
+    align-items: center;
+  }
+}
+
+@container (min-width: 620px) {
+  .home-module-row {
+    grid-template-columns: minmax(0, 1fr) 88px 100px 60px 80px;
+  }
+  .home-module-head {
+    display: grid;
+  }
+}
+@container (min-width: 620px) {
+  .login-preview-sticky {
+    position: sticky;
+    top: 24px;
+  }
+}
+
+/* Phones and tablets: the small icon buttons keep a finger-sized target without taking more room. */
+@media (pointer: coarse) {
+  .icon-btn::after {
+    content: "";
+    position: absolute;
+    inset: -8px;
   }
 }
 
@@ -122,6 +364,25 @@
   .settings-actions {
     position: static;
   }
+}
+
+/* The phone navigation: a panel from the left edge, over a dimmed page that does not scroll behind it. */
+.admin-drawer {
+  position: fixed;
+  inset: 0 auto 0 0;
+  width: min(300px, 85vw);
+  height: 100dvh;
+  max-height: none;
+  margin: 0;
+  border: 0;
+  padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
+  background: var(--color-brand-dark);
+}
+.admin-drawer::backdrop {
+  background: rgb(0 0 0 / 0.45);
+}
+html:has(.admin-drawer[open]) {
+  overflow: hidden;
 }
 
 /* Settings reserve the bottom edge for saving. Other admin pages retain their toast position. */
@@ -134,88 +395,6 @@ html:has(.settings-layout) {
 }
 .settings-body :is(input, select, textarea, button, summary) {
   scroll-margin-block: 96px;
-}
-
-/*
- * Native <select class="field"> in the admin's style: our arrow and focus ring, so the keyboard, screen
- * reader and phone pickers stay native. Browsers with customizable selects (appearance: base-select)
- * also get the opened list as an admin card; others show their own list.
- */
-select.field {
-  appearance: none;
-  padding-right: 2.25rem;
-  background-image: var(--select-chevron);
-  background-repeat: no-repeat;
-  background-position: right 0.7rem center;
-  background-size: 15px;
-  cursor: pointer;
-}
-
-select.field:disabled {
-  cursor: not-allowed;
-  opacity: 0.6;
-}
-
-:root {
-  --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23667784' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
-}
-
-@supports (appearance: base-select) {
-  select.field,
-  select.field::picker(select) {
-    appearance: base-select;
-  }
-
-  select.field {
-    display: flex;
-    align-items: center;
-    background-image: none;
-  }
-
-  select.field::picker-icon {
-    content: "";
-    width: 15px;
-    height: 15px;
-    margin-inline-start: auto;
-    background: var(--select-chevron) center / 15px no-repeat;
-    transition: rotate 180ms ease;
-  }
-
-  select.field:open::picker-icon {
-    rotate: 180deg;
-  }
-
-  select.field::picker(select) {
-    margin-block: 4px;
-    padding: 4px;
-    border: 1px solid var(--color-line);
-    border-radius: 12px;
-    background: var(--color-surface);
-    box-shadow: var(--shadow-card-hover);
-  }
-
-  select.field option {
-    padding: 7px 10px;
-    border-radius: 8px;
-    font-size: 14px;
-    color: var(--color-ink);
-    cursor: pointer;
-  }
-
-  select.field option:hover,
-  select.field option:focus-visible {
-    background: color-mix(in srgb, var(--color-brand-secondary) 12%, transparent);
-    outline: none;
-  }
-
-  select.field option:checked {
-    color: var(--color-brand);
-    font-weight: 600;
-  }
-
-  select.field option::checkmark {
-    color: var(--color-brand-secondary);
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -1,7 +1,7 @@
 import type { IntegrationProvider } from "@liam-frost/shared";
 import { useQuery } from "@tanstack/react-query";
 import { ShieldCheck } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { SettingsPage, SettingsState } from "../components/settings/SettingsUI";
 import LoadingSkeleton from "../../../web/src/components/LoadingSkeleton";
 
@@ -39,13 +39,6 @@ export function IntegrationsPage() {
     staleTime: 60_000
   });
 
-  useEffect(() => {
-    if (!unsaved) return;
-    const onBeforeUnload = (event: BeforeUnloadEvent) => event.preventDefault();
-    window.addEventListener("beforeunload", onBeforeUnload);
-    return () => window.removeEventListener("beforeunload", onBeforeUnload);
-  }, [unsaved]);
-
   return (
     <SettingsPage
       title={tr("集成与 API")}
@@ -65,7 +58,7 @@ export function IntegrationsPage() {
               {tr("需要先配置数据库与管理员密钥，才能保存 API 配置。")}
             </p>
           ) : null}
-          <div className="space-y-6">
+          <div className="space-y-5">
             {GROUPS.map((group) => (
               <section key={group.title} aria-labelledby={`group-${group.title}`}>
                 <h2

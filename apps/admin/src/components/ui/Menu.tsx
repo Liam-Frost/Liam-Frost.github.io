@@ -62,7 +62,7 @@ export function Menu({ label, items }: { label: string; items: MenuItem[] }) {
               setOpen(true);
             }
           }}
-          className="rounded-full p-1.5 text-faint transition-colors hover:bg-brand-secondary/12 hover:text-brand"
+          className="icon-btn"
         >
           <MoreHorizontal aria-hidden="true" className="size-4" />
         </button>
@@ -91,7 +91,7 @@ export function Menu({ label, items }: { label: string; items: MenuItem[] }) {
             } else return;
             event.preventDefault();
           }}
-          className="absolute top-full right-0 z-40 mt-1 min-w-[168px] rounded-xl border border-line bg-surface py-1 shadow-card-hover"
+          className="surface-overlay absolute top-full right-0 z-40 mt-1 min-w-[168px] py-1"
         >
           {items.map((item) => (
             <button

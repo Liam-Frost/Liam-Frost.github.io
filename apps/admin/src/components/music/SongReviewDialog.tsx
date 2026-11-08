@@ -8,6 +8,7 @@ import { Field } from "../ui/Field";
 import { StarRating } from "../ui/StarRating";
 import { useToast } from "../ui/Toast";
 import { tr } from "../../lib/messages";
+import { Select } from "../ui/Select";
 
 export function SongReviewDialog({ item, onClose }: { item: AdminMediaItem; onClose: () => void }) {
   const [rating, setRating] = useState(item.rating);
@@ -66,19 +67,17 @@ export function SongReviewDialog({ item, onClose }: { item: AdminMediaItem; onCl
           <StarRating value={rating} onChange={setRating} />
         </div>
         <Field label={tr("短评语言")} htmlFor="song-review-lang">
-          <select
+          <Select
             id="song-review-lang"
-            className="field"
             value={lang}
-            onChange={(event) => setLang(event.target.value as Lang)}
-          >
-            {LANGS.map((value) => (
-              <option key={value} value={value}>
-                {LANG_LABELS[value]}
-                {review[value]?.trim() ? " ✓" : ""}
-              </option>
-            ))}
-          </select>
+            onChange={(value) => setLang(value as Lang)}
+            options={[
+              ...LANGS.map((value) => ({
+                value: value,
+                label: `${LANG_LABELS[value]}${review[value]?.trim() ? " ✓" : ""}`
+              }))
+            ]}
+          />
         </Field>
         <Field
           label={tr("个人短评")}

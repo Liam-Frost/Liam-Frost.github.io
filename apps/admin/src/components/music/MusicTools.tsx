@@ -21,6 +21,7 @@ import { useToast } from "../ui/Toast";
 import { Tooltip } from "../ui/Tooltip";
 import { SongReviewDialog } from "./SongReviewDialog";
 import { tr } from "../../lib/messages";
+import { Select } from "../ui/Select";
 
 /** One shared <audio> for preview buttons: starting a preview stops the previous one. */
 export function usePreview() {
@@ -175,18 +176,12 @@ export function MusicSearchDialog({
     <Dialog open title={mode === "add" ? tr("添加歌曲") : tr("选择试听")} onClose={onClose}>
       <form onSubmit={search} className="flex flex-wrap items-end gap-2">
         <Field label={tr("商店")} htmlFor="music-store">
-          <select
+          <Select
             id="music-store"
-            className="field"
             value={country}
-            onChange={(e) => setCountry(e.target.value)}
-          >
-            {MUSIC_STORES.map(([code, label]) => (
-              <option key={code} value={code}>
-                {label}
-              </option>
-            ))}
-          </select>
+            onChange={(value) => setCountry(value)}
+            options={[...MUSIC_STORES.map(([code, label]) => ({ value: code, label: label }))]}
+          />
         </Field>
         <Field label={tr("在 iTunes 搜索")} htmlFor="music-query" className="min-w-0 flex-1">
           <input
@@ -731,7 +726,7 @@ function MusicRow({
         </Tooltip>
         <button
           type="button"
-          className="btn-secondary !px-3 !py-2"
+          className="btn-secondary btn-sm"
           aria-label={tr("评分与短评：{0}", title)}
           onClick={onReview}
         >

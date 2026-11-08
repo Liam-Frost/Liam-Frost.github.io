@@ -5,11 +5,11 @@ import type {
   LocalizedText
 } from "@liam-frost/shared";
 import { CloudDownload, ExternalLink, Plus, Replace, X } from "lucide-react";
-import { useState, type FormEvent } from "react";
+import { useState, type FormEvent, useId } from "react";
 
 import { useSetPhoto, useUpdatePhoto } from "../../hooks/usePhotos";
 import { api, uploadPhotoImage } from "../../lib/api";
-import { LANG_LABELS, LANGS, type Lang } from "../../lib/i18n";
+import { type Lang } from "../../lib/i18n";
 import { Dialog } from "../ui/Dialog";
 import { Field, Switch } from "../ui/Field";
 import { useToast } from "../ui/Toast";
@@ -17,6 +17,7 @@ import { RecentStats } from "../analytics/RecentStats";
 import { Tooltip } from "../ui/Tooltip";
 import { ImageSourcePicker, sourceLabel } from "./ImageSourcePicker";
 import { tr } from "../../lib/messages";
+import { LanguageTabPanel, LanguageTabs } from "../ui/LanguageTabs";
 
 type Draft = {
   title: LocalizedText;
@@ -73,6 +74,7 @@ export function PhotoEditor({
   const [imageError, setImageError] = useState("");
   const setPhoto = useSetPhoto();
   const [lang, setLang] = useState<Lang>("zh");
+  const languageTabs = useId();
   const [error, setError] = useState("");
   const update = useUpdatePhoto();
   const toast = useToast();
@@ -219,7 +221,7 @@ export function PhotoEditor({
             <div className="flex flex-wrap gap-1.5 pt-1">
               <button
                 type="button"
-                className="btn-secondary !px-3 !py-1.5 !text-[12px]"
+                className="btn-secondary btn-sm"
                 disabled={imageBusy}
                 onClick={() => {
                   setImageError("");
@@ -232,7 +234,7 @@ export function PhotoEditor({
               {photo.storage === "remote-url" ? (
                 <button
                   type="button"
-                  className="btn-secondary !px-3 !py-1.5 !text-[12px]"
+                  className="btn-secondary btn-sm"
                   disabled={imageBusy}
                   onClick={() => void host()}
                 >
@@ -265,30 +267,19 @@ export function PhotoEditor({
 
         <div className="min-w-0 space-y-5">
           <div>
-            <div role="tablist" aria-label={tr("语言")} className="mb-3 flex flex-wrap gap-1.5">
-              {LANGS.map((l) => (
-                <button
-                  key={l}
-                  type="button"
-                  role="tab"
-                  aria-selected={lang === l}
-                  onClick={() => setLang(l)}
-                  className={`rounded-full px-3 py-1.5 text-[12.5px] transition-colors ${
-                    lang === l
-                      ? "bg-brand text-white"
-                      : "bg-brand-secondary/10 text-brand hover:bg-brand-secondary/18"
-                  }`}
-                >
-                  {LANG_LABELS[l]}
-                  {draft.title[l]?.trim() ? "" : " ·"}
-                </button>
-              ))}
-            </div>
+            <LanguageTabs
+              id={languageTabs}
+              value={lang}
+              onChange={setLang}
+              isFilled={(l) => Boolean(draft.title[l]?.trim())}
+              mark="missing"
+              className="mb-3"
+            />
             <p className="mb-3 text-[11.5px] text-faint">
               {tr("没填写的语言会在网站上回退到其它语言。标签页名后带 · 表示该语言还没有标题。")}
             </p>
 
-            <div className="grid gap-3.5 sm:grid-cols-2">
+            <LanguageTabPanel id={languageTabs} lang={lang} className="grid gap-3.5 sm:grid-cols-2">
               <Field label={tr("标题")} htmlFor="photo-title">
                 <input
                   id="photo-title"
@@ -344,7 +335,7 @@ export function PhotoEditor({
                   maxLength={300}
                 />
               </Field>
-            </div>
+            </LanguageTabPanel>
 
             <fieldset className="mt-3.5">
               <legend className="mb-1.5 text-[12.5px] font-medium text-brand-dark">

@@ -8,6 +8,8 @@ export type ApiErrorBody = {
   error: {
     code: string;
     message: string;
+    /** Machine-readable specifics, for errors the client handles itself. */
+    details?: unknown;
   };
 };
 

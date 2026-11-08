@@ -35,6 +35,7 @@ import { Field } from "../ui/Field";
 import { Panel } from "../ui/Panel";
 import { useToast } from "../ui/Toast";
 import { tr } from "../../lib/messages";
+import { Select } from "../ui/Select";
 
 type Subject = { type: "media"; id: string; kind: MediaKind } | { type: "person"; id: string };
 
@@ -273,19 +274,15 @@ function RoleSelect({
   const roles = type === "credit" ? PERSON_ROLES : SOUNDTRACK_ROLES;
   return (
     <Field label={type === "credit" ? tr("身份") : tr("歌曲类型")} htmlFor="relation-role">
-      <select
+      <Select
         id="relation-role"
-        className="field"
         value={value ?? ""}
-        onChange={(e) => onChange(e.target.value || null)}
-      >
-        {type === "soundtrack" ? <option value="">{tr("不注明")}</option> : null}
-        {roles.map((role) => (
-          <option key={role} value={role}>
-            {roleLabel(type, role)}
-          </option>
-        ))}
-      </select>
+        onChange={(value) => onChange(value || null)}
+        options={[
+          ...(type === "soundtrack" ? [{ value: "", label: tr("不注明") }] : []),
+          ...roles.map((role) => ({ value: role, label: roleLabel(type, role) }))
+        ]}
+      />
     </Field>
   );
 }
@@ -441,18 +438,12 @@ function AddRelationDialog({
       <form id="add-relation" onSubmit={submit} className="space-y-4">
         {choices.length > 1 ? (
           <Field label={tr("关联类型")} htmlFor="relation-choice">
-            <select
+            <Select
               id="relation-choice"
-              className="field"
               value={choiceId}
-              onChange={(e) => select(e.target.value)}
-            >
-              {choices.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.label}
-                </option>
-              ))}
-            </select>
+              onChange={(value) => select(value)}
+              options={[...choices.map((c) => ({ value: c.id, label: c.label }))]}
+            />
           </Field>
         ) : null}
 

@@ -53,6 +53,7 @@ import {
 import { useRecentCounts } from "../components/analytics/RecentStats";
 import { Tooltip } from "../components/ui/Tooltip";
 import { tr } from "../lib/messages";
+import { Select } from "../components/ui/Select";
 
 const STATUSES = Object.keys(MEDIA_STATUS_LABELS) as MediaStatus[];
 
@@ -206,22 +207,22 @@ export function CollectionPage() {
         <label htmlFor="collection-sort" className="text-xs text-brand-secondary">
           {tr("排列顺序")}
         </label>
-        <select
+        <Select
           id="collection-sort"
-          className="field !w-auto"
           value={sort}
-          onChange={(e) => {
+          onChange={(value) => {
             const next = new URLSearchParams(params);
-            next.set("sort", e.target.value);
+            next.set("sort", value);
             setParams(next, { replace: true });
           }}
-        >
-          {Object.entries(COLLECTION_SORTS).map(([key, label]) => (
-            <option key={key} value={key}>
-              {label}
-            </option>
-          ))}
-        </select>
+          className="w-auto"
+          options={[
+            ...Object.entries(COLLECTION_SORTS).map(([key, label]) => ({
+              value: key,
+              label: label
+            }))
+          ]}
+        />
         <span className="text-xs text-brand-secondary">{tr("不改变首页精选或歌单播放顺序")}</span>
       </div>
       {kind === "track" ? (
@@ -507,21 +508,15 @@ function AddMediaDialog({
       <form onSubmit={search} className="flex flex-wrap items-end gap-2">
         {sources.length > 1 ? (
           <Field label={tr("资料来源")} htmlFor="media-source">
-            <select
+            <Select
               id="media-source"
-              className="field"
               value={source}
-              onChange={(e) => {
-                setSource(e.target.value as MediaSearchSource);
+              onChange={(value) => {
+                setSource(value as MediaSearchSource);
                 setResults(null);
               }}
-            >
-              {sources.map((s) => (
-                <option key={s} value={s}>
-                  {SOURCE_LABELS[s]}
-                </option>
-              ))}
-            </select>
+              options={[...sources.map((s) => ({ value: s, label: SOURCE_LABELS[s] }))]}
+            />
           </Field>
         ) : null}
         <Field

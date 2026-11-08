@@ -3,16 +3,18 @@ import type {
   AdminStackCategoryDelete,
   LocalizedText
 } from "@liam-frost/shared";
-import { useState, type FormEvent } from "react";
+import { useState, type FormEvent, useId } from "react";
 
 import { useStackMutation } from "../../hooks/useStack";
 import { api } from "../../lib/api";
-import { LANG_LABELS, LANGS, pickText, type Lang } from "../../lib/i18n";
+import { pickText, type Lang } from "../../lib/i18n";
 import { Dialog } from "../ui/Dialog";
 import { Field, Switch } from "../ui/Field";
 import { useToast } from "../ui/Toast";
 import { DiscardBar } from "./DiscardBar";
 import { tr } from "../../lib/messages";
+import { Select } from "../ui/Select";
+import { LanguageTabPanel, LanguageTabs } from "../ui/LanguageTabs";
 
 const trimmed = (text: LocalizedText) =>
   Object.fromEntries(
@@ -36,6 +38,7 @@ export function CategoryDialog({
   const [description, setDescription] = useState<LocalizedText>(category?.description ?? {});
   const [visible, setVisible] = useState(category?.visible ?? true);
   const [lang, setLang] = useState<Lang>("zh");
+  const languageTabs = useId();
   const [error, setError] = useState("");
   const [confirmDiscard, setConfirmDiscard] = useState(false);
   const toast = useToast();
@@ -90,52 +93,42 @@ export function CategoryDialog({
       }
     >
       <form id="stack-category" onSubmit={submit} noValidate className="space-y-3.5">
-        <div role="tablist" aria-label={tr("语言")} className="flex flex-wrap gap-1.5">
-          {LANGS.map((l) => (
-            <button
-              key={l}
-              type="button"
-              role="tab"
-              aria-selected={lang === l}
-              onClick={() => setLang(l)}
-              className={`rounded-full px-2.5 py-1 text-[12px] whitespace-nowrap transition-colors ${
-                lang === l
-                  ? "bg-brand text-white"
-                  : "bg-brand-secondary/10 text-brand hover:bg-brand-secondary/18"
-              }`}
-            >
-              {LANG_LABELS[l]}
-              {name[l]?.trim() ? "" : " ·"}
-            </button>
-          ))}
-        </div>
+        <LanguageTabs
+          id={languageTabs}
+          value={lang}
+          onChange={setLang}
+          isFilled={(l) => Boolean(name[l]?.trim())}
+          mark="missing"
+        />
         <p className="text-[11.5px] text-faint">
           {tr("没填写的语言在网站上回退到其它语言；带 · 的语言还没有名称。")}
         </p>
-        <Field label={tr("分类名称")} htmlFor="category-name">
-          <input
-            id="category-name"
-            className="field"
-            data-autofocus
-            value={name[lang] ?? ""}
-            maxLength={40}
-            placeholder={tr("例如 Frontend")}
-            onChange={(e) => setName((n) => ({ ...n, [lang]: e.target.value }))}
-          />
-        </Field>
-        <Field
-          label={tr("说明（可选）")}
-          htmlFor="category-description"
-          hint={tr("一句话，显示在网站上的分类名下方")}
-        >
-          <input
-            id="category-description"
-            className="field"
-            value={description[lang] ?? ""}
-            maxLength={200}
-            onChange={(e) => setDescription((d) => ({ ...d, [lang]: e.target.value }))}
-          />
-        </Field>
+        <LanguageTabPanel id={languageTabs} lang={lang} className="space-y-3.5">
+          <Field label={tr("分类名称")} htmlFor="category-name">
+            <input
+              id="category-name"
+              className="field"
+              data-autofocus
+              value={name[lang] ?? ""}
+              maxLength={40}
+              placeholder={tr("例如 Frontend")}
+              onChange={(e) => setName((n) => ({ ...n, [lang]: e.target.value }))}
+            />
+          </Field>
+          <Field
+            label={tr("说明（可选）")}
+            htmlFor="category-description"
+            hint={tr("一句话，显示在网站上的分类名下方")}
+          >
+            <input
+              id="category-description"
+              className="field"
+              value={description[lang] ?? ""}
+              maxLength={200}
+              onChange={(e) => setDescription((d) => ({ ...d, [lang]: e.target.value }))}
+            />
+          </Field>
+        </LanguageTabPanel>
         <Switch
           id="category-visible"
           checked={visible}
@@ -237,19 +230,19 @@ export function DeleteCategoryDialog({
               />
               <span className="min-w-0 flex-1">
                 {tr("移到另一个分类末尾")}
-                <select
+                <Select
                   aria-label={tr("移到哪个分类")}
-                  className="field mt-1.5"
                   value={target}
                   disabled={mode !== "move"}
-                  onChange={(e) => setTarget(e.target.value)}
-                >
-                  {others.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {pickText(c.name, tr("未命名分类"))}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(value) => setTarget(value)}
+                  className="mt-1.5"
+                  options={[
+                    ...others.map((c) => ({
+                      value: c.id,
+                      label: pickText(c.name, tr("未命名分类"))
+                    }))
+                  ]}
+                />
               </span>
             </label>
           ) : null}

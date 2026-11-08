@@ -19,7 +19,12 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const seq = useRef(0);
   const push = useCallback((message: string, tone: Tone = "success") => {
     const id = ++seq.current;
-    setToasts((list) => [...list.slice(-3), { id, tone, message }]);
+    setToasts((list) =>
+      // Two saves finishing together say the same thing once.
+      list.some((t) => t.message === message && t.tone === tone)
+        ? list
+        : [...list.slice(-3), { id, tone, message }]
+    );
     window.setTimeout(
       () => setToasts((list) => list.filter((t) => t.id !== id)),
       tone === "error" ? 7000 : 4000

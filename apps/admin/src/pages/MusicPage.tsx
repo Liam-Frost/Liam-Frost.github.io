@@ -12,6 +12,7 @@ import { usePlaylists } from "../hooks/usePlaylists";
 import { useSpotify, useUpdateSpotify } from "../hooks/useSpotify";
 import { pickText } from "../lib/i18n";
 import { tr } from "../lib/messages";
+import { Select } from "../components/ui/Select";
 
 /** Settings of the site's music player; its songs are managed in the collection's music tab. */
 export function MusicPage() {
@@ -158,23 +159,22 @@ function SettingsForm({ settings }: { settings: SpotifySettings }) {
                 "选一个歌单时，播放歌单里公开并且有试听的歌，按歌单顺序；歌单被隐藏或删除后回到全部歌曲。"
               )}
             >
-              <select
+              <Select
                 id="spotify-playlist"
-                className="field"
                 value={draft.playlistId ?? ""}
-                onChange={(e) => set("playlistId", e.target.value || null)}
-              >
-                <option value="">{tr("所有“加入播放器”的歌")}</option>
-                {(playlists ?? []).map((playlist) => (
-                  <option key={playlist.id} value={playlist.id}>
-                    {tr(
+                onChange={(value) => set("playlistId", value || null)}
+                options={[
+                  { value: "", label: tr("所有“加入播放器”的歌") },
+                  ...(playlists ?? []).map((playlist) => ({
+                    value: playlist.id,
+                    label: tr(
                       "歌单：{0}{1}",
                       pickText(playlist.name, tr("未命名歌单")),
                       playlist.visibility === "private" ? tr("（隐藏）") : ""
-                    )}
-                  </option>
-                ))}
-              </select>
+                    )
+                  }))
+                ]}
+              />
             </Field>
             <Switch
               id="spotify-shuffle"
