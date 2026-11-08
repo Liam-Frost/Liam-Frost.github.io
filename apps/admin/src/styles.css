@@ -495,3 +495,15 @@ html:has(.settings-layout) {
     animation-duration: 0.01ms !important;
   }
 }
+
+/* Colours of the glass slider (the vendored styles bring the motion tokens). */
+.glassScope {
+  --ios-font: inherit;
+  --ios-blue: var(--color-brand-secondary);
+  --ios-fill: rgb(120 120 128 / 20%);
+  --ios-fill-solid: color-mix(in srgb, rgb(120 120 128) 20%, #fff);
+  --glass-regular-wash: rgb(255 255 255 / 34%);
+  --glass-clear-wash: rgb(255 255 255 / 6%);
+  --glass-rim-alpha: 1;
+  --glass-shade: rgb(0 0 0 / 6%);
+}

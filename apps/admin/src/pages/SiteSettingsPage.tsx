@@ -11,6 +11,7 @@ import { Field, Switch } from "../components/ui/Field";
 import { IconButton } from "../components/ui/IconButton";
 import { LanguageTabPanel, LanguageTabs } from "../components/ui/LanguageTabs";
 import { Select } from "../components/ui/Select";
+import { Slider } from "../components/ui/Slider";
 import { api, request } from "../lib/api";
 import { mediaKey } from "../hooks/useMedia";
 import { LANGS, LANG_LABELS, type Lang } from "../lib/i18n";
@@ -424,20 +425,15 @@ export function SiteSettingsPage({ group }: { group: SiteSettingsGroup }) {
                 </Field>
                 <Field
                   label={tr("底部距离：{0}px", navigation.bottomOffset)}
-                  htmlFor="settings-bottom-offset"
                   hint={tr("手机上按一半距离显示。")}
                 >
-                  <input
-                    id="settings-bottom-offset"
-                    className="w-full"
-                    type="range"
+                  <Slider
+                    label={tr("底部距离")}
                     min={16}
                     max={40}
                     step={2}
                     value={navigation.bottomOffset}
-                    onChange={(event) =>
-                      change({ ...navigation, bottomOffset: Number(event.target.value) })
-                    }
+                    onChange={(bottomOffset) => change({ ...navigation, bottomOffset })}
                   />
                 </Field>
                 <div className="flex items-center pt-6">
@@ -466,20 +462,15 @@ export function SiteSettingsPage({ group }: { group: SiteSettingsGroup }) {
                 </Field>
                 <Field
                   label={tr("边缘折射：{0}×", navigation.refraction.toFixed(1))}
-                  htmlFor="settings-refraction"
                   hint={tr("1.0 是默认强度。Safari 和 Firefox 只显示毛玻璃，看不到边缘折射。")}
                 >
-                  <input
-                    id="settings-refraction"
-                    className="w-full"
-                    type="range"
+                  <Slider
+                    label={tr("边缘折射")}
                     min={0}
                     max={3}
                     step={0.1}
                     value={navigation.refraction}
-                    onChange={(event) =>
-                      change({ ...navigation, refraction: Number(event.target.value) })
-                    }
+                    onChange={(refraction) => change({ ...navigation, refraction })}
                   />
                 </Field>
               </SettingsGrid>
