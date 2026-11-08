@@ -5,18 +5,45 @@ import SiteMark from "../../../web/src/components/SiteMark";
 
 import { Field } from "../components/ui/Field";
 import { useLogin } from "../hooks/useSession";
+import { ApiError } from "../lib/api";
 
 export function LoginPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [needsCode, setNeedsCode] = useState(false);
+  const [useRecovery, setUseRecovery] = useState(false);
+  const [code, setCode] = useState("");
   const login = useLogin();
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
-    login.mutate({ username, password }, { onSuccess: () => setPassword("") });
+    login.mutate(
+      {
+        username,
+        password,
+        second: needsCode ? (useRecovery ? { recoveryCode: code } : { totp: code }) : undefined
+      },
+      {
+        onSuccess: () => {
+          setPassword("");
+          setCode("");
+        },
+        onError: (failed) => {
+          if (failed instanceof ApiError && failed.code === "TOTP_REQUIRED") setNeedsCode(true);
+          if (failed instanceof ApiError && failed.code === "INVALID_CREDENTIALS") {
+            setNeedsCode(false);
+            setCode("");
+          }
+        }
+      }
+    );
   };
 
-  const error = login.error?.message;
+  // Being asked for the code is the next step, not a failure.
+  const error =
+    login.error instanceof ApiError && login.error.code === "TOTP_REQUIRED"
+      ? undefined
+      : login.error?.message;
 
   return (
     <CenteredCard>
@@ -56,6 +83,39 @@ export function LoginPage() {
           />
         </Field>
 
+        {needsCode ? (
+          <div className="mt-3.5">
+            <Field
+              label={useRecovery ? "恢复码" : "验证码"}
+              htmlFor="admin-code"
+              hint={
+                useRecovery ? "每个恢复码只能使用一次。" : "输入手机验证器 App 显示的 6 位数字。"
+              }
+            >
+              <input
+                id="admin-code"
+                className="field"
+                autoFocus
+                autoComplete="one-time-code"
+                inputMode={useRecovery ? "text" : "numeric"}
+                maxLength={useRecovery ? 20 : 6}
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+              />
+            </Field>
+            <button
+              type="button"
+              className="mt-2 text-[12px] text-brand underline"
+              onClick={() => {
+                setUseRecovery((value) => !value);
+                setCode("");
+              }}
+            >
+              {useRecovery ? "使用验证码" : "手机不在身边？使用恢复码"}
+            </button>
+          </div>
+        ) : null}
+
         {error ? (
           <p id="login-error" role="alert" className="mt-3 text-[12.5px] text-status-error">
             {error}
@@ -64,7 +124,7 @@ export function LoginPage() {
 
         <button
           type="submit"
-          disabled={login.isPending || !username || !password}
+          disabled={login.isPending || !username || !password || (needsCode && !code)}
           className="btn-primary mt-5 w-full"
         >
           {login.isPending ? "登录中…" : "登录"}

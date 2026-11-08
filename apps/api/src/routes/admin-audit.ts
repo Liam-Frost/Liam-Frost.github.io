@@ -49,7 +49,7 @@ export function registerAdminAudit(app: FastifyInstance, auth: AdminAuthService)
       createdAt: new Date(),
       actor:
         action === "login" && reply.statusCode < 400
-          ? auth.config.username
+          ? auth.username
           : (actors.get(request) ?? null),
       action,
       method: request.method,

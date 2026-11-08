@@ -1,3 +1,4 @@
+import type { AdminLoginSecondFactor } from "@liam-frost/shared";
 import { hashKey, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { clearIntegrationDrafts } from "../components/integrations/drafts";
@@ -13,8 +14,15 @@ export function useSession() {
 export function useLogin() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ username, password }: { username: string; password: string }) =>
-      api.login(username, password),
+    mutationFn: ({
+      username,
+      password,
+      second
+    }: {
+      username: string;
+      password: string;
+      second?: AdminLoginSecondFactor;
+    }) => api.login(username, password, second),
     onSuccess: (session) => {
       clearIntegrationDrafts();
       clearSettingsDrafts();

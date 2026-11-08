@@ -56,7 +56,7 @@ describe("grouped website settings", () => {
         400
       );
       const security = await app.inject({
-        url: "/api/admin/site-settings/security/status",
+        url: "/api/admin/account",
         headers
       });
       expect(security.statusCode).toBe(200);

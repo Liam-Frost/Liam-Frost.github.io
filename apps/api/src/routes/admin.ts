@@ -22,15 +22,15 @@ export function registerAdminRoutes(app: FastifyInstance, auth: AdminAuthService
       configured: auth.configured,
       user,
       // The admin path is only revealed to a signed-in admin.
-      ...(user ? { adminPath: auth.config.path } : {})
+      ...(user ? { adminPath: auth.path } : {})
     };
   });
 
   app.post("/api/admin/login", async (request, reply): Promise<AdminSessionResponse> => {
     auth.assertConfigured();
-    const { username, password } = parseInput(loginSchema, request.body);
-    const user = await auth.login(request, reply, username, password);
-    return { authenticated: true, configured: true, user, adminPath: auth.config.path };
+    const { username, password, totp, recoveryCode } = parseInput(loginSchema, request.body);
+    const user = await auth.login(request, reply, username, password, { totp, recoveryCode });
+    return { authenticated: true, configured: true, user, adminPath: auth.path };
   });
 
   app.post("/api/admin/logout", async (request, reply) => {

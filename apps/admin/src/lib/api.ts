@@ -1,5 +1,9 @@
 import {
   ADMIN_REQUEST_HEADER,
+  type AdminAccountStatus,
+  type AdminLoginSecondFactor,
+  type AdminRecoveryCodes,
+  type AdminTotpSetup,
   type AdminBranding,
   type BrandSlot,
   type AdminAboutResponse,
@@ -228,11 +232,48 @@ export const api = {
     }),
   session: () => request<AdminSessionResponse>("/api/admin/session"),
   dashboard: () => request<AdminDashboard>("/api/admin/dashboard"),
-  login: (username: string, password: string) =>
+  login: (username: string, password: string, second: AdminLoginSecondFactor = {}) =>
     request<AdminSessionResponse>("/api/admin/login", {
       method: "POST",
-      json: { username, password }
+      json: { username, password, ...second }
     }),
+  account: () => request<AdminAccountStatus>("/api/admin/account"),
+  changePassword: (currentPassword: string, newPassword: string) =>
+    request("/api/admin/account/password", {
+      method: "POST",
+      json: { currentPassword, newPassword }
+    }),
+  changeUsername: (currentPassword: string, username: string) =>
+    request("/api/admin/account/username", { method: "POST", json: { currentPassword, username } }),
+  revokeAdminSession: (id: string) =>
+    request(`/api/admin/account/sessions/${encodeURIComponent(id)}`, { method: "DELETE" }),
+  revokeOtherAdminSessions: () =>
+    request("/api/admin/account/sessions/revoke-others", { method: "POST" }),
+  beginTotp: (currentPassword: string) =>
+    request<AdminTotpSetup>("/api/admin/account/totp/setup", {
+      method: "POST",
+      json: { currentPassword }
+    }),
+  enableTotp: (code: string) =>
+    request<AdminRecoveryCodes>("/api/admin/account/totp/enable", {
+      method: "POST",
+      json: { code }
+    }),
+  disableTotp: (currentPassword: string, totp: string) =>
+    request("/api/admin/account/totp/disable", {
+      method: "POST",
+      json: { currentPassword, totp }
+    }),
+  regenerateRecoveryCodes: (currentPassword: string, totp: string) =>
+    request<AdminRecoveryCodes>("/api/admin/account/totp/recovery-codes", {
+      method: "POST",
+      json: { currentPassword, totp }
+    }),
+  beginAdminPath: (currentPassword: string, path: string) =>
+    request("/api/admin/account/path", { method: "POST", json: { currentPassword, path } }),
+  confirmAdminPath: (from: string) =>
+    request("/api/admin/account/path/confirm", { method: "POST", json: { from } }),
+  cancelAdminPath: () => request("/api/admin/account/path", { method: "DELETE" }),
   logout: () => request<{ authenticated: false }>("/api/admin/logout", { method: "POST" }),
 
   photos: () => request<AdminPhotosResponse>("/api/admin/photos"),

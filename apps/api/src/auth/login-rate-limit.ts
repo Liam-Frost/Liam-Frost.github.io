@@ -1,5 +1,7 @@
-const maxAttempts = 8;
-const windowMs = 15 * 60 * 1000;
+export const LOGIN_MAX_ATTEMPTS = 8;
+export const LOGIN_WINDOW_MINUTES = 15;
+const maxAttempts = LOGIN_MAX_ATTEMPTS;
+const windowMs = LOGIN_WINDOW_MINUTES * 60 * 1000;
 
 type AttemptWindow = {
   count: number;

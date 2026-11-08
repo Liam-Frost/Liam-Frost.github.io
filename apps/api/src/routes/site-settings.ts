@@ -259,11 +259,4 @@ export function registerSiteSettingsRoutes(
       return result;
     });
   });
-  app.get("/api/admin/site-settings/security/status", admin, async () => ({
-    username: auth.config.username,
-    accountManagedBy: "runtime",
-    pathManagedBy: "runtime",
-    security: { csrf: true, signedSessions: true, loginRateLimit: true },
-    supportedAdminLanguages: ["zh"]
-  }));
 }
