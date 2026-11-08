@@ -21,3 +21,8 @@ apps/api/src/generated
 # runtime uploads
 uploads
 apps/api/uploads
+
+# Admin end-to-end tests
+apps/admin/e2e/dist
+apps/admin/e2e/.auth
+apps/admin/e2e/.results

@@ -8,3 +8,5 @@ apps/api/src/generated/
 package-lock.json
 # Preserve historical review records verbatim.
 docs/reviews/
+apps/admin/e2e/.auth/
+apps/admin/e2e/.results/
