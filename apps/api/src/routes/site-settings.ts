@@ -75,6 +75,16 @@ const schemas = {
       language: z.enum(["auto", "zh", "zh-Hant", "en", "ja", "fr"])
     })
     .strict(),
+  navigation: z
+    .object({
+      tabBarMode: z.enum(["always", "adaptive", "hover"]),
+      glass: z.enum(["regular", "clear", "opaque"]),
+      selectedButton: z.enum(["lens", "ring", "text"]),
+      refraction: z.number().min(0).max(3),
+      showLabels: z.boolean(),
+      bottomOffset: z.number().int().min(16).max(40)
+    })
+    .strict(),
   privacy: z
     .object({ title: text(160), body: text(20000), effectiveDate: z.string().date().nullable() })
     .strict(),
@@ -142,20 +152,29 @@ export function registerSiteSettingsRoutes(
   app.get("/api/site-settings", async (_request, reply) => {
     reply.header("cache-control", "no-store");
     reply.header("x-snapshot-data-source", repo ? "database" : "fallback");
-    const [identityDoc, footerDoc, preferencesDoc, privacyDoc, dictionaryDoc, assets] =
-      await Promise.all([
-        read("identity"),
-        read("footer"),
-        read("preferences"),
-        read("privacy"),
-        read("dictionary"),
-        branding.get()
-      ]);
+    const [
+      identityDoc,
+      footerDoc,
+      preferencesDoc,
+      navigationDoc,
+      privacyDoc,
+      dictionaryDoc,
+      assets
+    ] = await Promise.all([
+      read("identity"),
+      read("footer"),
+      read("preferences"),
+      read("navigation"),
+      read("privacy"),
+      read("dictionary"),
+      branding.get()
+    ]);
     const identity = identityDoc.value as typeof DEFAULT_SITE_SETTINGS.identity;
     return {
       identity,
       footer: footerDoc.value,
       preferences: preferencesDoc.value,
+      navigation: navigationDoc.value,
       privacy: privacyDoc.value,
       dictionary: dictionaryDoc.value,
       avatarUrl: brandUrl("avatar", assets.avatar),

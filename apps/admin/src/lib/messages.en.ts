@@ -1982,5 +1982,31 @@ export const en: Record<string, string> = {
   "移除链接 {0}": "Remove link {0}",
   "保存姓名；头像上传后已生效，不受影响。":
     "Saves the name. An uploaded avatar is already live and is not affected.",
-  设置已被其他页面修改: "These settings were changed elsewhere"
+  设置已被其他页面修改: "These settings were changed elsewhere",
+  导航外观: "Navigation appearance",
+  "调整前台底部导航和页面按钮的玻璃效果。":
+    "Adjust the glass of the public site's bottom navigation and page buttons.",
+  显示模式: "Display mode",
+  玻璃材质: "Glass material",
+  选中按钮样式: "Selected button style",
+  边缘折射: "Edge refraction",
+  显示文字: "Show labels",
+  底部距离: "Bottom distance",
+  底部导航: "Bottom navigation",
+  玻璃效果: "Glass effect",
+  "触屏设备没有悬停，悬停模式下保持收起。":
+    "Touch screens have no hover, so hover mode stays collapsed there.",
+  始终展开: "Always expanded",
+  滚动时收起: "Collapse on scroll",
+  鼠标悬停时展开: "Expand on hover",
+  常规: "Regular",
+  透明: "Clear",
+  磨砂: "Frosted",
+  "底部距离：{0}px": "Bottom distance: {0}px",
+  "手机上按一半距离显示。": "Phones use half of this distance.",
+  透镜: "Lens",
+  描边: "Outline",
+  "边缘折射：{0}×": "Edge refraction: {0}×",
+  "1.0 是默认强度。Safari 和 Firefox 只显示毛玻璃，看不到边缘折射。":
+    "1.0 is the default strength. Safari and Firefox show frosted glass without the edge refraction."
 };

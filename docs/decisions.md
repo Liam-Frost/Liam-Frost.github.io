@@ -582,6 +582,14 @@ The model chose to remove the tracked `my-app` Vite starter scaffold.
 
 Reason: it was a standalone unused starter app and conflicted with the user's requirement for a clear repository structure.
 
+## Floating tab bar
+
+The glass, tab bar and gesture sources are copied from CupertinoCN into `apps/web/src/vendor/cupertinocn` instead of installing its registry, because the public site does not use Tailwind. The differences are listed in that folder's README. The CupertinoCN repository declares no license, and that folder is not covered by this repository's MIT license until the author grants one.
+
+The lens is placed from the list's own width (four equal cells) rather than from the tab component's measured values, which arrive at least a frame late while the bar changes size. The lens and the copy of the tabs inside it read one animated value, so the copy stays still on screen.
+
+Site buttons get their glass from `GlassButtons`, which mounts a surface in each `.btn`, so the many components that render buttons stay unchanged.
+
 ## Homepage contact settings
 
 The homepage contact email and ordered HTTPS links are managed in the admin Contact page and stored in the existing settings table. Blank email and empty links hide those details. Writes require authentication, CSRF protection and a matching revision; unavailable storage does not restore removed contact details. Emergency Pages snapshots the public contact API alongside the rest of the published content. No schema migration is required.

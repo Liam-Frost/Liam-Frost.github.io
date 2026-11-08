@@ -1,5 +1,11 @@
 # Progress
 
+## 2026-11-09: Floating Tab Bar
+
+- The public site's top header is replaced by a floating Liquid Glass tab bar at the bottom. The logo, language and theme controls sit in the page's top row and scroll away with it.
+- The tab bar's mode, glass material, selected-button style, edge refraction, labels and bottom distance are edited in the admin under 网站设置 > 导航外观 (`site.navigation`, no migration). Defaults: hover, clear, lens, 1.4, labels on, 16px.
+- Every `.btn` on the site is CupertinoCN's glass button.
+
 ## 2026-11-08: Website Settings and the Admin Interface
 
 - Website Settings: all four phases are in (`website-settings-ui.zh-CN.md`): grouped settings, the tag dictionary, Simplified Chinese and English for the admin, account security and an in-app admin address switch (PRs #82, #83, #84).

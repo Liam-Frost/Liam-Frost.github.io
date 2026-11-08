@@ -34,6 +34,7 @@ const titles: Record<SiteSettingsGroup, string> = {
   identity: tr("基本资料"),
   footer: tr("页脚与版权"),
   preferences: tr("默认显示与语言"),
+  navigation: tr("导航外观"),
   privacy: tr("隐私说明"),
   dictionary: tr("标签词典")
 };
@@ -41,6 +42,7 @@ const descriptions: Record<SiteSettingsGroup, string> = {
   identity: tr("设置公开姓名和首屏头像。"),
   footer: tr("设置版权署名及年份范围。"),
   preferences: tr("决定访客首次访问时的显示偏好。"),
+  navigation: tr("调整前台底部导航和页面按钮的玻璃效果。"),
   privacy: tr("编辑公开隐私说明，历史版本可载入为草稿。"),
   dictionary: tr("为收藏标签补齐多语言翻译，保留原有内容标识。")
 };
@@ -54,6 +56,12 @@ const fieldLabels: Record<string, string> = {
   links: tr("页脚链接"),
   theme: tr("默认主题"),
   language: tr("默认语言"),
+  tabBarMode: tr("显示模式"),
+  glass: tr("玻璃材质"),
+  selectedButton: tr("选中按钮样式"),
+  refraction: tr("边缘折射"),
+  showLabels: tr("显示文字"),
+  bottomOffset: tr("底部距离"),
   body: tr("隐私正文"),
   effectiveDate: tr("生效日期"),
   entries: tr("词条")
@@ -155,6 +163,7 @@ export function SiteSettingsPage({ group }: { group: SiteSettingsGroup }) {
   const identity = value as SiteSettingsGroups["identity"],
     footer = value as SiteSettingsGroups["footer"],
     preferences = value as SiteSettingsGroups["preferences"],
+    navigation = value as SiteSettingsGroups["navigation"],
     privacy = value as SiteSettingsGroups["privacy"],
     dictionary = value as SiteSettingsGroups["dictionary"];
   const filtered =
@@ -380,6 +389,102 @@ export function SiteSettingsPage({ group }: { group: SiteSettingsGroup }) {
               </Field>
             </SettingsGrid>
           </SettingsSection>
+        ) : null}
+        {group === "navigation" ? (
+          <>
+            <SettingsSection title={tr("底部导航")}>
+              <SettingsGrid variant="equal">
+                <Field
+                  label={tr("显示模式")}
+                  htmlFor="settings-tab-mode"
+                  hint={tr("触屏设备没有悬停，悬停模式下保持收起。")}
+                >
+                  <Select
+                    id="settings-tab-mode"
+                    value={navigation.tabBarMode}
+                    onChange={(tabBarMode) => change({ ...navigation, tabBarMode })}
+                    options={[
+                      { value: "always" as const, label: tr("始终展开") },
+                      { value: "adaptive" as const, label: tr("滚动时收起") },
+                      { value: "hover" as const, label: tr("鼠标悬停时展开") }
+                    ]}
+                  />
+                </Field>
+                <Field label={tr("玻璃材质")} htmlFor="settings-glass">
+                  <Select
+                    id="settings-glass"
+                    value={navigation.glass}
+                    onChange={(glass) => change({ ...navigation, glass })}
+                    options={[
+                      { value: "regular" as const, label: tr("常规") },
+                      { value: "clear" as const, label: tr("透明") },
+                      { value: "opaque" as const, label: tr("磨砂") }
+                    ]}
+                  />
+                </Field>
+                <Field
+                  label={tr("底部距离：{0}px", navigation.bottomOffset)}
+                  htmlFor="settings-bottom-offset"
+                  hint={tr("手机上按一半距离显示。")}
+                >
+                  <input
+                    id="settings-bottom-offset"
+                    className="w-full"
+                    type="range"
+                    min={16}
+                    max={40}
+                    step={2}
+                    value={navigation.bottomOffset}
+                    onChange={(event) =>
+                      change({ ...navigation, bottomOffset: Number(event.target.value) })
+                    }
+                  />
+                </Field>
+                <div className="flex items-center pt-6">
+                  <Switch
+                    id="settings-show-labels"
+                    label={tr("显示文字")}
+                    checked={navigation.showLabels}
+                    onChange={(showLabels) => change({ ...navigation, showLabels })}
+                  />
+                </div>
+              </SettingsGrid>
+            </SettingsSection>
+            <SettingsSection title={tr("玻璃效果")}>
+              <SettingsGrid variant="equal">
+                <Field label={tr("选中按钮样式")} htmlFor="settings-selected-button">
+                  <Select
+                    id="settings-selected-button"
+                    value={navigation.selectedButton}
+                    onChange={(selectedButton) => change({ ...navigation, selectedButton })}
+                    options={[
+                      { value: "lens" as const, label: tr("透镜") },
+                      { value: "ring" as const, label: tr("描边") },
+                      { value: "text" as const, label: tr("文字") }
+                    ]}
+                  />
+                </Field>
+                <Field
+                  label={tr("边缘折射：{0}×", navigation.refraction.toFixed(1))}
+                  htmlFor="settings-refraction"
+                  hint={tr("1.0 是默认强度。Safari 和 Firefox 只显示毛玻璃，看不到边缘折射。")}
+                >
+                  <input
+                    id="settings-refraction"
+                    className="w-full"
+                    type="range"
+                    min={0}
+                    max={3}
+                    step={0.1}
+                    value={navigation.refraction}
+                    onChange={(event) =>
+                      change({ ...navigation, refraction: Number(event.target.value) })
+                    }
+                  />
+                </Field>
+              </SettingsGrid>
+            </SettingsSection>
+          </>
         ) : null}
         {group === "privacy" ? (
           <>
