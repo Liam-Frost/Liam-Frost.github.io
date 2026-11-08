@@ -1,0 +1,559 @@
+{
+  "identityDirtyBar": {
+    "bar": {
+      "x": 444,
+      "y": 373.0625,
+      "width": 797,
+      "height": 65.5
+    },
+    "css": {
+      "position": "sticky",
+      "bottom": "12px",
+      "z": "10"
+    }
+  },
+  "leaveThenReturn": {
+    "dialogsOnLeave": [
+      {
+        "type": "confirm",
+        "message": "有未保存的修改，确定离开吗？"
+      }
+    ],
+    "dialogsOnReturn": [
+      {
+        "type": "confirm",
+        "message": "有未保存的修改，确定离开吗？"
+      }
+    ],
+    "url1": "/settings/site/footer",
+    "draftKept": "审计草稿",
+    "navBadge": ["网站设置", "", "站点与品牌", "基本资料", "Logo、图标与标题", "页脚与版权"]
+  },
+  "dismissConfirmOnGlobalNav": {
+    "dialogs": [
+      {
+        "type": "confirm",
+        "message": "有未保存的修改，确定离开吗？"
+      }
+    ],
+    "stayed": "/settings/site/identity"
+  },
+  "pickerNavigationDirty": {
+    "dialogs": [],
+    "url": "/settings/experience/home"
+  },
+  "backButtonDirty": {
+    "dialogs": [],
+    "url": "/settings/site/identity",
+    "draft": "审计草稿"
+  },
+  "reload": {
+    "dialogs": [
+      {
+        "type": "beforeunload",
+        "message": ""
+      }
+    ],
+    "draftAfterReload": ""
+  },
+  "languageDismissBeforeUnload": {
+    "dialogs": [
+      {
+        "type": "beforeunload",
+        "message": ""
+      }
+    ],
+    "state": {
+      "stored": "en",
+      "htmlLang": "zh-CN",
+      "select": "zh"
+    },
+    "title": "基本资料"
+  },
+  "preferencesSelects": [
+    {
+      "id": "",
+      "inAside": true,
+      "value": "zh",
+      "options": ["简体中文", "English"],
+      "w": 82,
+      "h": 28,
+      "appearance": "auto",
+      "radius": "6px",
+      "font": "12px",
+      "className": "cursor-pointer rounded-md border border-current/20 bg-transp"
+    },
+    {
+      "id": "settings-page-selector",
+      "inAside": false,
+      "value": "experience/preferences",
+      "options": [
+        "基本资料",
+        "Logo、图标与标题",
+        "页脚与版权",
+        "首页模块",
+        "默认显示与语言",
+        "标签词典",
+        "隐私说明",
+        "集成与 API",
+        "登录外观",
+        "账号与安全"
+      ],
+      "w": 0,
+      "h": 0,
+      "appearance": "base-select",
+      "radius": "12px",
+      "font": "14px",
+      "className": "field"
+    },
+    {
+      "id": "settings-theme",
+      "inAside": false,
+      "value": "system",
+      "options": ["跟随系统", "浅色", "深色"],
+      "w": 291,
+      "h": 38,
+      "appearance": "base-select",
+      "radius": "12px",
+      "font": "14px",
+      "className": "field"
+    },
+    {
+      "id": "settings-language",
+      "inAside": false,
+      "value": "auto",
+      "options": ["自动识别浏览器", "简体中文", "繁體中文", "English", "Français", "日本語"],
+      "w": 291,
+      "h": 38,
+      "appearance": "base-select",
+      "radius": "12px",
+      "font": "14px",
+      "className": "field"
+    },
+    {
+      "id": "",
+      "inAside": false,
+      "value": "zh",
+      "options": ["简体中文", "English"],
+      "w": 82,
+      "h": 28,
+      "appearance": "auto",
+      "radius": "6px",
+      "font": "12px",
+      "className": "cursor-pointer rounded-md border border-current/20 bg-transp"
+    }
+  ],
+  "switchFromSettingsEntry": {
+    "stored": "en",
+    "aside": "en",
+    "h1": "Defaults and language"
+  },
+  "selectPicker": {
+    "info": {
+      "appearance": "base-select",
+      "supports": true,
+      "picker": "base-select"
+    },
+    "open": true
+  },
+  "asideSelect": {
+    "appearance": "auto",
+    "open": true
+  },
+  "pageTitlesDraft": {
+    "pre": {
+      "saveEnabled": true,
+      "barCount": 0
+    },
+    "dialogsOut": [],
+    "afterReturn": ""
+  },
+  "brandingInlineBar": {
+    "bar": {
+      "y": 1007,
+      "h": 66,
+      "position": "static",
+      "cls": "settings-actions settings-actions-inline"
+    },
+    "sections": [
+      {
+        "t": "主页 Logo",
+        "y": 115,
+        "h": 426,
+        "w": 797
+      },
+      {
+        "t": "后台 Logo",
+        "y": 561,
+        "h": 426,
+        "w": 797
+      },
+      {
+        "t": "网站图标",
+        "y": 1092,
+        "h": 341,
+        "w": 389
+      },
+      {
+        "t": "页面标题",
+        "y": 1092,
+        "h": 399,
+        "w": 389
+      }
+    ],
+    "fieldset": false
+  },
+  "brandingSaveButtons": ["保存 Logo", "保存页面标题"],
+  "sticky@390x844": {
+    "position": "sticky",
+    "barTop": 767,
+    "barBottom": 832,
+    "innerHeight": 844,
+    "focusedTop": 526,
+    "focusedBottom": 564,
+    "overlap": false,
+    "toast": [12, 12]
+  },
+  "sticky@1280x800": {
+    "position": "sticky",
+    "barTop": 708,
+    "barBottom": 774,
+    "innerHeight": 800,
+    "focusedTop": 330,
+    "focusedBottom": 368,
+    "overlap": false,
+    "toast": [12, 12]
+  },
+  "sticky@1280x480": {
+    "position": "static",
+    "barTop": 612,
+    "barBottom": 678,
+    "innerHeight": 480,
+    "focusedTop": 234,
+    "focusedBottom": 272,
+    "overlap": false,
+    "toast": [12, 12]
+  },
+  "scrollRoute": {
+    "before": 500,
+    "afterRouteChange": 0,
+    "afterBack": 500,
+    "sticky": {
+      "nav": 24,
+      "navPos": "sticky",
+      "aside": 0,
+      "asidePos": "sticky"
+    }
+  },
+  "sidebar@1280x800": {
+    "aside": [800, 800, "visible"],
+    "nav": {
+      "client": [187, 558],
+      "scroll": [187, 558],
+      "ox": "auto",
+      "oy": "auto"
+    },
+    "settingsNav": {
+      "client": 553,
+      "scroll": 553,
+      "shown": "block"
+    },
+    "langBottom": 729,
+    "logoutBottom": 776,
+    "innerHeight": 800,
+    "activeInView": true,
+    "activeRect": [16, 203]
+  },
+  "sidebar@1280x600": {
+    "aside": [600, 600, "visible"],
+    "nav": {
+      "client": [187, 358],
+      "scroll": [187, 431],
+      "ox": "auto",
+      "oy": "auto"
+    },
+    "settingsNav": {
+      "client": 552,
+      "scroll": 553,
+      "shown": "block"
+    },
+    "langBottom": 529,
+    "logoutBottom": 576,
+    "innerHeight": 600,
+    "activeInView": true,
+    "activeRect": [16, 203]
+  },
+  "sidebar@1280x420": {
+    "aside": [420, 420, "visible"],
+    "nav": {
+      "client": [187, 178],
+      "scroll": [187, 431],
+      "ox": "auto",
+      "oy": "auto"
+    },
+    "settingsNav": {
+      "client": 372,
+      "scroll": 553,
+      "shown": "block"
+    },
+    "langBottom": 349,
+    "logoutBottom": 396,
+    "innerHeight": 420,
+    "activeInView": true,
+    "activeRect": [16, 203]
+  },
+  "sidebar@800x420": {
+    "aside": [420, 420, "visible"],
+    "nav": {
+      "client": [187, 178],
+      "scroll": [187, 431],
+      "ox": "auto",
+      "oy": "auto"
+    },
+    "settingsNav": {
+      "client": 0,
+      "scroll": 0,
+      "shown": "none"
+    },
+    "langBottom": 349,
+    "logoutBottom": 396,
+    "innerHeight": 420,
+    "activeInView": true,
+    "activeRect": [16, 203]
+  },
+  "sidebar@390x844": {
+    "aside": [60, 60, "visible"],
+    "nav": {
+      "client": [91, 36],
+      "scroll": [945, 36],
+      "ox": "auto",
+      "oy": "auto"
+    },
+    "settingsNav": {
+      "client": 0,
+      "scroll": 0,
+      "shown": "none"
+    },
+    "langBottom": 42,
+    "logoutBottom": 46,
+    "innerHeight": 844,
+    "activeInView": false,
+    "activeRect": [971, 1071]
+  },
+  "menu@390x844": {
+    "left": 99,
+    "right": 344,
+    "top": 780,
+    "bottom": 932,
+    "innerWidth": 390,
+    "innerHeight": 844,
+    "docH": 1319,
+    "scrollY": 387,
+    "withinViewport": false
+  },
+  "menu@1280x800": {
+    "left": 975,
+    "right": 1220,
+    "top": 736,
+    "bottom": 888,
+    "innerWidth": 1280,
+    "innerHeight": 800,
+    "docH": 1185,
+    "scrollY": 297,
+    "withinViewport": false
+  },
+  "stackBaseline": {
+    "card": {
+      "w": 997,
+      "h": 350,
+      "padding": "0px",
+      "radius": "16px",
+      "shadow": true
+    },
+    "head": {
+      "w": 995,
+      "h": 67,
+      "padding": "10px 12px",
+      "radius": "0px",
+      "shadow": false
+    },
+    "row": {
+      "w": 971,
+      "h": 50,
+      "padding": "6px 8px",
+      "radius": "12px",
+      "shadow": false
+    },
+    "rows": [50, 50, 50],
+    "iconButton": {
+      "w": 28,
+      "h": 28,
+      "padding": "6px",
+      "radius": "3.35544e+07px",
+      "shadow": false
+    }
+  },
+  "dictionaryRow": {
+    "list": {
+      "w": 797,
+      "h": 911,
+      "padding": "0px",
+      "radius": "12px",
+      "shadow": false,
+      "border": "rgb(216, 221, 225)"
+    },
+    "row": {
+      "w": 795,
+      "h": 64,
+      "padding": "12px 16px",
+      "radius": "0px",
+      "shadow": false,
+      "border": "rgb(27, 27, 27)"
+    }
+  },
+  "homeRow": {
+    "rowH": 34,
+    "padding": "8px 16px",
+    "grid": "387px 88px 100px 60px 80px"
+  },
+  "loginPreview": {
+    "t0": "当前第 1 / 6 张",
+    "after10s": "当前第 2 / 6 张",
+    "afterSelectingAnother": "当前第 1 / 7 张",
+    "preview": [266, 256],
+    "previewRatio": 1.04,
+    "img": "/audit-img/0-1600-1067.svg",
+    "objectFit": "cover",
+    "gallery": {
+      "w": 755,
+      "client": 440,
+      "scroll": 992,
+      "columns": 4
+    },
+    "thumbFit": "contain",
+    "thumb": [160, 112],
+    "selectedRowH": 57,
+    "barPosition": "sticky",
+    "moveBtn": [30, 30]
+  },
+  "realLogin": {
+    "first": "/audit-a.svg",
+    "after10s": "/audit-b.svg",
+    "card": [400, 353]
+  },
+  "homeControls": {
+    "switch": [38, 22],
+    "fieldHeights": [0]
+  },
+  "prefHeights": [
+    ["SELECT", "", 28, 82],
+    ["SELECT", "settings-page-selector", 0, 0],
+    ["SELECT", "settings-theme", 38, 291],
+    ["SELECT", "settings-language", 38, 291],
+    ["SELECT", "", 28, 82]
+  ],
+  "saveSuccess": {
+    "toast": "",
+    "status": "更改已保存",
+    "bar": 0
+  },
+  "saveError": {
+    "toast": "模拟失败",
+    "inline": "模拟失败",
+    "draft": "失败草稿"
+  },
+  "languageDrafts": {
+    "enBefore": "",
+    "zhAfter": "中文草稿",
+    "bars": 1
+  },
+  "identityDraftVsPageTitles": {
+    "titleToast": "页面标题已保存",
+    "toast": "页面标题已保存\n设置已被其他页面修改；请先保留草稿再重新读取",
+    "conflict": 1,
+    "pre": 2
+  },
+  "securityForm": {
+    "dialogs": [],
+    "afterReturnEmpty": true
+  },
+  "integrationDraft": {
+    "dialogs": [],
+    "kept": "draft-value",
+    "hint": 1
+  },
+  "aboutPage": {
+    "box": {
+      "x": 244,
+      "y": 32,
+      "width": 920,
+      "height": 1639.5625
+    },
+    "bar": {
+      "position": "fixed",
+      "left": 220,
+      "right": 1265,
+      "h": 65
+    },
+    "dialogs": [],
+    "draftBarAfterReturn": 0,
+    "url": "/about"
+  },
+  "uploadResults": {
+    "oversize": "图标不能超过 2 MB",
+    "invalid": "图标不能超过 2 MB\n无法识别的图标文件",
+    "ok": "图标不能超过 2 MB\n无法识别的图标文件\n已上传，网站上马上生效",
+    "after": {
+      "preview": [
+        {
+          "src": "/LOGO2.svg",
+          "box": [36, 36]
+        },
+        {
+          "src": "/uploads/branding/admin-logo/c303aead9bb19bb6/512.webp",
+          "box": [36, 36]
+        },
+        {
+          "src": "http://127.0.0.1:4190/e2e-admin/favicon.svg",
+          "box": [16, 16]
+        }
+      ],
+      "sidebar": {
+        "src": "/uploads/branding/admin-logo/c303aead9bb19bb6/512.webp",
+        "box": [36, 36]
+      }
+    },
+    "unsavedBar": 0
+  },
+  "restoreDefault": {
+    "dialogs": [],
+    "toast": "图标不能超过 2 MB\n无法识别的图标文件\n已上传，网站上马上生效\n已恢复默认",
+    "restoreButtons": 0
+  },
+  "adminDefaultMark": {
+    "real": {
+      "tag": "SPAN",
+      "box": [28, 28],
+      "background": "linear-gradient(135deg, rgb(84, 119, 146), rgb(148, 180, 193",
+      "mask": "url(\"http://127.0.0.1:4190/e2e-admin/favicon.svg?v=lf\")"
+    },
+    "preview": {
+      "src": "/e2e-admin/favicon.svg",
+      "box": [36, 36],
+      "parentBg": "rgb(27, 60, 83)"
+    }
+  },
+  "englishLayout": {},
+  "englishChecked": 22,
+  "englishOversizeError": "The icon can't exceed 2 MB",
+  "discardIdentity": {
+    "restored": true,
+    "bar": 0,
+    "dialogs": []
+  },
+  "discardDoesNotRevertUpload": {
+    "restoreButtonsAfterDiscard": 1,
+    "afterReload": 1,
+    "sidebarImg": "/uploads/branding/admin-logo/cdf3578bb7b1e419/512.webp"
+  }
+}
