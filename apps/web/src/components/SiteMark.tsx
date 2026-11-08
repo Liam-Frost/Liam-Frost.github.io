@@ -3,8 +3,9 @@ import { usePresentation } from "../data/usePresentation";
 
 export default function SiteMark({ admin = false }: { admin?: boolean }) {
   const settings = usePresentation();
-  const logo = settings?.[admin ? "adminLogo" : "publicLogo"];
-  const src = logo?.photoId ? settings?.logoImages?.[logo.photoId] : null;
+  const slot = admin ? "adminLogo" : "publicLogo";
+  const logo = settings?.[slot];
+  const src = settings?.logoUrls?.[slot] ?? null;
   const [failed, setFailed] = useState<string | null>(null);
   if ((src && failed !== src) || logo?.text)
     return (

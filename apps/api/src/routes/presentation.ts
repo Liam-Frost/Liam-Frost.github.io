@@ -9,7 +9,8 @@ import { parseInput } from "../lib/validation";
 import type { SettingsRepository } from "../settings/types";
 import type { PhotoRepository } from "../photos/types";
 import type { LocalImageStore } from "../storage/local";
-import { remoteThumbnail, toPublicPhoto } from "../photos/mapping";
+import { toPublicPhoto } from "../photos/mapping";
+import { brandUrl, type BrandingStore } from "../site/branding";
 
 const id = z
   .string()
@@ -19,10 +20,12 @@ const id = z
 const logo = z
   .object({
     text: z.string().trim().max(12),
-    photoId: id.nullable(),
+    // Saved before logos were uploaded; a gallery choice no longer applies.
+    photoId: z.unknown().optional(),
     alt: z.string().trim().max(120).optional()
   })
-  .strict();
+  .strict()
+  .transform(({ photoId: _photoId, ...rest }) => rest);
 const schema = z
   .object({
     sections: z
@@ -50,7 +53,8 @@ export function registerPresentationRoutes(
   auth: AdminAuthService,
   repo: SettingsRepository | null,
   photos: PhotoRepository | null,
-  store: LocalImageStore
+  store: LocalImageStore,
+  branding: BrandingStore
 ) {
   const key = "presentation.v1",
     lock = new KeyedLock();
@@ -65,13 +69,7 @@ export function registerPresentationRoutes(
     reply.header("cache-control", "no-store");
     reply.header("x-snapshot-data-source", repo ? "database" : "fallback");
     const { settings } = await read();
-    const ids = new Set(
-      [
-        settings.publicLogo.photoId,
-        settings.adminLogo.photoId,
-        ...settings.loginBackground.photoIds
-      ].filter((v): v is string => v !== null)
-    );
+    const ids = new Set(settings.loginBackground.photoIds);
     const publicPhotos = ids.size && photos ? await photos.list() : [];
     // Resolve only currently public photos. Hidden/deleted images must never leak at the login screen.
     const images = Object.fromEntries(
@@ -83,19 +81,15 @@ export function registerPresentationRoutes(
           return [p.id, suitable?.url ?? photo.src];
         })
     );
-    const logoImages = Object.fromEntries(
-      publicPhotos
-        .filter(
-          (p) =>
-            p.visibility === "public" &&
-            (p.id === settings.publicLogo.photoId || p.id === settings.adminLogo.photoId)
-        )
-        .map((p) => {
-          const photo = toPublicPhoto(p, store);
-          return [p.id, photo.variants?.[0]?.url ?? remoteThumbnail(photo.src)];
-        })
-    );
-    return { ...settings, images, logoImages };
+    const assets = await branding.get();
+    return {
+      ...settings,
+      images,
+      logoUrls: {
+        publicLogo: brandUrl("publicLogo", assets.publicLogo),
+        adminLogo: brandUrl("adminLogo", assets.adminLogo)
+      }
+    };
   });
   const admin = { preHandler: auth.requireAdmin };
   app.get("/api/admin/presentation", admin, async () => {
@@ -111,13 +105,7 @@ export function registerPresentationRoutes(
     return lock.run(key, async () => {
       if ((await read()).revision !== input.revision)
         throw new HttpError(409, "PRESENTATION_OUT_OF_DATE", "设置已在其他页面修改，请重新加载");
-      const ids = new Set(
-        [
-          input.settings.publicLogo.photoId,
-          input.settings.adminLogo.photoId,
-          ...input.settings.loginBackground.photoIds
-        ].filter((v): v is string => v !== null)
-      );
+      const ids = new Set(input.settings.loginBackground.photoIds);
       const available = new Set(
         ((await photos?.list()) ?? []).filter((p) => p.visibility === "public").map((p) => p.id)
       );

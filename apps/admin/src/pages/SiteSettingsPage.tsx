@@ -33,16 +33,14 @@ const titles: Record<SiteSettingsGroup, string> = {
   footer: "页脚与版权",
   preferences: "默认显示与语言",
   privacy: "隐私说明",
-  dictionary: "标签词典",
-  favicon: "网站图标"
+  dictionary: "标签词典"
 };
 const descriptions: Record<SiteSettingsGroup, string> = {
-  identity: "设置公开姓名、网站标题和首屏头像。",
+  identity: "设置公开姓名、前台和后台的页面标题，以及首屏头像。",
   footer: "设置版权署名及年份范围。",
   preferences: "决定访客首次访问时的显示偏好。",
   privacy: "编辑公开隐私说明，历史版本可载入为草稿。",
-  dictionary: "为收藏标签补齐多语言翻译，保留原有内容标识。",
-  favicon: "设置前台与后台共同使用的浏览器图标。"
+  dictionary: "为收藏标签补齐多语言翻译，保留原有内容标识。"
 };
 export function SiteSettingsPage({
   group,
@@ -192,12 +190,8 @@ export function SiteSettingsPage({
     footer = value as SiteSettingsGroups["footer"],
     preferences = value as SiteSettingsGroups["preferences"],
     privacy = value as SiteSettingsGroups["privacy"],
-    dictionary = value as SiteSettingsGroups["dictionary"],
-    favicon = value as SiteSettingsGroups["favicon"];
-  const available = (photoQuery.data ?? []).filter(
-    (photo) => photo.visibility === "public" && (group !== "favicon" || photo.storage === "local")
-  );
-  const selectedIcon = available.find((photo) => photo.id === favicon.photoId);
+    dictionary = value as SiteSettingsGroups["dictionary"];
+  const available = (photoQuery.data ?? []).filter((photo) => photo.visibility === "public");
   const filtered =
     group === "dictionary"
       ? dictionary.entries
@@ -236,7 +230,19 @@ export function SiteSettingsPage({
             >
               <div className="grid gap-4 sm:grid-cols-2">
                 {localized("显示姓名", identity.name, (name) => change({ ...identity, name }))}
-                {localized("站点标题", identity.title, (title) => change({ ...identity, title }))}
+              </div>
+            </SettingsSection>
+            <SettingsSection
+              title="页面标题"
+              description="显示在浏览器标签页上。后台标题也用作侧栏顶部的名称。留空使用默认标题。"
+            >
+              <div className="grid gap-4 sm:grid-cols-2">
+                {localized("前台页面标题", identity.title, (title) =>
+                  change({ ...identity, title })
+                )}
+                {localized("后台页面标题", identity.adminTitle ?? {}, (adminTitle) =>
+                  change({ ...identity, adminTitle })
+                )}
               </div>
             </SettingsSection>
             <SettingsSection title="首屏头像" description="选择公开图库照片；留空沿用现有头像。">
@@ -279,6 +285,66 @@ export function SiteSettingsPage({
                     }
                   />
                 </Field>
+                <div className="space-y-2 border-t border-line-soft pt-4">
+                  <p className="text-sm text-brand-dark">页脚链接</p>
+                  {(footer.links ?? []).map((link, index) => {
+                    const setLink = (next: typeof link) =>
+                      change({
+                        ...footer,
+                        links: footer.links.map((item, i) => (i === index ? next : item))
+                      });
+                    return (
+                      <div key={index} className="grid gap-2 sm:grid-cols-[1fr_2fr_auto]">
+                        <input
+                          className="field"
+                          aria-label={`链接 ${index + 1} 的文字`}
+                          placeholder="文字"
+                          maxLength={40}
+                          value={link.label[lang] ?? ""}
+                          onChange={(event) =>
+                            setLink({
+                              ...link,
+                              label: { ...link.label, [lang]: event.target.value }
+                            })
+                          }
+                        />
+                        <input
+                          className="field"
+                          aria-label={`链接 ${index + 1} 的地址`}
+                          placeholder="https://… 或 /privacy"
+                          maxLength={300}
+                          value={link.url}
+                          onChange={(event) => setLink({ ...link, url: event.target.value })}
+                        />
+                        <button
+                          type="button"
+                          className="btn-secondary"
+                          onClick={() =>
+                            change({
+                              ...footer,
+                              links: footer.links.filter((_, i) => i !== index)
+                            })
+                          }
+                        >
+                          移除
+                        </button>
+                      </div>
+                    );
+                  })}
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    disabled={(footer.links ?? []).length >= 8}
+                    onClick={() =>
+                      change({
+                        ...footer,
+                        links: [...(footer.links ?? []), { label: {}, url: "" }]
+                      })
+                    }
+                  >
+                    添加链接
+                  </button>
+                </div>
                 <div className="flex items-center justify-between gap-3 border-t border-line-soft pt-4">
                   <span className="text-sm text-brand-dark">显示身份说明</span>
                   <Switch
@@ -423,46 +489,6 @@ export function SiteSettingsPage({
               )}
             </SettingsSection>
           </>
-        ) : null}
-        {group === "favicon" ? (
-          <SettingsSection title="网站图标" description="同时用于前台和后台浏览器标签页。">
-            <div className="grid items-start gap-5 lg:grid-cols-2">
-              <SettingsAssetPicker
-                label="图标照片"
-                photos={available}
-                selected={favicon.photoId}
-                onChange={(photoId) => change({ photoId })}
-                defaultLabel="现有默认图标"
-                loading={photoQuery.isPending}
-                error={photoQuery.error?.message}
-                onRetry={() => void photoQuery.refetch()}
-              />
-              <SettingsPreview title="浏览器标签页预览">
-                <div className="flex min-w-0 items-center gap-2 rounded-t-lg border border-line bg-white px-3 py-2">
-                  <img
-                    className="size-4 shrink-0 object-contain"
-                    src={
-                      selectedIcon?.variants[0]?.url ??
-                      selectedIcon?.src ??
-                      new URL("favicon.svg", document.baseURI).href
-                    }
-                    alt=""
-                  />
-                  <span className="truncate text-xs text-brand">网站标题</span>
-                  <span className="ml-auto text-xs text-muted" aria-hidden="true">
-                    ×
-                  </span>
-                </div>
-              </SettingsPreview>
-            </div>
-            <details className="text-xs text-muted">
-              <summary className="cursor-pointer">图片要求与生成尺寸</summary>
-              <p className="mt-2 leading-relaxed">
-                使用本站托管的公开图库图片，生成32 / 180 / 192 / 512
-                PNG及ICO。版本化地址更新缓存，远程引用图片请先上传图库。
-              </p>
-            </details>
-          </SettingsSection>
         ) : null}
         {group === "dictionary" ? (
           <>

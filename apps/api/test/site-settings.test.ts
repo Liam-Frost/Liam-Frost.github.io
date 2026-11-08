@@ -138,7 +138,7 @@ describe("grouped website settings", () => {
       await app.close();
     }
   });
-  it("resolves only public avatars and generates versioned PNG/ICO from local public photos", async () => {
+  it("resolves only public avatars", async () => {
     const { app, photos, store, save } = await setup();
     try {
       const now = new Date();
@@ -179,26 +179,11 @@ describe("grouped website settings", () => {
         (await save("identity", { ...DEFAULT_SITE_SETTINGS.identity, avatarPhotoId: "icon-photo" }))
           .statusCode
       ).toBe(200);
-      expect((await save("favicon", { photoId: "icon-photo" })).statusCode).toBe(200);
       const pub = (await app.inject({ url: "/api/site-settings" })).json();
       expect(pub.avatarUrl).toMatch(/^\/uploads\//);
-      expect(pub.faviconUrl).toMatch(/^\/api\/site-favicon\/[a-f0-9]{24}\/32\.png$/);
-      const png = await app.inject({ url: pub.faviconUrl });
-      expect(png.statusCode).toBe(200);
-      expect(await sharp(png.rawPayload).metadata()).toMatchObject({
-        format: "png",
-        width: 32,
-        height: 32
-      });
-      const ico = await app.inject({ url: pub.faviconUrl.replace("32.png", "favicon.ico") });
-      expect(ico.rawPayload.readUInt16LE(2)).toBe(1);
-      expect(ico.rawPayload.readUInt32LE(18)).toBe(22);
+      expect(pub.faviconUrl).toBeNull();
       await photos.update("icon-photo", { visibility: "private" });
-      expect((await app.inject({ url: pub.faviconUrl })).statusCode).toBe(404);
-      expect((await app.inject({ url: "/api/site-settings" })).json()).toMatchObject({
-        avatarUrl: null,
-        faviconUrl: null
-      });
+      expect((await app.inject({ url: "/api/site-settings" })).json().avatarUrl).toBeNull();
       expect((await save("favicon", { photoId: "icon-photo" })).statusCode).toBe(400);
     } finally {
       await app.close();

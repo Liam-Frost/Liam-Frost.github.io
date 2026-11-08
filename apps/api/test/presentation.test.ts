@@ -42,7 +42,7 @@ describe("presentation settings", () => {
     const initial = (await app.inject({ url: "/api/admin/presentation", headers })).json();
     const value = structuredClone(DEFAULT_PRESENTATION);
     value.sections.skills = false;
-    value.publicLogo.photoId = photo.id;
+    value.publicLogo.text = "LF";
     value.loginBackground = { mode: "rotate", photoIds: [photo.id], intervalSeconds: 20 };
     const payload = { revision: initial.revision, settings: value };
     expect(
@@ -72,7 +72,7 @@ describe("presentation settings", () => {
     photos.rows.set(photo.id, { ...photo, visibility: "private" });
     const hidden = await app.inject("/api/presentation");
     expect(hidden.json().images).toEqual({});
-    expect(hidden.json().logoImages).toEqual({});
+    expect(hidden.json().logoUrls).toEqual({ publicLogo: null, adminLogo: null });
     const current = (await app.inject({ url: "/api/admin/presentation", headers })).json();
     expect(
       (

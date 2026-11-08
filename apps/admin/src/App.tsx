@@ -1,4 +1,5 @@
 import SiteFavicon from "../../web/src/components/SiteFavicon";
+import { AdminDocumentTitle } from "./hooks/useAdminTitle";
 import { clearSettingsDrafts } from "./components/settings/drafts";
 import { clearIntegrationDrafts } from "./components/integrations/drafts";
 import { SettingsLayout, SettingsRedirect } from "./components/settings/SettingsLayout";
@@ -62,6 +63,7 @@ export function App() {
       <ToastProvider>
         <BrowserRouter basename={ADMIN_BASE}>
           <SiteFavicon />
+          <AdminDocumentTitle />
           <SessionGate />
         </BrowserRouter>
       </ToastProvider>
