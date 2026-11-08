@@ -3,6 +3,7 @@ import {
   conflictingFields,
   DEFAULT_PRESENTATION,
   HOME_SECTIONS,
+  ROTATION_MODES,
   type PresentationSettings,
   type SettingsConflictDetails
 } from "@liam-frost/shared";
@@ -47,11 +48,17 @@ const schema = z
     adminLogo: logo,
     loginBackground: z
       .object({
-        mode: z.enum(["none", "fixed", "rotate"]),
+        // "none" and "rotate" (on a timer, with intervalSeconds) are from older saves.
+        mode: z.enum([...ROTATION_MODES, "none", "rotate"]),
         photoIds: z.array(id).max(20),
-        intervalSeconds: z.number().int().min(10).max(3600)
+        intervalSeconds: z.unknown().optional()
       })
       .strict()
+      .transform(({ mode, photoIds }): PresentationSettings["loginBackground"] =>
+        mode === "none"
+          ? { mode: "fixed", photoIds: [] }
+          : { mode: mode === "rotate" ? "visit" : mode, photoIds }
+      )
   })
   .strict();
 
@@ -125,8 +132,6 @@ export function registerPresentationRoutes(
         );
         if (added.some((photo) => !available.has(photo)))
           throw new HttpError(400, "INVALID_PHOTO", "只能选择图库中当前公开的照片");
-        if (next.loginBackground.mode !== "none" && !next.loginBackground.photoIds.length)
-          throw new HttpError(400, "BACKGROUND_REQUIRED", "请选择至少一张背景图");
       }
       const settings = {
         ...next,

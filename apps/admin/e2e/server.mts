@@ -98,9 +98,8 @@ async function seed(scenario: "default" | "empty" | "large") {
     publicLogo: { text: "" },
     adminLogo: { text: "" },
     loginBackground: {
-      mode: "rotate",
-      photoIds: Array.from({ length: large ? 20 : 6 }, (_, i) => `photo${i}`),
-      intervalSeconds: 10
+      mode: "daily",
+      photoIds: Array.from({ length: large ? 20 : 6 }, (_, i) => `photo${i}`)
     }
   });
   await settings.set("site.identity", {

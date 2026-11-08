@@ -43,7 +43,7 @@ describe("presentation settings", () => {
     const value = structuredClone(DEFAULT_PRESENTATION);
     value.sections.skills = false;
     value.publicLogo.text = "LF";
-    value.loginBackground = { mode: "rotate", photoIds: [photo.id], intervalSeconds: 20 };
+    value.loginBackground = { mode: "daily", photoIds: [photo.id] };
     const payload = { changes: value, base: initial.settings };
     expect(
       (

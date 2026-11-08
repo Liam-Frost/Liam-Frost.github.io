@@ -1,5 +1,9 @@
 # Development Log
 
+## 2026-11-09: Login background rotation modes
+
+- The login background now offers fixed, daily, each visit and each browsing session, using the same rotation code as the home page. See `decisions.md`.
+
 ## 2026-11-08: Admin settings audit, fixes and docs tidy-up
 
 - The user asked for a read-only audit of the admin settings UI, then for fixes based on it. The audit and its measurements are in `docs/archive/admin-settings-audit/`.

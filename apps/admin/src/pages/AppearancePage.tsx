@@ -9,13 +9,14 @@ import {
   type SiteSettingsGroups
 } from "@liam-frost/shared";
 import { ArrowDown, ArrowUp, ArrowUpRight, X } from "lucide-react";
-import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
+import { useId, useLayoutEffect, useRef, useState } from "react";
 import { Link } from "react-router";
 
 import LoadingSkeleton from "../../../web/src/components/LoadingSkeleton";
 import SiteMark from "../../../web/src/components/SiteMark";
 import { refreshPresentation } from "../../../web/src/data/usePresentation";
 import { refreshSiteSettings } from "../../../web/src/data/useSiteSettings";
+import { dayNumber } from "../../../web/src/lib/rotation";
 import { BrandUpload, useBranding } from "../components/settings/BrandUpload";
 import {
   SettingsActions,
@@ -30,7 +31,6 @@ import { useSettingsDocument } from "../components/settings/useSettingsDocument"
 import { Field, Switch } from "../components/ui/Field";
 import { IconButton } from "../components/ui/IconButton";
 import { LanguageTabPanel, LanguageTabs } from "../components/ui/LanguageTabs";
-import { Select } from "../components/ui/Select";
 import { useAdminTitle } from "../hooks/useAdminTitle";
 import { useHomeContentCounts } from "../hooks/useHomeContentCounts";
 import { usePhotos } from "../hooks/usePhotos";
@@ -415,6 +415,12 @@ function HomeSettings() {
 
 const LIMIT = 20;
 const PAGE_SIZE = 24;
+const BACKGROUND_MODES = [
+  { mode: "fixed", label: tr("固定"), hint: tr("一直显示选定的一张") },
+  { mode: "daily", label: tr("每天"), hint: tr("按所选顺序每天换一张，同一天所有访客一致") },
+  { mode: "visit", label: tr("每次访问"), hint: tr("每次打开登录页换一张，不会连续两次相同") },
+  { mode: "session", label: tr("每个浏览会话"), hint: tr("同一个标签页里保持不变，下次打开换一张") }
+] as const;
 /** The same size the login page asks for. */
 const photoUrl = (photo: AdminPhoto) =>
   (photo.variants.find((variant) => variant.width >= 1600) ?? photo.variants.at(-1))?.url ??
@@ -457,24 +463,12 @@ function LoginSettings() {
   const available = (photoQuery.data ?? []).filter((photo) => photo.visibility === "public");
   const [search, setSearch] = useState("");
   const [shown, setShown] = useState(PAGE_SIZE);
-  const [previewIndex, setPreviewIndex] = useState(0);
 
   const background = (doc.value ?? DEFAULT_PRESENTATION).loginBackground;
   const selected = background.photoIds.flatMap((id) => {
     const photo = available.find((item) => item.id === id);
     return photo ? [photo] : [];
   });
-  const rotating = background.mode === "rotate";
-  useEffect(() => {
-    setPreviewIndex(0);
-    const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
-    if (!rotating || motion.matches || selected.length < 2) return;
-    const timer = setInterval(
-      () => setPreviewIndex((index) => index + 1),
-      Math.max(10, Math.min(3600, background.intervalSeconds || 10)) * 1000
-    );
-    return () => clearInterval(timer);
-  }, [rotating, background.intervalSeconds, selected.length]);
 
   if (!doc.value)
     return <Loading error={doc.query.error} onRetry={() => void doc.query.refetch()} />;
@@ -482,6 +476,9 @@ function LoginSettings() {
   const setBackground = (patch: Partial<typeof background>) =>
     doc.change({ ...value, loginBackground: { ...background, ...patch } });
   const fixed = background.mode === "fixed";
+  // Only the daily mode goes through the photos in order; the visit and session modes draw.
+  const daily = background.mode === "daily";
+  const drawn = !fixed && !daily && selected.length > 1;
   const ids = background.photoIds;
   // A fixed background is the first photo: picking another puts it first and keeps the rest.
   const pick = (id: string, on: boolean) =>
@@ -498,10 +495,8 @@ function LoginSettings() {
     setBackground({ photoIds: next });
   };
   const listed = fixed ? ids.slice(0, 1) : ids;
-  const preview =
-    background.mode === "none" || !selected.length
-      ? undefined
-      : photoUrl(selected[(fixed ? 0 : previewIndex) % selected.length]!);
+  const todayIndex = daily && selected.length ? dayNumber(new Date()) % selected.length : 0;
+  const preview = selected.length ? photoUrl(selected[todayIndex]!) : undefined;
   const matches = available.filter((photo) =>
     pickText(photo.title, photo.id).toLowerCase().includes(search.toLowerCase())
   );
@@ -511,216 +506,211 @@ function LoginSettings() {
       <fieldset disabled={doc.busy} className="min-w-0 space-y-5">
         <SettingsGrid variant="aside">
           <div className="space-y-5">
-            <SettingsSection title={tr("背景设置")} description={tr("仅使用公开图库照片。")}>
-              <SettingsGrid variant="equal">
-                <Field label={tr("展示方式")} htmlFor="background-mode">
-                  <Select
-                    id="background-mode"
-                    value={background.mode}
-                    onChange={(mode) => setBackground({ mode })}
-                    options={[
-                      { value: "none" as const, label: tr("纯色背景") },
-                      { value: "fixed" as const, label: tr("固定照片") },
-                      { value: "rotate" as const, label: tr("轮换照片") }
-                    ]}
-                  />
-                </Field>
-                {rotating ? (
-                  <Field
-                    label={tr("轮换间隔（秒）")}
-                    htmlFor="background-interval"
-                    hint={tr("10–3600 秒。减少动态效果时保持第一张照片。")}
-                  >
-                    <input
-                      id="background-interval"
-                      className="field"
-                      type="number"
-                      min={10}
-                      max={3600}
-                      value={background.intervalSeconds}
-                      onChange={(event) =>
-                        setBackground({ intervalSeconds: Number(event.target.value) })
-                      }
-                    />
-                  </Field>
-                ) : null}
-              </SettingsGrid>
-            </SettingsSection>
-            {background.mode !== "none" ? (
-              <SettingsSection
-                title={fixed ? tr("当前照片") : tr("已选照片 · {0} / {1}", ids.length, LIMIT)}
-                description={fixed ? undefined : tr("按此顺序轮换。")}
-                actions={
-                  ids.length && !fixed ? (
-                    <button
-                      type="button"
-                      className="btn-secondary btn-sm"
-                      onClick={() => setBackground({ photoIds: [] })}
+            <SettingsSection
+              title={tr("背景设置")}
+              description={tr("仅使用公开图库照片；不选照片时为纯色背景。")}
+            >
+              <fieldset className="min-w-0">
+                <legend className="sr-only">{tr("展示方式")}</legend>
+                <SettingsGrid variant="equal">
+                  {BACKGROUND_MODES.map(({ mode, label, hint }) => (
+                    <label
+                      key={mode}
+                      className={`flex cursor-pointer gap-2.5 rounded-xl border p-3 text-[13px] transition-colors ${
+                        background.mode === mode
+                          ? "border-brand bg-brand-secondary/8"
+                          : "border-line-soft hover:border-line"
+                      }`}
                     >
-                      {tr("清空选择")}
-                    </button>
-                  ) : undefined
-                }
-              >
-                {listed.length ? (
-                  <ol className="-my-1 divide-y divide-line-soft">
-                    {listed.map((id, index) => {
-                      const photo = available.find((item) => item.id === id);
-                      const name = photo ? pickText(photo.title, photo.id) : tr("照片已隐藏或删除");
-                      return (
-                        <li className="flex items-center gap-2.5 py-1.5" key={id}>
-                          {fixed ? null : (
-                            <span className="w-5 text-center text-xs text-muted">{index + 1}</span>
-                          )}
-                          <span className="block h-9 w-12 shrink-0 overflow-hidden rounded-md bg-canvas">
-                            {photo ? (
-                              <img
-                                className="size-full object-cover"
-                                alt=""
-                                src={photo.thumbnail}
-                              />
-                            ) : null}
-                          </span>
-                          <span
-                            className={`min-w-0 flex-1 truncate text-[13px] ${photo ? "text-ink" : "text-status-warn"}`}
-                          >
-                            {name}
-                          </span>
-                          {fixed ? null : (
-                            <>
-                              <IconButton
-                                label={tr("上移第{0}张背景", index + 1)}
-                                disabled={!index}
-                                onClick={() => move(index, -1)}
-                              >
-                                <ArrowUp aria-hidden="true" className="size-4" />
-                              </IconButton>
-                              <IconButton
-                                label={tr("下移第{0}张背景", index + 1)}
-                                disabled={index === ids.length - 1}
-                                onClick={() => move(index, 1)}
-                              >
-                                <ArrowDown aria-hidden="true" className="size-4" />
-                              </IconButton>
-                            </>
-                          )}
-                          <IconButton
-                            danger
-                            label={tr("移除第{0}张背景", index + 1)}
-                            onClick={() =>
-                              setBackground({ photoIds: ids.filter((item) => item !== id) })
-                            }
-                          >
-                            <X aria-hidden="true" className="size-4" />
-                          </IconButton>
-                        </li>
-                      );
-                    })}
-                  </ol>
-                ) : (
-                  <SettingsState empty={tr("从下方公开图库选择照片")} />
-                )}
-              </SettingsSection>
-            ) : null}
+                      <input
+                        type="radio"
+                        name="login-background-mode"
+                        className="mt-0.5 accent-[var(--color-brand)]"
+                        checked={background.mode === mode}
+                        onChange={() => setBackground({ mode })}
+                      />
+                      <span>
+                        <span className="block font-medium text-brand-dark">{label}</span>
+                        <span className="mt-0.5 block text-[12px] text-faint">{hint}</span>
+                      </span>
+                    </label>
+                  ))}
+                </SettingsGrid>
+              </fieldset>
+            </SettingsSection>
+            <SettingsSection
+              title={fixed ? tr("当前照片") : tr("已选照片 · {0} / {1}", ids.length, LIMIT)}
+              description={daily ? tr("按此顺序每天换一张。") : undefined}
+              actions={
+                ids.length && !fixed ? (
+                  <button
+                    type="button"
+                    className="btn-secondary btn-sm"
+                    onClick={() => setBackground({ photoIds: [] })}
+                  >
+                    {tr("清空选择")}
+                  </button>
+                ) : undefined
+              }
+            >
+              {listed.length ? (
+                <ol className="-my-1 divide-y divide-line-soft">
+                  {listed.map((id, index) => {
+                    const photo = available.find((item) => item.id === id);
+                    const name = photo ? pickText(photo.title, photo.id) : tr("照片已隐藏或删除");
+                    return (
+                      <li className="flex items-center gap-2.5 py-1.5" key={id}>
+                        {daily ? (
+                          <span className="w-5 text-center text-xs text-muted">{index + 1}</span>
+                        ) : null}
+                        <span className="block h-9 w-12 shrink-0 overflow-hidden rounded-md bg-canvas">
+                          {photo ? (
+                            <img className="size-full object-cover" alt="" src={photo.thumbnail} />
+                          ) : null}
+                        </span>
+                        <span
+                          className={`min-w-0 flex-1 truncate text-[13px] ${photo ? "text-ink" : "text-status-warn"}`}
+                        >
+                          {name}
+                        </span>
+                        {daily ? (
+                          <>
+                            <IconButton
+                              label={tr("上移第{0}张背景", index + 1)}
+                              disabled={!index}
+                              onClick={() => move(index, -1)}
+                            >
+                              <ArrowUp aria-hidden="true" className="size-4" />
+                            </IconButton>
+                            <IconButton
+                              label={tr("下移第{0}张背景", index + 1)}
+                              disabled={index === ids.length - 1}
+                              onClick={() => move(index, 1)}
+                            >
+                              <ArrowDown aria-hidden="true" className="size-4" />
+                            </IconButton>
+                          </>
+                        ) : null}
+                        <IconButton
+                          danger
+                          label={tr("移除第{0}张背景", index + 1)}
+                          onClick={() =>
+                            setBackground({ photoIds: ids.filter((item) => item !== id) })
+                          }
+                        >
+                          <X aria-hidden="true" className="size-4" />
+                        </IconButton>
+                      </li>
+                    );
+                  })}
+                </ol>
+              ) : (
+                <SettingsState empty={tr("从下方公开图库选择照片")} />
+              )}
+            </SettingsSection>
           </div>
           <div className="login-preview-sticky">
             <SettingsPreview title={tr("登录页效果预览")}>
               <LoginPreview image={preview} />
               <p className="mt-2 text-xs text-muted">
-                {rotating && selected.length > 1
-                  ? tr("当前第 {0} / {1} 张", (previewIndex % selected.length) + 1, selected.length)
-                  : tr("配置预览，保存后生效")}
+                {daily && selected.length > 1
+                  ? tr("今天显示第 {0} / {1} 张", todayIndex + 1, selected.length)
+                  : drawn
+                    ? tr("访客会看到其中一张，这里显示第一张")
+                    : tr("配置预览，保存后生效")}
               </p>
             </SettingsPreview>
           </div>
         </SettingsGrid>
-        {background.mode !== "none" ? (
-          <SettingsSection
-            title={tr("公开图库")}
-            description={
-              fixed ? tr("选择一张作为登录背景。") : tr("选择顺序即轮换顺序；最多20张。")
-            }
-            actions={
-              <Link className="btn-secondary btn-sm" to="/photos">
-                {tr("管理照片")}
-              </Link>
-            }
-          >
-            <Field label={tr("搜索背景照片")} htmlFor="background-search" width="short">
-              <input
-                id="background-search"
-                className="field"
-                value={search}
-                onChange={(event) => {
-                  setSearch(event.target.value);
-                  setShown(PAGE_SIZE);
-                }}
-              />
-            </Field>
-            {photoQuery.isPending ? (
-              <LoadingSkeleton label={tr("加载图库…")} variant="cards" />
-            ) : photoQuery.error ? (
-              <SettingsState
-                error={photoQuery.error.message}
-                onRetry={() => void photoQuery.refetch()}
-              />
-            ) : matches.length ? (
-              <>
-                <div className="photo-grid" role="group" aria-label={tr("可选背景照片")}>
-                  {matches.slice(0, shown).map((photo) => {
-                    const position = (fixed ? ids.slice(0, 1) : ids).indexOf(photo.id);
-                    const isSelected = position >= 0;
-                    return (
-                      <label className="photo-option" data-selected={isSelected} key={photo.id}>
-                        <input
-                          className="sr-only"
-                          type={fixed ? "radio" : "checkbox"}
-                          name={fixed ? "login-photo" : undefined}
-                          checked={isSelected}
-                          disabled={!fixed && !isSelected && ids.length >= LIMIT}
-                          onChange={(event) => pick(photo.id, event.target.checked)}
-                        />
-                        <img
-                          className="aspect-[4/3] w-full rounded-lg object-cover"
-                          loading="lazy"
-                          src={photo.thumbnail}
-                          alt=""
-                        />
-                        {isSelected ? (
-                          <span className="photo-option-mark" aria-hidden="true">
-                            {fixed ? "✓" : position + 1}
-                          </span>
-                        ) : null}
-                        <span className="mt-1.5 block truncate px-0.5 text-xs text-ink">
-                          {pickText(photo.title, photo.id)}
+        <SettingsSection
+          title={tr("公开图库")}
+          description={
+            fixed
+              ? tr("选择一张作为登录背景。")
+              : daily
+                ? tr("选择顺序即轮换顺序；最多20张。")
+                : tr("最多选择 {0} 张。", LIMIT)
+          }
+          actions={
+            <Link className="btn-secondary btn-sm" to="/photos">
+              {tr("管理照片")}
+            </Link>
+          }
+        >
+          <Field label={tr("搜索背景照片")} htmlFor="background-search" width="short">
+            <input
+              id="background-search"
+              className="field"
+              value={search}
+              onChange={(event) => {
+                setSearch(event.target.value);
+                setShown(PAGE_SIZE);
+              }}
+            />
+          </Field>
+          {photoQuery.isPending ? (
+            <LoadingSkeleton label={tr("加载图库…")} variant="cards" />
+          ) : photoQuery.error ? (
+            <SettingsState
+              error={photoQuery.error.message}
+              onRetry={() => void photoQuery.refetch()}
+            />
+          ) : matches.length ? (
+            <>
+              <div className="photo-grid" role="group" aria-label={tr("可选背景照片")}>
+                {matches.slice(0, shown).map((photo) => {
+                  const position = (fixed ? ids.slice(0, 1) : ids).indexOf(photo.id);
+                  const isSelected = position >= 0;
+                  return (
+                    <label className="photo-option" data-selected={isSelected} key={photo.id}>
+                      <input
+                        className="sr-only"
+                        type={fixed ? "radio" : "checkbox"}
+                        name={fixed ? "login-photo" : undefined}
+                        checked={isSelected}
+                        disabled={!fixed && !isSelected && ids.length >= LIMIT}
+                        onChange={(event) => pick(photo.id, event.target.checked)}
+                      />
+                      <img
+                        className="aspect-[4/3] w-full rounded-lg object-cover"
+                        loading="lazy"
+                        src={photo.thumbnail}
+                        alt=""
+                      />
+                      {isSelected ? (
+                        <span className="photo-option-mark" aria-hidden="true">
+                          {daily ? position + 1 : "✓"}
                         </span>
-                      </label>
-                    );
-                  })}
+                      ) : null}
+                      <span className="mt-1.5 block truncate px-0.5 text-xs text-ink">
+                        {pickText(photo.title, photo.id)}
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
+              {matches.length > shown ? (
+                <div className="text-center">
+                  <button
+                    type="button"
+                    className="btn-secondary btn-sm"
+                    onClick={() => setShown((count) => count + PAGE_SIZE)}
+                  >
+                    {tr("显示更多（还有 {0} 张）", matches.length - shown)}
+                  </button>
                 </div>
-                {matches.length > shown ? (
-                  <div className="text-center">
-                    <button
-                      type="button"
-                      className="btn-secondary btn-sm"
-                      onClick={() => setShown((count) => count + PAGE_SIZE)}
-                    >
-                      {tr("显示更多（还有 {0} 张）", matches.length - shown)}
-                    </button>
-                  </div>
-                ) : null}
-              </>
-            ) : (
-              <SettingsState
-                empty={
-                  available.length
-                    ? tr("没有匹配的背景照片")
-                    : tr("图库暂无公开照片，请先上传并公开。")
-                }
-              />
-            )}
-          </SettingsSection>
-        ) : null}
+              ) : null}
+            </>
+          ) : (
+            <SettingsState
+              empty={
+                available.length
+                  ? tr("没有匹配的背景照片")
+                  : tr("图库暂无公开照片，请先上传并公开。")
+              }
+            />
+          )}
+        </SettingsSection>
       </fieldset>
       {doc.conflict ? (
         <SettingsConflict

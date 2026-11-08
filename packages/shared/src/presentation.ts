@@ -1,3 +1,5 @@
+import type { RotationMode } from "./rotation";
+
 export const HOME_SECTIONS = [
   "top",
   "about",
@@ -20,11 +22,8 @@ export type PresentationSettings = {
   sections: Record<HomeSection, boolean>;
   publicLogo: SiteLogo;
   adminLogo: SiteLogo;
-  loginBackground: {
-    mode: "none" | "fixed" | "rotate";
-    photoIds: string[];
-    intervalSeconds: number;
-  };
+  /** How the login page chooses among the photos (fixed: the first). No photos: a plain background. */
+  loginBackground: { mode: RotationMode; photoIds: string[] };
 };
 export const DEFAULT_PRESENTATION: PresentationSettings = {
   sections: {
@@ -38,7 +37,7 @@ export const DEFAULT_PRESENTATION: PresentationSettings = {
   },
   publicLogo: { text: "" },
   adminLogo: { text: "" },
-  loginBackground: { mode: "none", photoIds: [], intervalSeconds: 30 }
+  loginBackground: { mode: "fixed", photoIds: [] }
 };
 export type PublicPresentation = PresentationSettings & {
   images: Record<string, string>;
