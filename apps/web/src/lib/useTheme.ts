@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useSiteSettings } from "../data/useSiteSettings";
+import { useEffect, useCallback, useState } from "react";
 
 export type ThemeMode = "system" | "light" | "dark";
 
@@ -23,22 +24,30 @@ function readInitialTheme(): ThemeMode {
 }
 
 export function useTheme() {
-  const [theme, setTheme] = useState<ThemeMode>(() => readInitialTheme());
-
+  const settings = useSiteSettings();
+  const [choice, setChoice] = useState<ThemeMode | null>(() => {
+    try {
+      const value = localStorage.getItem(THEME_KEY);
+      return isThemeMode(value) ? value : null;
+    } catch {
+      return null;
+    }
+  });
+  const theme = choice ?? settings?.preferences.theme ?? readInitialTheme();
+  const setTheme = useCallback((next: ThemeMode) => {
+    setChoice(next);
+    try {
+      localStorage.setItem(THEME_KEY, next);
+    } catch {
+      /* storage unavailable */
+    }
+  }, []);
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
-    try {
-      localStorage.setItem(THEME_KEY, theme);
-    } catch {
-      // ignore
-    }
   }, [theme]);
-
-  const cycleTheme = useMemo(() => {
-    return () => {
-      setTheme((prev) => (prev === "system" ? "light" : prev === "light" ? "dark" : "system"));
-    };
-  }, []);
-
+  const cycleTheme = useCallback(
+    () => setTheme(theme === "system" ? "light" : theme === "light" ? "dark" : "system"),
+    [theme, setTheme]
+  );
   return { theme, setTheme, cycleTheme };
 }

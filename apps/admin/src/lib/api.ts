@@ -345,17 +345,23 @@ export const api = {
   musicJob: (id: string) =>
     request<{ job: MusicImportJob }>(`/api/admin/music/jobs/${encodeURIComponent(id)}`),
   people: () => request<AdminPeopleResponse>("/api/admin/people"),
+  personMusicCandidates: (id: string) =>
+    request<{ candidates: import("@liam-frost/shared").PersonMusicCandidate[] }>(
+      `${personPath(id)}/music-candidates`
+    ),
   syncPersonRelations: (id: string) =>
     request<AdminPersonResponse & { added: number }>(`${personPath(id)}/sync-relations`, {
       method: "POST"
     }),
   person: (id: string) => request<AdminPersonResponse>(personPath(id)),
-  searchPeople: (q: string) =>
-    request<AdminPersonSearchResponse>(`/api/admin/people/search?${new URLSearchParams({ q })}`),
-  importPerson: (sourceId: string) =>
+  searchPeople: (q: string, source: "tmdb" | "musicbrainz" = "tmdb") =>
+    request<AdminPersonSearchResponse>(
+      `/api/admin/people/search?${new URLSearchParams({ q, source })}`
+    ),
+  importPerson: (sourceId: string, source: "tmdb" | "musicbrainz" = "tmdb") =>
     request<AdminPersonResponse>("/api/admin/people/import", {
       method: "POST",
-      json: { source: "tmdb", sourceId }
+      json: { source, sourceId }
     }),
   createPerson: (body: AdminPersonCreate) =>
     request<AdminPersonResponse>("/api/admin/people", { method: "POST", json: body }),

@@ -14,6 +14,10 @@ import {
 import type { MemoryMediaRepository } from "./memory-media-repository";
 
 const PERSON_FIELDS = new Set([
+  "kind",
+  "aliases",
+  "identities",
+  "members",
   "id",
   "source",
   "sourceId",
@@ -45,20 +49,47 @@ export class MemoryPersonRepository implements PersonRepository {
 
   async findBySource(source: PersonRow["source"], sourceIds: string[]) {
     return new Map(
-      [...this.rows.values()]
-        .filter((row) => row.source === source && row.sourceId && sourceIds.includes(row.sourceId))
-        .map((row) => [row.sourceId!, row.id])
+      [...this.rows.values()].flatMap((row) => [
+        ...(row.source === source && row.sourceId && sourceIds.includes(row.sourceId)
+          ? [[row.sourceId, row.id] as const]
+          : []),
+        ...(row.identities ?? [])
+          .filter((i) => i.provider === source && sourceIds.includes(i.externalId))
+          .map((i) => [i.externalId, row.id] as const)
+      ])
     );
   }
 
+  private unique(identities: PersonRow["identities"], except?: string) {
+    if (
+      (identities ?? []).some((i) =>
+        [...this.rows.values()].some(
+          (p) =>
+            p.id !== except &&
+            (p.identities ?? []).some(
+              (other) => i.provider === other.provider && i.externalId === other.externalId
+            )
+        )
+      )
+    )
+      throw new DuplicatePersonError();
+  }
   async create(person: NewPerson) {
     // Prisma rejects fields the table does not have; so does this.
     const unknown = Object.keys(person).filter((key) => !PERSON_FIELDS.has(key));
     if (unknown.length) throw new Error(`Unknown person fields: ${unknown.join(", ")}`);
     if (person.sourceId && (await this.findBySource(person.source, [person.sourceId])).size)
       throw new DuplicatePersonError();
+    this.unique(person.identities);
     const now = new Date();
     const row: PersonRow = {
+      kind: "person",
+      aliases: [],
+      members: [],
+      identities:
+        person.source !== "manual" && person.sourceId
+          ? [{ provider: person.source, externalId: person.sourceId, confirmed: true }]
+          : [],
       sourceId: null,
       sourceUrl: null,
       originalName: null,
@@ -78,6 +109,7 @@ export class MemoryPersonRepository implements PersonRepository {
   async update(id: string, patch: PersonPatch) {
     const row = this.rows.get(id);
     if (!row) return null;
+    this.unique(patch.identities, id);
     const next = { ...row, ...structuredClone(patch), updatedAt: new Date() };
     this.rows.set(id, next);
     return structuredClone(next);
@@ -87,6 +119,8 @@ export class MemoryPersonRepository implements PersonRepository {
     const row = this.rows.get(id);
     if (!row) return null;
     this.rows.delete(id);
+    for (const p of this.rows.values())
+      p.members = (p.members ?? []).filter((m) => m.personId !== id);
     return row;
   }
 }

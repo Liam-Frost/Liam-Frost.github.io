@@ -3,7 +3,13 @@ import type { PersonRole, PublicMediaSummary } from "@liam-frost/shared";
 
 import { usePublicPerson } from "../data/useCollection";
 import { pickLocalized, useI18n, type Key } from "../lib/i18n";
-import { MediaLinkRow, personName, useRoleLabel, type CollectionLinkTo } from "./CollectionLinks";
+import {
+  MediaLinkRow,
+  PersonLinkRow,
+  personName,
+  useRoleLabel,
+  type CollectionLinkTo
+} from "./CollectionLinks";
 import DetailDrawer from "./DetailDrawer";
 import { imageSrcSet } from "./ProjectCard";
 
@@ -84,6 +90,24 @@ export default function PersonDetail({
             </div>
           </div>
 
+          {person.members?.length ? (
+            <section className="mediaDrawerSection">
+              <h3>{t("collection.members")}</h3>
+              <div className="linkList">
+                {person.members.map((member) => (
+                  <PersonLinkRow
+                    key={member.person.id}
+                    person={member.person}
+                    to={linkTo.person(member.person.id)}
+                    details={[
+                      member.role ?? "",
+                      [member.startYear, member.endYear].filter((v) => v !== null).join("–")
+                    ]}
+                  />
+                ))}
+              </div>
+            </section>
+          ) : null}
           {bio ? (
             <section className="mediaDrawerSection">
               <h3>{t("collection.bio")}</h3>

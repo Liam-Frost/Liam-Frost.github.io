@@ -1,8 +1,9 @@
+import { useGenreLabel } from "../lib/useGenreLabel";
 import type { MediaKind, PublicMediaSummary } from "@liam-frost/shared";
 import { useMemo, useState } from "react";
 import type { To } from "react-router";
 
-import { pickLocalized, useI18n, type Key } from "../lib/i18n";
+import { useI18n, type Key } from "../lib/i18n";
 import MediaCard from "./MediaCard";
 
 /** Kinds in the order the summary names them. */
@@ -38,6 +39,7 @@ export default function YearReview({
   linkTo: (id: string) => To;
 }) {
   const { lang, t } = useI18n();
+  const genreLabel = useGenreLabel();
   const years = useMemo(() => reviewYears(items), [items]);
   const [picked, setPicked] = useState<string | null>(null);
   const year = picked && years.includes(picked) ? picked : years[0];
@@ -58,7 +60,7 @@ export default function YearReview({
     for (const item of done) {
       for (const genre of item.genres) {
         const id = genre.zh || genre.en || Object.values(genre).find(Boolean) || "";
-        const entry = genres.get(id) ?? { name: pickLocalized(genre, lang), count: 0 };
+        const entry = genres.get(id) ?? { name: genreLabel(genre, lang), count: 0 };
         entry.count += 1;
         genres.set(id, entry);
       }
@@ -79,7 +81,7 @@ export default function YearReview({
       favorites,
       rated: rated.length
     };
-  }, [done, lang]);
+  }, [done, lang, genreLabel]);
 
   if (!year) return <p className="sectionSubtitle">{t("review.empty")}</p>;
   const monthName = new Intl.DateTimeFormat(lang, { month: "short" });

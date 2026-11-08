@@ -2,7 +2,8 @@ import type { IntegrationProvider } from "@liam-frost/shared";
 import { useQuery } from "@tanstack/react-query";
 import { ShieldCheck } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Link } from "react-router";
+import { SettingsPage, SettingsState } from "../components/settings/SettingsUI";
+import LoadingSkeleton from "../../../web/src/components/LoadingSkeleton";
 
 import {
   hasDraft,
@@ -10,7 +11,6 @@ import {
   IntegrationItem
 } from "../components/integrations/IntegrationItem";
 import { useIntegrationDrafts } from "../components/integrations/drafts";
-import { PageHeader } from "../components/layout/AdminLayout";
 import { api } from "../lib/api";
 
 /** Services by what they are for; Spotify and Steam also need an account connected in 收藏. */
@@ -20,7 +20,7 @@ const GROUPS: { title: string; providers: IntegrationProvider[] }[] = [
 ];
 
 export function IntegrationsPage() {
-  const { data, isPending, error } = useQuery({
+  const { data, isPending, error, refetch } = useQuery({
     queryKey: INTEGRATIONS_KEY,
     queryFn: api.integrations
   });
@@ -46,26 +46,14 @@ export function IntegrationsPage() {
   }, [unsaved]);
 
   return (
-    <div className="max-w-[840px]">
-      <PageHeader title="API 配置" description="第三方服务的访问凭据，保存后立即生效。" />
-      <p className="mb-4 text-[13px] text-muted">
-        地理识别、请求频率、保留时间和 IP 排除规则在{" "}
-        <Link className="text-brand underline" to="/analytics/settings">
-          统计 → 设置
-        </Link>{" "}
-        中管理。
-      </p>
+    <SettingsPage title="集成与 API" description="管理第三方服务凭据与连接，各服务独立保存。">
       <p className="mb-6 flex items-start gap-2 text-[12.5px] leading-relaxed text-muted">
         <ShieldCheck aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-brand-secondary" />
         凭据加密保存，只在服务器上使用，保存后不再显示原值。预发布和正式环境分别保存。
       </p>
 
-      {isPending ? <ListSkeleton /> : null}
-      {error ? (
-        <p role="alert" className="text-[13px] text-status-error">
-          {error.message}
-        </p>
-      ) : null}
+      {isPending ? <LoadingSkeleton label="读取集成配置…" variant="form" /> : null}
+      {error ? <SettingsState error={error.message} onRetry={() => void refetch()} /> : null}
       {data ? (
         <>
           {!data.editable ? (
@@ -78,7 +66,7 @@ export function IntegrationsPage() {
               <section key={group.title} aria-labelledby={`group-${group.title}`}>
                 <h2
                   id={`group-${group.title}`}
-                  className="mb-2 px-1 text-[12px] font-medium text-faint"
+                  className="mb-2 px-1 text-[12px] font-medium text-muted"
                 >
                   {group.title}
                 </h2>
@@ -107,29 +95,6 @@ export function IntegrationsPage() {
           ) : null}
         </>
       ) : null}
-    </div>
-  );
-}
-
-function ListSkeleton() {
-  return (
-    <div aria-hidden="true" className="space-y-6">
-      {[3, 2].map((rows, group) => (
-        <div key={group}>
-          <div className="mb-2 h-3 w-16 rounded bg-line-soft" />
-          <div className="card divide-y divide-line-soft">
-            {Array.from({ length: rows }, (_, i) => (
-              <div key={i} className="flex items-center gap-3 px-5 py-4">
-                <div className="flex-1 space-y-2">
-                  <div className="h-3.5 w-24 rounded bg-line-soft" />
-                  <div className="h-3 w-48 max-w-full rounded bg-line-soft/70" />
-                </div>
-                <div className="h-4 w-12 rounded bg-line-soft" />
-              </div>
-            ))}
-          </div>
-        </div>
-      ))}
-    </div>
+    </SettingsPage>
   );
 }

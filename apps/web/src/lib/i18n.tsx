@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { useSiteSettings } from "../data/useSiteSettings";
+import React, { createContext, useContext, useCallback, useEffect, useMemo, useState } from "react";
 
 export type Lang = "zh" | "zh-Hant" | "en" | "fr" | "ja";
 
@@ -16,11 +17,13 @@ export function pickLocalized(value: Partial<LocalizedString> | undefined, lang:
 const zh = {
   // Common
   "common.skipToContent": "跳到主要内容",
+  "common.loading": "加载中…",
   "common.theme": "主题",
   "common.language": "语言",
   "common.reset": "重置",
   "common.close": "关闭",
   "common.backToTop": "回到顶部",
+  "home.loadFailed": "首页暂时无法加载，请稍后重试。",
 
   // Nav
   "nav.home": "主页",
@@ -287,6 +290,8 @@ const zh = {
   "collection.role.producer": "制作人",
   "collection.role.actor": "演员",
   "collection.role.voice": "配音",
+  "collection.members": "成员",
+  "collection.role.musician": "演奏",
   "collection.role.singer": "歌手",
   "collection.role.composer": "作曲",
   "collection.role.lyricist": "作词",
@@ -305,11 +310,13 @@ export type Key = keyof typeof zh;
 
 const en: Record<Key, string> = {
   "common.skipToContent": "Skip to content",
+  "common.loading": "Loading…",
   "common.theme": "Theme",
   "common.language": "Language",
   "common.reset": "Reset",
   "common.close": "Close",
   "common.backToTop": "Back to top",
+  "home.loadFailed": "The home page could not be loaded. Please try again.",
 
   "nav.home": "Home",
   "nav.portfolio": "Gallery",
@@ -568,6 +575,8 @@ const en: Record<Key, string> = {
   "collection.role.producer": "Producer",
   "collection.role.actor": "Cast",
   "collection.role.voice": "Voice",
+  "collection.members": "Members",
+  "collection.role.musician": "Instrumentalist",
   "collection.role.singer": "Vocals",
   "collection.role.composer": "Composer",
   "collection.role.lyricist": "Lyrics",
@@ -584,11 +593,13 @@ const en: Record<Key, string> = {
 
 const fr: Record<Key, string> = {
   "common.skipToContent": "Aller au contenu",
+  "common.loading": "Chargement…",
   "common.theme": "Thème",
   "common.language": "Langue",
   "common.reset": "Réinitialiser",
   "common.close": "Fermer",
   "common.backToTop": "Haut de page",
+  "home.loadFailed": "La page d’accueil ne peut pas être chargée. Veuillez réessayer.",
 
   "nav.home": "Accueil",
   "nav.portfolio": "Galerie",
@@ -848,6 +859,8 @@ const fr: Record<Key, string> = {
   "collection.role.producer": "Production",
   "collection.role.actor": "Interprétation",
   "collection.role.voice": "Voix",
+  "collection.members": "Membres",
+  "collection.role.musician": "Interprétation instrumentale",
   "collection.role.singer": "Chant",
   "collection.role.composer": "Composition",
   "collection.role.lyricist": "Paroles",
@@ -864,11 +877,13 @@ const fr: Record<Key, string> = {
 
 const ja: Record<Key, string> = {
   "common.skipToContent": "本文へスキップ",
+  "common.loading": "読み込み中…",
   "common.theme": "テーマ",
   "common.language": "言語",
   "common.reset": "リセット",
   "common.close": "閉じる",
   "common.backToTop": "トップへ",
+  "home.loadFailed": "ホームページを読み込めませんでした。もう一度お試しください。",
 
   "nav.home": "ホーム",
   "nav.portfolio": "ギャラリー",
@@ -1125,6 +1140,8 @@ const ja: Record<Key, string> = {
   "collection.role.producer": "プロデューサー",
   "collection.role.actor": "出演",
   "collection.role.voice": "声優",
+  "collection.members": "メンバー",
+  "collection.role.musician": "演奏",
   "collection.role.singer": "歌",
   "collection.role.composer": "作曲",
   "collection.role.lyricist": "作詞",
@@ -1142,11 +1159,13 @@ const ja: Record<Key, string> = {
 const zhHant: Record<Key, string> = {
   // Common
   "common.skipToContent": "跳到主要內容",
+  "common.loading": "載入中…",
   "common.theme": "主題",
   "common.language": "語言",
   "common.reset": "重置",
   "common.close": "關閉",
   "common.backToTop": "回到頂部",
+  "home.loadFailed": "首頁暫時無法載入，請稍後重試。",
 
   // Nav
   "nav.home": "首頁",
@@ -1413,6 +1432,8 @@ const zhHant: Record<Key, string> = {
   "collection.role.producer": "製作人",
   "collection.role.actor": "演員",
   "collection.role.voice": "配音",
+  "collection.members": "成員",
+  "collection.role.musician": "演奏",
   "collection.role.singer": "歌手",
   "collection.role.composer": "作曲",
   "collection.role.lyricist": "作詞",
@@ -1481,7 +1502,27 @@ type I18nContextValue = {
 const I18nContext = createContext<I18nContextValue | null>(null);
 
 export function I18nProvider({ children }: { children: React.ReactNode }) {
-  const [lang, setLang] = useState<Lang>(() => detectLang());
+  const settings = useSiteSettings();
+  const [choice, setChoice] = useState<Lang | null>(() => {
+    try {
+      return normalizeLang(localStorage.getItem(STORAGE_KEY));
+    } catch {
+      return null;
+    }
+  });
+  const lang =
+    choice ??
+    (settings?.preferences.language && settings.preferences.language !== "auto"
+      ? settings.preferences.language
+      : detectLang());
+  const setLang = useCallback((next: Lang) => {
+    setChoice(next);
+    try {
+      localStorage.setItem(STORAGE_KEY, next);
+    } catch {
+      /* visitor storage unavailable */
+    }
+  }, []);
 
   useEffect(() => {
     const families = {
@@ -1499,11 +1540,6 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
     if (fontLink && fontLink.href !== fontUrl) fontLink.href = fontUrl;
     document.documentElement.setAttribute("data-lang", lang);
     document.documentElement.lang = langToHtmlLang(lang);
-    try {
-      localStorage.setItem(STORAGE_KEY, lang);
-    } catch {
-      // ignore
-    }
   }, [lang]);
 
   const value = useMemo<I18nContextValue>(() => {
@@ -1514,7 +1550,7 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
       setLang,
       t: (key, params) => format(dict[key], params)
     };
-  }, [lang]);
+  }, [lang, setLang]);
 
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
 }

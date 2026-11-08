@@ -46,7 +46,14 @@ export function PlayAllButton({
     <button
       type="button"
       className="btn btnPrimary btnSmall"
-      onClick={() => sendPlayerCommand({ type: "queue", tracks, spotifyUrl })}
+      onClick={() =>
+        sendPlayerCommand({
+          type: "queue",
+          tracks,
+          spotifyUrl,
+          player: player.mode === "embed" ? "spotify" : "site"
+        })
+      }
     >
       {t("collection.playAll")}
     </button>
@@ -75,7 +82,11 @@ export default function PlayButton({
       sendPlayerCommand({ type: "pause" });
       return;
     }
-    sendPlayerCommand({ type: "play", track: playRequest(item, title)! });
+    sendPlayerCommand({
+      type: "play",
+      track: playRequest(item, title)!,
+      player: embed ? "spotify" : "site"
+    });
   };
 
   return (

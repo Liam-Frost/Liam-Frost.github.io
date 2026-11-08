@@ -128,14 +128,16 @@ export function ManifestoDialog({
   const [text, setText] = useState<LocalizedText>(manifesto?.text ?? {});
   const [attribution, setAttribution] = useState<LocalizedText>(manifesto?.attribution ?? {});
   const [visible, setVisible] = useState(manifesto?.visible ?? true);
+  const [weight, setWeight] = useState(manifesto?.weight ?? 1);
   const [lang, setLang] = useState<Lang>("zh");
   const [error, setError] = useState("");
   const dirty =
-    JSON.stringify([trimmed(text), trimmed(attribution), visible]) !==
+    JSON.stringify([trimmed(text), trimmed(attribution), visible, weight]) !==
     JSON.stringify([
       trimmed(manifesto?.text ?? {}),
       trimmed(manifesto?.attribution ?? {}),
-      manifesto?.visible ?? true
+      manifesto?.visible ?? true,
+      manifesto?.weight ?? 1
     ]);
 
   const submit = (event: FormEvent) => {
@@ -145,7 +147,8 @@ export function ManifestoDialog({
       id: manifesto?.id ?? crypto.randomUUID(),
       text: trimmed(text),
       attribution: trimmed(attribution),
-      visible
+      visible,
+      weight
     });
   };
 
@@ -210,6 +213,22 @@ export function ManifestoDialog({
             <p className="mt-2 text-[13px] text-muted">— {attribution[lang]!.trim()}</p>
           ) : null}
         </div>
+        <Field
+          label="出现权重"
+          htmlFor="manifesto-weight"
+          hint="非固定模式下，概率为本条权重 ÷ 所有可见宣言总权重。0表示不参与抽取；固定模式忽略权重。"
+        >
+          <input
+            id="manifesto-weight"
+            className="field"
+            type="number"
+            min={0}
+            max={10000}
+            step={1}
+            value={weight}
+            onChange={(e) => setWeight(Number(e.target.value))}
+          />
+        </Field>
         <Switch
           id="manifesto-visible"
           checked={visible}

@@ -1,3 +1,5 @@
+import { useUnsavedChanges } from "../../hooks/useUnsavedChanges";
+import { useSettingsDraftCount } from "../settings/drafts";
 import type { AdminUser } from "@liam-frost/shared";
 import {
   ChartColumn,
@@ -9,15 +11,16 @@ import {
   LogOut,
   Music,
   Mail,
-  KeyRound,
   Layers,
   Quote
 } from "lucide-react";
 import type { ReactNode } from "react";
-import { NavLink, Outlet } from "react-router";
+import { NavLink, Outlet, useLocation } from "react-router";
 
 import { useLogout } from "../../hooks/useSession";
 import { useToast } from "../ui/Toast";
+import SiteMark from "../../../../web/src/components/SiteMark";
+import { Settings2 } from "lucide-react";
 
 const NAV = [
   { to: "/", label: "概览", icon: LayoutDashboard, end: true },
@@ -28,12 +31,14 @@ const NAV = [
   { to: "/photos", label: "照片", icon: Images, end: false },
   { to: "/contact", label: "联系我", icon: Mail, end: false },
   { to: "/music", label: "播放器", icon: Music, end: false },
-  { to: "/integrations", label: "API 配置", icon: KeyRound, end: false },
   { to: "/analytics", label: "统计", icon: ChartColumn, end: false },
-  { to: "/audit", label: "审计日志", icon: ShieldCheck, end: false }
+  { to: "/audit", label: "审计日志", icon: ShieldCheck, end: false },
+  { to: "/settings", label: "网站设置", icon: Settings2, end: false }
 ];
 
 export function AdminLayout({ user }: { user: AdminUser }) {
+  const isSettings = useLocation().pathname.startsWith("/settings");
+  useUnsavedChanges(useSettingsDraftCount() > 0);
   const logout = useLogout();
   const toast = useToast();
 
@@ -43,17 +48,10 @@ export function AdminLayout({ user }: { user: AdminUser }) {
     });
 
   return (
-    <div className="min-h-dvh md:grid md:grid-cols-[220px_1fr]">
+    <div className="min-h-dvh md:grid md:grid-cols-[220px_minmax(0,1fr)]">
       <aside className="flex items-center gap-3 border-b border-line bg-brand-dark px-4 py-3 text-white md:sticky md:top-0 md:h-dvh md:flex-col md:items-stretch md:gap-6 md:border-r md:border-b-0 md:px-4 md:py-6">
         <div className="flex items-center gap-2.5 md:px-2">
-          <span
-            aria-hidden="true"
-            className="size-7 shrink-0 bg-linear-to-br from-[#547792] to-[#94b4c1] shadow-[0_0_0_6px_rgba(148,180,193,0.2)]"
-            style={{
-              mask: 'url("./favicon.svg?v=lf") center / contain no-repeat',
-              WebkitMask: 'url("./favicon.svg?v=lf") center / contain no-repeat'
-            }}
-          />
+          <SiteMark admin />
           <span className="text-[15px] font-semibold">管理后台</span>
         </div>
 
@@ -92,7 +90,9 @@ export function AdminLayout({ user }: { user: AdminUser }) {
         </div>
       </aside>
 
-      <main className="mx-auto w-full max-w-[1080px] px-4 pt-8 pb-12 sm:px-6">
+      <main
+        className={`mx-auto min-w-0 w-full px-4 pt-8 pb-12 sm:px-6 ${isSettings ? "max-w-[1440px]" : "max-w-[1080px]"}`}
+      >
         <Outlet />
       </main>
     </div>

@@ -1,4 +1,11 @@
+import SiteFavicon from "../../web/src/components/SiteFavicon";
+import { clearSettingsDrafts } from "./components/settings/drafts";
+import { clearIntegrationDrafts } from "./components/integrations/drafts";
+import { SettingsLayout, SettingsRedirect } from "./components/settings/SettingsLayout";
+import { SiteSettingsPage, RuntimeSettingsPage } from "./pages/SiteSettingsPage";
 import { AuditPage } from "./pages/AuditPage";
+import { AppearancePage } from "./pages/AppearancePage";
+import { FeaturedPage } from "./pages/FeaturedPage";
 import { ContactPage } from "./pages/ContactPage";
 import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Navigate, Route, Routes, useParams } from "react-router";
@@ -27,6 +34,8 @@ import { NotFoundPage, OverviewPage, SectionNotFound } from "./pages/OverviewPag
 // Any 401 (session expired or revoked elsewhere) sends the app back to the login screen.
 const onUnauthorized = (error: Error) => {
   if (error instanceof ApiError && error.status === 401) {
+    clearIntegrationDrafts();
+    clearSettingsDrafts();
     queryClient.setQueryData(sessionKey, { authenticated: false, configured: true, user: null });
   }
 };
@@ -52,6 +61,7 @@ export function App() {
     <QueryClientProvider client={queryClient}>
       <ToastProvider>
         <BrowserRouter basename={ADMIN_BASE}>
+          <SiteFavicon />
           <SessionGate />
         </BrowserRouter>
       </ToastProvider>
@@ -90,14 +100,90 @@ function SessionGate() {
         <Route path="collection" element={<CollectionLayout />}>
           <Route index element={<CollectionPage />} />
           <Route path="people" element={<PeoplePage />} />
+          <Route path="featured" element={<FeaturedPage />} />
           <Route path="people/:id" element={<PersonEditPage />} />
           <Route path=":id" element={<MediaEditPage />} />
         </Route>
         <Route path="people" element={<LegacyPersonRedirect />} />
         <Route path="people/:id" element={<LegacyPersonRedirect />} />
         <Route path="music" element={<MusicPage />} />
-        <Route path="integrations" element={<IntegrationsPage />} />
+        <Route
+          path="integrations"
+          element={<SettingsRedirect to="/settings/privacy/integrations" />}
+        />
         <Route path="audit" element={<AuditPage />} />
+        <Route path="appearance" element={<SettingsRedirect to="/settings/experience/home" />} />
+        <Route path="settings" element={<SettingsLayout />}>
+          <Route index element={<SettingsRedirect to="/settings/site/identity" />} />
+          <Route
+            path="site/identity"
+            element={<SiteSettingsPage key="identity" group="identity" />}
+          />
+          <Route path="site/branding" element={<AppearancePage key="branding" mode="branding" />} />
+          <Route path="site/footer" element={<SiteSettingsPage key="footer" group="footer" />} />
+          <Route path="experience/home" element={<AppearancePage key="home" mode="home" />} />
+          <Route
+            path="experience/preferences"
+            element={<SiteSettingsPage key="preferences" group="preferences" />}
+          />
+          <Route
+            path="experience/dictionary"
+            element={<SiteSettingsPage key="dictionary" group="dictionary" />}
+          />
+          <Route
+            path="privacy/content"
+            element={<SiteSettingsPage key="privacy" group="privacy" />}
+          />
+          <Route path="privacy/integrations" element={<IntegrationsPage />} />
+          <Route path="admin/login" element={<AppearancePage key="login" mode="login" />} />
+          <Route path="admin/security" element={<RuntimeSettingsPage />} />
+          <Route
+            path="frontend/identity"
+            element={<SettingsRedirect to="/settings/site/identity" />}
+          />
+          <Route
+            path="frontend/appearance"
+            element={<SettingsRedirect to="/settings/experience/home" />}
+          />
+          <Route path="frontend/footer" element={<SettingsRedirect to="/settings/site/footer" />} />
+          <Route
+            path="frontend/preferences"
+            element={<SettingsRedirect to="/settings/experience/preferences" />}
+          />
+          <Route
+            path="frontend/privacy"
+            element={<SettingsRedirect to="/settings/privacy/content" />}
+          />
+          <Route
+            path="frontend/dictionary"
+            element={<SettingsRedirect to="/settings/experience/dictionary" />}
+          />
+          <Route
+            path="backend/appearance"
+            element={<SettingsRedirect to="/settings/admin/login" />}
+          />
+          <Route
+            path="backend/favicon"
+            element={<SettingsRedirect to="/settings/site/branding" />}
+          />
+          <Route
+            path="backend/integrations"
+            element={<SettingsRedirect to="/settings/privacy/integrations" />}
+          />
+          <Route
+            path="backend/security"
+            element={<SettingsRedirect to="/settings/admin/security" />}
+          />
+          <Route
+            path="backend/language"
+            element={<SettingsRedirect to="/settings/experience/preferences" />}
+          />
+          <Route
+            path="backend/statistics"
+            element={<SettingsRedirect to="/analytics/settings" />}
+          />
+          <Route path="backend/audit" element={<SettingsRedirect to="/audit" />} />
+        </Route>
         <Route path="analytics" element={<AnalyticsPage view="overview" />} />
         <Route path="analytics/content" element={<AnalyticsPage view="content" />} />
         <Route path="analytics/content/:type/:id" element={<AnalyticsPage view="detail" />} />

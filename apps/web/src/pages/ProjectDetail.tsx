@@ -1,3 +1,4 @@
+import { useSiteSettings } from "../data/useSiteSettings";
 import LoadingImage from "../components/LoadingImage";
 import LoadingSkeleton from "../components/LoadingSkeleton";
 import type { ProjectImage } from "@liam-frost/shared";
@@ -17,6 +18,8 @@ const LINK_KEYS = ["demo", "repo", "docs"] as const;
 export default function ProjectDetailPage() {
   const { slug = "" } = useParams();
   const { lang, t } = useI18n();
+  const settings = useSiteSettings();
+  const owner = pickLocalized(settings?.identity.name ?? {}, lang) || "Liam Frost";
   const { project, status } = useProject(slug);
   const [viewing, setViewing] = useState<ProjectImage | null>(null);
 
@@ -25,11 +28,11 @@ export default function ProjectDetailPage() {
   useEffect(() => {
     if (!title) return;
     const previous = document.title;
-    document.title = `${title} · Liam Frost`;
+    document.title = `${title} · ${owner}`;
     return () => {
       document.title = previous;
     };
-  }, [title]);
+  }, [title, owner]);
 
   if (status === "loading") {
     return (

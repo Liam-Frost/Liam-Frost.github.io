@@ -1,3 +1,4 @@
+import { useArrivalParams } from "../hooks/useArrivalParams";
 import LoadingSkeleton from "../../../web/src/components/LoadingSkeleton";
 import {
   ABOUT_LIMITS,
@@ -25,9 +26,9 @@ const aboutKey = ["admin", "about"] as const;
 
 const MODE_LABELS: Record<ManifestoRotationMode, { label: string; hint: string }> = {
   fixed: { label: "固定", hint: "一直显示选定的一条" },
-  daily: { label: "每天", hint: "按温哥华时间每天换一条，同一天所有访客看到同一条" },
-  visit: { label: "每次访问", hint: "每次打开首页换一条，不会连续两次相同" },
-  session: { label: "每个浏览会话", hint: "同一个标签页里保持不变，下次打开网站换一条" }
+  daily: { label: "每天", hint: "按温哥华日期加权选择，同一天所有访客一致" },
+  visit: { label: "每次访问", hint: "每次打开首页按权重抽取，允许连续出现同一条" },
+  session: { label: "每个浏览会话", hint: "按权重选择，同一标签页保持不变；权重调整后重新选择" }
 };
 
 const BADGE =
@@ -72,7 +73,14 @@ export function AboutPage() {
   // The draft keeps the revision it was started from, so a save after someone else's (seen by a
   // refetch meanwhile) is still refused instead of overwriting their changes.
   const [draft, setDraft] = useState<{ about: AboutContent; revision: string } | null>(null);
-  const [editing, setEditing] = useState<Editing>(null);
+  const arrival = useArrivalParams("open").open;
+  const [editing, setEditing] = useState<Editing>(
+    arrival === "manifesto"
+      ? { kind: "manifesto" }
+      : arrival === "gear"
+        ? { kind: "category" }
+        : null
+  );
   const [newItem, setNewItem] = useState<Record<string, string>>({});
   const save = useMutation({
     mutationFn: api.saveAbout,
@@ -240,6 +248,23 @@ export function AboutPage() {
                         {pickText(m.attribution) ? <span>— {pickText(m.attribution)}</span> : null}
                         {about.rotation.mode === "fixed" && m.id === about.rotation.fixedId ? (
                           <span className={BADGE}>固定显示</span>
+                        ) : null}
+                        {about.rotation.mode !== "fixed" ? (
+                          <span className={BADGE}>
+                            权重 {m.weight ?? 1} ·{" "}
+                            {m.visible &&
+                            visibleManifestos.reduce((sum, v) => sum + (v.weight ?? 1), 0) > 0
+                              ? (
+                                  ((m.weight ?? 1) /
+                                    visibleManifestos.reduce(
+                                      (sum, v) => sum + (v.weight ?? 1),
+                                      0
+                                    )) *
+                                  100
+                                ).toFixed(1)
+                              : "0"}
+                            %
+                          </span>
                         ) : null}
                         {m.visible ? null : <span className={BADGE}>已隐藏</span>}
                         {missing.length ? (

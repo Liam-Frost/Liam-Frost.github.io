@@ -291,7 +291,7 @@ function QuiltTile({
         if (playing) sendPlayerCommand({ type: "pause" });
         else {
           const track = playRequest(item, title);
-          if (track) sendPlayerCommand({ type: "play", track });
+          if (track) sendPlayerCommand({ type: "play", track, player: embed ? "spotify" : "site" });
           if (embed) setSelectedSpotify(true);
         }
       }}

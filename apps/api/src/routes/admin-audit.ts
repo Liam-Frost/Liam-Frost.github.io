@@ -34,9 +34,16 @@ export function registerAdminAudit(app: FastifyInstance, auth: AdminAuthService)
           ? "write"
           : "access";
     const params = request.params as Record<string, unknown> | null;
-    const id = params?.id ?? params?.slug;
+    const id = params?.id ?? params?.slug ?? params?.group;
     const resource =
       typeof id === "string" && /^[a-zA-Z0-9_.:-]{1,80}$/.test(id) ? `${route} [${id}]` : route;
+    const settingsRevision = reply.getHeader("x-settings-revision");
+    const revisionSuffix =
+      route.includes("/site-settings/") &&
+      typeof settingsRevision === "string" &&
+      /^[a-f0-9]{64}$/.test(settingsRevision)
+        ? ` @${settingsRevision}`
+        : "";
     const row: AuditRow = {
       id: randomUUID(),
       createdAt: new Date(),
@@ -46,7 +53,7 @@ export function registerAdminAudit(app: FastifyInstance, auth: AdminAuthService)
           : (actors.get(request) ?? null),
       action,
       method: request.method,
-      resource: resource.slice(0, 280),
+      resource: (resource + revisionSuffix).slice(0, 280),
       status: reply.statusCode,
       ip: request.ip
     };

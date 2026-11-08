@@ -1,4 +1,8 @@
-import type { SpotifyAccountStatus, SpotifyOwnPlaylist } from "@liam-frost/shared";
+import type {
+  MusicArtistIdentity,
+  SpotifyAccountStatus,
+  SpotifyOwnPlaylist
+} from "@liam-frost/shared";
 import { createHash, randomBytes } from "node:crypto";
 
 import { SecretBox } from "../lib/secret-box";
@@ -24,6 +28,8 @@ export type ApiTrack = {
   id: string;
   title: string;
   artists: string[];
+  artistIdentities?: MusicArtistIdentity[];
+  isrc?: string | null;
   album: string | null;
   year: number | null;
   durationMs: number | null;
@@ -36,7 +42,8 @@ type SpotifyApiTrack = {
   type?: string;
   is_local?: boolean;
   name?: string;
-  artists?: { name?: string }[];
+  artists?: { id?: string; name?: string }[];
+  external_ids?: { isrc?: string };
   album?: {
     name?: string;
     release_date?: string;
@@ -57,6 +64,10 @@ function toApiTrack(track: SpotifyApiTrack | null | undefined): ApiTrack | null 
     id: track.id,
     title: track.name,
     artists: (track.artists ?? []).map((artist) => artist.name?.trim() ?? "").filter(Boolean),
+    artistIdentities: (track.artists ?? [])
+      .filter((a) => a.id && /^[A-Za-z0-9]{22}$/.test(a.id) && a.name?.trim())
+      .map((a) => ({ provider: "spotify", externalId: a.id!, name: a.name!.trim() })),
+    isrc: track.external_ids?.isrc ?? null,
     album: track.album?.name ?? null,
     year: Number(track.album?.release_date?.slice(0, 4)) || null,
     durationMs: track.duration_ms ?? null,

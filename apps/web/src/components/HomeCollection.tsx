@@ -1,3 +1,4 @@
+import { homeCollectionContentIds } from "@liam-frost/shared";
 import LoadingImage from "./LoadingImage";
 import { orderHomeWall, type PublicCollection, type PublicMediaSummary } from "@liam-frost/shared";
 import { useCallback, useMemo, useState } from "react";
@@ -187,8 +188,7 @@ export default function HomeCollection({ collection }: { collection: PublicColle
   const recent = parts.done.filter(GROUPS[group]).slice(0, limit);
 
   // Songs alone are enough: the listening bar can be the only part.
-  if (!parts.featured.length && !parts.ongoing.length && !parts.done.length && !parts.songs.length)
-    return null;
+  if (!homeCollectionContentIds(collection).length) return null;
 
   return (
     <section className="section" id="watching">

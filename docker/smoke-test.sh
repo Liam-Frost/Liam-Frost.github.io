@@ -82,6 +82,9 @@ curl -fsS -c "$JAR" -H 'x-admin-request: 1' -H 'content-type: application/json' 
   -d "{\"username\":\"smoke\",\"password\":\"$PASSWORD\"}" "$BASE/api/admin/login" >/dev/null || fail "login"
 [[ "$(curl -fsS -b "$JAR" "$BASE/api/admin/session" | json 'd.authenticated')" == "true" ]] || fail "session"
 
+step "people identities and memberships against PostgreSQL"
+SMOKE_PASSWORD="$PASSWORD" node docker/people-smoke.mjs
+
 step "create a project with an uploaded cover"
 node -e "
 const zlib=require('zlib');const w=800,h=500;const raw=Buffer.alloc((w*3+1)*h);

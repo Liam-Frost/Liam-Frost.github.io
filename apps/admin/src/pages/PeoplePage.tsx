@@ -1,8 +1,10 @@
+import { useArrivalParams } from "../hooks/useArrivalParams";
 import LoadingSkeleton from "../../../web/src/components/LoadingSkeleton";
 import type {
   AdminBatchRequest,
   AdminPerson,
   AdminPersonUpdate,
+  PersonKind,
   PersonSearchResult
 } from "@liam-frost/shared";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -27,7 +29,8 @@ import { Tooltip } from "../components/ui/Tooltip";
 export function PeoplePage() {
   const { data: people, isPending, error } = usePeople();
   const { data: settings } = useCollectionSettings();
-  const [adding, setAdding] = useState(false);
+  const arrival = useArrivalParams("open").open;
+  const [adding, setAdding] = useState(arrival === "add");
   const [filter, setFilter] = useState("");
   const [processed, setProcessed] = useState(0);
   const qc = useQueryClient();
@@ -57,6 +60,7 @@ export function PeoplePage() {
       );
       void qc.invalidateQueries({ queryKey: peopleKey });
       void qc.invalidateQueries({ queryKey: ["admin", "relations"] });
+      void qc.invalidateQueries({ queryKey: ["admin", "music-candidates"] });
     }
   });
 
@@ -64,8 +68,8 @@ export function PeoplePage() {
   const visible = (people ?? []).filter(
     (person) =>
       !needle ||
-      [...Object.values(person.name), person.originalName ?? ""].some((text) =>
-        text?.toLowerCase().includes(needle)
+      [...Object.values(person.name), person.originalName ?? "", ...(person.aliases ?? [])].some(
+        (text) => text?.toLowerCase().includes(needle)
       )
   );
   const order = useMemo(() => visible.map((person) => person.id), [visible]);
@@ -74,8 +78,8 @@ export function PeoplePage() {
   return (
     <>
       <PageHeader
-        title="人物"
-        description="TMDB 人物会按来源 ID 自动关联已有影视，新增作品也会匹配已有人物。手动添加的歌手、作者或工作室，先关联一部作品并选择角色，之后按唯一名字补齐。来源暂不可用时可在人物内重试。"
+        title="人物与团体"
+        description="TMDB 导入影视人物，MusicBrainz 导入歌手与乐队，也可手动添加。音乐作品仅按已确认的来源身份自动关联，同名与别名只作为待确认建议。"
         actions={
           <>
             <button
@@ -193,7 +197,10 @@ function PersonCard({ person, selection }: { person: AdminPerson; selection: Sel
             {name}
           </p>
         </Tooltip>
-        <p className="text-[12px] text-subtle">{person.works} 部作品</p>
+        <p className="text-[12px] text-subtle">
+          {{ person: "人物", group: "团体", organization: "机构" }[person.kind ?? "person"]} ·{" "}
+          {person.works} 部作品
+        </p>
       </div>
     </>
   );
@@ -324,6 +331,8 @@ function PeopleBatchActions({ selection }: { selection: Selection }) {
 }
 
 function AddPersonDialog({ tmdbReady, onClose }: { tmdbReady: boolean; onClose: () => void }) {
+  const [source, setSource] = useState<"tmdb" | "musicbrainz">("musicbrainz");
+  const [kind, setKind] = useState<PersonKind>("person");
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<PersonSearchResult[] | null>(null);
   const [searching, setSearching] = useState(false);
@@ -335,11 +344,11 @@ function AddPersonDialog({ tmdbReady, onClose }: { tmdbReady: boolean; onClose: 
 
   const search = async (event: FormEvent) => {
     event.preventDefault();
-    if (!query.trim() || !tmdbReady) return;
+    if (!query.trim() || (source === "tmdb" && !tmdbReady)) return;
     setSearching(true);
     setError("");
     try {
-      setResults((await api.searchPeople(query.trim())).results);
+      setResults((await api.searchPeople(query.trim(), source)).results);
     } catch (e) {
       setError(e instanceof Error ? e.message : "搜索失败");
     } finally {
@@ -351,7 +360,7 @@ function AddPersonDialog({ tmdbReady, onClose }: { tmdbReady: boolean; onClose: 
     setImporting(result.sourceId);
     setError("");
     try {
-      const { person } = await api.importPerson(result.sourceId);
+      const { person } = await api.importPerson(result.sourceId, result.source);
       setPerson(person);
       navigate(`/collection/people/${person.id}`);
     } catch (e) {
@@ -372,7 +381,7 @@ function AddPersonDialog({ tmdbReady, onClose }: { tmdbReady: boolean; onClose: 
     const name = manualName.trim();
     if (!name) return;
     try {
-      const { person } = await api.createPerson({ name: { [guessLang(name)]: name } });
+      const { person } = await api.createPerson({ kind, name: { [guessLang(name)]: name } });
       setPerson(person);
       navigate(`/collection/people/${person.id}`);
     } catch (e) {
@@ -383,14 +392,29 @@ function AddPersonDialog({ tmdbReady, onClose }: { tmdbReady: boolean; onClose: 
   return (
     <Dialog open title="添加人物" onClose={onClose}>
       <form onSubmit={search} className="flex flex-wrap items-end gap-2">
-        <Field label="在 TMDB 搜索" htmlFor="person-query" className="min-w-0 flex-1">
+        <Field label="来源" htmlFor="person-source">
+          <select
+            id="person-source"
+            className="field"
+            value={source}
+            disabled={searching || importing !== null}
+            onChange={(e) => {
+              setSource(e.target.value as typeof source);
+              setResults(null);
+            }}
+          >
+            <option value="musicbrainz">MusicBrainz · 音乐</option>
+            <option value="tmdb">TMDB · 影视</option>
+          </select>
+        </Field>
+        <Field label="搜索人物或团体" htmlFor="person-query" className="min-w-0 flex-1">
           <input
             id="person-query"
             className="field"
             value={query}
             maxLength={100}
             placeholder="名字，英文或原名都可以"
-            disabled={!tmdbReady}
+            disabled={source === "tmdb" && !tmdbReady}
             onChange={(e) => setQuery(e.target.value)}
             data-autofocus
           />
@@ -398,7 +422,7 @@ function AddPersonDialog({ tmdbReady, onClose }: { tmdbReady: boolean; onClose: 
         <button
           type="submit"
           className="btn-primary"
-          disabled={searching || !query.trim() || !tmdbReady}
+          disabled={searching || !query.trim() || (source === "tmdb" && !tmdbReady)}
         >
           <Search aria-hidden="true" className="size-4" />
           {searching ? "搜索中…" : "搜索"}
@@ -406,14 +430,14 @@ function AddPersonDialog({ tmdbReady, onClose }: { tmdbReady: boolean; onClose: 
       </form>
       {!tmdbReady ? (
         <p className="mt-3 text-[12.5px] text-status-warn">
-          未配置 TMDB，暂时只能手动添加。
+          未配置 TMDB；MusicBrainz 搜索和手动添加仍可使用。
           <Link to="/integrations" className="text-brand underline">
             前往 API 配置
           </Link>
         </p>
       ) : null}
       <p className="mt-2 text-[11.5px] text-faint">
-        TMDB 主要收录影视人物；歌手、作家、漫画家可以手动添加。
+        MusicBrainz 无需密钥，按限速排队查询；不自动导入完整唱片目录。
       </p>
       {error ? (
         <p role="alert" className="mt-3 text-[12.5px] text-status-error">
@@ -476,6 +500,18 @@ function AddPersonDialog({ tmdbReady, onClose }: { tmdbReady: boolean; onClose: 
         onSubmit={(e) => void addManually(e)}
         className="mt-5 flex flex-wrap items-end gap-2 border-t border-line-soft pt-4"
       >
+        <Field label="类型" htmlFor="person-manual-kind">
+          <select
+            className="field"
+            id="person-manual-kind"
+            value={kind}
+            onChange={(e) => setKind(e.target.value as PersonKind)}
+          >
+            <option value="person">人物</option>
+            <option value="group">团体 / 乐队</option>
+            <option value="organization">机构 / 工作室</option>
+          </select>
+        </Field>
         <Field
           label="手动添加"
           htmlFor="person-manual-name"

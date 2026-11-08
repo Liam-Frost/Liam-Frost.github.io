@@ -7,6 +7,7 @@ export const ANALYTICS_EVENT_TYPES = [
   "page_view",
   "content_view",
   "music_play",
+  "music_request",
   "outbound_click",
   "collection_filter",
   "engagement",
@@ -140,6 +141,8 @@ export type AnalyticsContentItem = {
   /** Each day's distinct visitors added up. */
   visitors: number;
   plays: number;
+  /** User playback requests, separate from starts/legacy embed-load events. */
+  requests?: number;
 };
 
 export type AnalyticsContentReport = {

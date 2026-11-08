@@ -1,5 +1,8 @@
 import type {
   LocalizedText,
+  PersonKind,
+  PersonMembership,
+  PersonIdentity,
   PersonSource,
   PhotoVisibility,
   RelationType
@@ -8,6 +11,10 @@ import type {
 import type { StoredImage } from "../projects/types";
 
 export type PersonRow = {
+  members?: PersonMembership[];
+  kind?: PersonKind;
+  aliases?: string[];
+  identities?: PersonIdentity[];
   id: string;
   source: PersonSource;
   sourceId: string | null;

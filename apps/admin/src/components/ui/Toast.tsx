@@ -30,6 +30,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     <ToastContext value={push}>
       {children}
       <div
+        data-admin-toasts
         aria-live="polite"
         className="pointer-events-none fixed right-4 bottom-4 z-[60] flex w-[min(380px,calc(100%-32px))] flex-col gap-2"
       >

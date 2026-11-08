@@ -43,7 +43,9 @@ export function ContentDetailView({ type, id }: { type: AnalyticsContentType; id
   const kpis = [
     { label: "浏览", current: item.views, previous: data.previous.views },
     { label: "访客", current: item.visitors, previous: data.previous.visitors },
-    ...(isSong ? [{ label: "播放", current: item.plays, previous: data.previous.plays }] : [])
+    ...(isSong
+      ? [{ label: "播放 / 载入", current: item.plays, previous: data.previous.plays }]
+      : [])
   ];
   const edit = EDIT[item.type];
 
@@ -61,6 +63,11 @@ export function ContentDetailView({ type, id }: { type: AnalyticsContentType; id
         ) : null}
       </div>
 
+      {isSong && (
+        <p className="text-sm text-muted">
+          本站点击播放：{number.format(item.requests ?? 0)} 次（此版本起采集，旧记录不补造）
+        </p>
+      )}
       <section aria-label="指标" className="grid gap-3 sm:grid-cols-3">
         {kpis.map(({ label, current, previous }) => {
           const delta = changeText(current, previous);

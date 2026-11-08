@@ -61,9 +61,17 @@ export function ContentView() {
 
   return (
     <>
+      <div className="mb-4 rounded-xl border border-line bg-surface p-4 text-[13px] leading-relaxed text-muted">
+        <strong className="text-brand-dark">测试访问为什么没有记录？</strong>
+        <p>
+          已登录管理员的访问、开启 DNT / GPC 的浏览器、自动化浏览器及排除 IP
+          均不计入访客数据。请使用未登录的独立浏览器进行验证；不要为测试关闭隐私保护。内容排行统计打开详情，不统计仅看见卡片。播放器内置示例曲目不计入收藏内容，Spotify
+          内嵌页面内部操作也无法完整观测。请同时检查统计开关与日期范围。
+        </p>
+      </div>
       <Card
         title="内容排行"
-        hint="浏览：打开项目、照片、收藏条目、人物、歌单的次数；访客是每天人数之和；播放只对歌曲。"
+        hint="点击播放：本站歌曲按钮请求，播放全部只计首个可播放曲目；不含暂停。播放/载入保留原口径，不代表Spotify实际收听。旧记录无法还原点击次数。"
         actions={
           <div role="group" aria-label="类型" className="flex flex-wrap gap-1">
             {(["all", ...ANALYTICS_CONTENT_TYPES] as const).map((value) => (
@@ -93,7 +101,8 @@ export function ContentView() {
                   <th className="pb-2 font-normal">类型</th>
                   <th className="pb-2 text-right font-normal">浏览</th>
                   <th className="pb-2 text-right font-normal">访客</th>
-                  <th className="pb-2 text-right font-normal">播放</th>
+                  <th className="pb-2 text-right font-normal">点击播放</th>
+                  <th className="pb-2 text-right font-normal">播放 / 载入</th>
                 </tr>
               </thead>
               <tbody>
@@ -117,6 +126,11 @@ export function ContentView() {
                     </td>
                     <td className="py-2 text-right tabular-nums">
                       {item.type === "media" && item.kind === "track"
+                        ? number.format(item.requests ?? 0)
+                        : "—"}
+                    </td>
+                    <td className="py-2 text-right tabular-nums">
+                      {item.type === "media" && item.kind === "track"
                         ? number.format(item.plays)
                         : "—"}
                     </td>
@@ -133,7 +147,7 @@ export function ContentView() {
       <div className="grid gap-4 md:grid-cols-2">
         <Card
           title="播放器"
-          hint="网站播放器在歌曲开始时计一次（暂停后继续不算）；Spotify 播放器在歌曲载入时计一次。"
+          hint="网站播放器在歌曲开始时计一次（暂停后继续不算）；Spotify 统计从本站请求载入曲目，不代表已经实际播放；内嵌页面内部播放无法完整观测。"
         >
           <BarList rows={data.players} label={(key) => PLAYERS[key] ?? key} empty="没有播放。" />
         </Card>

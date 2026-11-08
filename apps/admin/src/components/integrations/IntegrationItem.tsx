@@ -7,7 +7,7 @@ import {
   type IntegrationUpdate,
   type IntegrationValues
 } from "@liam-frost/shared";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useIsMutating, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ChevronDown } from "lucide-react";
 import { useId, useState, type FormEvent, type ReactNode } from "react";
 import { Link } from "react-router";
@@ -181,6 +181,7 @@ export function IntegrationItem({
   const dirty = hasDraft(draft);
 
   const mutation = useMutation({
+    mutationKey: ["admin", "integration-save", provider],
     mutationFn: (update: IntegrationUpdate) => api.updateIntegration(provider, update),
     onSuccess: (data, update) => {
       client.setQueryData(INTEGRATIONS_KEY, data);
@@ -208,7 +209,7 @@ export function IntegrationItem({
     },
     gcTime: 0
   });
-  const busy = mutation.isPending;
+  const busy = useIsMutating({ mutationKey: ["admin", "integration-save", provider] }) > 0;
 
   const save = (event: FormEvent) => {
     event.preventDefault();
@@ -374,7 +375,7 @@ export function IntegrationItem({
                     type="button"
                     disabled={!editable || busy}
                     onClick={() => setConfirm("disable")}
-                    className="text-subtle underline-offset-2 hover:text-status-error hover:underline disabled:opacity-50"
+                    className="text-muted underline-offset-2 hover:text-brand hover:underline disabled:opacity-50"
                   >
                     停用
                   </button>

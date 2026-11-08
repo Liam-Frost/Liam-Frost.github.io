@@ -33,6 +33,8 @@ export default function AboutSection() {
   const by = manifesto ? pickLocalized(manifesto.attribution, lang) : "";
   const index = manifesto ? items.indexOf(manifesto) + 1 : 0;
 
+  if (about && !items.length && !about.gear.some((category) => category.items.length)) return null;
+
   return (
     <section className="section about" id="about">
       <div className="container">

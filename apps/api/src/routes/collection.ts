@@ -183,6 +183,19 @@ export function registerCollectionRoutes(app: FastifyInstance, deps: Deps) {
       // Newest work first.
       .sort((a, b) => (b.row.year ?? 0) - (a.row.year ?? 0))
       .map(({ relation, row }) => ({ relation, item: toPublicMediaSummary(row, deps.store) }));
-    return toPublicPerson(person.row, credits, deps.store);
+    return {
+      ...toPublicPerson(person.row, credits, deps.store),
+      members: (person.row.members ?? []).flatMap(({ personId, ...membership }) => {
+        const member = shown.people.get(personId);
+        return member
+          ? [
+              {
+                ...membership,
+                person: toPublicPersonSummary(member.row, member.credits, deps.store)
+              }
+            ]
+          : [];
+      })
+    };
   });
 }

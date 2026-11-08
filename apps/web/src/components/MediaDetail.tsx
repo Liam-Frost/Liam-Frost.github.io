@@ -1,3 +1,4 @@
+import { useGenreLabel } from "../lib/useGenreLabel";
 import LoadingSkeleton from "./LoadingSkeleton";
 import { useCollectionItem } from "../data/useCollection";
 import { pickLocalized, useI18n } from "../lib/i18n";
@@ -28,12 +29,13 @@ export default function MediaDetail({
   linkTo: CollectionLinkTo;
 }) {
   const { lang, t } = useI18n();
+  const genreLabel = useGenreLabel();
   const { item, status } = useCollectionItem(id);
 
   const title = item ? mediaTitle(item, lang) : "";
   const review = item ? pickLocalized(item.review, lang) : "";
   const overview = item ? pickLocalized(item.overview, lang) : "";
-  const genres = item ? item.genres.map((genre) => pickLocalized(genre, lang)).filter(Boolean) : [];
+  const genres = item ? item.genres.map((genre) => genreLabel(genre, lang)).filter(Boolean) : [];
   const progress = item?.progress;
   const isMusic = item?.kind === "track";
   const isRead = item ? isReadKind(item.kind) : false;

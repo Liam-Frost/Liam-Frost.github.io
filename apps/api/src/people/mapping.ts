@@ -17,6 +17,10 @@ import type { PersonRow, RelationRow } from "./types";
 
 export function toAdminPerson(row: PersonRow, works: number, store: LocalImageStore): AdminPerson {
   return {
+    kind: row.kind ?? "person",
+    aliases: row.aliases ?? [],
+    identities: row.identities ?? [],
+    members: row.members ?? [],
     id: row.id,
     source: row.source,
     sourceId: row.sourceId,
@@ -102,6 +106,8 @@ export function toPublicPersonSummary(
     if (credit.role)
       counts.set(credit.role as PersonRole, (counts.get(credit.role as PersonRole) ?? 0) + 1);
   return {
+    kind: row.kind ?? "person",
+    aliases: row.aliases ?? [],
     id: row.id,
     name: row.name,
     originalName: row.originalName,
