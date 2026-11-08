@@ -5,7 +5,6 @@ import { usePresentation } from "../../../web/src/data/usePresentation";
 import { Field } from "../components/ui/Field";
 import { useLogin } from "../hooks/useSession";
 import { ApiError } from "../lib/api";
-import { LanguageSwitch } from "../components/ui/LanguageSwitch";
 import { tr } from "../lib/messages";
 
 export function LoginPage() {
@@ -126,10 +125,6 @@ export function LoginForm({ preview = false }: { preview?: boolean }) {
             </button>
           </div>
         ) : null}
-
-        <div className="mt-3 flex justify-end text-muted">
-          <LanguageSwitch className="w-auto min-w-28" />
-        </div>
 
         {error ? (
           <p id="login-error" role="alert" className="mt-3 text-[12.5px] text-status-error">

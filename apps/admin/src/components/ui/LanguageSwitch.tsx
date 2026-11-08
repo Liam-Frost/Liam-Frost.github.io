@@ -1,18 +1,22 @@
 import {
   ADMIN_LOCALES,
   ADMIN_LOCALE_LABELS,
-  locale,
+  changesLocale,
   setLocale,
   tr,
-  type AdminLocale
+  useLocalePreference,
+  type AdminLocalePreference
 } from "../../lib/messages";
 import { hasUnsaved } from "../../lib/unsaved";
 import { useConfirm } from "./Confirm";
 import { Select } from "./Select";
 
-const OPTIONS = ADMIN_LOCALES.map((value) => ({ value, label: ADMIN_LOCALE_LABELS[value] }));
+const OPTIONS = [
+  { value: "system" as const, label: tr("跟随系统") },
+  ...ADMIN_LOCALES.map((value) => ({ value, label: ADMIN_LOCALE_LABELS[value] }))
+];
 
-/** The admin's own language. Switching reloads the page, so unsaved work is settled first. */
+/** The admin's own language. A change that needs a reload settles unsaved work first. */
 export function LanguageSwitch({
   className = "",
   surface = "light"
@@ -21,8 +25,10 @@ export function LanguageSwitch({
   surface?: "light" | "dark";
 }) {
   const confirm = useConfirm();
-  const change = async (next: AdminLocale) => {
+  const preference = useLocalePreference();
+  const change = async (next: AdminLocalePreference) => {
     if (
+      changesLocale(next) &&
       hasUnsaved() &&
       !(await confirm({
         title: tr("切换后台语言？"),
@@ -35,12 +41,12 @@ export function LanguageSwitch({
     setLocale(next);
   };
   return (
-    <Select<AdminLocale>
+    <Select<AdminLocalePreference>
       aria-label={tr("界面语言")}
       size="sm"
       surface={surface}
       className={className}
-      value={locale}
+      value={preference}
       options={OPTIONS}
       onChange={(next) => void change(next)}
     />

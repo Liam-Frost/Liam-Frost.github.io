@@ -39,6 +39,69 @@ export function SettingsGrid({
 }) {
   return <div className={`settings-grid settings-grid-${variant} ${className}`}>{children}</div>;
 }
+function SectionHeader({
+  id,
+  title,
+  description,
+  actions
+}: {
+  id: string;
+  title: string;
+  description?: string;
+  actions?: ReactNode;
+}) {
+  return (
+    <header className="surface-header">
+      <div className="min-w-0">
+        <h2 id={id} className="surface-title">
+          {title}
+        </h2>
+        {description ? <p className="surface-description">{description}</p> : null}
+      </div>
+      {actions}
+    </header>
+  );
+}
+
+/**
+ * One white surface for settings that belong together, holding `SettingsGroup`s separated by hairlines.
+ * The columns only apply when the surface is wide enough; below that the groups stack.
+ */
+export function SettingsSurface({
+  columns = "stack",
+  children
+}: {
+  columns?: "stack" | "equal" | "primary" | "aside";
+  children: ReactNode;
+}) {
+  return (
+    <div className="settings-surface">
+      <div className={`settings-groups settings-groups-${columns}`}>{children}</div>
+    </div>
+  );
+}
+
+/** A titled part of a `SettingsSurface`. */
+export function SettingsGroup({
+  title,
+  description,
+  children,
+  actions
+}: {
+  title: string;
+  description?: string;
+  children: ReactNode;
+  actions?: ReactNode;
+}) {
+  const id = useId();
+  return (
+    <section className="settings-group" aria-labelledby={id}>
+      <SectionHeader id={id} title={title} description={description} actions={actions} />
+      <div className="space-y-4">{children}</div>
+    </section>
+  );
+}
+
 export function SettingsSection({
   title,
   description,
@@ -53,15 +116,7 @@ export function SettingsSection({
   const id = useId();
   return (
     <section className="settings-section" aria-labelledby={id}>
-      <header className="surface-header">
-        <div className="min-w-0">
-          <h2 id={id} className="surface-title">
-            {title}
-          </h2>
-          {description ? <p className="surface-description">{description}</p> : null}
-        </div>
-        {actions}
-      </header>
+      <SectionHeader id={id} title={title} description={description} actions={actions} />
       <div className="space-y-4">{children}</div>
     </section>
   );
@@ -197,45 +252,47 @@ export function SettingsConflict({
   onKeepMine: () => void;
 }) {
   return (
-    <section role="alert" className="settings-section">
-      <header className="surface-header">
-        <div>
-          <h2 className="surface-title">{tr("有设置已在别处被修改")}</h2>
-          <p className="surface-description">
+    <section
+      role="alert"
+      className="settings-conflict"
+      ref={(element) => element?.scrollIntoView({ block: "nearest" })}
+    >
+      <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
+        <div className="min-w-0 flex-1 basis-48">
+          <h2 className="text-[13.5px] font-semibold text-status-warn">
+            {tr("有设置已在别处被修改")}
+          </h2>
+          <p className="mt-0.5 text-[12px] leading-relaxed text-muted">
             {tr("下面的内容在你编辑时被保存过。选择要保留的版本，其它修改不受影响。")}
           </p>
         </div>
-      </header>
-      <div className="space-y-4">
+        <div className="flex shrink-0 flex-wrap gap-2">
+          <button type="button" className="btn-secondary btn-sm" onClick={onUseLatest}>
+            {tr("使用已保存的版本")}
+          </button>
+          <button type="button" className="btn-secondary btn-sm" onClick={onKeepMine}>
+            {tr("保留我的修改")}
+          </button>
+        </div>
+      </div>
+      <dl className="mt-2.5 divide-y divide-status-warn/20 border-t border-status-warn/20">
         {conflict.fields.map(({ field, current, draft }) => (
-          <div key={field}>
-            <p className="mb-1.5 text-[12.5px] font-medium text-brand-dark">
-              {labels[field] ?? field}
-            </p>
-            <div className="settings-grid settings-grid-equal !gap-2">
-              {[
-                [tr("已保存的版本"), current],
-                [tr("你的修改"), draft]
-              ].map(([title, value]) => (
-                <div className="surface-media" key={String(title)}>
-                  <p className="mb-1 text-[11px] font-medium text-muted">{String(title)}</p>
-                  <p className="max-h-32 overflow-y-auto text-[13px] break-words whitespace-pre-wrap text-ink">
-                    {describeValue(value)}
-                  </p>
-                </div>
-              ))}
-            </div>
+          <div className="settings-conflict-row" key={field}>
+            <dt className="text-[12.5px] font-medium text-brand-dark">{labels[field] ?? field}</dt>
+            {[
+              [tr("已保存的版本"), current],
+              [tr("你的修改"), draft]
+            ].map(([title, value]) => (
+              <dd className="min-w-0" key={String(title)}>
+                <span className="block text-[11px] text-muted">{String(title)}</span>
+                <span className="block max-h-20 overflow-y-auto text-[12.5px] break-words whitespace-pre-wrap text-ink">
+                  {describeValue(value)}
+                </span>
+              </dd>
+            ))}
           </div>
         ))}
-      </div>
-      <div className="mt-4 flex flex-wrap gap-2">
-        <button type="button" className="btn-secondary" onClick={onUseLatest}>
-          {tr("使用已保存的版本")}
-        </button>
-        <button type="button" className="btn-secondary" onClick={onKeepMine}>
-          {tr("保留我的修改")}
-        </button>
-      </div>
+      </dl>
     </section>
   );
 }

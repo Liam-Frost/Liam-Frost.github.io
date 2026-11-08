@@ -10,8 +10,11 @@ import { loadConfig } from "../../api/src/config/env";
 import type { PhotoRow } from "../../api/src/photos/types";
 import { buildServer } from "../../api/src/server";
 import type { SettingsRepository } from "../../api/src/settings/types";
+import { MemoryAnalyticsStore } from "../../api/test/memory-analytics-store";
 import { MemoryMediaRepository } from "../../api/test/memory-media-repository";
 import { MemoryPhotoRepository } from "../../api/test/memory-photo-repository";
+import { MemoryPlaylistRepository } from "../../api/test/memory-playlist-repository";
+import { MemoryProjectRepository } from "../../api/test/memory-project-repository";
 import { MemoryStackRepository } from "../../api/test/memory-stack-repository";
 import { ADMIN_PATH, PASSWORD, PORT, USERNAME } from "./constants";
 
@@ -31,6 +34,8 @@ const settings = new Settings();
 const photos = new MemoryPhotoRepository();
 const stack = new MemoryStackRepository();
 const media = new MemoryMediaRepository();
+const projects = new MemoryProjectRepository(stack);
+const playlists = new MemoryPlaylistRepository(media);
 
 const SIZES = [
   [1600, 1067],
@@ -75,8 +80,10 @@ async function seed(scenario: "default" | "empty" | "large") {
   photos.rows.clear();
   stack.categories.clear();
   stack.technologies.clear();
+  projects.rows.clear();
   if (scenario === "empty") return;
   const large = scenario === "large";
+  await projects.create({ id: "project1", slug: "sample", title: { zh: "示例项目" } });
   for (let i = 0; i < (large ? 120 : 24); i++) photos.rows.set(`photo${i}`, photo(i));
   await settings.set("presentation.v1", {
     sections: {
@@ -162,12 +169,13 @@ const app = await buildServer({
   adminDistDir: join(here, "dist"),
   webDistDir: join(here, "../../web/public"),
   photos,
-  projects: null,
+  projects,
   stack,
   media,
   people: null,
   relations: null,
-  playlists: null,
+  playlists,
+  analyticsStore: new MemoryAnalyticsStore(),
   settings,
   adminAccount: new MemoryAdminAccountRepository()
 });

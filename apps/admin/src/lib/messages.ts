@@ -1,3 +1,5 @@
+import { useSyncExternalStore } from "react";
+
 import { en } from "./messages.en";
 import { allowUnload, hasUnsaved, onUnsavedChange } from "./unsaved";
 
@@ -8,35 +10,64 @@ export const ADMIN_LOCALE_LABELS: Record<AdminLocale, string> = { zh: "简体中
 
 const STORAGE_KEY = "lf-admin-locale";
 
-function detectLocale(): AdminLocale {
+/** What the admin was told to use; "system" (nothing stored) follows the browser. */
+export type AdminLocalePreference = AdminLocale | "system";
+
+function readPreference(): AdminLocalePreference {
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved === "zh" || saved === "en") return saved;
   } catch {
     // Blocked storage: go by the browser.
   }
-  return typeof navigator !== "undefined" && navigator.language.toLowerCase().startsWith("zh")
+  return "system";
+}
+
+const systemLocale = (): AdminLocale =>
+  typeof navigator !== "undefined" && navigator.language.toLowerCase().startsWith("zh")
     ? "zh"
     : "en";
-}
+
+const resolve = (preference: AdminLocalePreference): AdminLocale =>
+  preference === "system" ? systemLocale() : preference;
+
+let preference = readPreference();
+const preferenceListeners = new Set<() => void>();
+const emitPreference = () => preferenceListeners.forEach((listener) => listener());
+export const useLocalePreference = () =>
+  useSyncExternalStore(
+    (listener) => {
+      preferenceListeners.add(listener);
+      return () => preferenceListeners.delete(listener);
+    },
+    () => preference
+  );
 
 /**
  * The admin's language, read once when the app starts. Messages, including those in module-level
  * constants, are resolved with it, so changing the language reloads the page.
  */
-export const locale: AdminLocale = detectLocale();
+export const locale: AdminLocale = resolve(preference);
+
+/** Whether choosing this would actually change the language, and so need a reload. */
+export const changesLocale = (next: AdminLocalePreference) => resolve(next) !== locale;
 
 /** For Intl formatters and sorting. */
 export const intlLocale = locale === "en" ? "en-CA" : "zh-CN";
 
 if (typeof document !== "undefined") document.documentElement.lang = intlLocale;
 
-/** Callers settle unsaved work first: by the time this runs, the reload is already agreed. */
-export function setLocale(next: AdminLocale) {
-  if (next === locale) return;
+/** Callers settle unsaved work first: by the time this runs, a reload is already agreed. */
+export function setLocale(next: AdminLocalePreference) {
   try {
-    localStorage.setItem(STORAGE_KEY, next);
+    if (next === "system") localStorage.removeItem(STORAGE_KEY);
+    else localStorage.setItem(STORAGE_KEY, next);
   } catch {
+    return;
+  }
+  preference = next;
+  if (!changesLocale(next)) {
+    emitPreference();
     return;
   }
   allowUnload();
@@ -51,8 +82,10 @@ if (typeof window !== "undefined") {
     window.location.reload();
   };
   window.addEventListener("storage", (event) => {
-    if (event.key !== STORAGE_KEY || event.newValue === locale) return;
-    pending = event.newValue === "zh" || event.newValue === "en";
+    if (event.key !== STORAGE_KEY && event.key !== null) return;
+    preference = readPreference();
+    emitPreference();
+    pending = changesLocale(preference);
     follow();
   });
   window.addEventListener("focus", follow);

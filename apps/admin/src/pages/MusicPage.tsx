@@ -36,7 +36,7 @@ export function MusicPage() {
           "网站右下角的音乐播放器：网站自己的播放器（收藏里的歌，30 秒试听），或 Spotify 嵌入播放器。"
         )}
       />
-      <div className="grid gap-5 lg:grid-cols-[1fr_minmax(0,360px)]">
+      <div className="card-row lg:grid-cols-[1fr_minmax(0,360px)]">
         <SettingsForm settings={data.settings} />
         <Panel title={tr("歌曲")}>
           <p className="text-[13.5px] text-muted">
@@ -88,7 +88,7 @@ function SettingsForm({ settings }: { settings: SpotifySettings }) {
   };
 
   return (
-    <form onSubmit={submit} noValidate className="space-y-5">
+    <form onSubmit={submit} noValidate>
       <Panel title={tr("播放")}>
         <Switch
           id="spotify-enabled"
@@ -224,27 +224,26 @@ function SettingsForm({ settings }: { settings: SpotifySettings }) {
             onBlur={() => setCollapseText(String(draft.autoCollapseSeconds))}
           />
         </Field>
-      </Panel>
-
-      {error ? (
-        <p
-          role="alert"
-          className="rounded-xl border border-status-error/30 bg-status-error/8 px-4 py-2.5 text-[12.5px] text-status-error"
-        >
-          {error}
-        </p>
-      ) : null}
-
-      <div className="flex items-center gap-3">
-        <button type="submit" className="btn-primary" disabled={update.isPending || !dirty}>
-          {update.isPending ? tr("保存中…") : tr("保存")}
-        </button>
-        {dirty ? (
-          <span className="text-[12.5px] text-status-warn" role="status">
-            {tr("有未保存的修改")}
-          </span>
+        {error ? (
+          <p
+            role="alert"
+            className="rounded-xl border border-status-error/30 bg-status-error/8 px-4 py-2.5 text-[12.5px] text-status-error"
+          >
+            {error}
+          </p>
         ) : null}
-      </div>
+
+        <div className="flex items-center gap-3">
+          <button type="submit" className="btn-primary" disabled={update.isPending || !dirty}>
+            {update.isPending ? tr("保存中…") : tr("保存")}
+          </button>
+          {dirty ? (
+            <span className="text-[12.5px] text-status-warn" role="status">
+              {tr("有未保存的修改")}
+            </span>
+          ) : null}
+        </div>
+      </Panel>
     </form>
   );
 }

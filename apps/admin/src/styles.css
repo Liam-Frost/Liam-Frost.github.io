@@ -137,6 +137,24 @@
     mask: url("/LOGO2.svg") center / contain no-repeat;
   }
 
+  /*
+   * Cards side by side in one row share its height: the row is as tall as its tallest card, and every card
+   * fills it. A row that collapses to one column has nothing to share, so no height is left behind.
+   */
+  .settings-grid-equal,
+  .card-row {
+    align-items: stretch;
+  }
+  .card-row {
+    @apply grid min-w-0 gap-5;
+  }
+  .card-row > form {
+    @apply flex min-w-0 flex-col;
+  }
+  .card-row > form > .card {
+    @apply flex-1;
+  }
+
   /* Field widths by what the field holds, capped by the column it is in. */
   .field-width-meta {
     max-width: 176px;
@@ -154,12 +172,32 @@
    */
   .card,
   .settings-section,
+  .settings-surface,
   .settings-list {
     @apply min-w-0 rounded-[var(--radius-card)] border border-line bg-surface shadow-card;
   }
   .settings-section {
     @apply p-4;
     container-type: inline-size;
+  }
+  .settings-surface {
+    container: settings-surface / inline-size;
+  }
+  /* Groups of one surface: separated by a hairline, never by another card. */
+  .settings-groups {
+    @apply grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .settings-groups > * {
+    @apply min-w-0;
+    container-type: inline-size;
+  }
+  .settings-groups > * + *,
+  .settings-group + .settings-group {
+    @apply border-t border-line-soft;
+  }
+  .settings-group {
+    @apply min-w-0 p-4;
   }
   .settings-list {
     @apply divide-y divide-line-soft overflow-hidden;
@@ -187,9 +225,23 @@
     @apply text-[11px] font-bold tracking-[1px] text-brand-secondary;
   }
 
+  /* Part of the page rather than a card: it only needs to stay readable over what scrolls under it. */
   .settings-actions {
-    @apply sticky z-10 mt-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line bg-surface p-3 shadow-card-hover;
-    bottom: max(12px, env(safe-area-inset-bottom));
+    @apply sticky z-10 mt-4 flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-t border-line bg-canvas pt-2.5;
+    bottom: 0;
+    padding-bottom: max(10px, env(safe-area-inset-bottom));
+  }
+  .settings-conflict {
+    @apply rounded-xl border border-status-warn/35 bg-status-warn/10 px-3.5 pt-3 pb-1;
+    scroll-margin-block: 96px;
+    container-type: inline-size;
+  }
+  .settings-conflict-row {
+    @apply grid gap-x-4 gap-y-1 py-2;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .settings-conflict-row dt {
+    grid-column: 1 / -1;
   }
 
   /* Controls: same height and shape for the same job. */
@@ -244,6 +296,12 @@
   .select-trigger {
     @apply inline-flex w-full cursor-pointer items-center justify-between gap-2 text-left;
   }
+  .select-trigger[data-popup-open] {
+    @apply border-brand-secondary ring-2 ring-brand-secondary/20;
+  }
+  .select-trigger:not([data-popup-open], :disabled):hover {
+    border-color: var(--color-brand-secondary);
+  }
   .select-trigger[data-popup-open] .select-chevron {
     rotate: 180deg;
   }
@@ -253,6 +311,10 @@
   }
   .select-dark {
     @apply border-white/25 bg-white/8 text-white hover:bg-white/14 focus:border-white/60 focus:ring-white/20;
+  }
+  .select-dark.select-trigger[data-popup-open],
+  .select-dark.select-trigger:not([data-popup-open], :disabled):hover {
+    @apply border-white/60 ring-white/20;
   }
   .select-dark .select-chevron {
     @apply text-white/70;
@@ -326,6 +388,40 @@
   container-type: inline-size;
 }
 
+@container settings-surface (min-width: 540px) {
+  .settings-group {
+    padding: 20px;
+  }
+}
+@container settings-surface (min-width: 620px) {
+  .settings-groups-equal {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .settings-groups-primary {
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  }
+  .settings-groups-aside {
+    grid-template-columns: minmax(0, 1fr) clamp(260px, 32%, 320px);
+  }
+  .settings-groups-equal > * + *,
+  .settings-groups-primary > * + *,
+  .settings-groups-aside > * + * {
+    @apply border-t-0 border-l border-line-soft;
+  }
+  .login-preview-sticky {
+    position: sticky;
+    top: 24px;
+  }
+}
+@container (min-width: 560px) {
+  .settings-conflict-row {
+    grid-template-columns: 7rem minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .settings-conflict-row dt {
+    grid-column: auto;
+  }
+}
+
 @container (min-width: 480px) {
   .settings-definitions {
     grid-template-columns: 6.5rem minmax(0, 1fr);
@@ -342,12 +438,6 @@
   }
   .home-module-head {
     display: grid;
-  }
-}
-@container (min-width: 620px) {
-  .login-preview-sticky {
-    position: sticky;
-    top: 24px;
   }
 }
 
