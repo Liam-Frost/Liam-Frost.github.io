@@ -229,30 +229,26 @@ export class AdminAuthService {
     });
   }
 
-  /** Checks an authenticator or recovery code, using it up. False when wrong. */
+  /** Checks an authenticator or recovery code, using it up. False when wrong. Call under the lock. */
   private async useSecondFactor(second: AdminLoginSecondFactor) {
-    return this.lock.run("account", async () => {
-      const account = this.account!;
-      if (second.totp) {
-        const secret = this.box.open(account.totpSecret ?? "");
-        const step = secret
-          ? matchTotp(secret, second.totp, this.now(), account.totpLastStep)
-          : null;
-        if (step === null) return false;
-        await this.persist({ ...account, totpLastStep: step });
-        return true;
-      }
-      if (second.recoveryCode) {
-        const stored = this.matchRecovery(account, second.recoveryCode);
-        if (!stored) return false;
-        await this.persist({
-          ...account,
-          recoveryCodes: account.recoveryCodes.filter((code) => code !== stored)
-        });
-        return true;
-      }
-      return false;
-    });
+    const account = this.account!;
+    if (second.totp) {
+      const secret = this.box.open(account.totpSecret ?? "");
+      const step = secret ? matchTotp(secret, second.totp, this.now(), account.totpLastStep) : null;
+      if (step === null) return false;
+      await this.persist({ ...account, totpLastStep: step });
+      return true;
+    }
+    if (second.recoveryCode) {
+      const stored = this.matchRecovery(account, second.recoveryCode);
+      if (!stored) return false;
+      await this.persist({
+        ...account,
+        recoveryCodes: account.recoveryCodes.filter((code) => code !== stored)
+      });
+      return true;
+    }
+    return false;
   }
 
   /** Callers check assertConfigured() first. */
@@ -267,28 +263,32 @@ export class AdminAuthService {
     await this.ensureLoaded();
 
     // Always run scrypt so a wrong username takes as long as a wrong password.
-    const passwordMatches = await verifyPassword(
-      password,
-      this.account?.passwordHash ?? this.config.passwordHash
-    );
-    if (username !== this.username || !passwordMatches) {
-      request.log.warn({ ip: request.ip }, "Admin login failed");
-      throw new HttpError(401, "INVALID_CREDENTIALS", "Invalid username or password");
-    }
+    const checkedHash = this.account?.passwordHash ?? this.config.passwordHash;
+    const passwordMatches = await verifyPassword(password, checkedHash);
 
-    if (this.account?.totpEnabledAt) {
-      if (!second.totp && !second.recoveryCode)
-        throw new HttpError(401, "TOTP_REQUIRED", "Enter the code from your authenticator");
-      if (!(await this.useSecondFactor(second))) {
-        request.log.warn({ ip: request.ip }, "Admin login failed at the second factor");
-        throw new HttpError(401, "INVALID_TOTP", "That code is not valid");
+    // Under the account lock, and against the hash that was checked: a password changed while
+    // scrypt ran must not let the old one start a session after the others were ended.
+    return this.lock.run("account", async () => {
+      const currentHash = this.account?.passwordHash ?? this.config.passwordHash;
+      if (username !== this.username || !passwordMatches || currentHash !== checkedHash) {
+        request.log.warn({ ip: request.ip }, "Admin login failed");
+        throw new HttpError(401, "INVALID_CREDENTIALS", "Invalid username or password");
       }
-    }
 
-    this.limiter.reset(request.ip);
-    await this.issueSession(request, reply);
-    request.log.info({ ip: request.ip }, "Admin logged in");
-    return { username: this.username };
+      if (this.account?.totpEnabledAt) {
+        if (!second.totp && !second.recoveryCode)
+          throw new HttpError(401, "TOTP_REQUIRED", "Enter the code from your authenticator");
+        if (!(await this.useSecondFactor(second))) {
+          request.log.warn({ ip: request.ip }, "Admin login failed at the second factor");
+          throw new HttpError(401, "INVALID_TOTP", "That code is not valid");
+        }
+      }
+
+      this.limiter.reset(request.ip);
+      await this.issueSession(request, reply);
+      request.log.info({ ip: request.ip }, "Admin logged in");
+      return { username: this.username };
+    });
   }
 
   logout(request: FastifyRequest, reply: FastifyReply) {

@@ -1,5 +1,7 @@
 import "dotenv/config";
 
+import { PrismaAdminAccountRepository } from "../auth/account-repository";
+import { resetAdminAccount } from "../auth/reset-account";
 import { createPrismaClient } from "./client";
 
 /**
@@ -16,36 +18,16 @@ if (!["--all", "--totp", "--path"].some((flag) => flags.has(flag)))
   throw new Error("Choose what to reset: --all, --totp or --path");
 
 const prisma = createPrismaClient(databaseUrl);
-const id = "admin";
 try {
-  if (flags.has("--all")) {
-    await prisma.adminCredential.deleteMany({ where: { id } });
-  } else {
-    await prisma.adminCredential.updateMany({
-      where: { id },
-      data: {
-        ...(flags.has("--totp")
-          ? {
-              totpSecret: null,
-              totpPendingSecret: null,
-              totpPendingAt: null,
-              totpEnabledAt: null,
-              totpLastStep: null,
-              recoveryCodes: []
-            }
-          : {}),
-        ...(flags.has("--path")
-          ? {
-              adminPath: null,
-              adminPathPending: null,
-              adminPathRetiring: null,
-              adminPathRetireUntil: null
-            }
-          : {})
-      }
-    });
-  }
-  await prisma.adminSession.deleteMany({});
+  await resetAdminAccount(
+    new PrismaAdminAccountRepository(prisma),
+    { all: flags.has("--all"), totp: flags.has("--totp"), path: flags.has("--path") },
+    {
+      username: process.env.ADMIN_USERNAME?.trim() || "admin",
+      passwordHash: process.env.ADMIN_PASSWORD_HASH?.trim() ?? ""
+    },
+    new Date()
+  );
   console.log("Done. Restart the application for this to take effect.");
 } finally {
   await prisma.$disconnect();

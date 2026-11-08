@@ -11,7 +11,8 @@ import {
   newTotpSecret,
   totpCode
 } from "../src/auth/totp";
-import { buildTestServer, csrf, PASSWORD, USERNAME } from "./helpers";
+import { resetAdminAccount } from "../src/auth/reset-account";
+import { buildTestServer, csrf, PASSWORD, passwordHash, USERNAME } from "./helpers";
 
 type App = Awaited<ReturnType<typeof buildTestServer>>;
 const NEW_PASSWORD = "a much longer new password";
@@ -274,6 +275,69 @@ describe("admin account", () => {
         })
       ).statusCode
     ).toBe(503);
+  });
+
+  it("does not let the old password in while it is being changed", async () => {
+    const { app, adminAccount, call } = await setup();
+    const save = adminAccount.saveAccount.bind(adminAccount);
+    let racing: ReturnType<typeof signIn> | undefined;
+    adminAccount.saveAccount = async (account) => {
+      // The login starts while the old password is still the saved one.
+      racing ??= signIn(app, { username: USERNAME, password: PASSWORD });
+      await new Promise((resolve) => setTimeout(resolve, 5));
+      await save(account);
+    };
+    const changed = await call("POST", "/api/admin/account/password", {
+      currentPassword: PASSWORD,
+      newPassword: NEW_PASSWORD
+    });
+    expect(changed.statusCode).toBe(200);
+    expect((await racing!).statusCode).toBe(401);
+  });
+
+  it("ends sessions for good on a recovery reset, and keeps revoked ones revoked", async () => {
+    for (const options of [{ totp: true }, { path: true }, { all: true }]) {
+      const adminAccount = new MemoryAdminAccountRepository();
+      const first = await setup({}, { adminAccount });
+      const cookie = cookieOf(await signIn(first.app, { username: USERNAME, password: PASSWORD }));
+      await resetAdminAccount(
+        adminAccount,
+        options,
+        { username: USERNAME, passwordHash: await passwordHash() },
+        new Date()
+      );
+      await new Promise((resolve) => setTimeout(resolve, 1100));
+      const restarted = await buildTestServer({}, { adminAccount });
+      expect(
+        (await restarted.inject({ url: "/api/admin/account", headers: { cookie } })).statusCode
+      ).toBe(401);
+      expect((await signIn(restarted, { username: USERNAME, password: PASSWORD })).statusCode).toBe(
+        200
+      );
+      await restarted.close();
+    }
+  });
+
+  it("restores the configured account and clears two-step sign-in and the address", async () => {
+    const adminAccount = new MemoryAdminAccountRepository();
+    const { call, enableTotp } = await setup({}, { adminAccount });
+    await enableTotp();
+    await call("POST", "/api/admin/account/username", {
+      currentPassword: PASSWORD,
+      username: "frost"
+    });
+    await resetAdminAccount(
+      adminAccount,
+      { all: true },
+      { username: USERNAME, passwordHash: await passwordHash() },
+      new Date()
+    );
+    expect(adminAccount.account).toMatchObject({
+      username: USERNAME,
+      totpEnabledAt: null,
+      recoveryCodes: [],
+      adminPath: null
+    });
   });
 
   it("refuses to sign anyone in while the saved account cannot be read", async () => {
