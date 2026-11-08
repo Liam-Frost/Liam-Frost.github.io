@@ -1,5 +1,15 @@
 # Admin
 
+## Website settings
+
+Website Settings groups public identity, gallery avatar, public logo/home visibility, footer, default theme/language, localized privacy text and collection-tag translations separately from admin branding, login backgrounds, site favicon, integrations, statistics and audit history. Existing appearance and integration URLs redirect with their query/hash intact, including account callbacks.
+
+Each new setting group has its own save/revision. Failed saves preserve the draft; conflicting writes show the latest saved value alongside the draft before an explicit decision and another save. Privacy retains ten previous saved versions. Referenced dictionary aliases cannot be removed, including references from private collection items. Existing visitor theme/language choices take precedence over site defaults.
+
+The favicon uses a public, locally hosted gallery photo and generates versioned PNG/ICO assets for both apps. Anonymous `GET /api/site-settings` exposes only public fields; account/security state and integration secrets stay behind authentication. Ordinary setting changes record the group and resulting revision in the read-only audit trail, without storing values or privacy text.
+
+Account/password changes, entry-path changes, TOTP and complete admin translations remain separate implementation stages. The current security page reports runtime-managed state and the language page exposes only the currently supported Chinese interface. This phase uses the existing Setting storage and adds no database migration. See the [implementation plan and status](website-settings-proposal.zh-CN.md).
+
 ## Read-only audit log
 
 The Audit Log page records login outcomes, logout, matched admin write requests, rejected admin reads and authorization callbacks. Each entry contains the timestamp, authenticated actor when available, operation, HTTP method, route template and validated resource identifier, status, and source IP. It never stores request bodies, passwords, query strings, cookies or tokens. Source IP follows the existing `TRUST_PROXY` configuration.

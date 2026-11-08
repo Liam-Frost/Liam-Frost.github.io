@@ -9,7 +9,6 @@ import {
   LogOut,
   Music,
   Mail,
-  KeyRound,
   Layers,
   Quote
 } from "lucide-react";
@@ -19,7 +18,7 @@ import { NavLink, Outlet } from "react-router";
 import { useLogout } from "../../hooks/useSession";
 import { useToast } from "../ui/Toast";
 import SiteMark from "../../../../web/src/components/SiteMark";
-import { Palette } from "lucide-react";
+import { Settings2 } from "lucide-react";
 
 const NAV = [
   { to: "/", label: "概览", icon: LayoutDashboard, end: true },
@@ -30,10 +29,9 @@ const NAV = [
   { to: "/photos", label: "照片", icon: Images, end: false },
   { to: "/contact", label: "联系我", icon: Mail, end: false },
   { to: "/music", label: "播放器", icon: Music, end: false },
-  { to: "/integrations", label: "API 配置", icon: KeyRound, end: false },
   { to: "/analytics", label: "统计", icon: ChartColumn, end: false },
   { to: "/audit", label: "审计日志", icon: ShieldCheck, end: false },
-  { to: "/appearance", label: "外观与首页", icon: Palette, end: false }
+  { to: "/settings", label: "网站设置", icon: Settings2, end: false }
 ];
 
 export function AdminLayout({ user }: { user: AdminUser }) {

@@ -1,4 +1,4 @@
-import { genreLabel } from "@liam-frost/shared";
+import { useGenreLabel } from "../lib/useGenreLabel";
 import LoadingImage from "./LoadingImage";
 import type { PublicMediaSummary } from "@liam-frost/shared";
 import { Link, type To } from "react-router";
@@ -129,6 +129,7 @@ export function MediaRow({
   state?: unknown;
 }) {
   const { lang, t } = useI18n();
+  const genreLabel = useGenreLabel();
   const title = mediaTitle(item, lang);
   const isMusic = item.kind === "track";
   const genres = item.genres

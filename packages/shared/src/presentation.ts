@@ -8,7 +8,7 @@ export const HOME_SECTIONS = [
   "contact"
 ] as const;
 export type HomeSection = (typeof HOME_SECTIONS)[number];
-export type SiteLogo = { text: string; photoId: string | null };
+export type SiteLogo = { text: string; photoId: string | null; alt?: string };
 export type PresentationSettings = {
   sections: Record<HomeSection, boolean>;
   publicLogo: SiteLogo;

@@ -22,7 +22,7 @@ A personal website for photography, software projects, and a collection of films
 - **Multilingual interface** — English, Simplified Chinese, Traditional Chinese, Japanese, and French on the public site, with light and dark themes.
 - **Configurable homepage** — manage weighted manifestos, gear, technology categories and contact details; hide empty sections and control each section's visibility.
 - **Collection management** — title, date, year and rating sorting, a dedicated featured-order page, and shared genre translations that preserve custom labels.
-- **Appearance controls** — independent public/admin logos and a fixed or rotating public-gallery background for admin sign-in.
+- **Unified website settings** — public identity/avatar, footer, theme/language defaults, localized privacy, tag dictionary and homepage switches; independent public/admin logos, gallery sign-in backgrounds and a generated site favicon. Integrations, analytics and audit remain separate settings pages.
 - **Visitor analytics and audit history** — content views, player requests, traffic sources, missing-page paths and a read-only administrative audit trail. Administrator visits and browser privacy preferences are respected.
 - **Adaptive loading and motion** — independent animation, filter, image and prefetch budgets, shimmer placeholders, reduced-motion support and section-aware reload restoration.
 - **Styled error pages** — an integrated 404 with home and portfolio links, while API errors retain structured responses.

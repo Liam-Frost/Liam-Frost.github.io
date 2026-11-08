@@ -9,7 +9,9 @@ export default function SiteMark({ admin = false }: { admin?: boolean }) {
   if ((src && failed !== src) || logo?.text)
     return (
       <span
-        aria-hidden="true"
+        aria-hidden={logo?.alt ? undefined : true}
+        role={logo?.alt ? "img" : undefined}
+        aria-label={logo?.alt || undefined}
         style={{
           display: "inline-flex",
           alignItems: "center",

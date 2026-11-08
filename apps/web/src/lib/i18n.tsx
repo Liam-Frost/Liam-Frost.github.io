@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { useSiteSettings } from "../data/useSiteSettings";
+import React, { createContext, useContext, useCallback, useEffect, useMemo, useState } from "react";
 
 export type Lang = "zh" | "zh-Hant" | "en" | "fr" | "ja";
 
@@ -1496,7 +1497,27 @@ type I18nContextValue = {
 const I18nContext = createContext<I18nContextValue | null>(null);
 
 export function I18nProvider({ children }: { children: React.ReactNode }) {
-  const [lang, setLang] = useState<Lang>(() => detectLang());
+  const settings = useSiteSettings();
+  const [choice, setChoice] = useState<Lang | null>(() => {
+    try {
+      return normalizeLang(localStorage.getItem(STORAGE_KEY));
+    } catch {
+      return null;
+    }
+  });
+  const lang =
+    choice ??
+    (settings?.preferences.language && settings.preferences.language !== "auto"
+      ? settings.preferences.language
+      : detectLang());
+  const setLang = useCallback((next: Lang) => {
+    setChoice(next);
+    try {
+      localStorage.setItem(STORAGE_KEY, next);
+    } catch {
+      /* visitor storage unavailable */
+    }
+  }, []);
 
   useEffect(() => {
     const families = {
@@ -1514,11 +1535,6 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
     if (fontLink && fontLink.href !== fontUrl) fontLink.href = fontUrl;
     document.documentElement.setAttribute("data-lang", lang);
     document.documentElement.lang = langToHtmlLang(lang);
-    try {
-      localStorage.setItem(STORAGE_KEY, lang);
-    } catch {
-      // ignore
-    }
   }, [lang]);
 
   const value = useMemo<I18nContextValue>(() => {
@@ -1529,7 +1545,7 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
       setLang,
       t: (key, params) => format(dict[key], params)
     };
-  }, [lang]);
+  }, [lang, setLang]);
 
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
 }

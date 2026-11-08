@@ -1,3 +1,6 @@
+import SiteFavicon from "../../web/src/components/SiteFavicon";
+import { SettingsLayout, SettingsRedirect } from "./components/settings/SettingsLayout";
+import { SiteSettingsPage, RuntimeSettingsPage } from "./pages/SiteSettingsPage";
 import { AuditPage } from "./pages/AuditPage";
 import { AppearancePage } from "./pages/AppearancePage";
 import { FeaturedPage } from "./pages/FeaturedPage";
@@ -54,6 +57,7 @@ export function App() {
     <QueryClientProvider client={queryClient}>
       <ToastProvider>
         <BrowserRouter basename={ADMIN_BASE}>
+          <SiteFavicon />
           <SessionGate />
         </BrowserRouter>
       </ToastProvider>
@@ -99,9 +103,52 @@ function SessionGate() {
         <Route path="people" element={<LegacyPersonRedirect />} />
         <Route path="people/:id" element={<LegacyPersonRedirect />} />
         <Route path="music" element={<MusicPage />} />
-        <Route path="integrations" element={<IntegrationsPage />} />
+        <Route
+          path="integrations"
+          element={<SettingsRedirect to="/settings/backend/integrations" />}
+        />
         <Route path="audit" element={<AuditPage />} />
-        <Route path="appearance" element={<AppearancePage />} />
+        <Route
+          path="appearance"
+          element={<SettingsRedirect to="/settings/frontend/appearance" />}
+        />
+        <Route path="settings" element={<SettingsLayout />}>
+          <Route index element={<SettingsRedirect to="/settings/frontend/identity" />} />
+          <Route
+            path="frontend/identity"
+            element={<SiteSettingsPage key="identity" group="identity" />}
+          />
+          <Route
+            path="frontend/appearance"
+            element={<AppearancePage key="front" scope="front" />}
+          />
+          <Route
+            path="frontend/footer"
+            element={<SiteSettingsPage key="footer" group="footer" />}
+          />
+          <Route
+            path="frontend/preferences"
+            element={<SiteSettingsPage key="preferences" group="preferences" />}
+          />
+          <Route
+            path="frontend/privacy"
+            element={<SiteSettingsPage key="privacy" group="privacy" />}
+          />
+          <Route
+            path="frontend/dictionary"
+            element={<SiteSettingsPage key="dictionary" group="dictionary" />}
+          />
+          <Route path="backend/appearance" element={<AppearancePage key="back" scope="back" />} />
+          <Route
+            path="backend/favicon"
+            element={<SiteSettingsPage key="favicon" group="favicon" />}
+          />
+          <Route path="backend/integrations" element={<IntegrationsPage />} />
+          <Route path="backend/security" element={<RuntimeSettingsPage />} />
+          <Route path="backend/language" element={<RuntimeSettingsPage language />} />
+          <Route path="backend/statistics" element={<AnalyticsPage view="settings" />} />
+          <Route path="backend/audit" element={<AuditPage />} />
+        </Route>
         <Route path="analytics" element={<AnalyticsPage view="overview" />} />
         <Route path="analytics/content" element={<AnalyticsPage view="content" />} />
         <Route path="analytics/content/:type/:id" element={<AnalyticsPage view="detail" />} />

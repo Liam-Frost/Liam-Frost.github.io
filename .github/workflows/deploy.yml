@@ -105,7 +105,7 @@ jobs:
                       if member.isdir():continue
                       assert p.suffix.lower() in ALLOWED or p.name=='.nojekyll'
                       target=ROOT/p;target.parent.mkdir(parents=True,exist_ok=True);target.write_bytes(archive.extractfile(member).read())
-              paths=['/api/photos','/api/projects','/api/collection','/api/stack','/api/spotify/player','/api/contact','/api/about','/api/presentation']
+              paths=['/api/photos','/api/projects','/api/collection','/api/stack','/api/spotify/player','/api/contact','/api/about','/api/presentation','/api/site-settings']
               routes={path:get(path, database=path!='/api/spotify/player') for path in paths}
               for item in routes['/api/projects']:
                   ident=item['slug'];assert re.fullmatch('[A-Za-z0-9_-]{1,160}',ident)
@@ -123,9 +123,10 @@ jobs:
                   elif isinstance(value,list):
                       for v in value:scan(v)
                   elif isinstance(value,str) and value.startswith('/uploads/'):images.add(value)
+                  elif isinstance(value,str) and re.fullmatch(r'/api/site-favicon/[a-f0-9]{24}/32\.png',value):images.update(value[:-6]+name for name in ['32.png','180.png','192.png','512.png','favicon.ico'])
               scan(routes)
               for url in sorted(images):
-                  assert re.fullmatch('/uploads/[A-Za-z0-9_./-]+',url) and '..' not in pathlib.PurePosixPath(url).parts
+                  assert (re.fullmatch('/uploads/[A-Za-z0-9_./-]+',url) or re.fullmatch(r'/api/site-favicon/[a-f0-9]{24}/(32|180|192|512)\.png|/api/site-favicon/[a-f0-9]{24}/favicon\.ico',url)) and '..' not in pathlib.PurePosixPath(url).parts
                   data,kind=fetch(SOURCE+url);assert kind.startswith('image/')
                   target=ROOT/url.lstrip('/');target.parent.mkdir(parents=True,exist_ok=True);target.write_bytes(data)
               external={}

@@ -16,7 +16,13 @@ const id = z
   .min(1)
   .max(100)
   .regex(/^[A-Za-z0-9_-]+$/);
-const logo = z.object({ text: z.string().trim().max(12), photoId: id.nullable() }).strict();
+const logo = z
+  .object({
+    text: z.string().trim().max(12),
+    photoId: id.nullable(),
+    alt: z.string().trim().max(120).optional()
+  })
+  .strict();
 const schema = z
   .object({
     sections: z

@@ -1,4 +1,4 @@
-import { genreLabel } from "@liam-frost/shared";
+import { useGenreLabel } from "../lib/useGenreLabel";
 import LoadingSkeleton from "../components/LoadingSkeleton";
 import type { MediaKind, MediaStatus, PublicMediaSummary } from "@liam-frost/shared";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -37,6 +37,7 @@ const genreId = (genre: PublicMediaSummary["genres"][number]) =>
 
 export default function CollectionPage() {
   const { lang, t } = useI18n();
+  const genreLabel = useGenreLabel();
   const { kinds, items, people, playlists, status: loadStatus } = useCollection();
   const [params, setParams] = useSearchParams();
   const navigate = useNavigate();
@@ -86,7 +87,7 @@ export default function CollectionPage() {
     for (const item of ofKind)
       for (const g of item.genres) byId.set(genreId(g), genreLabel(g, lang));
     return [...byId].sort((a, b) => a[1].localeCompare(b[1]));
-  }, [ofKind, lang]);
+  }, [ofKind, lang, genreLabel]);
   const years = useMemo(
     () =>
       [...new Set(ofKind.map((item) => item.year).filter((y): y is number => y !== null))].sort(

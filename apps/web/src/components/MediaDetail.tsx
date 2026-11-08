@@ -1,4 +1,4 @@
-import { genreLabel } from "@liam-frost/shared";
+import { useGenreLabel } from "../lib/useGenreLabel";
 import LoadingSkeleton from "./LoadingSkeleton";
 import { useCollectionItem } from "../data/useCollection";
 import { pickLocalized, useI18n } from "../lib/i18n";
@@ -29,6 +29,7 @@ export default function MediaDetail({
   linkTo: CollectionLinkTo;
 }) {
   const { lang, t } = useI18n();
+  const genreLabel = useGenreLabel();
   const { item, status } = useCollectionItem(id);
 
   const title = item ? mediaTitle(item, lang) : "";

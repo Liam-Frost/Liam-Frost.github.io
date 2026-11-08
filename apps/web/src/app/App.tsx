@@ -1,3 +1,5 @@
+import SiteMetadata from "../components/SiteMetadata";
+import { useSiteSettings, refreshSiteSettings } from "../data/useSiteSettings";
 import LoadingSkeleton from "../components/LoadingSkeleton";
 import { lazy, Suspense, useEffect } from "react";
 import { Route, Routes } from "react-router";
@@ -12,25 +14,37 @@ import WaveformNavigator from "../components/waveform/WaveformNavigator";
 import HomePage from "../pages/Home";
 import NotFoundPage from "../pages/NotFound";
 import PortfolioPage from "../pages/Portfolio";
-import PrivacyPage from "../pages/Privacy";
+const PrivacyPage = lazy(() => import("../pages/Privacy"));
 import ProjectsPage from "../pages/Projects";
 import { useI18n } from "../lib/i18n";
 import { scrollToElement, startSmoothScroll } from "../lib/smoothScroll";
 import { useTheme } from "../lib/useTheme";
 
-// The Markdown renderer is only needed on project pages; keep it out of the main bundle.
+// Markdown is only needed on project/privacy pages; keep it out of the main bundle.
 const ProjectDetailPage = lazy(() => import("../pages/ProjectDetail"));
 // Only /collection needs the collection page and its detail panel.
 const CollectionPage = lazy(() => import("../pages/Collection"));
 
 export default function App() {
   const { t } = useI18n();
+  const settings = useSiteSettings();
   const { theme, cycleTheme } = useTheme();
   // Smooth scrolling for the whole site (lib/smoothScroll.ts).
   useEffect(() => startSmoothScroll(), []);
 
+  if (!settings) return <LoadingSkeleton label={t("nav.home")} />;
+  if (settings.unavailable)
+    return (
+      <section className="section container" role="alert">
+        <p>{t("home.loadFailed")}</p>
+        <button className="btn" onClick={refreshSiteSettings}>
+          {t("skills.retry")}
+        </button>
+      </section>
+    );
   return (
     <div className="site">
+      <SiteMetadata />
       <a
         className="skipLink"
         href="#main"
@@ -70,7 +84,14 @@ export default function App() {
           />
           <Route path="/portfolio" element={<PortfolioPage />} />
           <Route path="/projects" element={<ProjectsPage />} />
-          <Route path="/privacy" element={<PrivacyPage />} />
+          <Route
+            path="/privacy"
+            element={
+              <Suspense fallback={<LoadingSkeleton label={t("privacy.title")} />}>
+                <PrivacyPage />
+              </Suspense>
+            }
+          />
           <Route
             path="/collection"
             element={

@@ -1,4 +1,5 @@
 import { registerAdminAudit } from "./routes/admin-audit";
+import { registerSiteSettingsRoutes } from "./routes/site-settings";
 import { registerPresentationRoutes } from "./routes/presentation";
 import { registerContactRoutes } from "./routes/contact";
 import "dotenv/config";
@@ -476,6 +477,7 @@ export async function buildServer({
   registerAboutRoutes(app, auth, settings ? new AboutStore(settings) : null);
   registerContactRoutes(app, auth, settings);
   registerPresentationRoutes(app, auth, settings, photos, store);
+  registerSiteSettingsRoutes(app, auth, settings, photos, store, media);
   registerAdminMediaRoutes(app, auth, {
     media,
     collection,

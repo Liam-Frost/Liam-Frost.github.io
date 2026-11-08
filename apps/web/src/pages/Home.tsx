@@ -1,3 +1,4 @@
+import { useSiteSettings } from "../data/useSiteSettings";
 import { refreshPresentation, usePresentation } from "../data/usePresentation";
 import { useStack } from "../data/useStack";
 import LoadingSkeleton from "../components/LoadingSkeleton";
@@ -37,6 +38,7 @@ const GREETING_ORDER: GreetingLang[] = ["zh", "en", "fr", "ja"];
 
 export default function HomePage() {
   const { lang, t } = useI18n();
+  const settings = useSiteSettings();
   const presentation = usePresentation();
   const { photos, status: photoStatus } = usePhotos();
   const { contact, loading: contactLoading } = useContactState();
@@ -81,9 +83,14 @@ export default function HomePage() {
     const startIdx = GREETING_ORDER.indexOf(initialGreetingLang);
     // Reorder: from startIdx to end, then from 0 to startIdx-1
     const orderedLangs = [...GREETING_ORDER.slice(startIdx), ...GREETING_ORDER.slice(0, startIdx)];
-    return orderedLangs.map((l) => GREETINGS[l]);
+    return orderedLangs.map((l) =>
+      GREETINGS[l].replace(
+        site.nameLatin,
+        pickLocalized(settings?.identity.name ?? {}, l) || site.nameLatin
+      )
+    );
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Empty deps: only compute once on mount
+  }, [settings?.identity.name]); // Keep the initial language order while reflecting edited identity.
 
   const openFeatured = (id: string) => {
     navigate({ pathname: "/portfolio", search: `?photo=${encodeURIComponent(id)}` });
@@ -147,7 +154,17 @@ export default function HomePage() {
               </Reveal>
 
               <Reveal after className="heroPortrait">
-                <div className="avatarMark" aria-hidden="true" />
+                {settings?.avatarUrl ? (
+                  <img
+                    className="avatarMark"
+                    src={settings.avatarUrl}
+                    alt=""
+                    fetchPriority="high"
+                    style={{ objectFit: "cover" }}
+                  />
+                ) : (
+                  <div className="avatarMark" aria-hidden="true" />
+                )}
               </Reveal>
 
               <Reveal after className="heroNumbers">

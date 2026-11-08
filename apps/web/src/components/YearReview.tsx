@@ -1,4 +1,4 @@
-import { genreLabel } from "@liam-frost/shared";
+import { useGenreLabel } from "../lib/useGenreLabel";
 import type { MediaKind, PublicMediaSummary } from "@liam-frost/shared";
 import { useMemo, useState } from "react";
 import type { To } from "react-router";
@@ -39,6 +39,7 @@ export default function YearReview({
   linkTo: (id: string) => To;
 }) {
   const { lang, t } = useI18n();
+  const genreLabel = useGenreLabel();
   const years = useMemo(() => reviewYears(items), [items]);
   const [picked, setPicked] = useState<string | null>(null);
   const year = picked && years.includes(picked) ? picked : years[0];
@@ -80,7 +81,7 @@ export default function YearReview({
       favorites,
       rated: rated.length
     };
-  }, [done, lang]);
+  }, [done, lang, genreLabel]);
 
   if (!year) return <p className="sectionSubtitle">{t("review.empty")}</p>;
   const monthName = new Intl.DateTimeFormat(lang, { month: "short" });
