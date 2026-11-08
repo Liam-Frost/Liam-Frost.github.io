@@ -152,6 +152,10 @@ function SessionGate() {
             element={<SiteSettingsPage key="preferences" group="preferences" />}
           />
           <Route
+            path="experience/navigation"
+            element={<SiteSettingsPage key="navigation" group="navigation" />}
+          />
+          <Route
             path="experience/dictionary"
             element={<SiteSettingsPage key="dictionary" group="dictionary" />}
           />

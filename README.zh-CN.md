@@ -140,4 +140,6 @@ docker compose exec app node apps/api/dist/seed.js
 
 原创软件源码和技术文档采用 **[MIT 许可证](LICENSE)**，复制或分发时保留版权与许可声明。页面可见署名非强制，欢迎链接回本仓库。
 
+`apps/web/src/vendor/cupertinocn` 中的 Tab Bar、玻璃材质和后台滑块改编自 [CupertinoCN](https://github.com/vantezzen/cupertinocn)。该项目未声明许可证，因此这个目录不在本仓库的 MIT 许可范围内。
+
 **照片、个人文字、肖像、品牌及第三方材料不属于软件许可范围。** 种子数据和引用链接的内容权利见 [CONTENT-LICENSE.md](CONTENT-LICENSE.md)。

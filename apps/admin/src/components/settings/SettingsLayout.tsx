@@ -29,6 +29,7 @@ export const SETTINGS_NAV: {
     items: [
       ["experience/home", tr("首页模块"), "wide"],
       ["experience/preferences", tr("默认显示与语言"), "compact"],
+      ["experience/navigation", tr("导航外观"), "compact"],
       ["experience/dictionary", tr("标签词典"), "wide"]
     ]
   },

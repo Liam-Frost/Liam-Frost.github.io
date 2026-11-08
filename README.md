@@ -219,4 +219,6 @@ Report vulnerabilities privately through [GitHub's vulnerability reporting form]
 
 Original software source code and technical documentation are available under the **[MIT License](LICENSE)**. Preserve the copyright and license notice when copying or redistributing the software or substantial portions of it. Visible website attribution is optional; a link to this repository is appreciated.
 
+The tab bar, glass surfaces and admin slider in `apps/web/src/vendor/cupertinocn` are adapted from [CupertinoCN](https://github.com/vantezzen/cupertinocn). That project declares no license, so that folder is not covered by this repository's MIT License.
+
 **Photographs, personal writing, portraits, branding, and third-party materials are excluded from the software license.** See [content and third-party rights](CONTENT-LICENSE.md), including the rules for content embedded in seed data or referenced by URL.

@@ -21,6 +21,17 @@ export type SiteSettingsGroups = {
     theme: "system" | "light" | "dark";
     language: "auto" | "zh" | "zh-Hant" | "en" | "ja" | "fr";
   };
+  /** The public site's floating tab bar and glass buttons. */
+  navigation: {
+    tabBarMode: "always" | "adaptive" | "hover";
+    glass: "regular" | "clear" | "opaque";
+    selectedButton: "lens" | "ring" | "text";
+    /** Multiplier of the edge refraction; 1 is the glass component's own strength. */
+    refraction: number;
+    showLabels: boolean;
+    /** Distance from the bottom of the window in px (phones use half of it). */
+    bottomOffset: number;
+  };
   privacy: { title: LocalizedText; body: LocalizedText; effectiveDate: string | null };
   dictionary: { entries: DictionaryEntry[] };
 };
@@ -28,6 +39,14 @@ export const DEFAULT_SITE_SETTINGS: SiteSettingsGroups = {
   identity: { name: {}, title: {}, adminTitle: {} },
   footer: { owner: {}, startYear: null, showRole: true, links: [] },
   preferences: { theme: "system", language: "auto" },
+  navigation: {
+    tabBarMode: "hover",
+    glass: "clear",
+    selectedButton: "lens",
+    refraction: 1.4,
+    showLabels: true,
+    bottomOffset: 16
+  },
   privacy: { title: {}, body: {}, effectiveDate: null },
   dictionary: { entries: [] }
 };

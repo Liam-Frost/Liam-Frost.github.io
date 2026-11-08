@@ -1,0 +1,522 @@
+/* The site's navigation: the bare top row, the floating tab bar and the glass buttons. */
+
+/* Tokens CupertinoCN reads, mapped to the site's palette. Dark first, like globals.css. */
+.glassScope {
+  --ios-font: var(--font-sans);
+  --ios-blue: #bcd3dd;
+  --ios-label: var(--text);
+  /* Opaque: a translucent stroke darkens wherever an icon's paths overlap. */
+  --ios-secondary: color-mix(in srgb, var(--sand) 82%, var(--navy));
+  --ios-surface: var(--bg2);
+  --glass-opaque-wash: rgb(27 42 62 / 74%);
+  --glass-regular-wash: rgb(33 52 72 / 34%);
+  --glass-clear-wash: rgb(234 224 207 / 4%);
+  --glass-rim-alpha: 0.55;
+  --glass-shade: rgb(0 0 0 / 20%);
+  --glass-shadow:
+    0 16px 36px -14px rgb(8 14 22 / 58%), 0 3px 10px -3px rgb(8 14 22 / 30%),
+    0 0.5px 1px rgb(8 14 22 / 34%);
+  --glass-shadow-lifted:
+    0 24px 48px -14px rgb(8 14 22 / 66%), 0 8px 16px -4px rgb(8 14 22 / 38%),
+    0 0.5px 1px rgb(8 14 22 / 38%);
+  --tab-copy-fill: rgb(234 224 207 / 15%);
+  --tabbar-selected-wash: rgb(234 224 207 / 22%);
+  --tabbar-selected-text: #f6f1e7;
+  --tabbar-selected-shadow: 0 2px 8px rgb(8 14 22 / 22%), 0 0.5px 1px rgb(8 14 22 / 18%);
+}
+
+html[data-theme="light"] .glassScope {
+  --ios-blue: #3a5e7a;
+  --ios-label: var(--navy);
+  --ios-secondary: color-mix(in srgb, var(--navy) 76%, var(--sand));
+  --ios-surface: var(--sand);
+  --glass-opaque-wash: rgb(244 238 226 / 80%);
+  --glass-regular-wash: rgb(250 246 238 / 42%);
+  --glass-clear-wash: rgb(255 255 255 / 8%);
+  --glass-rim-alpha: 1;
+  --glass-shade: rgb(33 52 72 / 7%);
+  --glass-shadow:
+    0 16px 36px -14px rgb(33 52 72 / 30%), 0 3px 10px -3px rgb(33 52 72 / 12%),
+    0 0.5px 1px rgb(33 52 72 / 10%);
+  --glass-shadow-lifted:
+    0 24px 48px -14px rgb(33 52 72 / 36%), 0 8px 16px -4px rgb(33 52 72 / 16%),
+    0 0.5px 1px rgb(33 52 72 / 12%);
+  --tab-copy-fill: rgb(255 255 255 / 46%);
+  --tabbar-selected-wash: rgb(255 255 255 / 74%);
+  --tabbar-selected-text: var(--ios-blue);
+  --tabbar-selected-shadow: 0 2px 8px rgb(33 52 72 / 10%), 0 0.5px 1px rgb(33 52 72 / 8%);
+}
+
+@media (prefers-color-scheme: light) {
+  html[data-theme="system"] .glassScope {
+    --ios-blue: #3a5e7a;
+    --ios-label: var(--navy);
+    --ios-secondary: color-mix(in srgb, var(--navy) 76%, var(--sand));
+    --ios-surface: var(--sand);
+    --glass-opaque-wash: rgb(244 238 226 / 80%);
+    --glass-regular-wash: rgb(250 246 238 / 42%);
+    --glass-clear-wash: rgb(255 255 255 / 8%);
+    --glass-rim-alpha: 1;
+    --glass-shade: rgb(33 52 72 / 7%);
+    --glass-shadow:
+      0 16px 36px -14px rgb(33 52 72 / 30%), 0 3px 10px -3px rgb(33 52 72 / 12%),
+      0 0.5px 1px rgb(33 52 72 / 10%);
+    --glass-shadow-lifted:
+      0 24px 48px -14px rgb(33 52 72 / 36%), 0 8px 16px -4px rgb(33 52 72 / 16%),
+      0 0.5px 1px rgb(33 52 72 / 12%);
+    --tab-copy-fill: rgb(255 255 255 / 46%);
+    --tabbar-selected-wash: rgb(255 255 255 / 74%);
+    --tabbar-selected-text: var(--ios-blue);
+    --tabbar-selected-shadow: 0 2px 8px rgb(33 52 72 / 10%), 0 0.5px 1px rgb(33 52 72 / 8%);
+  }
+}
+
+/* Layout: no header row, the hero takes the whole first screen. */
+.site {
+  --header-h: 0px;
+  --tabbar-top-h: 76px;
+  --tabbar-bar-h: 64px;
+  --tabbar-bar-w: clamp(372px, 32vw, 420px);
+  --tabbar-bar-bottom: var(--tabbar-offset, 28px);
+  --tabbar-bar-clear: calc(var(--tabbar-bar-bottom) + var(--tabbar-bar-h) + 14px);
+}
+
+@media (max-width: 1023px) {
+  .site {
+    --tabbar-bar-w: 420px;
+  }
+}
+
+@media (max-width: 699px) {
+  .site {
+    --tabbar-bar-h: 62px;
+    --tabbar-bar-w: min(
+      calc(100% - 24px - env(safe-area-inset-left) - env(safe-area-inset-right)),
+      420px
+    );
+    --tabbar-bar-bottom: calc(
+      max(10px, var(--tabbar-offset, 28px) * 0.5) + env(safe-area-inset-bottom)
+    );
+  }
+}
+
+.site main:not(:has(.hero)) {
+  padding-top: var(--tabbar-top-h);
+}
+
+.site .hero {
+  padding-top: calc(var(--tabbar-top-h) + env(safe-area-inset-top) + 8px);
+  padding-bottom: calc(var(--tabbar-bar-clear) + 28px);
+}
+
+@media (max-width: 699px) {
+  .site .hero {
+    padding-bottom: clamp(56px, 6vw, 78px);
+  }
+}
+
+/* The hint stays clear of the bar when the hero ends at or below the fold. */
+.site .heroScroll {
+  bottom: max(22px, calc(100% - 100svh + var(--tabbar-bar-clear)));
+}
+
+.site .siteFooter {
+  padding-bottom: calc(var(--tabbar-bar-clear) + 24px);
+}
+
+/* Top row: three bare controls in the hero, on the content's left and right edges. */
+.siteTop {
+  position: absolute;
+  inset: 0 0 auto;
+  z-index: 40;
+  padding-top: env(safe-area-inset-top);
+}
+
+.siteTopRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: var(--tabbar-top-h);
+}
+
+.siteBrand {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 8px;
+  transition: opacity 160ms var(--ease);
+}
+
+.siteBrand .brandMark {
+  display: block;
+  width: 32px;
+  height: 32px;
+  box-shadow: none;
+}
+
+.siteTopActions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-right: -10px;
+}
+
+.site .siteIconButton {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  color: var(--muted);
+  cursor: pointer;
+  transform: none;
+  transition: color 160ms var(--ease);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .siteBrand:hover {
+    opacity: 0.72;
+  }
+  .site .siteIconButton:hover {
+    background: none;
+    color: var(--text);
+    transform: none;
+  }
+}
+
+.siteBrand:focus-visible,
+.site .siteIconButton:focus-visible {
+  outline: 2px solid var(--accent2);
+  outline-offset: 2px;
+  background: none;
+}
+
+.site .siteIconButton[data-popup-open] {
+  color: var(--text);
+}
+
+.siteLangPositioner {
+  z-index: 90;
+}
+
+.siteLangPopup {
+  min-width: 168px;
+  padding: 6px;
+  border-radius: 16px;
+  box-shadow: var(--glass-shadow-lifted);
+  transform-origin: var(--transform-origin);
+  transition:
+    opacity 140ms ease,
+    transform 180ms var(--ios-ease);
+}
+
+.siteLangPopup[data-starting-style],
+.siteLangPopup[data-ending-style] {
+  opacity: 0;
+  transform: scale(0.96) translateY(-4px);
+}
+
+.siteLangItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 40px;
+  padding: 0 12px;
+  border-radius: 10px;
+  color: var(--ios-label);
+  font-size: 14px;
+  cursor: pointer;
+  outline: none;
+}
+
+.siteLangItem[data-highlighted] {
+  background: color-mix(in srgb, var(--ios-blue) 18%, transparent);
+}
+
+.siteLangItem[data-checked] {
+  color: var(--ios-blue);
+  font-weight: 600;
+}
+
+.siteLangCheck {
+  display: inline-flex;
+}
+
+/* Floating tab bar */
+.siteTabDock {
+  position: fixed;
+  inset: auto 0 var(--tabbar-bar-bottom);
+  z-index: 60;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.siteTabBar {
+  width: var(--tabbar-bar-w);
+  max-width: calc(100% - 16px);
+  pointer-events: auto;
+  transition: width 320ms var(--ios-ease);
+}
+
+.siteTabGlass {
+  width: 100%;
+  /* Reads over photos: a little more diffusion than the component's default 2px. */
+  --glass-blur: 5px;
+  --glass-saturate: 1.5;
+}
+
+.siteTabDock .cupertino {
+  letter-spacing: 0;
+}
+
+.siteTabDock .cupertino-tab-list {
+  min-height: var(--tabbar-bar-h);
+  transition: min-height 320ms var(--ios-ease);
+}
+
+.siteTabDock .cupertino-tab-trigger {
+  gap: 2px;
+  min-width: 0;
+  padding: 0 4px;
+  font-size: 11px;
+  line-height: 13px;
+  font-weight: 500;
+  text-decoration: none;
+  outline-offset: -3px;
+  -webkit-touch-callout: none;
+  transition:
+    color 220ms ease,
+    font-weight 220ms ease;
+}
+
+.siteTabDock .cupertino-tab-trigger svg {
+  width: 23px;
+  height: 23px;
+  stroke-width: 1.9;
+  transition:
+    scale 320ms var(--ios-spring-bounce),
+    stroke-width 220ms ease,
+    width 320ms var(--ios-ease),
+    height 320ms var(--ios-ease);
+}
+
+.siteTabDock .cupertino-tab-trigger[data-active],
+.siteTabDock [data-glass-copy] .cupertino-tab-trigger {
+  font-weight: 700;
+}
+
+.siteTabDock .cupertino-tab-trigger[data-active] svg,
+.siteTabDock [data-glass-copy] .cupertino-tab-trigger svg {
+  stroke-width: 2.3;
+}
+
+.siteTabLabel {
+  display: block;
+  max-width: 100%;
+  max-height: 13px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  transition:
+    opacity 180ms ease,
+    max-height 320ms var(--ios-ease);
+}
+
+.siteTabDock[data-labels="off"] .siteTabLabel {
+  max-height: 0;
+  opacity: 0;
+}
+
+.siteTabDock[data-labels="off"] .cupertino-tab-trigger {
+  gap: 0;
+}
+
+.siteTabDock[data-labels="off"] {
+  --tabbar-bar-h: 56px;
+}
+
+/* The narrowest phones: the longest labels (Japanese) still fit on one line. */
+@media (max-width: 359px) {
+  .siteTabDock .cupertino-tab-trigger {
+    padding: 0 1px;
+    font-size: 10px;
+  }
+}
+
+/* Scroll Adaptive: icons only, four targets still 56px wide and at least 50px tall. */
+.siteTabDock[data-collapsed] {
+  --tabbar-bar-h: 52px;
+  --tabbar-bar-w: 248px;
+}
+
+.siteTabDock[data-collapsed] .cupertino-tab-trigger svg {
+  width: 21px;
+  height: 21px;
+}
+
+/*
+ * The four cells are equal, so the lens is placed from the list's own width: it is exact on every
+ * frame of a resize, while the component's measured values arrive a frame or more late.
+ */
+.siteTabDock .cupertino-tab-list:not([data-scrubbing]) > .cupertino-tab-indicator {
+  --lens-x: calc(4px + var(--tabbar-index, 0) * 25cqw);
+  --lens-w: 25cqw;
+}
+
+.siteTabDock[data-resizing] .cupertino-tab-list > .cupertino-tab-indicator {
+  transition: box-shadow 240ms ease;
+}
+
+/* A tab change: the lens slides as bare glass, the colour moves on the real icons. */
+.siteTabDock [data-glass-copy] .cupertino-tab-trigger {
+  transition: opacity 140ms ease;
+}
+
+/* Same size as the selected real icon, so the hand-over between the two is invisible. */
+.siteTabDock [data-glass-copy] .cupertino-tab-trigger svg {
+  scale: 1.06;
+}
+
+.siteTabDock [data-lens-moving] [data-glass-copy] .cupertino-tab-trigger {
+  opacity: 0;
+}
+
+.siteTabDock
+  .cupertino-tab-list[data-lens-moving]:not([data-glass-copy])
+  > .cupertino-tab-trigger[data-active] {
+  color: var(--ios-blue);
+}
+
+/* CupertinoCN's glass button on the site's buttons (the surface comes from DemoGlassButtons). */
+.glassPortal {
+  display: contents;
+  border-radius: inherit;
+}
+
+.glassScope :is(.btn:not(.siteIconButton), .contactCopy) {
+  --glass-blur: 5px;
+  position: relative;
+  isolation: isolate;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 10px 20px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  color: var(--ios-label);
+  font-weight: 600;
+  transform: none;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.glassScope :is(.btn:not(.siteIconButton), .contactCopy):hover {
+  background: transparent;
+  box-shadow: none;
+  color: var(--ios-label);
+  transform: none;
+}
+
+.glassScope .btn.btnSmall:not(.siteIconButton) {
+  min-height: 36px;
+  padding: 6px 14px;
+}
+
+/* The selected filter: still glass; the admin picks one of three looks. */
+.glassScope .btn.btnSoft:not(.siteIconButton),
+.glassScope .btn.btnSoft:not(.siteIconButton):hover {
+  color: var(--ios-blue);
+}
+
+body[data-selected-button="lens"] .btn.btnSoft:not(.siteIconButton),
+body[data-selected-button="lens"] .btn.btnSoft:not(.siteIconButton):hover {
+  --glass-wash: var(--tabbar-selected-wash);
+  box-shadow: var(--tabbar-selected-shadow);
+  color: var(--tabbar-selected-text);
+}
+
+body[data-selected-button="ring"] .btn.btnSoft:not(.siteIconButton),
+body[data-selected-button="ring"] .btn.btnSoft:not(.siteIconButton):hover {
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--ios-blue) 60%, transparent);
+}
+
+body[data-selected-button="text"] .btn.btnSoft:not(.siteIconButton),
+body[data-selected-button="text"] .btn.btnSoft:not(.siteIconButton):hover {
+  font-weight: 800;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .glassScope :is(.btn:not(.siteIconButton), .contactCopy):hover:not(:disabled):not(:active) {
+    --glass-scale: 1.02;
+  }
+}
+
+/* Spotify dock: stays in its corner when wide enough, otherwise rises above the bar. */
+.site .spotifyDock {
+  bottom: var(--tabbar-bar-bottom);
+}
+
+@media (max-width: 1199px) {
+  .site .spotifyDock {
+    bottom: var(--tabbar-bar-clear);
+  }
+}
+
+@media (max-width: 699px) {
+  .site .spotifyDock {
+    right: max(12px, env(safe-area-inset-right));
+    width: min(360px, calc(100vw - 24px));
+  }
+  .site .spotifyDockPanel {
+    width: min(360px, calc(100vw - 24px));
+  }
+  .site .spotifyDock.isCollapsed {
+    width: 44px;
+    height: 44px;
+  }
+  .site .spotifyDockButton {
+    width: 44px;
+    height: 44px;
+  }
+  /* A touch screen has no hover to reveal the nearly transparent resting state. */
+  .site .spotifyDock.isCollapsed .spotifyDockButton {
+    opacity: 0.82;
+  }
+  .site .spotifyDockButton svg {
+    width: 26px;
+    height: 26px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .siteTabBar,
+  .siteTabDock .cupertino-tab-list,
+  .siteTabLabel,
+  .siteTabDock .cupertino-tab-trigger,
+  .siteTabDock .cupertino-tab-trigger svg,
+  .siteLangPopup {
+    transition: none;
+  }
+}
+
+/* The site's low-end tier turns off backdrop filters: the bar then needs its own solid surface. */
+html[data-perf-filters="off"] .cupertino-glass-backdrop {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+html[data-perf-filters="off"] .siteTabGlass > .cupertino-glass-surface > .cupertino-glass-wash {
+  background: color-mix(in srgb, var(--ios-surface) 90%, transparent);
+}

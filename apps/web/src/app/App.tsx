@@ -3,14 +3,18 @@ import { useSiteSettings, refreshSiteSettings } from "../data/useSiteSettings";
 import LoadingSkeleton from "../components/LoadingSkeleton";
 import PageLoading from "../components/PageLoading";
 import { usePresentation } from "../data/usePresentation";
-import { lazy, Suspense, useEffect } from "react";
+import { DEFAULT_SITE_SETTINGS } from "@liam-frost/shared";
+import { lazy, Suspense, useEffect, type CSSProperties } from "react";
 import { Route, Routes } from "react-router";
 
 import AnalyticsTracker from "./AnalyticsTracker";
 import ScrollManager from "./ScrollManager";
 import BackgroundFX from "../components/BackgroundFX";
 import Footer from "../components/Footer";
-import Header from "../components/Header";
+import GlassButtons from "../components/navigation/GlassButtons";
+import SiteTabBar from "../components/navigation/SiteTabBar";
+import SiteTopBar from "../components/navigation/SiteTopBar";
+import "../components/navigation/navigation.css";
 import SpotifyDock from "../components/SpotifyDock";
 import WaveformNavigator from "../components/waveform/WaveformNavigator";
 import HomePage from "../pages/Home";
@@ -45,8 +49,13 @@ export default function App() {
         </button>
       </section>
     );
+  // A snapshot taken before these settings existed has none.
+  const navigation = settings.navigation ?? DEFAULT_SITE_SETTINGS.navigation;
   return (
-    <div className="site">
+    <div
+      className="site"
+      style={{ "--tabbar-offset": `${navigation.bottomOffset}px` } as CSSProperties}
+    >
       <SiteMetadata />
       <a
         className="skipLink"
@@ -67,11 +76,7 @@ export default function App() {
       <ScrollManager />
       <AnalyticsTracker />
 
-      <header className="siteHeader">
-        <div className="container">
-          <Header theme={theme} onCycleTheme={cycleTheme} />
-        </div>
-      </header>
+      <SiteTopBar theme={theme} onCycleTheme={cycleTheme} />
 
       <main id="main" tabIndex={-1}>
         <Routes>
@@ -135,6 +140,8 @@ export default function App() {
 
       <SpotifyDock />
       <WaveformNavigator />
+      <SiteTabBar settings={navigation} />
+      <GlassButtons strength={navigation.refraction} selected={navigation.selectedButton} />
     </div>
   );
 }

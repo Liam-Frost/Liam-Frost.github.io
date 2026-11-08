@@ -100,6 +100,24 @@ describe("grouped website settings", () => {
       expect((await app.inject({ url: "/api/site-settings" })).json().privacy.body.en).toBe(
         "Second"
       );
+      expect((await app.inject({ url: "/api/site-settings" })).json().navigation).toEqual(
+        DEFAULT_SITE_SETTINGS.navigation
+      );
+      expect(
+        (await save("navigation", { ...DEFAULT_SITE_SETTINGS.navigation, refraction: 4 }))
+          .statusCode
+      ).toBe(400);
+      expect(
+        (await save("navigation", { ...DEFAULT_SITE_SETTINGS.navigation, tabBarMode: "fixed" }))
+          .statusCode
+      ).toBe(400);
+      expect(
+        (await save("navigation", { ...DEFAULT_SITE_SETTINGS.navigation, refraction: 2.5 }))
+          .statusCode
+      ).toBe(200);
+      expect((await app.inject({ url: "/api/site-settings" })).json().navigation.refraction).toBe(
+        2.5
+      );
       await settings.set("site.preferences", { theme: "broken" });
       expect((await app.inject({ url: "/api/site-settings" })).statusCode).toBe(503);
       expect(await settings.get("site.preferences")).toEqual({ theme: "broken" });
