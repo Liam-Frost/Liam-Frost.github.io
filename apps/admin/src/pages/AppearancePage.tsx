@@ -487,7 +487,7 @@ function LoginSettings() {
   const pick = (id: string, on: boolean) =>
     setBackground({
       photoIds: fixed
-        ? [id, ...ids.filter((item) => item !== id)]
+        ? [id, ...ids.filter((item) => item !== id)].slice(0, LIMIT)
         : on
           ? [...ids, id]
           : ids.filter((item) => item !== id)

@@ -340,6 +340,19 @@ test.describe("login appearance", () => {
     await expect(free).toBeDisabled();
   });
 
+  test("choosing a fixed photo stays within the limit", async ({ page }) => {
+    await page.request.post("/__e2e/seed", { data: { scenario: "large" } });
+    await open(page, "/settings/admin/login");
+    await page.locator("#background-mode").click();
+    await page.getByRole("option", { name: "固定照片" }).click();
+    await page.locator(".photo-option", { hasText: "示例照片 24" }).click();
+    await page.getByRole("button", { name: "保存更改" }).click();
+    await expect(page.getByText("更改已保存")).toBeVisible();
+    const saved = await (await page.request.get("/api/admin/presentation")).json();
+    expect(saved.settings.loginBackground.photoIds[0]).toBe("photo23");
+    expect(saved.settings.loginBackground.photoIds).toHaveLength(20);
+  });
+
   test("the gallery does not scroll inside the page", async ({ page }) => {
     await page.request.post("/__e2e/seed", { data: { scenario: "large" } });
     await page.setViewportSize({ width: 390, height: 844 });
