@@ -266,7 +266,7 @@ function AudienceReport({
               </div>
             </details>
           </Card>
-          <div className="grid min-w-0 items-start gap-5 xl:grid-cols-2">
+          <div className="card-row xl:grid-cols-2">
             <Card title={tr("访问受众")}>
               <div className="grid min-w-0 gap-6 sm:grid-cols-2">
                 <Distribution

@@ -6,16 +6,19 @@ export function Field({
   htmlFor,
   hint,
   children,
+  width,
   className = ""
 }: {
   label: string;
   htmlFor?: string;
   hint?: ReactNode;
   children: ReactNode;
+  /** What the field holds: meta (dates, numbers), short (names), long (sentences). Default: its column. */
+  width?: "meta" | "short" | "long";
   className?: string;
 }) {
   return (
-    <div className={className}>
+    <div className={`${width ? `field-width-${width}` : ""} ${className}`}>
       <label htmlFor={htmlFor} className="mb-1.5 block text-[12.5px] font-medium text-brand-dark">
         {label}
       </label>

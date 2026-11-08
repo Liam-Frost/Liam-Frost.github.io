@@ -60,3 +60,41 @@ export function homeCollectionContentIds(collection: PublicCollection): string[]
     : collection.items.filter((item) => item.kind === "track").map((item) => item.id);
   return [...new Set([...picked, ...activity, ...songs])];
 }
+
+/**
+ * A save of some top-level fields of a settings document: the new values, and the values they were
+ * edited from. Fields nobody else touched are merged; a field that changed underneath is a conflict.
+ */
+export type SettingsFieldPatch = {
+  changes: Record<string, unknown>;
+  base: Record<string, unknown>;
+};
+export type SettingsConflictDetails<Document = unknown> = {
+  fields: string[];
+  current: Document;
+};
+
+function sortedKeys(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(sortedKeys);
+  if (value && typeof value === "object")
+    return Object.fromEntries(
+      Object.entries(value)
+        .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+        .map(([key, item]) => [key, sortedKeys(item)])
+    );
+  return value;
+}
+
+/** Equality of settings values, regardless of the order their keys were written in. */
+export const sameSettingsValue = (a: unknown, b: unknown) =>
+  JSON.stringify(sortedKeys(a ?? null)) === JSON.stringify(sortedKeys(b ?? null));
+
+/** The fields of a patch that someone else has changed to something different since it was started. */
+export function conflictingFields(current: object, { changes, base }: SettingsFieldPatch) {
+  const stored = current as Record<string, unknown>;
+  return Object.keys(changes).filter(
+    (field) =>
+      !sameSettingsValue(stored[field], base[field]) &&
+      !sameSettingsValue(stored[field], changes[field])
+  );
+}

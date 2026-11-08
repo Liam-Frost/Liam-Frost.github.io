@@ -4,6 +4,7 @@ import { request } from "../lib/api";
 import { PageHeader } from "../components/layout/AdminLayout";
 import LoadingSkeleton from "../../../web/src/components/LoadingSkeleton";
 import { intlLocale, tr } from "../lib/messages";
+import { Select } from "../components/ui/Select";
 type Entry = {
   id: string;
   createdAt: string;
@@ -43,36 +44,34 @@ export function AuditPage() {
         <div className="mb-5 flex flex-wrap items-end gap-3">
           <label className="text-[12px] text-muted">
             {tr("操作类型")}
-            <select
-              className="field mt-1 min-w-36"
+            <Select
               value={action}
-              onChange={(e) => {
-                setAction(e.target.value);
+              onChange={(value) => {
+                setAction(value);
                 setPage(0);
               }}
-            >
-              <option value="">{tr("全部操作")}</option>
-              {Object.entries(names).map(([key, name]) => (
-                <option key={key} value={key}>
-                  {name}
-                </option>
-              ))}
-            </select>
+              className="mt-1 min-w-36"
+              options={[
+                { value: "", label: tr("全部操作") },
+                ...Object.entries(names).map(([key, name]) => ({ value: key, label: name }))
+              ]}
+            />
           </label>
           <label className="text-[12px] text-muted">
             {tr("执行结果")}
-            <select
-              className="field mt-1 min-w-32"
+            <Select
               value={outcome}
-              onChange={(e) => {
-                setOutcome(e.target.value);
+              onChange={(value) => {
+                setOutcome(value);
                 setPage(0);
               }}
-            >
-              <option value="">{tr("全部结果")}</option>
-              <option value="success">{tr("成功")}</option>
-              <option value="failure">{tr("失败或拒绝")}</option>
-            </select>
+              className="mt-1 min-w-32"
+              options={[
+                { value: "", label: tr("全部结果") },
+                { value: "success", label: tr("成功") },
+                { value: "failure", label: tr("失败或拒绝") }
+              ]}
+            />
           </label>
           <span className="ml-auto text-[12px] text-muted">{tr("每页50条 · 只读")}</span>
         </div>

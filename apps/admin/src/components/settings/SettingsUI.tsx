@@ -1,7 +1,8 @@
-import { useId, useState, type ReactNode } from "react";
-import { Check, Image } from "lucide-react";
+import { useId, type ReactNode } from "react";
+import { Check } from "lucide-react";
 import { PageHeader } from "../layout/AdminLayout";
-import { LANGS, LANG_LABELS, type Lang } from "../../lib/i18n";
+import { LANG_LABELS, type Lang } from "../../lib/i18n";
+import type { SettingsConflict as Conflict } from "./useSettingsDocument";
 import { settingsCopy as copy } from "./copy";
 import { tr } from "../../lib/messages";
 
@@ -23,6 +24,84 @@ export function SettingsPage({
     </>
   );
 }
+/**
+ * How settings content is arranged, against the width it actually has: "equal" is two columns of at least
+ * 260px, "aside" a main column with a 260px companion (a preview). Both fall back to one column.
+ */
+export function SettingsGrid({
+  variant,
+  className = "",
+  children
+}: {
+  variant: "equal" | "aside";
+  className?: string;
+  children: ReactNode;
+}) {
+  return <div className={`settings-grid settings-grid-${variant} ${className}`}>{children}</div>;
+}
+function SectionHeader({
+  id,
+  title,
+  description,
+  actions
+}: {
+  id: string;
+  title: string;
+  description?: string;
+  actions?: ReactNode;
+}) {
+  return (
+    <header className="surface-header">
+      <div className="min-w-0">
+        <h2 id={id} className="surface-title">
+          {title}
+        </h2>
+        {description ? <p className="surface-description">{description}</p> : null}
+      </div>
+      {actions}
+    </header>
+  );
+}
+
+/**
+ * One white surface for settings that belong together, holding `SettingsGroup`s separated by hairlines.
+ * The columns only apply when the surface is wide enough; below that the groups stack.
+ */
+export function SettingsSurface({
+  columns = "stack",
+  children
+}: {
+  columns?: "stack" | "equal" | "primary" | "aside";
+  children: ReactNode;
+}) {
+  return (
+    <div className="settings-surface">
+      <div className={`settings-groups settings-groups-${columns}`}>{children}</div>
+    </div>
+  );
+}
+
+/** A titled part of a `SettingsSurface`. */
+export function SettingsGroup({
+  title,
+  description,
+  children,
+  actions
+}: {
+  title: string;
+  description?: string;
+  children: ReactNode;
+  actions?: ReactNode;
+}) {
+  const id = useId();
+  return (
+    <section className="settings-group" aria-labelledby={id}>
+      <SectionHeader id={id} title={title} description={description} actions={actions} />
+      <div className="space-y-4">{children}</div>
+    </section>
+  );
+}
+
 export function SettingsSection({
   title,
   description,
@@ -37,17 +116,7 @@ export function SettingsSection({
   const id = useId();
   return (
     <section className="settings-section" aria-labelledby={id}>
-      <header className="mb-4 flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h2 id={id} className="text-[15px] font-semibold text-brand-dark">
-            {title}
-          </h2>
-          {description ? (
-            <p className="mt-1 text-[12px] leading-relaxed text-muted">{description}</p>
-          ) : null}
-        </div>
-        {actions}
-      </header>
+      <SectionHeader id={id} title={title} description={description} actions={actions} />
       <div className="space-y-4">{children}</div>
     </section>
   );
@@ -59,9 +128,9 @@ export function SettingsActions({
   onSave,
   onDiscard,
   blocked = false,
-  inline = false,
   saved = false,
-  label = copy.save
+  label = copy.save,
+  scope
 }: {
   dirty: boolean;
   pending: boolean;
@@ -69,24 +138,23 @@ export function SettingsActions({
   onSave: () => void;
   onDiscard: () => void;
   blocked?: boolean;
-  inline?: boolean;
   saved?: boolean;
   label?: string;
+  /** What this save covers, when a page also has things that take effect at once. */
+  scope?: string;
 }) {
   if (!dirty)
     return (
-      <p className="flex items-center gap-1.5 py-3 text-xs text-muted" role="status">
-        <Check aria-hidden="true" className="size-3.5" />
+      <p className="flex items-center gap-1.5 text-[11.5px] text-faint" role="status">
+        <Check aria-hidden="true" className="size-3" />
         {saved ? copy.saved : copy.clean}
       </p>
     );
   return (
-    <div
-      className={`settings-actions ${inline ? "settings-actions-inline" : ""}`}
-      aria-label={tr("保存操作")}
-    >
+    <div className="settings-actions" role="region" aria-label={tr("保存操作")}>
       <div className="min-w-0 flex-1">
         <p className="text-xs font-medium text-brand">{copy.unsaved}</p>
+        {scope ? <p className="mt-0.5 text-[11.5px] text-faint">{scope}</p> : null}
         {error ? (
           <p role="alert" className="mt-1 break-words text-xs text-status-error">
             {error}
@@ -108,6 +176,10 @@ export function SettingsActions({
       </div>
     </div>
   );
+}
+/** Marks a control whose result is live as soon as it succeeds, unlike the fields around it. */
+export function ImmediateBadge() {
+  return <span className="chip ml-1.5 align-middle font-normal">{tr("立即生效")}</span>;
 }
 export function SettingsState({
   error,
@@ -135,134 +207,92 @@ export function SettingsState({
     </div>
   );
 }
-export function SettingsLanguages({
-  value,
-  onChange
-}: {
-  value: Lang;
-  onChange: (value: Lang) => void;
-}) {
-  return (
-    <div className="flex flex-wrap gap-1" role="group" aria-label={tr("编辑语言")}>
-      {LANGS.map((lang) => (
-        <button
-          type="button"
-          className={`rounded-lg px-3 py-2 text-xs font-medium ${lang === value ? "bg-brand text-white" : "text-muted hover:bg-white"}`}
-          aria-pressed={lang === value}
-          key={lang}
-          onClick={() => onChange(lang)}
-        >
-          {LANG_LABELS[lang]}
-        </button>
-      ))}
-    </div>
-  );
-}
 export function SettingsPreview({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <div
-      className="min-w-0 rounded-xl border border-line-soft bg-canvas p-4"
-      role="region"
-      aria-label={title}
-    >
+    <div className="surface-media" role="region" aria-label={title}>
       <p className="mb-3 text-[11px] font-medium text-muted">{title}</p>
       {children}
     </div>
   );
 }
-export function AssetPreview({
-  src,
-  label,
-  fallback
-}: {
-  src?: string;
-  label: string;
-  fallback?: ReactNode;
-}) {
-  const [failed, setFailed] = useState<string | null>(null);
-  return (
-    <div
-      className="flex size-20 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-line bg-canvas"
-      role="img"
-      aria-label={label}
-    >
-      {src && failed !== src ? (
-        <img className="size-full object-contain" alt="" src={src} onError={() => setFailed(src)} />
-      ) : (
-        (fallback ?? <Image aria-hidden="true" className="size-7 text-brand-secondary" />)
-      )}
-    </div>
-  );
+/** A setting's value in words, for choosing between two versions of it. */
+function describeValue(value: unknown): string {
+  if (value === null || value === undefined || value === "") return tr("未设置");
+  if (typeof value === "boolean") return value ? tr("开启") : tr("关闭");
+  if (typeof value !== "object") return String(value);
+  if (Array.isArray(value)) return tr("{0} 项", value.length);
+  const record = value as Record<string, unknown>;
+  if ("mode" in record) {
+    const background = record as { mode: string; photoIds: string[]; intervalSeconds: number };
+    if (background.mode === "none") return tr("纯色背景");
+    return background.mode === "fixed"
+      ? tr("固定照片")
+      : tr("轮换 {0} 张，每 {1} 秒", background.photoIds.length, background.intervalSeconds);
+  }
+  if ("text" in record) return String(record.text || tr("默认 Logo"));
+  const values = Object.values(record);
+  if (values.length && values.every((item) => typeof item === "boolean"))
+    return tr("开启 {0} / {1} 项", values.filter(Boolean).length, values.length);
+  const languages = Object.entries(record).filter(([, text]) => text);
+  if (!languages.length) return tr("未设置");
+  return languages
+    .map(([lang, text]) => `${LANG_LABELS[lang as Lang] ?? lang}：${String(text)}`)
+    .join("\n");
 }
-export function SettingsBrandPreview({
-  src,
-  text,
-  alt,
-  defaultSrc
-}: {
-  src?: string;
-  text: string;
-  alt?: string;
-  defaultSrc: string;
-}) {
-  const [failed, setFailed] = useState<string[]>([]);
-  const image =
-    src && !failed.includes(src) ? src : !text && !failed.includes(defaultSrc) ? defaultSrc : null;
-  return image ? (
-    <img
-      alt={alt || tr("Logo 预览")}
-      className="size-9 object-contain"
-      src={image}
-      onError={() => setFailed((value) => [...value, image])}
-    />
-  ) : (
-    <span
-      className="max-w-36 truncate text-sm font-bold"
-      role={alt ? "img" : undefined}
-      aria-label={alt || undefined}
-    >
-      {text || "LF"}
-    </span>
-  );
-}
+
 export function SettingsConflict({
-  current,
-  draft,
-  onUseCurrent,
-  onKeepDraft
+  conflict,
+  labels,
+  onUseLatest,
+  onKeepMine
 }: {
-  current: unknown;
-  draft: unknown;
-  onUseCurrent: () => void;
-  onKeepDraft: () => void;
+  conflict: Conflict;
+  labels: Record<string, string>;
+  onUseLatest: () => void;
+  onKeepMine: () => void;
 }) {
   return (
-    <section role="alert" className="settings-section">
-      <h2 className="text-sm font-semibold text-brand-dark">{tr("其他页面已修改这组设置")}</h2>
-      <p className="my-2 text-xs text-muted">
-        {tr("草稿尚未保存。比较后选择最新值，或保留草稿并再次确认保存。")}
-      </p>
-      <div className="grid min-w-0 gap-3 sm:grid-cols-2">
-        {[
-          [tr("最新已保存值"), current],
-          [tr("当前草稿"), draft]
-        ].map(([label, value]) => (
-          <details className="min-w-0" key={String(label)}>
-            <summary className="cursor-pointer text-xs text-brand">{String(label)}</summary>
-            <pre className="my-2 max-h-48 overflow-auto whitespace-pre-wrap break-all text-xs">
-              {JSON.stringify(value, null, 2)}
-            </pre>
-          </details>
+    <section
+      role="alert"
+      className="settings-conflict"
+      ref={(element) => element?.scrollIntoView({ block: "nearest" })}
+    >
+      <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
+        <div className="min-w-0 flex-1 basis-48">
+          <h2 className="text-[13.5px] font-semibold text-status-warn">
+            {tr("有设置已在别处被修改")}
+          </h2>
+          <p className="mt-0.5 text-[12px] leading-relaxed text-muted">
+            {tr("下面的内容在你编辑时被保存过。选择要保留的版本，其它修改不受影响。")}
+          </p>
+        </div>
+        <div className="flex shrink-0 flex-wrap gap-2">
+          <button type="button" className="btn-secondary btn-sm" onClick={onUseLatest}>
+            {tr("使用已保存的版本")}
+          </button>
+          <button type="button" className="btn-secondary btn-sm" onClick={onKeepMine}>
+            {tr("保留我的修改")}
+          </button>
+        </div>
+      </div>
+      <dl className="mt-2.5 divide-y divide-status-warn/20 border-t border-status-warn/20">
+        {conflict.fields.map(({ field, current, draft }) => (
+          <div className="settings-conflict-row" key={field}>
+            <dt className="text-[12.5px] font-medium text-brand-dark">{labels[field] ?? field}</dt>
+            {[
+              [tr("已保存的版本"), current],
+              [tr("你的修改"), draft]
+            ].map(([title, value]) => (
+              <dd className="min-w-0" key={String(title)}>
+                <span className="block text-[11px] text-muted">{String(title)}</span>
+                <span className="block max-h-20 overflow-y-auto text-[12.5px] break-words whitespace-pre-wrap text-ink">
+                  {describeValue(value)}
+                </span>
+              </dd>
+            ))}
+          </div>
         ))}
-      </div>
-      <div className="mt-3 flex flex-wrap gap-2">
-        <button type="button" className="btn-secondary" onClick={onUseCurrent}>
-          {tr("采用最新已保存值")}
-        </button>
-        <button type="button" className="btn-secondary" onClick={onKeepDraft}>
-          {tr("保留草稿，待再次确认保存")}
-        </button>
-      </div>
+      </dl>
     </section>
   );
 }

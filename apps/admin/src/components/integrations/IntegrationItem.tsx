@@ -275,7 +275,7 @@ export function IntegrationItem({
       >
         <div className="min-h-0 overflow-hidden">
           <div className="border-t border-line-soft bg-canvas/50 px-4 py-4 sm:px-5">
-            <dl className="mb-4 grid gap-x-4 gap-y-1.5 text-[12.5px] sm:grid-cols-[6.5rem_minmax(0,1fr)]">
+            <dl className="settings-definitions mb-4 text-[12.5px]">
               <dt className="text-faint">{tr("配置来源")}</dt>
               <dd className="text-ink">{source}</dd>
               <dt className="text-faint">{tr("连接情况")}</dt>

@@ -30,6 +30,7 @@ import { useDeletePhoto, usePhotos, useReorderPhotos, useSetPhoto } from "../hoo
 import { api, uploadPhoto } from "../lib/api";
 import { pickText } from "../lib/i18n";
 import { tr } from "../lib/messages";
+import { Select } from "../components/ui/Select";
 
 type Filter = "all" | "public" | "private";
 
@@ -249,20 +250,21 @@ export function PhotosPage() {
             {label} <span className="opacity-70">{counts[value]}</span>
           </button>
         ))}
-        <select
-          className="field !w-auto !py-1.5 !text-[12.5px]"
+        <Select
           aria-label={tr("来源")}
           value={sourceFilter}
-          onChange={(e) => setSourceFilter(e.target.value as SourceFilter)}
-        >
-          <option value="all">{tr("全部来源")}</option>
-          {Object.entries(SOURCE_LABELS).map(([value, label]) => (
-            <option key={value} value={value}>
-              {label}
-            </option>
-          ))}
-          <option value="unknown">{tr("未记录来源")}</option>
-        </select>
+          onChange={(value) => setSourceFilter(value as SourceFilter)}
+          size="sm"
+          className="w-auto"
+          options={[
+            { value: "all", label: tr("全部来源") },
+            ...Object.entries(SOURCE_LABELS).map(([value, label]) => ({
+              value: value,
+              label: label
+            })),
+            { value: "unknown", label: tr("未记录来源") }
+          ]}
+        />
         {SHOWS.map(({ value, label, test }) => {
           const count = all.filter(test).length;
           if (!count && show !== value) return null;

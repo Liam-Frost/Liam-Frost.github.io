@@ -1,7 +1,12 @@
 import { createHash } from "node:crypto";
 import sharp from "sharp";
 import { z } from "zod";
-import { DEFAULT_SITE_SETTINGS, type SiteSettingsGroup } from "@liam-frost/shared";
+import {
+  conflictingFields,
+  DEFAULT_SITE_SETTINGS,
+  type SettingsConflictDetails,
+  type SiteSettingsGroup
+} from "@liam-frost/shared";
 import type { FastifyInstance } from "fastify";
 import type { AdminAuthService } from "../auth/service";
 import type { MediaRepository } from "../media/types";
@@ -103,6 +108,12 @@ const schemas = {
       }
     })
 };
+export const settingsFieldPatch = z
+  .object({
+    changes: z.record(z.string(), z.unknown()),
+    base: z.record(z.string(), z.unknown())
+  })
+  .strict();
 const digest = (value: unknown) => createHash("sha256").update(JSON.stringify(value)).digest("hex");
 
 export function registerSiteSettingsRoutes(
@@ -192,21 +203,21 @@ export function registerSiteSettingsRoutes(
   app.get("/api/admin/site-settings/privacy/history", admin, async () => ({
     history: (await repo?.get("site.privacy.history")) ?? []
   }));
-  app.put("/api/admin/site-settings/:group", admin, async (request, reply) => {
+  app.patch("/api/admin/site-settings/:group", admin, async (request, reply) => {
     if (!repo) throw new HttpError(503, "DATABASE_NOT_CONFIGURED", "网站设置需要数据库");
     const group = groupOf(request.params);
-    const body = parseInput(
-      z.object({ value: schemas[group], revision: z.string().length(64) }).strict(),
-      request.body
-    );
+    const patch = parseInput(settingsFieldPatch, request.body);
     return lock.run(group, async () => {
       const before = await read(group);
-      if (before.revision !== body.revision)
-        throw new HttpError(
-          409,
-          "SETTINGS_OUT_OF_DATE",
-          "设置已被其他页面修改；请先保留草稿再重新读取"
-        );
+      const fields = conflictingFields(before.value, patch);
+      if (fields.length)
+        throw new HttpError(409, "SETTINGS_CONFLICT", "设置已被其他页面修改", {
+          fields,
+          current: before
+        } satisfies SettingsConflictDetails);
+      const body = {
+        value: parseInput(schemas[group], { ...before.value, ...patch.changes })
+      };
       if (group === "dictionary") {
         const normalize = (v: string) => v.normalize("NFKC").trim().toLowerCase();
         const used = new Set(

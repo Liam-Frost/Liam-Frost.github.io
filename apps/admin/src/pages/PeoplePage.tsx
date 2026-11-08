@@ -25,6 +25,7 @@ import { api, ApiError } from "../lib/api";
 import { guessLang, pickText } from "../lib/i18n";
 import { Tooltip } from "../components/ui/Tooltip";
 import { tr } from "../lib/messages";
+import { Select } from "../components/ui/Select";
 
 /** People linked to collection entries: actors, directors, singers, writers, studios. */
 export function PeoplePage() {
@@ -411,19 +412,19 @@ function AddPersonDialog({ tmdbReady, onClose }: { tmdbReady: boolean; onClose: 
     <Dialog open title={tr("添加人物")} onClose={onClose}>
       <form onSubmit={search} className="flex flex-wrap items-end gap-2">
         <Field label={tr("来源")} htmlFor="person-source">
-          <select
+          <Select
             id="person-source"
-            className="field"
             value={source}
             disabled={searching || importing !== null}
-            onChange={(e) => {
-              setSource(e.target.value as typeof source);
+            onChange={(value) => {
+              setSource(value as typeof source);
               setResults(null);
             }}
-          >
-            <option value="musicbrainz">{tr("MusicBrainz · 音乐")}</option>
-            <option value="tmdb">{tr("TMDB · 影视")}</option>
-          </select>
+            options={[
+              { value: "musicbrainz", label: tr("MusicBrainz · 音乐") },
+              { value: "tmdb", label: tr("TMDB · 影视") }
+            ]}
+          />
         </Field>
         <Field label={tr("搜索人物或团体")} htmlFor="person-query" className="min-w-0 flex-1">
           <input
@@ -519,16 +520,16 @@ function AddPersonDialog({ tmdbReady, onClose }: { tmdbReady: boolean; onClose: 
         className="mt-5 flex flex-wrap items-end gap-2 border-t border-line-soft pt-4"
       >
         <Field label={tr("类型")} htmlFor="person-manual-kind">
-          <select
-            className="field"
+          <Select
             id="person-manual-kind"
             value={kind}
-            onChange={(e) => setKind(e.target.value as PersonKind)}
-          >
-            <option value="person">{tr("人物")}</option>
-            <option value="group">{tr("团体 / 乐队")}</option>
-            <option value="organization">{tr("机构 / 工作室")}</option>
-          </select>
+            onChange={(value) => setKind(value as PersonKind)}
+            options={[
+              { value: "person", label: tr("人物") },
+              { value: "group", label: tr("团体 / 乐队") },
+              { value: "organization", label: tr("机构 / 工作室") }
+            ]}
+          />
         </Field>
         <Field
           label={tr("手动添加")}

@@ -19,13 +19,15 @@ async function setup() {
     headers = { ...csrf, cookie: await login(app) };
   const read = async (group: string) =>
     (await app.inject({ url: `/api/admin/site-settings/${group}`, headers })).json();
-  const save = async (group: string, value: unknown, revision?: string) =>
-    app.inject({
-      method: "PUT",
+  const save = async (group: string, value: object, start?: object) => {
+    const base = start ?? (await read(group)).value;
+    return app.inject({
+      method: "PATCH",
       url: `/api/admin/site-settings/${group}`,
       headers,
-      payload: { value, revision: revision ?? (await read(group)).revision }
+      payload: { changes: value, base }
     });
+  };
   return { app, settings, media, photos, store, headers, read, save };
 }
 describe("grouped website settings", () => {
@@ -38,16 +40,16 @@ describe("grouped website settings", () => {
       expect(
         (
           await app.inject({
-            method: "PUT",
+            method: "PATCH",
             url: "/api/admin/site-settings/identity",
             headers: { cookie: headers.cookie },
-            payload: { value, revision: initial.revision }
+            payload: { changes: value, base: initial.value }
           })
         ).statusCode
       ).toBe(403);
       const writes = await Promise.all([
-        save("identity", value, initial.revision),
-        save("identity", { ...value, title: { en: "Other tab" } }, initial.revision)
+        save("identity", value, initial.value),
+        save("identity", { ...value, title: { en: "Other tab" } }, initial.value)
       ]);
       expect(writes.map((r) => r.statusCode).sort()).toEqual([200, 409]);
       expect((await read("footer")).value).toEqual(DEFAULT_SITE_SETTINGS.footer);

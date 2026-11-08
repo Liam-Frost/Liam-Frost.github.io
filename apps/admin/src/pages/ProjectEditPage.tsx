@@ -9,7 +9,7 @@ import type {
   ProjectStatus
 } from "@liam-frost/shared";
 import { ArrowLeft, ExternalLink, ImagePlus, Trash2, X } from "lucide-react";
-import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent, useId } from "react";
 import { Link, useParams } from "react-router";
 
 import { technologyOptions } from "../components/stack/linkOptions";
@@ -21,9 +21,12 @@ import { useToast } from "../components/ui/Toast";
 import { useProject, useProjectImages, useUpdateProject } from "../hooks/useProjects";
 import { useStack } from "../hooks/useStack";
 import { ApiError } from "../lib/api";
-import { LANG_LABELS, LANGS, pickText, STATUS_LABELS, type Lang } from "../lib/i18n";
+import { pickText, STATUS_LABELS, type Lang } from "../lib/i18n";
 import { RecentStats } from "../components/analytics/RecentStats";
 import { tr } from "../lib/messages";
+import { Select } from "../components/ui/Select";
+import { LanguageTabPanel, LanguageTabs } from "../components/ui/LanguageTabs";
+import { useUnsaved } from "../lib/unsaved";
 
 const ACCEPT = "image/jpeg,image/png,image/webp,image/avif,image/tiff";
 
@@ -112,18 +115,14 @@ function ProjectEditor({ project }: { project: AdminProject }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- only when the project data changes
   }, [project]);
   const [lang, setLang] = useState<Lang>("zh");
+  const languageTabs = useId();
   const [error, setError] = useState("");
   const [techInput, setTechInput] = useState("");
   const update = useUpdateProject(project.id);
   const toast = useToast();
 
   // Closing or reloading the tab with unsaved texts asks for confirmation.
-  useEffect(() => {
-    if (!dirty) return;
-    const onBeforeUnload = (event: BeforeUnloadEvent) => event.preventDefault();
-    window.addEventListener("beforeunload", onBeforeUnload);
-    return () => window.removeEventListener("beforeunload", onBeforeUnload);
-  }, [dirty]);
+  useUnsaved(dirty, "page");
 
   const set = <K extends keyof Draft>(key: K, value: Draft[K]) =>
     setDraft((d) => ({ ...d, [key]: value }));
@@ -224,9 +223,6 @@ function ProjectEditor({ project }: { project: AdminProject }) {
           to="/projects"
           className="rounded-full p-1.5 text-subtle hover:bg-brand-secondary/12 hover:text-brand"
           aria-label={tr("返回项目列表")}
-          onClick={(e) => {
-            if (dirty && !window.confirm(tr("有未保存的修改，确定离开吗？"))) e.preventDefault();
-          }}
         >
           <ArrowLeft aria-hidden="true" className="size-5" />
         </Link>
@@ -265,30 +261,19 @@ function ProjectEditor({ project }: { project: AdminProject }) {
 
       <div className="grid gap-5 lg:grid-cols-[1fr_320px]">
         <section className="card min-w-0 p-5" aria-label={tr("内容")}>
-          <div role="tablist" aria-label={tr("语言")} className="mb-3 flex flex-wrap gap-1.5">
-            {LANGS.map((l) => (
-              <button
-                key={l}
-                type="button"
-                role="tab"
-                aria-selected={lang === l}
-                onClick={() => setLang(l)}
-                className={`rounded-full px-3 py-1.5 text-[12.5px] transition-colors ${
-                  lang === l
-                    ? "bg-brand text-white"
-                    : "bg-brand-secondary/10 text-brand hover:bg-brand-secondary/18"
-                }`}
-              >
-                {LANG_LABELS[l]}
-                {draft.title[l]?.trim() ? "" : " ·"}
-              </button>
-            ))}
-          </div>
+          <LanguageTabs
+            id={languageTabs}
+            value={lang}
+            onChange={setLang}
+            isFilled={(l) => Boolean(draft.title[l]?.trim())}
+            mark="missing"
+            className="mb-3"
+          />
           <p className="mb-4 text-[11.5px] text-faint">
             {tr("没填写的语言会在网站上回退到其它语言。标签页名后带 · 表示该语言还没有标题。")}
           </p>
 
-          <div className="space-y-3.5">
+          <LanguageTabPanel id={languageTabs} lang={lang} className="space-y-3.5">
             <Field label={tr("标题")} htmlFor="project-title">
               <input
                 id="project-title"
@@ -325,7 +310,7 @@ function ProjectEditor({ project }: { project: AdminProject }) {
                 onChange={(e) => setText("body", e.target.value)}
               />
             </Field>
-          </div>
+          </LanguageTabPanel>
         </section>
 
         <div className="space-y-5">
@@ -361,18 +346,17 @@ function ProjectEditor({ project }: { project: AdminProject }) {
 
           <Panel title={tr("信息")}>
             <Field label={tr("状态")} htmlFor="project-status">
-              <select
+              <Select
                 id="project-status"
-                className="field"
                 value={draft.status}
-                onChange={(e) => set("status", e.target.value as ProjectStatus)}
-              >
-                {(Object.keys(STATUS_LABELS) as ProjectStatus[]).map((status) => (
-                  <option key={status} value={status}>
-                    {STATUS_LABELS[status]}
-                  </option>
-                ))}
-              </select>
+                onChange={(value) => set("status", value as ProjectStatus)}
+                options={[
+                  ...(Object.keys(STATUS_LABELS) as ProjectStatus[]).map((status) => ({
+                    value: status,
+                    label: STATUS_LABELS[status]
+                  }))
+                ]}
+              />
             </Field>
             <div className="grid grid-cols-2 gap-3">
               <Field label={tr("开始")} htmlFor="project-start">

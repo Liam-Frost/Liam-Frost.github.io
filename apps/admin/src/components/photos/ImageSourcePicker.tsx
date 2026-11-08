@@ -12,6 +12,7 @@ import { useRef, useState } from "react";
 import { api, serverPreviewUrl } from "../../lib/api";
 import { InfoTip } from "../ui/Tooltip";
 import { tr } from "../../lib/messages";
+import { Select } from "../ui/Select";
 
 type Tab = "upload" | "server" | "gallery" | "url";
 
@@ -261,7 +262,7 @@ function LinkPane({
           {multiple ? tr("，每行一个") : ""}
         </span>
         <textarea
-          className="field min-h-[96px] font-mono !text-[12.5px]"
+          className="field field-sm min-h-[96px] font-mono"
           value={text}
           placeholder={
             type === "gallery"
@@ -338,21 +339,17 @@ function ServerPane({
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-1 text-[13px]">
         {data.roots.length > 1 ? (
-          <select
-            className="field !w-auto !py-1"
+          <Select
             aria-label={tr("导入目录")}
-            value={root}
-            onChange={(e) => {
-              setRoot(Number(e.target.value));
+            value={String(root)}
+            onChange={(value) => {
+              setRoot(Number(value));
               open("");
             }}
-          >
-            {data.roots.map((r) => (
-              <option key={r.index} value={r.index}>
-                {r.name}
-              </option>
-            ))}
-          </select>
+            size="sm"
+            className="w-auto"
+            options={[...data.roots.map((r) => ({ value: String(r.index), label: r.name }))]}
+          />
         ) : (
           <button type="button" className="text-brand hover:underline" onClick={() => open("")}>
             {data.roots[0]!.name}

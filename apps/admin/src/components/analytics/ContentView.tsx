@@ -85,7 +85,7 @@ export function ContentView() {
                 onClick={() => setType(value)}
                 className={
                   type === value
-                    ? "chip !px-2.5 !py-1.5 font-semibold"
+                    ? "chip chip-lg font-semibold"
                     : "rounded-md px-2.5 py-1.5 text-[11px] text-muted hover:bg-brand-secondary/8"
                 }
               >

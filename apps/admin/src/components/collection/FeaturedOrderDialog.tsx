@@ -10,6 +10,7 @@ import { Dialog } from "../ui/Dialog";
 import { IconButton } from "../ui/IconButton";
 import { useToast } from "../ui/Toast";
 import { tr } from "../../lib/messages";
+import { Select } from "../ui/Select";
 
 /** Fixed order first; entries never ordered after them, newest first (as the site does). */
 export function featuredInOrder(items: AdminMediaItem[]) {
@@ -142,14 +143,18 @@ export function FeaturedOrderDialog({
         </label>
         <label className="text-xs text-muted">
           {tr("类型")}
-          <select className="field mt-1" value={kind} onChange={(e) => setKind(e.target.value)}>
-            <option value="">{tr("全部类型")}</option>
-            {[...new Set(order.map((i) => i.kind))].map((k) => (
-              <option key={k} value={k}>
-                {kindLabel(k)}
-              </option>
-            ))}
-          </select>
+          <Select
+            value={kind}
+            onChange={(value) => setKind(value)}
+            className="mt-1"
+            options={[
+              { value: "", label: tr("全部类型") },
+              ...[...new Set(order.map((i) => i.kind))].map((k) => ({
+                value: k,
+                label: kindLabel(k)
+              }))
+            ]}
+          />
         </label>
         <span className="text-xs text-muted">
           {tr("共 {0} 项 · 筛选不改变完整排序", order.length)}
@@ -230,7 +235,7 @@ export function FeaturedOrderDialog({
                 </label>
                 <button
                   type="button"
-                  className="btn-secondary !px-2"
+                  className="btn-secondary btn-sm"
                   disabled={saving || index === 0}
                   onClick={() => move(index, 0)}
                   aria-label={tr("置顶 {0}", title)}

@@ -474,7 +474,7 @@ function AccountRow({
         <span className="block truncate text-[12px] text-muted">{detail}</span>
       </span>
       {action ? (
-        <Link to={action.to} className="btn-secondary shrink-0 !px-3 !py-1.5 !text-[12px]">
+        <Link to={action.to} className="btn-secondary btn-sm shrink-0">
           {action.label}
         </Link>
       ) : null}

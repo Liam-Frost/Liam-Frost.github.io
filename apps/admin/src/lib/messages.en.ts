@@ -105,9 +105,7 @@ export const en: Record<string, string> = {
   "{0}效果": "{0} preview",
   "{0}需要数据库。请在": "{0} needs a database. In ",
   "{0}已更新": "{0} updated",
-  "{0}预览": "{0} preview",
   "*星号*": "*asterisks*",
-  "10–3600 秒，轮换模式生效。": "10–3600 seconds, applies in rotate mode.",
   "30 天": "30 days",
   "7 天": "7 days",
   "7–730 天；过期后只保留按天汇总。": "7–730 days; after that only daily totals are kept.",
@@ -132,7 +130,6 @@ export const en: Record<string, string> = {
   "包住要强调的词，网站上会用强调色显示。最多 {0} 字。":
     " to mark words to emphasise; the site shows them in the accent colour. Up to {0} characters.",
   保存: "Save",
-  "保存 Logo": "Save logo",
   保存操作: "Save actions",
   保存更改: "Save changes",
   "保存后立即生效，无需重启。设置仅属于当前环境，预发布与正式环境独立。":
@@ -144,11 +141,9 @@ export const en: Record<string, string> = {
   "保存失败，请重试。{0}": "Save failed, please try again. {0}",
   保存顺序: "Save order",
   保存统计设置: "Save analytics settings",
-  保存网站图标: "Save site icon",
   "保存应用配置后，到 收藏 → 音乐 → Spotify 账号 连接账号。更换应用后需要重新连接。":
     "After saving the app configuration, connect the account under Collection → Music → Spotify account. Reconnect after changing the app.",
   "保存中…": "Saving…",
-  "保留草稿，待再次确认保存": "Keep my draft, confirm saving again",
   "保留访问统计，不记录国家和地区。":
     "Keeps visit statistics without recording countries or regions.",
   "保留最近10个旧版本；载入后需检查并保存。":
@@ -223,7 +218,6 @@ export const en: Record<string, string> = {
   "部分公开内容暂时无法核验，开关草稿不受影响。":
     "Some public content can't be verified right now; your switch drafts are not affected.",
   采集与隐私: "Collection and privacy",
-  采用最新已保存值: "Use the latest saved value",
   参与的作品: "Works involved in",
   参与者: "People",
   "参与者（导演、演员、作者等）": "People (directors, actors, authors, etc.)",
@@ -233,8 +227,6 @@ export const en: Record<string, string> = {
   操作类型: "Action type",
   操作人: "Actor",
   操作失败: "Action failed",
-  "草稿尚未保存。比较后选择最新值，或保留草稿并再次确认保存。":
-    "The draft is not saved. Compare, then use the latest value, or keep your draft and confirm saving again.",
   "测试访问为什么没有记录？": "Why was my test visit not recorded?",
   插曲: "Insert song",
   "查看近 30 天的统计": "View the last 30 days",
@@ -287,15 +279,12 @@ export const en: Record<string, string> = {
   待处理: "To do",
   待改进: "Needs improvement",
   待核验: "To verify",
-  当前草稿: "Current draft",
   "当前地址：": "Current address: ",
   "当前第 {0} / {1} 张": "Photo {0} of {1}",
   "当前范围 · {0}": "Current range · {0}",
   "当前范围没有记录。": "No records in the current range.",
   "当前范围没有具体的不存在页面路径记录。":
     "No specific missing-page paths recorded in the current range.",
-  "后台支持简体中文和英文，与前台默认语言独立；切换后页面会重新加载。":
-    "The admin is available in Simplified Chinese and English, independent of the site's default language. Switching reloads the page.",
   "当前没有数据库，账号只能在服务器配置中修改，下面的操作不可用。":
     "There is no database, so the account can only be changed in the server configuration. The actions below are unavailable.",
   当前密码: "Current password",
@@ -556,7 +545,6 @@ export const en: Record<string, string> = {
     "Sources used by admin search and import: last success and failure.",
   后台写操作: "Admin writes",
   后台页面标题: "Admin page title",
-  后台语言与格式: "Admin language and format",
   "后重启 API（见": " then restart the API (see ",
   候选内容: "Candidates",
   画师: "Illustrator",
@@ -605,15 +593,12 @@ export const en: Record<string, string> = {
   "加载项目中…": "Loading projects…",
   加载中: "Loading",
   "加载中…": "Loading…",
-  "减少动态效果时保持第一张照片。": "Stays on the first photo when reduced motion is on. ",
   简介: "Summary",
   简体中文: "Simplified Chinese",
   "建议 2:1，例如 1280×640（GitHub Social preview 的尺寸），在网站卡片上完整显示。":
     "2:1 recommended, e.g. 1280×640 (GitHub's social preview size); shown whole on the site's cards.",
   建议处理: "Suggested tasks",
   "建议都已添加。": "All suggestions have been added.",
-  "建议使用正方形图片；非正方形会完整缩放并留出透明边。SVG、PNG、WebP 或 JPEG，不超过 2 MB。上传后自动生成 32 / 180 / 192 / 512 PNG 和 ICO，立即生效。":
-    "A square image works best; other shapes are scaled to fit with transparent margins. SVG, PNG, WebP or JPEG, up to 2 MB. 32 / 180 / 192 / 512 PNG and ICO are generated on upload and take effect immediately.",
   "将 Country MMDB 拖到这里": "Drop a Country MMDB here",
   "将从 TMDB 导入": "Will import from TMDB",
   "将删除后台保存的 {0} 配置（{1}），改用服务器环境变量里的配置；服务器没有配置时，{2} 会变成未配置。服务器上的配置不会被修改。":
@@ -637,8 +622,6 @@ export const en: Record<string, string> = {
   "今天 · 与昨天同一时段比较": "Today · compared with the same period yesterday",
   "仅记录路径，不保存查询参数；历史汇总无法还原路径。最多显示前100项。":
     "Records paths only, not query strings; historical totals can't recover paths. Shows up to the top 100.",
-  "仅使用公开图库照片；固定模式使用第一张，轮换按已选顺序播放。":
-    "Public gallery photos only; fixed mode uses the first, rotation plays them in the selected order.",
   "仅在可信代理覆盖请求头、源站受保护时使用；这不会修改代理信任范围或防火墙。":
     "Only use when a trusted proxy overrides the header and the origin is protected; this doesn't change proxy trust or the firewall.",
   "近 30 天": "Last 30 days",
@@ -753,7 +736,6 @@ export const en: Record<string, string> = {
   浏览器标签页预览: "Browser tab preview",
   "浏览器无法生成此文件的本地预览；保存后将显示服务端处理的图标。":
     "The browser can't preview this file; the processed icon appears after saving.",
-  浏览图库: "Browse gallery",
   "留空保留已保存的地址。": "Leave empty to keep the saved address.",
   "留空即可隐藏邮箱；不会影响下面的联系方式。":
     "Leave empty to hide the email; the contact links below are not affected.",
@@ -799,7 +781,6 @@ export const en: Record<string, string> = {
     "No matching entries; try adjusting the search or the missing-translation filter.",
   没有匹配的项目: "No matching projects",
   没有匹配的选项: "No matching options",
-  "没有匹配结果，请调整搜索条件。": "No matches; adjust the search.",
   "没有切换。": "No switches.",
   没有试听: "No preview",
   "没有试听，不能加入播放器。": "No preview, so it can't be added to the player.",
@@ -853,7 +834,6 @@ export const en: Record<string, string> = {
   "默认音量：{0}%": "Default volume: {0}%",
   默认语言: "Default language",
   默认主题: "Default theme",
-  默认资源: "Default asset",
   "母语写法，例如“宮崎駿”": 'Native spelling, e.g. "宮崎駿"',
   "目标行高 · Target Row Height（px）": "Target row height (px)",
   内容: "Content",
@@ -900,7 +880,6 @@ export const en: Record<string, string> = {
   "其他技术（不在技术栈中）": "Other technologies (not in the tech stack)",
   其他设备已全部退出: "All other devices signed out",
   其他网站: "Other sites",
-  其他页面已修改这组设置: "Another page changed these settings",
   其它语言可以在编辑页填写: "Other languages can be filled in on the edit page",
   起始年份: "Start year",
   弃了: "Dropped",
@@ -987,7 +966,6 @@ export const en: Record<string, string> = {
   日: "Sun",
   日本: "Japan",
   日本語: "Japanese",
-  日期示例: "Date example",
   "日文歌在“日本”商店更容易找到，并显示日文歌名。":
     "Japanese songs are easier to find in the Japan store and show Japanese titles.",
   "日文原名、罗马音或英文名": "Japanese original, romaji or English name",
@@ -1044,7 +1022,6 @@ export const en: Record<string, string> = {
   "上移分类 {0}": "Move category {0} up",
   "尚未保存，当前沿用服务器默认配置。": "Not saved yet; using the server's default configuration.",
   尚未配置: "Not configured",
-  尚未选择背景照片: "No background photos selected",
   设备: "Gear",
   设备分类: "Gear categories",
   设备类型: "Device type",
@@ -1136,7 +1113,6 @@ export const en: Record<string, string> = {
   "搜不到？手动添加": "Can't find it? Add manually",
   搜索: "Search",
   搜索背景照片: "Search background photos",
-  搜索公开照片: "Search public photos",
   搜索技术名称: "Search technology names",
   搜索人物或团体: "Search people or groups",
   搜索失败: "Search failed",
@@ -1234,7 +1210,6 @@ export const en: Record<string, string> = {
   图库: "Gallery",
   "图库暂无公开照片，请先上传并公开。":
     "The gallery has no public photos; upload and publish some first.",
-  图库暂无可用的公开照片: "No public photos available in the gallery",
   "图库照片页链接，自动识别网站。目前支持 Flickr（flickr.com/photos/…、flic.kr/p/… 或 live.staticflickr.com 图片链接）":
     "Link to a gallery photo page; the site is detected automatically. Flickr is supported for now (flickr.com/photos/…, flic.kr/p/… or live.staticflickr.com image links)",
   图片: "Image",
@@ -1450,7 +1425,6 @@ export const en: Record<string, string> = {
   "严格按“首页精选”里的顺序分行，不自动混排或打乱。":
     'Follows the "Featured on home" order exactly, with no mixing or shuffling.',
   "沿用部署时的国家识别配置。": "Keeps the country detection set at deployment.",
-  沿用默认资源: "Use default asset",
   沿用站点署名: "Use the site's name",
   "颜色越深，浏览量越多；斜线表示有访问但人数不足。聚焦格子后可用方向键移动。":
     "Darker means more views; hatching means visits but too few people. Focus a cell to move with the arrow keys.",
@@ -1563,7 +1537,6 @@ export const en: Record<string, string> = {
   "已选 {0} / {1}": "{0} / {1} selected",
   已选择: "Selected",
   "已选择：": "Selected: ",
-  "已选照片 · {0} / 20": "Selected photos · {0} / 20",
   已隐藏: "Hidden",
   已隐藏或删除: "Hidden or deleted",
   "已有内容翻译优先，词典补齐当前语言与英文，最后回退内置词典及原标签。别名匹配不改写原内容；稳定ID不可编辑。在用词条及别名不能直接删除，服务端会再次核验。":
@@ -1622,26 +1595,21 @@ export const en: Record<string, string> = {
     "A linked technology was removed from the tech stack; refresh and try again",
   "有关联的项目已被删除，请刷新后重试": "A linked project was deleted; refresh and try again",
   "有技术关联的项目已达上限：{0}": "A project has reached its technology limit: {0}",
-  "有上传的图片时显示图片；没有图片时显示文字标记，文字也为空则使用默认 Logo。文字和替代文字需要点“保存 Logo”。":
-    'Shows the uploaded image if there is one; otherwise the text mark, and if that\'s empty too, the default logo. The text and alt text need "Save logo".',
   有未保存的更改: "Unsaved changes",
   "有未保存的顺序调整，保存后才会更新首页。":
     "Unsaved order changes; the home page updates after saving.",
   有未保存的修改: "Unsaved changes",
   "有未保存的修改，确定放弃吗？": "You have unsaved changes. Discard them?",
-  "有未保存的修改，确定离开吗？": "You have unsaved changes. Leave anyway?",
   "有未保存的修改：保存后才会生效。在后台里切换页面会保留，刷新或关闭页面会丢失。":
     "Unsaved changes take effect after saving. They're kept when moving between admin pages, but lost on refresh or closing.",
   "有项目已关联 40 项技术，不能再添加：{0}":
     "A project already has 40 technologies and can't take more: {0}",
-  语言: "Language",
   预览: "Preview",
   预览网站: "Preview site",
   "原标签、别名或翻译": "Original tag, alias or translation",
   原名: "Original name",
   原声歌曲: "Soundtrack",
   原始记录保留天数: "Days to keep raw records",
-  "原图片已隐藏或删除，请重新选择": "The original image was hidden or deleted; please choose again",
   运行记录: "Operations",
   再次输入新密码: "Enter the new password again",
   再点一次清除评分: "Click again to clear the rating",
@@ -1732,8 +1700,6 @@ export const en: Record<string, string> = {
   只看引用: "References only",
   "只能使用字母、数字、- 和 _，例如 /studio-7f3a。不能与网站已有的页面相同。":
     "Letters, digits, - and _ only, e.g. /studio-7f3a. Can't match a page the site already has.",
-  "只使用公开照片。需要新图片时，先到照片管理中上传并公开。":
-    "Public photos only. For a new image, upload and publish it under Photos first.",
   只引用原链接: "Link to the original only",
   "只支持 https 链接：{0}": "Only https links: {0}",
   "只作为项目的标签显示，回车添加；输入技术栈里已有的名称会自动改为关联":
@@ -1787,10 +1753,6 @@ export const en: Record<string, string> = {
   "最近一次请求成功 ·": "Last request succeeded · ",
   "最近一次请求失败 ·": "Last request failed · ",
   最近一次失败: "Last failure",
-  "最新版本读取失败，草稿仍保留。": "Couldn't read the latest version; your draft is kept.",
-  "最新版本读取失败；草稿仍保留，请稍后重试。":
-    "Couldn't read the latest version; your draft is kept. Try again later.",
-  最新已保存值: "Latest saved value",
   作词: "Lyrics",
   作品: "Works",
   作曲: "Composer",
@@ -1828,8 +1790,6 @@ export const en: Record<string, string> = {
     'In Steam\'s privacy settings, "Game details" must be public.',
   "Steam Web API Key。保存后到 收藏 → 游戏 → Steam 游戏库 连接账号并同步。":
     "Steam Web API key. After saving, connect and sync under Collection → Games → Steam library.",
-  "SVG、PNG、WebP 或 JPEG，不超过 2 MB，建议使用透明背景。上传后立即生效。":
-    "SVG, PNG, WebP or JPEG, up to 2 MB; a transparent background is best. Takes effect on upload.",
   "TMDB · 影视": "TMDB · film and TV",
   "TMDB 导入影视人物，MusicBrainz 导入歌手与乐队，也可手动添加。音乐作品仅按已确认的来源身份自动关联，同名与别名只作为待确认建议。":
     "Import film people from TMDB and artists and bands from MusicBrainz, or add them manually. Music works link automatically only by confirmed source identity; same names and aliases are just suggestions to confirm.",
@@ -1889,7 +1849,6 @@ export const en: Record<string, string> = {
   "联系方式已在其他页面修改，请重新加载后保存":
     "Contact details were changed on another page; reload and save again",
   外观管理需要数据库: "Appearance management needs a database",
-  "设置已在其他页面修改，请重新加载": "Settings were changed on another page; please reload",
   只能选择图库中当前公开的照片: "Only currently public gallery photos can be chosen",
   请选择至少一张背景图: "Choose at least one background",
   品牌素材管理需要数据库: "Brand asset management needs a database",
@@ -1899,8 +1858,6 @@ export const en: Record<string, string> = {
   同一别名不能属于多个词条: "An alias can't belong to several entries",
   "设置无法读取，请联系管理员": "Settings can't be read; contact the administrator",
   网站设置需要数据库: "Site settings need a database",
-  "设置已被其他页面修改；请先保留草稿再重新读取":
-    "Settings were changed on another page; keep your draft, then reload",
   只能选择当前公开的图库照片: "Only currently public gallery photos can be chosen",
   "词条或别名正在被收藏使用，请先保留匹配别名或调整对应内容":
     "The entry or alias is used by the collection; keep the matching alias or change that content first",
@@ -1970,9 +1927,60 @@ export const en: Record<string, string> = {
   "统一管理主页、后台品牌、浏览器图标和页面标题。":
     "Manage the site's and admin's branding, the browser icon and the page titles.",
   "用于管理后台导航。": "Used in the admin navigation.",
-  保存页面标题: "Save page titles",
-  页面标题已保存: "Page titles saved",
   头像图片: "Avatar image",
-  "建议使用正方形图片。SVG、PNG、WebP 或 JPEG，不超过 2 MB。上传后立即生效。":
-    "A square image works best. SVG, PNG, WebP or JPEG, up to 2 MB. Takes effect on upload."
+  打开导航: "Open navigation",
+  关闭导航: "Close navigation",
+  "退出登录？": "Sign out?",
+  "退出后，未保存的修改不会保留。": "Unsaved changes won't be kept after signing out.",
+  "离开此页？": "Leave this page?",
+  "这里有未保存的内容，离开后不会保留。":
+    "This page has unsaved content that won't be kept if you leave.",
+  离开: "Leave",
+  "恢复默认？": "Restore the default?",
+  "当前图片会被删除，网站上立刻改回默认，无法撤销。":
+    "The current image will be deleted and the site switches back to the default right away. This can't be undone.",
+  "建议使用正方形图片。SVG、PNG、WebP 或 JPEG，不超过 2 MB。":
+    "A square image works best. SVG, PNG, WebP or JPEG, up to 2 MB.",
+  立即生效: "Live at once",
+  未设置: "Not set",
+  开启: "On",
+  "轮换 {0} 张，每 {1} 秒": "Rotating {0} photos every {1} s",
+  "默认 Logo": "Default logo",
+  "开启 {0} / {1} 项": "{0} of {1} on",
+  有设置已在别处被修改: "Some settings were changed elsewhere",
+  "下面的内容在你编辑时被保存过。选择要保留的版本，其它修改不受影响。":
+    "These were saved while you were editing. Choose which version to keep; your other changes are not affected.",
+  已保存的版本: "Saved version",
+  你的修改: "Your change",
+  使用已保存的版本: "Use the saved version",
+  保留我的修改: "Keep my change",
+  "切换后台语言？": "Switch the admin language?",
+  "切换语言需要重新加载页面，未保存的修改会丢失。":
+    "Switching reloads the page, and unsaved changes will be lost.",
+  仍然切换: "Switch anyway",
+  登录背景: "Login background",
+  "SVG、PNG、WebP 或 JPEG，不超过 2 MB，建议使用透明背景。":
+    "SVG, PNG, WebP or JPEG, up to 2 MB. A transparent background works best.",
+  "有上传的图片时显示图片；没有图片时显示文字标记，文字也为空则使用默认 Logo。":
+    "An uploaded image is shown first; without one, the text mark; with no text either, the default logo.",
+  "建议使用正方形图片；非正方形会完整缩放并留出透明边。SVG、PNG、WebP 或 JPEG，不超过 2 MB。":
+    "A square image works best; others are scaled to fit with transparent margins. SVG, PNG, WebP or JPEG, up to 2 MB.",
+  "保存文字标记和页面标题；已上传的图片已生效，不受影响。":
+    "Saves the text marks and page titles. Uploaded images are already live and are not affected.",
+  "仅使用公开图库照片。": "Only public gallery photos can be used.",
+  "10–3600 秒。减少动态效果时保持第一张照片。":
+    "10–3600 seconds. With reduced motion, the first photo stays.",
+  当前照片: "Current photo",
+  "已选照片 · {0} / {1}": "Selected · {0} / {1}",
+  "按此顺序轮换。": "Rotates in this order.",
+  从下方公开图库选择照片: "Choose photos from the public gallery below",
+  "选择一张作为登录背景。": "Choose one as the login background.",
+  "显示更多（还有 {0} 张）": "Show more ({0} left)",
+  词条: "Entries",
+  "上移链接 {0}": "Move link {0} up",
+  "下移链接 {0}": "Move link {0} down",
+  "移除链接 {0}": "Remove link {0}",
+  "保存姓名；头像上传后已生效，不受影响。":
+    "Saves the name. An uploaded avatar is already live and is not affected.",
+  设置已被其他页面修改: "These settings were changed elsewhere"
 };

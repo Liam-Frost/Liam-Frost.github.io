@@ -1,6 +1,6 @@
-import { useState, useMemo } from "react";
-import { useIsMutating, useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
-import { ChevronDown, Plus } from "lucide-react";
+import { useId, useMemo, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { ArrowDown, ArrowUp, ChevronDown, Plus, Trash2 } from "lucide-react";
 import type {
   LocalizedText,
   SiteSettingsGroup,
@@ -8,25 +8,26 @@ import type {
   SiteSettingsDocument
 } from "@liam-frost/shared";
 import { Field, Switch } from "../components/ui/Field";
-import { useToast } from "../components/ui/Toast";
-import { ApiError, api, request } from "../lib/api";
+import { IconButton } from "../components/ui/IconButton";
+import { LanguageTabPanel, LanguageTabs } from "../components/ui/LanguageTabs";
+import { Select } from "../components/ui/Select";
+import { api, request } from "../lib/api";
 import { mediaKey } from "../hooks/useMedia";
 import { LANGS, LANG_LABELS, type Lang } from "../lib/i18n";
 import { refreshSiteSettings } from "../../../web/src/data/useSiteSettings";
 import LoadingSkeleton from "../../../web/src/components/LoadingSkeleton";
-import { clearSettingsDraftIfUnchanged, useSettingsDraft } from "../components/settings/drafts";
 import { settingsDate } from "../components/settings/copy";
 import {
   SettingsActions,
   SettingsConflict,
-  SettingsLanguages,
+  SettingsGrid,
   SettingsPage,
   SettingsPreview,
   SettingsSection,
   SettingsState
 } from "../components/settings/SettingsUI";
+import { useSettingsDocument } from "../components/settings/useSettingsDocument";
 import { AvatarUpload } from "../components/settings/BrandUpload";
-import { LanguageSwitch } from "../components/ui/LanguageSwitch";
 import { tr } from "../lib/messages";
 
 const titles: Record<SiteSettingsGroup, string> = {
@@ -43,23 +44,36 @@ const descriptions: Record<SiteSettingsGroup, string> = {
   privacy: tr("编辑公开隐私说明，历史版本可载入为草稿。"),
   dictionary: tr("为收藏标签补齐多语言翻译，保留原有内容标识。")
 };
-export function SiteSettingsPage({
-  group,
-  embedded = false
-}: {
-  group: SiteSettingsGroup;
-  embedded?: boolean;
-}) {
-  const key = ["admin", "site-settings", group],
-    qc = useQueryClient(),
-    toast = useToast();
-  const q = useQuery({
+const fieldLabels: Record<string, string> = {
+  name: tr("显示姓名"),
+  title: tr("标题"),
+  adminTitle: tr("后台页面标题"),
+  owner: tr("版权署名"),
+  startYear: tr("起始年份"),
+  showRole: tr("显示身份说明"),
+  links: tr("页脚链接"),
+  theme: tr("默认主题"),
+  language: tr("默认语言"),
+  body: tr("隐私正文"),
+  effectiveDate: tr("生效日期"),
+  entries: tr("词条")
+};
+export function SiteSettingsPage({ group }: { group: SiteSettingsGroup }) {
+  const key = ["admin", "site-settings", group];
+  const qc = useQueryClient();
+  const tabs = useId();
+  const doc = useSettingsDocument<SiteSettingsDocument, SiteSettingsGroups[SiteSettingsGroup]>({
+    draftKey: `site:${group}`,
     queryKey: key,
-    queryFn: () => request<SiteSettingsDocument>(`/api/admin/site-settings/${group}`)
+    url: `/api/admin/site-settings/${group}`,
+    read: (document) => document.value,
+    onSaved: () => {
+      refreshSiteSettings();
+      void qc.invalidateQueries({ queryKey: ["admin", "privacy-history"] });
+    }
   });
-  const [draft, setDraft] = useSettingsDraft<SiteSettingsDocument>(`site:${group}`),
-    [conflict, setConflict] = useState<SiteSettingsDocument | null>(null),
-    [lang, setLang] = useState<Lang>("zh"),
+  const q = doc.query;
+  const [lang, setLang] = useState<Lang>("zh"),
     [filter, setFilter] = useState(""),
     [missingOnly, setMissingOnly] = useState(false),
     [expanded, setExpanded] = useState<string | null>(null);
@@ -87,7 +101,7 @@ export function SiteSettingsPage({
         ...(usageIndex.get(alias.normalize("NFKC").trim().toLowerCase()) ?? [])
       ])
     ).size;
-  const value = draft?.value ?? q.data?.value;
+  const value = doc.value;
   const savedEntries = new Map(
     ((q.data?.value as SiteSettingsGroups["dictionary"] | undefined)?.entries ?? []).map(
       (entry) => [entry.id, entry]
@@ -101,69 +115,20 @@ export function SiteSettingsPage({
       ),
     enabled: group === "privacy"
   });
-  const busy = useIsMutating({ mutationKey: key }) > 0;
-  const save = useMutation({
-    mutationKey: key,
-    mutationFn: (body: SiteSettingsDocument) =>
-      request<SiteSettingsDocument>(`/api/admin/site-settings/${group}`, {
-        method: "PUT",
-        json: {
-          value:
-            group === "dictionary"
-              ? {
-                  entries: (body.value as SiteSettingsGroups["dictionary"]).entries.map(
-                    (entry) => ({
-                      ...entry,
-                      aliases: entry.aliases.map((alias) => alias.trim()).filter(Boolean)
-                    })
-                  )
-                }
-              : body.value,
-          revision: body.revision
-        }
-      }),
-    onSuccess: (data, submitted) => {
-      qc.setQueryData(key, data);
-      clearSettingsDraftIfUnchanged(`site:${group}`, submitted);
-      setConflict(null);
-      refreshSiteSettings();
-      void qc.invalidateQueries({ queryKey: ["admin", "privacy-history"] });
-    },
-    onError: async (error: Error) => {
-      toast(error.message, "error");
-      if (error instanceof ApiError && error.code === "SETTINGS_OUT_OF_DATE") {
-        try {
-          setConflict(await request<SiteSettingsDocument>(`/api/admin/site-settings/${group}`));
-        } catch {
-          toast(tr("最新版本读取失败；草稿仍保留，请稍后重试。"), "error");
-        }
-      }
-    }
-  });
-  const change = (next: SiteSettingsGroups[SiteSettingsGroup]) => {
-    if (q.data && !busy)
-      setDraft(
-        JSON.stringify(next) === JSON.stringify(q.data.value)
-          ? null
-          : { value: next, revision: draft?.revision ?? q.data.revision, saved: q.data.saved }
-      );
-  };
+  const change = doc.change;
   const localized = (
     label: string,
     data: LocalizedText,
     onChange: (value: LocalizedText) => void,
     multiline = false,
-    suffix = ""
+    suffix = "",
+    width?: "short" | "long"
   ) => (
-    <Field
-      label={label}
-      htmlFor={`settings-${group}-${label}-${suffix}`}
-      className={multiline ? "" : "max-w-md"}
-    >
+    <Field label={label} htmlFor={`settings-${group}-${label}-${suffix}`} width={width}>
       {multiline ? (
         <textarea
           id={`settings-${group}-${label}-${suffix}`}
-          className="field min-h-64"
+          className="field min-h-56"
           maxLength={20000}
           value={data[lang] ?? ""}
           onChange={(event) => onChange({ ...data, [lang]: event.target.value })}
@@ -215,37 +180,59 @@ export function SiteSettingsPage({
     setExpanded(id);
     change({ entries: [...dictionary.entries, { id, aliases: [""], labels: {} }] });
   };
-  const languageControl = ["identity", "footer", "privacy", "dictionary"].includes(group) ? (
-    <SettingsLanguages value={lang} onChange={setLang} />
-  ) : null;
+  const languageTabs = (isFilled?: (lang: Lang) => boolean) => (
+    <LanguageTabs id={tabs} size="sm" value={lang} onChange={setLang} isFilled={isFilled} />
+  );
+  const moveLink = (index: number, direction: number) => {
+    const links = [...footer.links];
+    [links[index], links[index + direction]] = [links[index + direction]!, links[index]!];
+    change({ ...footer, links });
+  };
   const body = (
     <>
-      {group !== "dictionary" ? languageControl : null}
-      <fieldset disabled={busy} className="min-w-0 space-y-5">
+      <fieldset disabled={doc.busy} className="min-w-0 space-y-5">
         {group === "identity" ? (
-          <>
-            <div className="grid items-start gap-5 sm:grid-cols-2">
-              <SettingsSection
-                title={tr("身份信息")}
-                description={tr("当前语言未填写时，沿用站点现有语言回退。")}
-              >
-                {localized(tr("显示姓名"), identity.name, (name) => change({ ...identity, name }))}
-              </SettingsSection>
-              <SettingsSection title={tr("首屏头像")}>
-                <AvatarUpload />
-              </SettingsSection>
-            </div>
-          </>
+          <SettingsGrid variant="equal">
+            <SettingsSection
+              title={tr("身份信息")}
+              description={tr("当前语言未填写时，沿用站点现有语言回退。")}
+            >
+              {languageTabs((l) => Boolean(identity.name[l]?.trim()))}
+              <LanguageTabPanel id={tabs} lang={lang}>
+                {localized(
+                  tr("显示姓名"),
+                  identity.name,
+                  (name) => change({ ...identity, name }),
+                  false,
+                  "",
+                  "short"
+                )}
+              </LanguageTabPanel>
+            </SettingsSection>
+            <SettingsSection title={tr("首屏头像")}>
+              <AvatarUpload />
+            </SettingsSection>
+          </SettingsGrid>
         ) : null}
         {group === "footer" ? (
           <>
             <SettingsSection title={tr("版权信息")}>
               <div className="space-y-4">
-                {localized(tr("版权署名"), footer.owner, (owner) => change({ ...footer, owner }))}
+                {languageTabs()}
+                <LanguageTabPanel id={tabs} lang={lang} className="space-y-4">
+                  {localized(
+                    tr("版权署名"),
+                    footer.owner,
+                    (owner) => change({ ...footer, owner }),
+                    false,
+                    "",
+                    "short"
+                  )}
+                </LanguageTabPanel>
                 <Field
                   label={tr("起始年份")}
                   htmlFor="settings-year"
-                  className="max-w-40"
+                  width="meta"
                   hint={tr("留空只显示当年；填写后自动延续至当年。")}
                 >
                   <input
@@ -272,7 +259,7 @@ export function SiteSettingsPage({
                         links: footer.links.map((item, i) => (i === index ? next : item))
                       });
                     return (
-                      <div key={index} className="grid gap-2 sm:grid-cols-[1fr_2fr_auto]">
+                      <div key={index} className="settings-link-row">
                         <input
                           className="field"
                           aria-label={tr("链接 {0} 的文字", index + 1)}
@@ -294,18 +281,34 @@ export function SiteSettingsPage({
                           value={link.url}
                           onChange={(event) => setLink({ ...link, url: event.target.value })}
                         />
-                        <button
-                          type="button"
-                          className="btn-secondary"
-                          onClick={() =>
-                            change({
-                              ...footer,
-                              links: footer.links.filter((_, i) => i !== index)
-                            })
-                          }
-                        >
-                          {tr("移除")}
-                        </button>
+                        <div className="flex items-center justify-end">
+                          <IconButton
+                            label={tr("上移链接 {0}", index + 1)}
+                            disabled={index === 0}
+                            onClick={() => moveLink(index, -1)}
+                          >
+                            <ArrowUp aria-hidden="true" className="size-4" />
+                          </IconButton>
+                          <IconButton
+                            label={tr("下移链接 {0}", index + 1)}
+                            disabled={index === footer.links.length - 1}
+                            onClick={() => moveLink(index, 1)}
+                          >
+                            <ArrowDown aria-hidden="true" className="size-4" />
+                          </IconButton>
+                          <IconButton
+                            danger
+                            label={tr("移除链接 {0}", index + 1)}
+                            onClick={() =>
+                              change({
+                                ...footer,
+                                links: footer.links.filter((_, i) => i !== index)
+                              })
+                            }
+                          >
+                            <Trash2 aria-hidden="true" className="size-4" />
+                          </IconButton>
+                        </div>
                       </div>
                     );
                   })}
@@ -332,84 +335,51 @@ export function SiteSettingsPage({
                     onChange={(showRole) => change({ ...footer, showRole })}
                   />
                 </div>
+                <SettingsPreview title={tr("版权署名预览")}>
+                  <p className="break-words text-sm text-muted">
+                    ©{" "}
+                    {footer.startYear && footer.startYear !== new Date().getFullYear()
+                      ? `${footer.startYear}–`
+                      : ""}
+                    {new Date().getFullYear()}{" "}
+                    {footer.owner[lang] || footer.owner.en || footer.owner.zh || tr("沿用站点署名")}
+                  </p>
+                </SettingsPreview>
               </div>
             </SettingsSection>
-            <SettingsPreview title={tr("版权署名预览")}>
-              <p className="break-words text-sm text-muted">
-                ©{" "}
-                {footer.startYear && footer.startYear !== new Date().getFullYear()
-                  ? `${footer.startYear}–`
-                  : ""}
-                {new Date().getFullYear()}{" "}
-                {footer.owner[lang] || footer.owner.en || footer.owner.zh || tr("沿用站点署名")}
-              </p>
-            </SettingsPreview>
           </>
         ) : null}
         {group === "preferences" ? (
-          <>
-            <SettingsSection
-              title={tr("首次访问默认值")}
-              description={tr("访客自己保存的主题和语言优先。")}
-            >
-              <div className="grid gap-4 sm:grid-cols-2">
-                <Field label={tr("默认主题")} htmlFor="settings-theme">
-                  <select
-                    className="field"
-                    id="settings-theme"
-                    value={preferences.theme}
-                    onChange={(event) =>
-                      change({
-                        ...preferences,
-                        theme: event.target.value as typeof preferences.theme
-                      })
-                    }
-                  >
-                    <option value="system">{tr("跟随系统")}</option>
-                    <option value="light">{tr("浅色")}</option>
-                    <option value="dark">{tr("深色")}</option>
-                  </select>
-                </Field>
-                <Field label={tr("默认语言")} htmlFor="settings-language">
-                  <select
-                    className="field"
-                    id="settings-language"
-                    value={preferences.language}
-                    onChange={(event) =>
-                      change({
-                        ...preferences,
-                        language: event.target.value as typeof preferences.language
-                      })
-                    }
-                  >
-                    <option value="auto">{tr("自动识别浏览器")}</option>
-                    {LANGS.map((language) => (
-                      <option key={language} value={language}>
-                        {LANG_LABELS[language]}
-                      </option>
-                    ))}
-                  </select>
-                </Field>
-              </div>
-            </SettingsSection>
-            <SettingsSection
-              title={tr("后台语言与格式")}
-              description={tr("后台支持简体中文和英文，与前台默认语言独立；切换后页面会重新加载。")}
-            >
-              <dl className="flex flex-wrap gap-x-8 gap-y-2 text-xs">
-                <div>
-                  <dt className="text-muted">{tr("语言")}</dt>
-                  <dd className="mt-1 text-brand-dark">
-                    <LanguageSwitch />
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-muted">{tr("日期示例")}</dt>
-                  <dd className="mt-1 text-brand-dark">{settingsDate(new Date().toISOString())}</dd>
-                </div>
-              </dl>
-            </SettingsSection>
-          </>
+          <SettingsSection
+            title={tr("首次访问默认值")}
+            description={tr("访客自己保存的主题和语言优先。")}
+          >
+            <SettingsGrid variant="equal">
+              <Field label={tr("默认主题")} htmlFor="settings-theme">
+                <Select
+                  id="settings-theme"
+                  value={preferences.theme}
+                  onChange={(theme) => change({ ...preferences, theme })}
+                  options={[
+                    { value: "system" as const, label: tr("跟随系统") },
+                    { value: "light" as const, label: tr("浅色") },
+                    { value: "dark" as const, label: tr("深色") }
+                  ]}
+                />
+              </Field>
+              <Field label={tr("默认语言")} htmlFor="settings-language">
+                <Select
+                  id="settings-language"
+                  value={preferences.language}
+                  onChange={(language) => change({ ...preferences, language })}
+                  options={[
+                    { value: "auto" as const, label: tr("自动识别浏览器") },
+                    ...LANGS.map((language) => ({ value: language, label: LANG_LABELS[language] }))
+                  ]}
+                />
+              </Field>
+            </SettingsGrid>
+          </SettingsSection>
         ) : null}
         {group === "privacy" ? (
           <>
@@ -417,15 +387,30 @@ export function SiteSettingsPage({
               title={tr("公开说明")}
               description={tr("支持 Markdown；不渲染原始 HTML。")}
             >
-              {localized(tr("隐私标题"), privacy.title, (title) => change({ ...privacy, title }))}
-              {localized(
-                tr("隐私正文"),
-                privacy.body,
-                (body) => change({ ...privacy, body }),
-                true
-              )}
+              {languageTabs((l) => Boolean(privacy.body[l]?.trim()))}
+              <LanguageTabPanel id={tabs} lang={lang} className="space-y-4">
+                {localized(
+                  tr("隐私标题"),
+                  privacy.title,
+                  (title) => change({ ...privacy, title }),
+                  false,
+                  "",
+                  "long"
+                )}
+                {localized(
+                  tr("隐私正文"),
+                  privacy.body,
+                  (body) => change({ ...privacy, body }),
+                  true
+                )}
+              </LanguageTabPanel>
               <div className="flex flex-wrap items-start justify-between gap-3">
-                <Field label={tr("生效日期")} htmlFor="privacy-date" className="max-w-56">
+                <Field
+                  label={tr("生效日期")}
+                  htmlFor="privacy-date"
+                  width="meta"
+                  className="w-full"
+                >
                   <input
                     className="field"
                     id="privacy-date"
@@ -436,7 +421,7 @@ export function SiteSettingsPage({
                     }
                   />
                 </Field>
-                <p className="max-w-sm text-xs leading-relaxed text-muted">
+                <p className="field-width-short text-xs leading-relaxed text-muted">
                   {tr("正文留空时沿用现有隐私说明。公开页面继续显示实际统计采集状态。")}
                 </p>
               </div>
@@ -480,23 +465,12 @@ export function SiteSettingsPage({
         ) : null}
         {group === "dictionary" ? (
           <>
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              {languageControl}
-              <button
-                type="button"
-                className="btn-primary"
-                disabled={dictionary.entries.length >= 500}
-                onClick={addEntry}
-              >
-                <Plus aria-hidden="true" className="size-4" />
-                {tr("添加词条")}
-              </button>
-            </div>
-            <div className="flex flex-wrap items-end gap-4">
+            <div className="flex flex-wrap items-end gap-x-4 gap-y-3">
               <Field
                 label={tr("查找词条")}
                 htmlFor="dictionary-filter"
-                className="min-w-0 flex-1 sm:max-w-sm"
+                width="short"
+                className="min-w-48 flex-1"
               >
                 <input
                   id="dictionary-filter"
@@ -514,10 +488,20 @@ export function SiteSettingsPage({
                   onChange={setMissingOnly}
                 />
               </div>
-              <p className="pb-2 text-xs text-muted">
+              <p className="pb-2.5 text-xs text-muted">
                 {tr("{0} / {1} 条", filtered.length, dictionary.entries.length)}
               </p>
+              <button
+                type="button"
+                className="btn-primary ml-auto"
+                disabled={dictionary.entries.length >= 500}
+                onClick={addEntry}
+              >
+                <Plus aria-hidden="true" className="size-4" />
+                {tr("添加词条")}
+              </button>
             </div>
+            {languageTabs()}
             <details className="text-xs text-muted">
               <summary className="cursor-pointer">{tr("翻译与引用规则")}</summary>
               <p className="mt-2 leading-relaxed">
@@ -544,16 +528,16 @@ export function SiteSettingsPage({
                     <div key={entry.id}>
                       <button
                         type="button"
-                        className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-canvas"
+                        className="surface-row flex w-full items-center gap-3 text-left"
                         aria-expanded={open}
                         aria-controls={`dictionary-row-${entry.id}`}
                         onClick={() => setExpanded(open ? null : entry.id)}
                       >
                         <span className="min-w-0 flex-1">
-                          <span className="block truncate text-sm font-medium text-brand-dark">
+                          <span className="block truncate text-[13.5px] font-medium text-brand-dark">
                             {entry.aliases[0] || tr("新词条")}
                           </span>
-                          <span className="mt-1 block truncate text-xs text-muted">
+                          <span className="block truncate text-[11.5px] text-muted">
                             {entry.labels[lang] || tr("当前语言缺译")}
                           </span>
                         </span>
@@ -574,7 +558,7 @@ export function SiteSettingsPage({
                           id={`dictionary-row-${entry.id}`}
                           className="space-y-4 border-t border-line-soft bg-canvas/40 p-4"
                         >
-                          <div className="grid items-start gap-4 sm:grid-cols-2">
+                          <SettingsGrid variant="equal">
                             <Field
                               label={tr("匹配别名（每行一个）")}
                               htmlFor={`dictionary-alias-${entry.id}`}
@@ -607,7 +591,7 @@ export function SiteSettingsPage({
                               false,
                               entry.id
                             )}
-                          </div>
+                          </SettingsGrid>
                           <div className="flex flex-wrap items-center justify-between gap-3">
                             <p className="text-xs text-muted">
                               {count
@@ -662,44 +646,27 @@ export function SiteSettingsPage({
           </>
         ) : null}
       </fieldset>
-      {conflict && draft ? (
+      {doc.conflict ? (
         <SettingsConflict
-          current={conflict.value}
-          draft={draft.value}
-          onUseCurrent={() => {
-            qc.setQueryData(key, conflict);
-            setDraft(null);
-            setConflict(null);
-            save.reset();
-          }}
-          onKeepDraft={() => {
-            qc.setQueryData(key, conflict);
-            setDraft({ ...draft, revision: conflict.revision });
-            setConflict(null);
-            save.reset();
-          }}
+          conflict={doc.conflict}
+          labels={fieldLabels}
+          onUseLatest={doc.useLatest}
+          onKeepMine={doc.keepMine}
         />
       ) : null}
       <SettingsActions
-        saved={save.isSuccess}
-        dirty={Boolean(draft)}
-        pending={busy}
-        error={save.error?.message}
-        blocked={Boolean(conflict)}
-        inline={embedded}
-        label={embedded ? tr("保存网站图标") : undefined}
-        onSave={() => draft && save.mutate(draft)}
-        onDiscard={() => {
-          setDraft(null);
-          setConflict(null);
-          save.reset();
-        }}
+        saved={doc.saved}
+        dirty={doc.dirty}
+        pending={doc.busy}
+        error={doc.error}
+        blocked={Boolean(doc.conflict)}
+        scope={group === "identity" ? tr("保存姓名；头像上传后已生效，不受影响。") : undefined}
+        onSave={doc.save}
+        onDiscard={doc.discard}
       />
     </>
   );
-  return embedded ? (
-    <div className="space-y-4 border-t border-line pt-5">{body}</div>
-  ) : (
+  return (
     <SettingsPage title={titles[group]} description={descriptions[group]}>
       {body}
     </SettingsPage>

@@ -8,7 +8,7 @@ import type {
 } from "@liam-frost/shared";
 import { ArrowLeft, ExternalLink, ImagePlus, RefreshCw, Trash2, UserRound, X } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent, useId } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 
 import { MusicCandidatesPanel } from "../components/people/MusicCandidatesPanel";
@@ -25,9 +25,13 @@ import {
   useUploadPersonPhoto
 } from "../hooks/usePeople";
 import { api, ApiError } from "../lib/api";
-import { LANG_LABELS, LANGS, pickText, type Lang } from "../lib/i18n";
+import { pickText, type Lang } from "../lib/i18n";
 import { RecentStats } from "../components/analytics/RecentStats";
 import { tr } from "../lib/messages";
+import { Select } from "../components/ui/Select";
+import { LanguageTabPanel, LanguageTabs } from "../components/ui/LanguageTabs";
+import { useUnsaved } from "../lib/unsaved";
+import { skipNavigationGuard } from "../lib/unsaved";
 
 const ACCEPT = "image/jpeg,image/png,image/webp,image/avif,image/tiff";
 
@@ -85,6 +89,7 @@ function PersonEditor({ person }: { person: AdminPerson }) {
   const [saved, setSaved] = useState(draft);
   const dirty = JSON.stringify(draft) !== JSON.stringify(saved);
   const [lang, setLang] = useState<Lang>("zh");
+  const languageTabs = useId();
   const [linkInput, setLinkInput] = useState("");
   const [error, setError] = useState("");
   const [deleting, setDeleting] = useState(false);
@@ -104,12 +109,7 @@ function PersonEditor({ person }: { person: AdminPerson }) {
     onError: (error) => toast(error.message, "error")
   });
 
-  useEffect(() => {
-    if (!dirty) return;
-    const onBeforeUnload = (event: BeforeUnloadEvent) => event.preventDefault();
-    window.addEventListener("beforeunload", onBeforeUnload);
-    return () => window.removeEventListener("beforeunload", onBeforeUnload);
-  }, [dirty]);
+  useUnsaved(dirty, "page");
 
   const set = <K extends keyof Draft>(key: K, value: Draft[K]) =>
     setDraft((d) => ({ ...d, [key]: value }));
@@ -165,9 +165,6 @@ function PersonEditor({ person }: { person: AdminPerson }) {
           to="/collection/people"
           className="rounded-full p-1.5 text-subtle hover:bg-brand-secondary/12 hover:text-brand"
           aria-label={tr("返回人物")}
-          onClick={(e) => {
-            if (dirty && !window.confirm(tr("有未保存的修改，确定离开吗？"))) e.preventDefault();
-          }}
         >
           <ArrowLeft aria-hidden="true" className="size-5" />
         </Link>
@@ -206,25 +203,18 @@ function PersonEditor({ person }: { person: AdminPerson }) {
       <div className="grid gap-5 lg:grid-cols-[1fr_320px]">
         <div className="min-w-0 space-y-5">
           <section className="card min-w-0 p-5" aria-label={tr("文字")}>
-            <div role="tablist" aria-label={tr("语言")} className="mb-3 flex flex-wrap gap-1.5">
-              {LANGS.map((l) => (
-                <button
-                  key={l}
-                  type="button"
-                  role="tab"
-                  aria-selected={lang === l}
-                  onClick={() => setLang(l)}
-                  className={`rounded-full px-3 py-1.5 text-[12.5px] transition-colors ${lang === l ? "bg-brand text-white" : "bg-brand-secondary/10 text-brand hover:bg-brand-secondary/18"}`}
-                >
-                  {LANG_LABELS[l]}
-                  {draft.name[l]?.trim() ? " ✓" : ""}
-                </button>
-              ))}
-            </div>
+            <LanguageTabs
+              id={languageTabs}
+              value={lang}
+              onChange={setLang}
+              isFilled={(l) => Boolean(draft.name[l]?.trim())}
+              mark="filled"
+              className="mb-3"
+            />
             <p className="mb-4 text-[11.5px] text-faint">
               {tr("没填写的语言会在网站上回退到其它语言。标签后带 ✓ 表示该语言已有名字。")}
             </p>
-            <div className="space-y-3.5">
+            <LanguageTabPanel id={languageTabs} lang={lang} className="space-y-3.5">
               <Field label={tr("名字")} htmlFor="person-name">
                 <input
                   id="person-name"
@@ -248,7 +238,7 @@ function PersonEditor({ person }: { person: AdminPerson }) {
                   onChange={(e) => setText("bio", e.target.value)}
                 />
               </Field>
-            </div>
+            </LanguageTabPanel>
           </section>
 
           {draft.kind !== "person" || draft.members.length ? (
@@ -260,28 +250,22 @@ function PersonEditor({ person }: { person: AdminPerson }) {
                 <div className="space-y-2 rounded-lg border border-line-soft p-3" key={index}>
                   <label className="block text-xs">
                     {tr("成员")}
-                    <select
-                      className="field"
+                    <Select
                       aria-label={tr("成员 {0}", index + 1)}
                       value={member.personId}
-                      onChange={(e) =>
+                      onChange={(value) =>
                         set(
                           "members",
-                          draft.members.map((m, i) =>
-                            i === index ? { ...m, personId: e.target.value } : m
-                          )
+                          draft.members.map((m, i) => (i === index ? { ...m, personId: value } : m))
                         )
                       }
-                    >
-                      <option value="">{tr("请选择人物")}</option>
-                      {(everyone ?? [])
-                        .filter((p) => p.id !== person.id && (p.kind ?? "person") === "person")
-                        .map((p) => (
-                          <option key={p.id} value={p.id}>
-                            {pickText(p.name)}
-                          </option>
-                        ))}
-                    </select>
+                      options={[
+                        { value: "", label: tr("请选择人物") },
+                        ...(everyone ?? [])
+                          .filter((p) => p.id !== person.id && (p.kind ?? "person") === "person")
+                          .map((p) => ({ value: p.id, label: pickText(p.name) }))
+                      ]}
+                    />
                   </label>
                   <input
                     className="field"
@@ -383,16 +367,16 @@ function PersonEditor({ person }: { person: AdminPerson }) {
 
           <Panel title={tr("身份与别名")}>
             <Field label={tr("类型")} htmlFor="person-kind">
-              <select
-                className="field"
+              <Select
                 id="person-kind"
                 value={draft.kind}
-                onChange={(e) => set("kind", e.target.value as PersonKind)}
-              >
-                <option value="person">{tr("人物")}</option>
-                <option value="group">{tr("团体 / 乐队")}</option>
-                <option value="organization">{tr("机构 / 工作室")}</option>
-              </select>
+                onChange={(value) => set("kind", value as PersonKind)}
+                options={[
+                  { value: "person", label: tr("人物") },
+                  { value: "group", label: tr("团体 / 乐队") },
+                  { value: "organization", label: tr("机构 / 工作室") }
+                ]}
+              />
             </Field>
             <Field
               label={tr("别名")}
@@ -414,29 +398,30 @@ function PersonEditor({ person }: { person: AdminPerson }) {
               <div key={index} className="space-y-2 rounded-lg border border-line-soft p-3">
                 <label className="block text-xs">
                   {tr("来源")}
-                  <select
+                  <Select
                     aria-label={tr("身份 {0} 来源", index + 1)}
-                    className="field"
                     value={identity.provider}
-                    onChange={(e) =>
+                    onChange={(value) =>
                       set(
                         "identities",
                         draft.identities.map((v, i) =>
                           i === index
                             ? {
                                 ...v,
-                                provider: e.target.value as PersonIdentity["provider"],
+                                provider: value as PersonIdentity["provider"],
                                 confirmed: false
                               }
                             : v
                         )
                       )
                     }
-                  >
-                    {["musicbrainz", "spotify", "itunes", "tmdb"].map((provider) => (
-                      <option key={provider}>{provider}</option>
-                    ))}
-                  </select>
+                    options={[
+                      ...["musicbrainz", "spotify", "itunes", "tmdb"].map((provider) => ({
+                        value: provider,
+                        label: provider
+                      }))
+                    ]}
+                  />
                 </label>
                 <input
                   className="field"
@@ -605,6 +590,7 @@ function PersonEditor({ person }: { person: AdminPerson }) {
                 remove.mutate(person.id, {
                   onSuccess: () => {
                     toast(tr("已删除"));
+                    skipNavigationGuard();
                     navigate("/collection/people");
                   },
                   onError: (e) => toast(e.message, "error")

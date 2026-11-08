@@ -1,11 +1,18 @@
 import { useState } from "react";
 import { usePresentation } from "../data/usePresentation";
 
-export default function SiteMark({ admin = false }: { admin?: boolean }) {
+/** `override` shows a logo that is not saved yet, for the admin's preview. */
+export default function SiteMark({
+  admin = false,
+  override
+}: {
+  admin?: boolean;
+  override?: { text: string; alt?: string; src: string | null };
+}) {
   const settings = usePresentation();
   const slot = admin ? "adminLogo" : "publicLogo";
-  const logo = settings?.[slot];
-  const src = settings?.logoUrls?.[slot] ?? null;
+  const logo = override ?? settings?.[slot];
+  const src = override ? override.src : (settings?.logoUrls?.[slot] ?? null);
   const [failed, setFailed] = useState<string | null>(null);
   if ((src && failed !== src) || logo?.text)
     return (

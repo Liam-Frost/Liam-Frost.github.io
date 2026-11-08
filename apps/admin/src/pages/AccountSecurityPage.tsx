@@ -10,6 +10,7 @@ import { sessionKey } from "../hooks/useSession";
 import { ADMIN_BASE } from "../lib/adminBase";
 import { api } from "../lib/api";
 import { intlLocale, tr } from "../lib/messages";
+import { useUnsaved } from "../lib/unsaved";
 
 const accountKey = ["admin", "account"] as const;
 const when = (value: string) =>
@@ -33,7 +34,7 @@ function PasswordField({
   hint?: ReactNode;
 }) {
   return (
-    <Field label={label} htmlFor={id} hint={hint} className="max-w-sm">
+    <Field label={label} htmlFor={id} hint={hint} width="short">
       <input
         id={id}
         type="password"
@@ -56,7 +57,7 @@ function CodeField({
   onChange: (value: string) => void;
 }) {
   return (
-    <Field label={tr("验证码")} htmlFor={id} className="max-w-[160px]">
+    <Field label={tr("验证码")} htmlFor={id} width="meta">
       <input
         id={id}
         className="field"
@@ -116,6 +117,7 @@ function PasswordSection() {
   const [current, setCurrent] = useState("");
   const [next, setNext] = useState("");
   const [again, setAgain] = useState("");
+  useUnsaved(Boolean(current || next || again), "page");
   const change = useAccountAction(
     () => api.changePassword(current, next),
     tr("密码已修改，其他设备已退出登录")
@@ -187,7 +189,7 @@ function UsernameSection({ username }: { username: string }) {
           change.mutate(undefined, { onSuccess: () => setCurrent("") });
         }}
       >
-        <Field label={tr("用户名")} htmlFor="account-username" className="max-w-sm">
+        <Field label={tr("用户名")} htmlFor="account-username" width="short">
           <input
             id="account-username"
             className="field"
@@ -487,7 +489,7 @@ function PathSection({ status }: { status: AdminAccountStatus }) {
           <Field
             label={tr("新地址")}
             htmlFor="admin-new-path"
-            className="max-w-sm"
+            width="short"
             hint={tr("只能使用字母、数字、- 和 _，例如 /studio-7f3a。不能与网站已有的页面相同。")}
           >
             <input
@@ -532,7 +534,7 @@ export function AccountSecurityPage() {
       ) : q.data ? (
         <div className="space-y-5">
           <SettingsSection title={tr("当前状态")}>
-            <dl className="grid gap-x-6 gap-y-2 text-[13px] sm:grid-cols-2">
+            <dl className="settings-grid settings-grid-equal !gap-x-6 !gap-y-2 text-[13px]">
               {(
                 [
                   [tr("登录账号"), q.data.username],

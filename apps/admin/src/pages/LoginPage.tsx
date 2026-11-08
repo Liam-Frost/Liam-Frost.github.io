@@ -5,10 +5,18 @@ import { usePresentation } from "../../../web/src/data/usePresentation";
 import { Field } from "../components/ui/Field";
 import { useLogin } from "../hooks/useSession";
 import { ApiError } from "../lib/api";
-import { LanguageSwitch } from "../components/ui/LanguageSwitch";
 import { tr } from "../lib/messages";
 
 export function LoginPage() {
+  return (
+    <CenteredCard>
+      <LoginForm />
+    </CenteredCard>
+  );
+}
+
+/** With `preview`, the form is only drawn: nothing in it can be used or filled in. */
+export function LoginForm({ preview = false }: { preview?: boolean }) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [needsCode, setNeedsCode] = useState(false);
@@ -47,8 +55,8 @@ export function LoginPage() {
       : login.error?.message;
 
   return (
-    <CenteredCard>
-      <form onSubmit={submit} noValidate>
+    <form onSubmit={submit} noValidate>
+      <fieldset disabled={preview} className="min-w-0">
         <div className="mb-5 flex items-center gap-2.5">
           <span className="inline-flex size-9 items-center justify-center rounded-full bg-brand-secondary/12 text-brand">
             <Lock aria-hidden="true" className="size-4" />
@@ -61,9 +69,9 @@ export function LoginPage() {
 
         <Field label={tr("用户名")} htmlFor="admin-username" className="mb-3.5">
           <input
-            id="admin-username"
+            id={preview ? undefined : "admin-username"}
             className="field"
-            autoComplete="username"
+            autoComplete={preview ? "off" : "username"}
             required
             value={username}
             onChange={(e) => setUsername(e.target.value)}
@@ -71,10 +79,10 @@ export function LoginPage() {
         </Field>
         <Field label={tr("密码")} htmlFor="admin-password">
           <input
-            id="admin-password"
-            type="password"
+            id={preview ? undefined : "admin-password"}
+            type={preview ? "text" : "password"}
             className="field"
-            autoComplete="current-password"
+            autoComplete={preview ? "off" : "current-password"}
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
@@ -118,10 +126,6 @@ export function LoginPage() {
           </div>
         ) : null}
 
-        <div className="mt-3 flex justify-end text-muted">
-          <LanguageSwitch />
-        </div>
-
         {error ? (
           <p id="login-error" role="alert" className="mt-3 text-[12.5px] text-status-error">
             {error}
@@ -135,8 +139,8 @@ export function LoginPage() {
         >
           {login.isPending ? tr("登录中…") : tr("登录")}
         </button>
-      </form>
-    </CenteredCard>
+      </fieldset>
+    </form>
   );
 }
 
@@ -163,7 +167,8 @@ export function CenteredCard({ children }: { children: React.ReactNode }) {
   const [index, setIndex] = useState(0);
   const [failed, setFailed] = useState<string[]>([]);
   const validImages = images.filter((src) => !failed.includes(src));
-  const image = validImages[index % Math.max(1, validImages.length)];
+  const image =
+    background?.mode !== "none" ? validImages[index % Math.max(1, validImages.length)] : undefined;
   useEffect(() => {
     const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
     let timer: ReturnType<typeof setInterval> | undefined;
@@ -184,15 +189,37 @@ export function CenteredCard({ children }: { children: React.ReactNode }) {
     };
   }, [background?.mode, background?.intervalSeconds, images.length]);
   return (
-    <div className="relative isolate flex min-h-dvh items-center justify-center overflow-hidden px-4 py-10">
-      {background?.mode !== "none" && image ? (
+    <LoginStage image={image} onImageError={() => setFailed((v) => [...v, image!])}>
+      {children}
+    </LoginStage>
+  );
+}
+
+/** What the login page looks like: also drawn, scaled down, as the preview in 登录外观. */
+export function LoginStage({
+  image,
+  fill = false,
+  onImageError,
+  children
+}: {
+  image?: string;
+  /** Fills its parent instead of the window. */
+  fill?: boolean;
+  onImageError?: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <div
+      className={`relative isolate flex items-center justify-center overflow-hidden px-4 py-10 ${fill ? "h-full" : "min-h-dvh"}`}
+    >
+      {image ? (
         <>
           <img
             key={image}
             src={image}
             alt=""
             className="absolute inset-0 -z-20 size-full object-cover"
-            onError={() => setFailed((v) => [...v, image])}
+            onError={onImageError}
           />
           <div className="absolute inset-0 -z-10 bg-black/40" />
         </>
