@@ -84,6 +84,21 @@ describe("uploaded logos and site icon", () => {
     expect((await app.inject(pub.faviconUrl)).statusCode).toBe(404);
   });
 
+  it("applies a JPEG's EXIF orientation", async () => {
+    const { app, upload } = await setup();
+    const sideways = await sharp({
+      create: { width: 200, height: 100, channels: 3, background: "#123" }
+    })
+      .withMetadata({ orientation: 6 })
+      .jpeg()
+      .toBuffer();
+    const url = (await upload("publicLogo", sideways, "a.jpg", "image/jpeg")).json().publicLogo;
+    expect(await sharp((await app.inject(url)).rawPayload).metadata()).toMatchObject({
+      width: 100,
+      height: 200
+    });
+  });
+
   it("accepts JPEG here, and refuses files that are not safe images", async () => {
     const { upload } = await setup();
     const jpeg = await sharp({ create: { width: 64, height: 64, channels: 3, background: "#123" } })
