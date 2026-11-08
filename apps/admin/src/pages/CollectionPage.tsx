@@ -52,6 +52,8 @@ import {
 } from "../lib/i18n";
 import { useRecentCounts } from "../components/analytics/RecentStats";
 import { Tooltip } from "../components/ui/Tooltip";
+import { tr } from "../lib/messages";
+import { Select } from "../components/ui/Select";
 
 const STATUSES = Object.keys(MEDIA_STATUS_LABELS) as MediaStatus[];
 
@@ -79,8 +81,8 @@ export function CollectionPage() {
     ] as const) {
       const result = params.get(param);
       if (!result) continue;
-      if (result === "connected") toast(`已连接 ${name}`);
-      else toast(`连接 ${name} 失败：${params.get("reason") ?? "未知原因"}`, "error");
+      if (result === "connected") toast(tr("已连接 {0}", name));
+      else toast(tr("连接 {0} 失败：{1}", name, params.get("reason") ?? tr("未知原因")), "error");
       open(result === "connected");
       const next = new URLSearchParams(params);
       next.delete(param);
@@ -107,12 +109,12 @@ export function CollectionPage() {
     setParams(value, { replace: true });
   };
 
-  if (isPending) return <LoadingSkeleton label="加载中…" variant="rows" />;
+  if (isPending) return <LoadingSkeleton label={tr("加载中…")} variant="rows" />;
   if (error) {
     return (
       <>
-        <PageHeader title="收藏" />
-        <DatabaseNotice error={error} subject="收藏管理" />
+        <PageHeader title={tr("收藏")} />
+        <DatabaseNotice error={error} subject={tr("收藏管理")} />
       </>
     );
   }
@@ -129,8 +131,10 @@ export function CollectionPage() {
     <>
       <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
         <PageHeader
-          title="收藏"
-          description="看过、在看和想看的电影、剧集、动漫，读过的书和漫画，以及喜欢的歌。搜索添加时会自动填好资料和海报。"
+          title={tr("收藏")}
+          description={tr(
+            "看过、在看和想看的电影、剧集、动漫，读过的书和漫画，以及喜欢的歌。搜索添加时会自动填好资料和海报。"
+          )}
         />
         <div className="flex flex-wrap gap-2">
           <button
@@ -139,7 +143,7 @@ export function CollectionPage() {
             onClick={() => setEditingSettings(true)}
             disabled={!settings}
           >
-            <Settings2 aria-hidden="true" className="size-4" /> 显示设置
+            <Settings2 aria-hidden="true" className="size-4" /> {tr("显示设置")}
           </button>
           <button
             type="button"
@@ -147,41 +151,41 @@ export function CollectionPage() {
             onClick={() => navigate("/collection/featured")}
             disabled={!items}
           >
-            <Star aria-hidden="true" className="size-4" /> 首页精选
+            <Star aria-hidden="true" className="size-4" /> {tr("首页精选")}
           </button>
           {kind === "game" ? (
             <button type="button" className="btn-secondary" onClick={() => setSteamOpen(true)}>
-              Steam 游戏库
+              {tr("Steam 游戏库")}
             </button>
           ) : null}
           {kind === "track" ? (
             <>
               <button type="button" className="btn-secondary" onClick={() => setSpotifyOpen(true)}>
-                Spotify 账号
+                {tr("Spotify 账号")}
               </button>
               <button type="button" className="btn-secondary" onClick={() => setImporting(true)}>
-                导入歌单链接
+                {tr("导入歌单链接")}
               </button>
             </>
           ) : null}
           <button type="button" className="btn-primary" onClick={() => setAdding(true)}>
             <Plus aria-hidden="true" className="size-4" />{" "}
-            {kind === "track" ? "添加歌曲" : `添加${KIND_LABELS[kind]}`}
+            {kind === "track" ? tr("添加歌曲") : tr("添加{0}", KIND_LABELS[kind])}
           </button>
         </div>
       </div>
 
       {settings && !settings.sources.tmdb && (kind === "movie" || kind === "tv") ? (
         <p className="mb-4 rounded-xl border border-status-warn/30 bg-status-warn/8 px-4 py-2.5 text-[12.5px] leading-relaxed text-status-warn">
-          未配置 TMDB：电影和剧集暂时只能手动添加。请到{" "}
+          {tr("未配置 TMDB：电影和剧集暂时只能手动添加。请到")}{" "}
           <Link to="/integrations" className="text-brand underline">
-            API 配置
+            {tr("API 配置")}
           </Link>{" "}
-          添加凭据，保存后即可搜索。
+          {tr("添加凭据，保存后即可搜索。")}
         </p>
       ) : null}
 
-      <div role="tablist" aria-label="类型" className="mb-3 flex flex-wrap gap-1.5">
+      <div role="tablist" aria-label={tr("类型")} className="mb-3 flex flex-wrap gap-1.5">
         {COLLECTION_KINDS.map((k) => (
           <button
             key={k}
@@ -201,25 +205,25 @@ export function CollectionPage() {
 
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <label htmlFor="collection-sort" className="text-xs text-brand-secondary">
-          排列顺序
+          {tr("排列顺序")}
         </label>
-        <select
+        <Select
           id="collection-sort"
-          className="field !w-auto"
           value={sort}
-          onChange={(e) => {
+          onChange={(value) => {
             const next = new URLSearchParams(params);
-            next.set("sort", e.target.value);
+            next.set("sort", value);
             setParams(next, { replace: true });
           }}
-        >
-          {Object.entries(COLLECTION_SORTS).map(([key, label]) => (
-            <option key={key} value={key}>
-              {label}
-            </option>
-          ))}
-        </select>
-        <span className="text-xs text-brand-secondary">不改变首页精选或歌单播放顺序</span>
+          className="w-auto"
+          options={[
+            ...Object.entries(COLLECTION_SORTS).map(([key, label]) => ({
+              value: key,
+              label: label
+            }))
+          ]}
+        />
+        <span className="text-xs text-brand-secondary">{tr("不改变首页精选或歌单播放顺序")}</span>
       </div>
       {kind === "track" ? (
         <MusicTab items={ofKind} sort={sort} />
@@ -295,7 +299,7 @@ function WatchList({
             onClick={() => onStatus(s)}
             className={`chip ${status === s ? "border-brand bg-brand/10 text-brand" : ""}`}
           >
-            {s ? statusLabels(kind)[s] : "全部"}{" "}
+            {s ? statusLabels(kind)[s] : tr("全部")}{" "}
             {s ? ofKind.filter((item) => item.status === s).length : ofKind.length}
           </button>
         ))}
@@ -305,11 +309,11 @@ function WatchList({
           onClick={() => onUnrated(!unrated)}
           className={`chip ${unrated ? "border-brand bg-brand/10 text-brand" : ""}`}
         >
-          未评分{" "}
-          {
+          {tr(
+            "未评分 {0}",
             ofKind.filter((item) => (!status || item.status === status) && item.rating === null)
               .length
-          }
+          )}
         </button>
         <div className="ml-auto flex w-full items-center gap-2 sm:w-auto">
           <div className="relative flex-1 sm:w-60">
@@ -319,15 +323,15 @@ function WatchList({
             />
             <input
               className="field pl-9"
-              placeholder="筛选标题"
-              aria-label="筛选标题"
+              placeholder={tr("筛选标题")}
+              aria-label={tr("筛选标题")}
               value={filter}
               onChange={(e) => setFilter(e.target.value)}
             />
           </div>
           {visible.length && !selection.active ? (
             <button type="button" className="btn-secondary shrink-0" onClick={selection.start}>
-              选择
+              {tr("选择")}
             </button>
           ) : null}
         </div>
@@ -336,8 +340,8 @@ function WatchList({
       {visible.length === 0 ? (
         <div className="card p-10 text-center text-[13.5px] text-muted">
           {ofKind.length
-            ? "没有符合条件的条目"
-            : `还没有${KIND_LABELS[kind]}，点击“添加${KIND_LABELS[kind]}”开始`}
+            ? tr("没有符合条件的条目")
+            : tr("还没有{0}，点击“添加{1}”开始", KIND_LABELS[kind], KIND_LABELS[kind])}
         </div>
       ) : (
         <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
@@ -357,7 +361,7 @@ function WatchList({
 }
 
 function MediaCard({ item, selection }: { item: AdminMediaItem; selection: Selection }) {
-  const title = pickText(item.title, "未命名");
+  const title = pickText(item.title, tr("未命名"));
   const selected = selection.isSelected(item.id);
   const { data: counts } = useRecentCounts("media");
   const views = counts?.[item.id]?.views;
@@ -388,12 +392,12 @@ function MediaCard({ item, selection }: { item: AdminMediaItem; selection: Selec
           ) : null}
           {item.visibility === "private" ? (
             <span className="chip inline-flex items-center gap-1 bg-surface/90">
-              <EyeOff aria-hidden="true" className="size-3" /> 隐藏
+              <EyeOff aria-hidden="true" className="size-3" /> {tr("隐藏")}
             </span>
           ) : null}
           {item.featured ? (
             <span className="chip inline-flex items-center gap-1 bg-surface/90">
-              <Star aria-hidden="true" className="size-3" /> 精选
+              <Star aria-hidden="true" className="size-3" /> {tr("精选")}
             </span>
           ) : null}
         </div>
@@ -408,8 +412,8 @@ function MediaCard({ item, selection }: { item: AdminMediaItem; selection: Selec
           <span>
             {item.year ?? "—"}
             {views ? (
-              <Tooltip content="近 30 天" describe={false}>
-                <span className="ml-1.5 text-faint">· {views} 次浏览</span>
+              <Tooltip content={tr("近 30 天")} describe={false}>
+                <span className="ml-1.5 text-faint">{tr("· {0} 次浏览", views)}</span>
               </Tooltip>
             ) : null}
           </span>
@@ -423,7 +427,7 @@ function MediaCard({ item, selection }: { item: AdminMediaItem; selection: Selec
     <button
       type="button"
       aria-pressed={selected}
-      aria-label={`选择 ${title}`}
+      aria-label={tr("选择 {0}", title)}
       className={className}
       onClick={(e) => selection.toggle(item.id, e.shiftKey)}
     >
@@ -467,7 +471,7 @@ function AddMediaDialog({
     try {
       setResults((await api.searchMedia(kind, source, query.trim())).results);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "搜索失败");
+      setError(e instanceof Error ? e.message : tr("搜索失败"));
     } finally {
       setSearching(false);
     }
@@ -480,7 +484,9 @@ function AddMediaDialog({
         onSuccess: ({ item }) => navigate(`/collection/${item.id}`),
         onError: (e) =>
           setError(
-            e instanceof ApiError && e.code === "MEDIA_EXISTS" ? "这个条目已在收藏中" : e.message
+            e instanceof ApiError && e.code === "MEDIA_EXISTS"
+              ? tr("这个条目已在收藏中")
+              : e.message
           )
       }
     );
@@ -498,29 +504,23 @@ function AddMediaDialog({
   };
 
   return (
-    <Dialog open title={`添加${KIND_LABELS[kind]}`} onClose={onClose}>
+    <Dialog open title={tr("添加{0}", KIND_LABELS[kind])} onClose={onClose}>
       <form onSubmit={search} className="flex flex-wrap items-end gap-2">
         {sources.length > 1 ? (
-          <Field label="资料来源" htmlFor="media-source">
-            <select
+          <Field label={tr("资料来源")} htmlFor="media-source">
+            <Select
               id="media-source"
-              className="field"
               value={source}
-              onChange={(e) => {
-                setSource(e.target.value as MediaSearchSource);
+              onChange={(value) => {
+                setSource(value as MediaSearchSource);
                 setResults(null);
               }}
-            >
-              {sources.map((s) => (
-                <option key={s} value={s}>
-                  {SOURCE_LABELS[s]}
-                </option>
-              ))}
-            </select>
+              options={[...sources.map((s) => ({ value: s, label: SOURCE_LABELS[s] }))]}
+            />
           </Field>
         ) : null}
         <Field
-          label={`在 ${SOURCE_LABELS[source]} 搜索`}
+          label={tr("在 {0} 搜索", SOURCE_LABELS[source])}
           htmlFor="media-query"
           className="min-w-0 flex-1"
         >
@@ -541,21 +541,22 @@ function AddMediaDialog({
           disabled={searching || !query.trim() || !sourceReady}
         >
           <Search aria-hidden="true" className="size-4" />
-          {searching ? "搜索中…" : "搜索"}
+          {searching ? tr("搜索中…") : tr("搜索")}
         </button>
       </form>
 
       {!sourceReady ? (
         <p className="mt-3 text-[12.5px] text-status-warn">
-          未配置{" "}
-          {source === "tmdb"
-            ? "TMDB_API_KEY"
-            : source === "igdb"
-              ? "TWITCH_CLIENT_ID / TWITCH_CLIENT_SECRET"
-              : "GOOGLE_BOOKS_API_KEY"}
-          ，暂时只能手动添加。
+          {tr(
+            "未配置 {0}，暂时只能手动添加。",
+            source === "tmdb"
+              ? "TMDB_API_KEY"
+              : source === "igdb"
+                ? "TWITCH_CLIENT_ID / TWITCH_CLIENT_SECRET"
+                : "GOOGLE_BOOKS_API_KEY"
+          )}
           <Link to="/integrations" className="text-brand underline">
-            前往 API 配置
+            {tr("前往 API 配置")}
           </Link>
         </p>
       ) : null}
@@ -591,7 +592,7 @@ function AddMediaDialog({
                     ) : null}
                     {kind === "anime" && result.source === "tmdb" ? (
                       <span className="chip ml-1.5">
-                        {result.mediaType === "movie" ? "剧场版" : "TV"}
+                        {result.mediaType === "movie" ? tr("剧场版") : "TV"}
                       </span>
                     ) : null}
                   </p>
@@ -609,7 +610,7 @@ function AddMediaDialog({
                 </div>
                 {result.existingId ? (
                   <Link to={`/collection/${result.existingId}`} className="btn-secondary shrink-0">
-                    已添加，打开
+                    {tr("已添加，打开")}
                   </Link>
                 ) : (
                   <button
@@ -619,8 +620,8 @@ function AddMediaDialog({
                     onClick={() => add(result)}
                   >
                     {importMedia.isPending && importMedia.variables?.sourceId === result.sourceId
-                      ? "添加中…"
-                      : "添加"}
+                      ? tr("添加中…")
+                      : tr("添加")}
                   </button>
                 )}
               </li>
@@ -628,7 +629,7 @@ function AddMediaDialog({
           </ul>
         ) : (
           <p className="mt-4 text-[13px] text-muted">
-            没有找到，换个关键词试试，或者在下面手动添加。
+            {tr("没有找到，换个关键词试试，或者在下面手动添加。")}
           </p>
         )
       ) : null}
@@ -638,9 +639,9 @@ function AddMediaDialog({
         className="mt-5 flex flex-wrap items-end gap-2 border-t border-line-soft pt-4"
       >
         <Field
-          label="搜不到？手动添加"
+          label={tr("搜不到？手动添加")}
           htmlFor="media-manual-title"
-          hint="之后在编辑页补充资料和海报"
+          hint={tr("之后在编辑页补充资料和海报")}
           className="min-w-0 flex-1"
         >
           <input
@@ -648,7 +649,7 @@ function AddMediaDialog({
             className="field"
             value={manualTitle}
             maxLength={200}
-            placeholder="标题（简体中文）"
+            placeholder={tr("标题（简体中文）")}
             onChange={(e) => setManualTitle(e.target.value)}
           />
         </Field>
@@ -657,7 +658,7 @@ function AddMediaDialog({
           className="btn-secondary"
           disabled={!manualTitle.trim() || createMedia.isPending}
         >
-          {createMedia.isPending ? "创建中…" : "手动添加"}
+          {createMedia.isPending ? tr("创建中…") : tr("手动添加")}
         </button>
       </form>
     </Dialog>
@@ -666,12 +667,12 @@ function AddMediaDialog({
 
 /** What each source finds best. */
 const SEARCH_HINTS: Record<MediaSearchSource, string> = {
-  tmdb: "片名，中文、英文或原名都可以",
-  bangumi: "中文名或日文原名",
-  openlibrary: "书名或作者，英文和原文书名最容易找到",
-  googlebooks: "书名、作者或 ISBN，中文书也很全",
-  anilist: "日文原名、罗马音或英文名",
-  igdb: "游戏英文名最容易找到"
+  tmdb: tr("片名，中文、英文或原名都可以"),
+  bangumi: tr("中文名或日文原名"),
+  openlibrary: tr("书名或作者，英文和原文书名最容易找到"),
+  googlebooks: tr("书名、作者或 ISBN，中文书也很全"),
+  anilist: tr("日文原名、罗马音或英文名"),
+  igdb: tr("游戏英文名最容易找到")
 };
 
 function SettingsDialog({
@@ -689,8 +690,8 @@ function SettingsDialog({
   const toast = useToast();
   const kinds = [
     ...WATCH_KINDS.map((k) => [k, KIND_LABELS[k]] as const),
-    ["music", "音乐"] as const,
-    ["people", "人物"] as const
+    ["music", tr("音乐")] as const,
+    ["people", tr("人物")] as const
   ];
 
   const save = () => {
@@ -703,12 +704,12 @@ function SettingsDialog({
       wall.targetRowHeight < 100 ||
       wall.targetRowHeight > 360
     ) {
-      toast("展示行数须为 1–8 的整数；目标行高须为 100–360px 的整数。", "error");
+      toast(tr("展示行数须为 1–8 的整数；目标行高须为 100–360px 的整数。"), "error");
       return;
     }
     update.mutate(draft, {
       onSuccess: () => {
-        toast("已保存");
+        toast(tr("已保存"));
         onClose();
       },
       onError: (e) => toast(e.message, "error")
@@ -719,22 +720,22 @@ function SettingsDialog({
     <Dialog
       open
       size="sm"
-      title="显示设置"
+      title={tr("显示设置")}
       onClose={onClose}
       footer={
         <>
           <button type="button" className="btn-secondary" onClick={onClose}>
-            取消
+            {tr("取消")}
           </button>
           <button type="button" className="btn-primary" onClick={save} disabled={update.isPending}>
-            {update.isPending ? "保存中…" : "保存"}
+            {update.isPending ? tr("保存中…") : tr("保存")}
           </button>
         </>
       }
     >
       <div className="space-y-4">
         <div>
-          <p className="mb-2 text-[12.5px] font-medium text-brand-dark">在网站上显示</p>
+          <p className="mb-2 text-[12.5px] font-medium text-brand-dark">{tr("在网站上显示")}</p>
           {/* As many columns as fit (4 in the dialog, 3 on a narrow phone): two short rows, not one long one. */}
           <div className="grid grid-cols-[repeat(auto-fill,minmax(5rem,1fr))] gap-x-3 gap-y-3">
             {kinds.map(([key, label]) => (
@@ -753,27 +754,37 @@ function SettingsDialog({
             id="show-want"
             checked={draft.showWant}
             onChange={(on) => setDraft((d) => ({ ...d, showWant: on }))}
-            label="显示“想看”的条目"
+            label={tr("显示“想看”的条目")}
           />
           <p className="mt-1.5 text-[11.5px] leading-relaxed text-faint">
-            关闭后，所有“想看”条目都不在网站上显示；打开时，每个条目再按自己的“公开”设置决定。
+            {tr(
+              "关闭后，所有“想看”条目都不在网站上显示；打开时，每个条目再按自己的“公开”设置决定。"
+            )}
           </p>
         </div>
         <fieldset className="border-t border-line-soft pt-4">
           {/* Floated so the legend sits below the divider instead of on it. */}
           <legend className="float-left mb-2 w-full text-[12.5px] font-medium text-brand-dark">
-            首页精选
+            {tr("首页精选")}
           </legend>
           <div className="clear-both space-y-2">
             {(
               [
-                ["fixed", "固定", "严格按“首页精选”里的顺序分行，不自动混排或打乱。"],
-                ["daily", "每天", "每天换一批开头并混排音乐与其他收藏，同一天所有访客看到的一样。"],
-                ["visit", "每次访问", "每次打开首页换一批开头，不会连续两次相同；同样混排。"],
+                ["fixed", tr("固定"), tr("严格按“首页精选”里的顺序分行，不自动混排或打乱。")],
+                [
+                  "daily",
+                  tr("每天"),
+                  tr("每天换一批开头并混排音乐与其他收藏，同一天所有访客看到的一样。")
+                ],
+                [
+                  "visit",
+                  tr("每次访问"),
+                  tr("每次打开首页换一批开头，不会连续两次相同；同样混排。")
+                ],
                 [
                   "session",
-                  "每个浏览会话",
-                  "同一个标签页里保持不变，下次打开网站换一批；同样混排。"
+                  tr("每个浏览会话"),
+                  tr("同一个标签页里保持不变，下次打开网站换一批；同样混排。")
                 ]
               ] as const
             ).map(([value, label, hint]) => (
@@ -798,11 +809,11 @@ function SettingsDialog({
           </div>
         </fieldset>
         <div className="space-y-3.5 border-t border-line-soft pt-4">
-          <p className="text-[12.5px] font-medium text-brand-dark">精选拼布墙</p>
+          <p className="text-[12.5px] font-medium text-brand-dark">{tr("精选拼布墙")}</p>
           <Field
-            label="展示行数 · Visible Rows"
+            label={tr("展示行数 · Visible Rows")}
             htmlFor="featured-wall-rows"
-            hint="控制精选海报墙最多展示的行数。实际展示数量随页面宽度和图片比例自动调整。"
+            hint={tr("控制精选海报墙最多展示的行数。实际展示数量随页面宽度和图片比例自动调整。")}
           >
             <input
               id="featured-wall-rows"
@@ -821,9 +832,11 @@ function SettingsDialog({
             />
           </Field>
           <Field
-            label="目标行高 · Target Row Height（px）"
+            label={tr("目标行高 · Target Row Height（px）")}
             htmlFor="featured-wall-height"
-            hint="用于计算每行图片的理想高度。实际行高可能略有调整，以保证所有图片完整展示且无缝拼接。"
+            hint={tr(
+              "用于计算每行图片的理想高度。实际行高可能略有调整，以保证所有图片完整展示且无缝拼接。"
+            )}
           >
             <input
               id="featured-wall-height"
@@ -847,7 +860,7 @@ function SettingsDialog({
             target="_blank"
             rel="noreferrer"
           >
-            打开主页收藏近况 ↗
+            {tr("打开主页收藏近况 ↗")}
           </a>
         </div>
       </div>

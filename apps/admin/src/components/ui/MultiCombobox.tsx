@@ -1,5 +1,6 @@
 import { Check, X } from "lucide-react";
 import { useId, useMemo, useRef, useState, type ReactNode } from "react";
+import { tr } from "../../lib/messages";
 
 export type MultiOption = {
   id: string;
@@ -30,7 +31,7 @@ export function MultiCombobox({
   onChange,
   placeholder,
   listLabel,
-  emptyText = "没有匹配的选项",
+  emptyText = tr("没有匹配的选项"),
   max
 }: {
   id: string;
@@ -75,10 +76,10 @@ export function MultiCombobox({
   return (
     <div>
       {value.length ? (
-        <ul className="mb-2 flex flex-wrap gap-1.5" aria-label="已选择">
+        <ul className="mb-2 flex flex-wrap gap-1.5" aria-label={tr("已选择")}>
           {value.map((v) => {
             const option = byId.get(v);
-            const label = option?.label ?? "（已删除）";
+            const label = option?.label ?? tr("（已删除）");
             return (
               <li
                 key={v}
@@ -89,7 +90,7 @@ export function MultiCombobox({
                 <span className="min-w-0 truncate">{label}</span>
                 <button
                   type="button"
-                  aria-label={`移除 ${label}`}
+                  aria-label={tr("移除 {0}", label)}
                   onClick={() => remove(v)}
                   className="rounded-full p-0.5 hover:bg-brand-secondary/15 hover:text-status-error focus-visible:outline-2 focus-visible:outline-brand-secondary"
                 >
@@ -112,7 +113,7 @@ export function MultiCombobox({
           aria-activedescendant={open && shown.length ? optionId(active) : undefined}
           autoComplete="off"
           value={query}
-          placeholder={full ? `最多 ${max} 项` : placeholder}
+          placeholder={full ? tr("最多 {0} 项", max) : placeholder}
           onChange={(event) => {
             setQuery(event.target.value);
             setActive(0);
@@ -153,7 +154,7 @@ export function MultiCombobox({
             role="listbox"
             aria-multiselectable="true"
             aria-label={listLabel}
-            className="absolute top-full right-0 left-0 z-40 mt-1 max-h-72 overflow-y-auto rounded-xl border border-line bg-surface py-1 shadow-card-hover"
+            className="surface-overlay absolute top-full right-0 left-0 z-40 mt-1 max-h-72 overflow-y-auto py-1"
           >
             {shown.map((option, index) => {
               const selected = chosen.has(option.id);
@@ -193,7 +194,7 @@ export function MultiCombobox({
             ) : null}
             {matches.length > shown.length ? (
               <li className="px-3 py-2 text-[12px] text-faint">
-                还有 {matches.length - shown.length} 项，输入名称缩小范围
+                {tr("还有 {0} 项，输入名称缩小范围", matches.length - shown.length)}
               </li>
             ) : null}
           </ul>

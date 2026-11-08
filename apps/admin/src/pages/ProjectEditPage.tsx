@@ -9,7 +9,7 @@ import type {
   ProjectStatus
 } from "@liam-frost/shared";
 import { ArrowLeft, ExternalLink, ImagePlus, Trash2, X } from "lucide-react";
-import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent, useId } from "react";
 import { Link, useParams } from "react-router";
 
 import { technologyOptions } from "../components/stack/linkOptions";
@@ -21,8 +21,12 @@ import { useToast } from "../components/ui/Toast";
 import { useProject, useProjectImages, useUpdateProject } from "../hooks/useProjects";
 import { useStack } from "../hooks/useStack";
 import { ApiError } from "../lib/api";
-import { LANG_LABELS, LANGS, pickText, STATUS_LABELS, type Lang } from "../lib/i18n";
+import { pickText, STATUS_LABELS, type Lang } from "../lib/i18n";
 import { RecentStats } from "../components/analytics/RecentStats";
+import { tr } from "../lib/messages";
+import { Select } from "../components/ui/Select";
+import { LanguageTabPanel, LanguageTabs } from "../components/ui/LanguageTabs";
+import { useUnsaved } from "../lib/unsaved";
 
 const ACCEPT = "image/jpeg,image/png,image/webp,image/avif,image/tiff";
 
@@ -76,17 +80,17 @@ export function ProjectEditPage() {
   const { id = "" } = useParams();
   const { data: project, isPending, error } = useProject(id);
 
-  if (isPending) return <LoadingSkeleton label="加载中…" variant="form" />;
+  if (isPending) return <LoadingSkeleton label={tr("加载中…")} variant="form" />;
   if (error || !project) {
     return (
       <div className="card p-6 text-[13.5px]">
         <p role="alert" className="mb-3 text-status-error">
           {error instanceof ApiError && error.status === 404
-            ? "项目不存在"
-            : (error?.message ?? "无法加载项目")}
+            ? tr("项目不存在")
+            : (error?.message ?? tr("无法加载项目"))}
         </p>
         <Link to="/projects" className="btn-secondary">
-          返回项目列表
+          {tr("返回项目列表")}
         </Link>
       </div>
     );
@@ -111,18 +115,14 @@ function ProjectEditor({ project }: { project: AdminProject }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- only when the project data changes
   }, [project]);
   const [lang, setLang] = useState<Lang>("zh");
+  const languageTabs = useId();
   const [error, setError] = useState("");
   const [techInput, setTechInput] = useState("");
   const update = useUpdateProject(project.id);
   const toast = useToast();
 
   // Closing or reloading the tab with unsaved texts asks for confirmation.
-  useEffect(() => {
-    if (!dirty) return;
-    const onBeforeUnload = (event: BeforeUnloadEvent) => event.preventDefault();
-    window.addEventListener("beforeunload", onBeforeUnload);
-    return () => window.removeEventListener("beforeunload", onBeforeUnload);
-  }, [dirty]);
+  useUnsaved(dirty, "page");
 
   const set = <K extends keyof Draft>(key: K, value: Draft[K]) =>
     setDraft((d) => ({ ...d, [key]: value }));
@@ -147,7 +147,7 @@ function ProjectEditor({ project }: { project: AdminProject }) {
     // A name the stack has becomes a link instead of a plain name.
     const inStack = stackByKey.get(techKey(value));
     if (inStack === null) {
-      setError(`技术栈里有多个“${value}”，请在上面的技术栈列表里选择`);
+      setError(tr("技术栈里有多个“{0}”，请在上面的技术栈列表里选择", value));
       return;
     }
     if (inStack) {
@@ -175,11 +175,11 @@ function ProjectEditor({ project }: { project: AdminProject }) {
   const submit = (event: FormEvent) => {
     event.preventDefault();
     if (!Object.values(draft.title).some((t) => t?.trim())) {
-      setError("请至少用一种语言填写标题");
+      setError(tr("请至少用一种语言填写标题"));
       return;
     }
     if (draft.startedAt && draft.endedAt && draft.endedAt < draft.startedAt) {
-      setError("结束月份不能早于开始月份");
+      setError(tr("结束月份不能早于开始月份"));
       return;
     }
     setError("");
@@ -199,16 +199,16 @@ function ProjectEditor({ project }: { project: AdminProject }) {
         const normalized = toDraft(next);
         setDraft(normalized);
         setSaved(normalized);
-        toast("已保存");
+        toast(tr("已保存"));
       },
       onError: (e) =>
         setError(
           e instanceof ApiError && e.code === "SLUG_TAKEN"
-            ? "这个网址名已被其它项目使用"
+            ? tr("这个网址名已被其它项目使用")
             : e instanceof ApiError && e.code === "UNKNOWN_TECHNOLOGY"
-              ? "有关联的技术已从技术栈删除，请刷新后重试"
+              ? tr("有关联的技术已从技术栈删除，请刷新后重试")
               : e instanceof ApiError && e.code === "TOO_MANY_PROJECTS"
-                ? `有技术关联的项目已达上限：${e.message}`
+                ? tr("有技术关联的项目已达上限：{0}", e.message)
                 : e.message
         )
     });
@@ -222,10 +222,7 @@ function ProjectEditor({ project }: { project: AdminProject }) {
         <Link
           to="/projects"
           className="rounded-full p-1.5 text-subtle hover:bg-brand-secondary/12 hover:text-brand"
-          aria-label="返回项目列表"
-          onClick={(e) => {
-            if (dirty && !window.confirm("有未保存的修改，确定离开吗？")) e.preventDefault();
-          }}
+          aria-label={tr("返回项目列表")}
         >
           <ArrowLeft aria-hidden="true" className="size-5" />
         </Link>
@@ -240,16 +237,16 @@ function ProjectEditor({ project }: { project: AdminProject }) {
             rel="noreferrer"
             className="btn-secondary"
           >
-            <ExternalLink aria-hidden="true" className="size-4" /> 查看页面
+            <ExternalLink aria-hidden="true" className="size-4" /> {tr("查看页面")}
           </a>
         ) : null}
         {dirty ? (
           <span className="text-[12.5px] text-status-warn" role="status">
-            有未保存的修改
+            {tr("有未保存的修改")}
           </span>
         ) : null}
         <button type="submit" className="btn-primary" disabled={update.isPending}>
-          {update.isPending ? "保存中…" : "保存"}
+          {update.isPending ? tr("保存中…") : tr("保存")}
         </button>
       </div>
 
@@ -263,32 +260,21 @@ function ProjectEditor({ project }: { project: AdminProject }) {
       ) : null}
 
       <div className="grid gap-5 lg:grid-cols-[1fr_320px]">
-        <section className="card min-w-0 p-5" aria-label="内容">
-          <div role="tablist" aria-label="语言" className="mb-3 flex flex-wrap gap-1.5">
-            {LANGS.map((l) => (
-              <button
-                key={l}
-                type="button"
-                role="tab"
-                aria-selected={lang === l}
-                onClick={() => setLang(l)}
-                className={`rounded-full px-3 py-1.5 text-[12.5px] transition-colors ${
-                  lang === l
-                    ? "bg-brand text-white"
-                    : "bg-brand-secondary/10 text-brand hover:bg-brand-secondary/18"
-                }`}
-              >
-                {LANG_LABELS[l]}
-                {draft.title[l]?.trim() ? "" : " ·"}
-              </button>
-            ))}
-          </div>
+        <section className="card min-w-0 p-5" aria-label={tr("内容")}>
+          <LanguageTabs
+            id={languageTabs}
+            value={lang}
+            onChange={setLang}
+            isFilled={(l) => Boolean(draft.title[l]?.trim())}
+            mark="missing"
+            className="mb-3"
+          />
           <p className="mb-4 text-[11.5px] text-faint">
-            没填写的语言会在网站上回退到其它语言。标签页名后带 · 表示该语言还没有标题。
+            {tr("没填写的语言会在网站上回退到其它语言。标签页名后带 · 表示该语言还没有标题。")}
           </p>
 
-          <div className="space-y-3.5">
-            <Field label="标题" htmlFor="project-title">
+          <LanguageTabPanel id={languageTabs} lang={lang} className="space-y-3.5">
+            <Field label={tr("标题")} htmlFor="project-title">
               <input
                 id="project-title"
                 className="field"
@@ -297,7 +283,11 @@ function ProjectEditor({ project }: { project: AdminProject }) {
                 onChange={(e) => setText("title", e.target.value)}
               />
             </Field>
-            <Field label="一句话简介" htmlFor="project-summary" hint="显示在首页和项目列表的卡片上">
+            <Field
+              label={tr("一句话简介")}
+              htmlFor="project-summary"
+              hint={tr("显示在首页和项目列表的卡片上")}
+            >
               <input
                 id="project-summary"
                 className="field"
@@ -307,9 +297,9 @@ function ProjectEditor({ project }: { project: AdminProject }) {
               />
             </Field>
             <Field
-              label="正文"
+              label={tr("正文")}
               htmlFor="project-body"
-              hint="支持 Markdown：## 小标题、**加粗**、- 列表、[链接](https://…)、```代码```"
+              hint={tr("支持 Markdown：## 小标题、**加粗**、- 列表、[链接](https://…)、```代码```")}
             >
               <textarea
                 id="project-body"
@@ -320,26 +310,30 @@ function ProjectEditor({ project }: { project: AdminProject }) {
                 onChange={(e) => setText("body", e.target.value)}
               />
             </Field>
-          </div>
+          </LanguageTabPanel>
         </section>
 
         <div className="space-y-5">
-          <Panel title="发布">
+          <Panel title={tr("发布")}>
             <div className="flex flex-col items-start gap-2.5">
               <Switch
                 id="project-public"
                 checked={draft.visibility === "public"}
                 onChange={(on) => set("visibility", on ? "public" : "private")}
-                label="公开显示"
+                label={tr("公开显示")}
               />
               <Switch
                 id="project-featured"
                 checked={draft.featured}
                 onChange={(on) => set("featured", on)}
-                label="首页精选"
+                label={tr("首页精选")}
               />
             </div>
-            <Field label="网址名" htmlFor="project-slug" hint={`/projects/${draft.slug || "…"}`}>
+            <Field
+              label={tr("网址名")}
+              htmlFor="project-slug"
+              hint={`/projects/${draft.slug || "…"}`}
+            >
               <input
                 id="project-slug"
                 className="field"
@@ -350,23 +344,22 @@ function ProjectEditor({ project }: { project: AdminProject }) {
             </Field>
           </Panel>
 
-          <Panel title="信息">
-            <Field label="状态" htmlFor="project-status">
-              <select
+          <Panel title={tr("信息")}>
+            <Field label={tr("状态")} htmlFor="project-status">
+              <Select
                 id="project-status"
-                className="field"
                 value={draft.status}
-                onChange={(e) => set("status", e.target.value as ProjectStatus)}
-              >
-                {(Object.keys(STATUS_LABELS) as ProjectStatus[]).map((status) => (
-                  <option key={status} value={status}>
-                    {STATUS_LABELS[status]}
-                  </option>
-                ))}
-              </select>
+                onChange={(value) => set("status", value as ProjectStatus)}
+                options={[
+                  ...(Object.keys(STATUS_LABELS) as ProjectStatus[]).map((status) => ({
+                    value: status,
+                    label: STATUS_LABELS[status]
+                  }))
+                ]}
+              />
             </Field>
             <div className="grid grid-cols-2 gap-3">
-              <Field label="开始" htmlFor="project-start">
+              <Field label={tr("开始")} htmlFor="project-start">
                 <input
                   id="project-start"
                   type="month"
@@ -375,7 +368,7 @@ function ProjectEditor({ project }: { project: AdminProject }) {
                   onChange={(e) => set("startedAt", e.target.value)}
                 />
               </Field>
-              <Field label="结束" htmlFor="project-end" hint="进行中可留空">
+              <Field label={tr("结束")} htmlFor="project-end" hint={tr("进行中可留空")}>
                 <input
                   id="project-end"
                   type="month"
@@ -386,13 +379,13 @@ function ProjectEditor({ project }: { project: AdminProject }) {
               </Field>
             </div>
             <Field
-              label="技术栈"
+              label={tr("技术栈")}
               htmlFor="project-technologies"
-              hint="从首页技术栈中选择；技术栈管理页会同步显示这个项目"
+              hint={tr("从首页技术栈中选择；技术栈管理页会同步显示这个项目")}
             >
               {stack.isError ? (
                 <p role="alert" className="text-[12.5px] text-status-error">
-                  无法加载技术栈
+                  {tr("无法加载技术栈")}
                 </p>
               ) : (
                 <MultiCombobox
@@ -400,17 +393,19 @@ function ProjectEditor({ project }: { project: AdminProject }) {
                   options={technologyChoices}
                   value={draft.technologyIds}
                   onChange={(ids) => set("technologyIds", ids)}
-                  placeholder={stack.isPending ? "加载技术栈中…" : "搜索技术名称"}
-                  listLabel="技术栈中的技术"
-                  emptyText={technologyChoices.length ? "技术栈里没有这项技术" : "技术栈还是空的"}
+                  placeholder={stack.isPending ? tr("加载技术栈中…") : tr("搜索技术名称")}
+                  listLabel={tr("技术栈中的技术")}
+                  emptyText={
+                    technologyChoices.length ? tr("技术栈里没有这项技术") : tr("技术栈还是空的")
+                  }
                   max={40}
                 />
               )}
             </Field>
             <Field
-              label="其他技术（不在技术栈中）"
+              label={tr("其他技术（不在技术栈中）")}
               htmlFor="project-tech"
-              hint="只作为项目的标签显示，回车添加；输入技术栈里已有的名称会自动改为关联"
+              hint={tr("只作为项目的标签显示，回车添加；输入技术栈里已有的名称会自动改为关联")}
             >
               <div className="mb-2 flex flex-wrap gap-1.5">
                 {draft.otherTechnologies.map((tech) => {
@@ -423,14 +418,14 @@ function ProjectEditor({ project }: { project: AdminProject }) {
                           type="button"
                           onClick={() => linkOther(tech, match.id)}
                           className="rounded-full px-1 text-[11px] text-brand underline-offset-2 hover:underline"
-                          title={`改为关联技术栈中的 ${match.name}`}
+                          title={tr("改为关联技术栈中的 {0}", match.name)}
                         >
-                          关联
+                          {tr("关联")}
                         </button>
                       ) : null}
                       <button
                         type="button"
-                        aria-label={`删除 ${tech}`}
+                        aria-label={tr("删除 {0}", tech)}
                         onClick={() =>
                           set(
                             "otherTechnologies",
@@ -450,7 +445,7 @@ function ProjectEditor({ project }: { project: AdminProject }) {
                 className="field"
                 value={techInput}
                 maxLength={30}
-                placeholder="例如 Fastify"
+                placeholder={tr("例如 Fastify")}
                 onChange={(e) => setTechInput(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
@@ -463,12 +458,12 @@ function ProjectEditor({ project }: { project: AdminProject }) {
             </Field>
           </Panel>
 
-          <Panel title="链接">
+          <Panel title={tr("链接")}>
             {(
               [
-                ["repo", "代码仓库"],
-                ["demo", "在线演示"],
-                ["docs", "文档"]
+                ["repo", tr("代码仓库")],
+                ["demo", tr("在线演示")],
+                ["docs", tr("文档")]
               ] as const
             ).map(([key, label]) => (
               <Field key={key} label={label} htmlFor={`project-link-${key}`}>
@@ -506,7 +501,7 @@ function ImagesPanel({ project }: { project: AdminProject }) {
       try {
         await upload.mutateAsync({ slot, file });
       } catch (e) {
-        toast(`${file.name}：${e instanceof Error ? e.message : "上传失败"}`, "error");
+        toast(`${file.name}：${e instanceof Error ? e.message : tr("上传失败")}`, "error");
       }
     }
     setPending(null);
@@ -542,9 +537,9 @@ function ImagesPanel({ project }: { project: AdminProject }) {
   );
 
   return (
-    <Panel title="图片">
+    <Panel title={tr("图片")}>
       <div>
-        <p className="mb-1.5 text-[12.5px] font-medium text-brand-dark">封面</p>
+        <p className="mb-1.5 text-[12.5px] font-medium text-brand-dark">{tr("封面")}</p>
         {project.cover ? (
           <div className="relative">
             <img
@@ -554,7 +549,7 @@ function ImagesPanel({ project }: { project: AdminProject }) {
               style={{ aspectRatio: "2 / 1" }}
             />
             <div className="absolute top-2 right-2 rounded-full bg-white/90">
-              <IconButton label="删除封面" onClick={() => removeImage(project.cover!)} danger>
+              <IconButton label={tr("删除封面")} onClick={() => removeImage(project.cover!)} danger>
                 <Trash2 aria-hidden="true" className="size-4" />
               </IconButton>
             </div>
@@ -567,18 +562,18 @@ function ImagesPanel({ project }: { project: AdminProject }) {
           onClick={() => coverInput.current?.click()}
         >
           <ImagePlus aria-hidden="true" className="size-4" />
-          {pending === "cover" ? "上传中…" : project.cover ? "更换封面" : "上传封面"}
+          {pending === "cover" ? tr("上传中…") : project.cover ? tr("更换封面") : tr("上传封面")}
         </button>
         {fileInput(coverInput, "cover", false)}
         {/* The site's cards frame covers at 2:1 (apps/web .projectCover). */}
         <p className="mt-1.5 text-[12px] text-faint">
-          建议 2:1，例如 1280×640（GitHub Social preview 的尺寸），在网站卡片上完整显示。
+          {tr("建议 2:1，例如 1280×640（GitHub Social preview 的尺寸），在网站卡片上完整显示。")}
         </p>
       </div>
 
       <div>
         <p className="mb-1.5 text-[12.5px] font-medium text-brand-dark">
-          截图 {project.gallery.length ? `（${project.gallery.length}）` : ""}
+          {tr("截图 {0}", project.gallery.length ? `（${project.gallery.length}）` : "")}
         </p>
         {project.gallery.length ? (
           <ul className="grid grid-cols-2 gap-2">
@@ -591,14 +586,14 @@ function ImagesPanel({ project }: { project: AdminProject }) {
                 />
                 <div className="flex items-center justify-end">
                   <IconButton
-                    label={`截图 ${index + 1} 前移`}
+                    label={tr("截图 {0} 前移", index + 1)}
                     disabled={index === 0 || update.isPending}
                     onClick={() => moveGallery(index, index - 1)}
                   >
                     <ArrowLeft aria-hidden="true" className="size-3.5" />
                   </IconButton>
                   <IconButton
-                    label={`删除截图 ${index + 1}`}
+                    label={tr("删除截图 {0}", index + 1)}
                     onClick={() => removeImage(image)}
                     danger
                   >
@@ -616,7 +611,7 @@ function ImagesPanel({ project }: { project: AdminProject }) {
           onClick={() => galleryInput.current?.click()}
         >
           <ImagePlus aria-hidden="true" className="size-4" />
-          {pending === "gallery" ? "上传中…" : "添加截图"}
+          {pending === "gallery" ? tr("上传中…") : tr("添加截图")}
         </button>
         {fileInput(galleryInput, "gallery", true)}
       </div>

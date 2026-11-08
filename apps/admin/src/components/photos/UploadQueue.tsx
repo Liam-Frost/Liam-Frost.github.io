@@ -1,4 +1,5 @@
 import { CircleAlert, CircleCheck, LoaderCircle } from "lucide-react";
+import { tr } from "../../lib/messages";
 
 export type UploadItem = {
   key: string;
@@ -9,10 +10,10 @@ export type UploadItem = {
 };
 
 const STATUS_TEXT: Record<UploadItem["status"], string> = {
-  uploading: "上传中",
-  processing: "处理中",
-  done: "已完成",
-  error: "失败"
+  uploading: tr("上传中"),
+  processing: tr("处理中"),
+  done: tr("已完成"),
+  error: tr("失败")
 };
 
 /** Per-image progress of uploads and imports; the server's processing time shows as "处理中". */
@@ -21,16 +22,16 @@ export function UploadQueue({ items, onClear }: { items: UploadItem[]; onClear: 
   const active = items.some((item) => item.status === "uploading" || item.status === "processing");
 
   return (
-    <section aria-label="添加进度" className="card mb-5 p-4">
+    <section aria-label={tr("添加进度")} className="card mb-5 p-4">
       <div className="mb-2 flex items-center justify-between">
-        <h2 className="text-[13px] font-semibold text-brand-dark">添加</h2>
+        <h2 className="text-[13px] font-semibold text-brand-dark">{tr("添加")}</h2>
         {!active ? (
           <button
             type="button"
             className="text-[12px] text-subtle hover:text-brand"
             onClick={onClear}
           >
-            清除记录
+            {tr("清除记录")}
           </button>
         ) : null}
       </div>

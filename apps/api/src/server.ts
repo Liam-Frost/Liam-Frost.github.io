@@ -1,6 +1,8 @@
 import { registerAdminAudit } from "./routes/admin-audit";
 import { registerSiteSettingsRoutes } from "./routes/site-settings";
 import { registerPresentationRoutes } from "./routes/presentation";
+import { registerBrandingRoutes } from "./routes/site-branding";
+import { BrandingStore } from "./site/branding";
 import { registerContactRoutes } from "./routes/contact";
 import "dotenv/config";
 
@@ -26,6 +28,11 @@ import { getPrismaClient, hasDatabaseUrl } from "./db/client";
 import { HttpError, isDatabaseUnavailable, notFound } from "./lib/errors";
 import { registerAdminRoutes } from "./routes/admin";
 import { registerAnalyticsRoutes } from "./routes/analytics";
+import {
+  PrismaAdminAccountRepository,
+  type AdminAccountRepository
+} from "./auth/account-repository";
+import { registerAdminAccountRoutes } from "./routes/admin-account";
 import { registerAdminApp } from "./routes/admin-app";
 import { registerAdminDashboardRoutes } from "./routes/admin-dashboard";
 import { registerAdminPhotoRoutes } from "./routes/admin-photos";
@@ -85,6 +92,12 @@ const DEFAULT_ADMIN_DIST_DIR = fileURLToPath(new URL("../../admin/dist", import.
 const DEFAULT_WEB_DIST_DIR = fileURLToPath(new URL("../../web/dist", import.meta.url));
 /** apps/api/uploads, used when UPLOAD_DIR is not set. */
 const DEFAULT_UPLOAD_DIR = fileURLToPath(new URL("../uploads", import.meta.url));
+
+/** The Prisma-backed admin account when DATABASE_URL is set, otherwise the configured one only. */
+function defaultAdminAccountRepository(): AdminAccountRepository | null {
+  const client = getPrismaClient();
+  return client ? new PrismaAdminAccountRepository(client) : null;
+}
 
 /** The Prisma-backed photo store when DATABASE_URL is set, otherwise none (public routes use seed data). */
 function defaultPhotoRepository(): PhotoRepository | null {
@@ -155,6 +168,8 @@ export type BuildServerOptions = {
   projects?: ProjectRepository | null;
   /** Tech stack; defaults to Prisma when DATABASE_URL is set. Pass null for none. */
   stack?: StackRepository | null;
+  /** The admin account; defaults to Prisma when DATABASE_URL is set. Pass null for none. */
+  adminAccount?: AdminAccountRepository | null;
   /** Collection storage; defaults to Prisma when DATABASE_URL is set. Pass null for none. */
   media?: MediaRepository | null;
   /** People; defaults to Prisma when DATABASE_URL is set. Pass null for none. */
@@ -198,6 +213,7 @@ export async function buildServer({
   photos = defaultPhotoRepository(),
   projects = defaultProjectRepository(),
   stack = defaultStackRepository(),
+  adminAccount = defaultAdminAccountRepository(),
   media = defaultMediaRepository(),
   people = defaultPersonRepository(),
   relations = defaultRelationRepository(),
@@ -224,7 +240,8 @@ export async function buildServer({
     bodyLimit: 1024 * 1024
   });
 
-  const auth = new AdminAuthService(config.admin);
+  const auth = new AdminAuthService(config.admin, adminAccount);
+  await auth.load();
   const integrations = new IntegrationSettings(settings, config);
   await integrations.refresh();
   const requireAdmin = auth.requireAdmin;
@@ -456,6 +473,8 @@ export async function buildServer({
   registerAdminRoutes(app, auth);
   registerIntegrationRoutes(app, auth, integrations);
   registerAdminApp(app, auth, adminDistDir);
+  registerAdminAccountRoutes(app, auth);
+  app.addHook("onClose", async () => auth.stop());
   registerAdminPhotoRoutes(
     app,
     auth,
@@ -476,8 +495,10 @@ export async function buildServer({
   registerStackRoutes(app, auth, stack, store, projects);
   registerAboutRoutes(app, auth, settings ? new AboutStore(settings) : null);
   registerContactRoutes(app, auth, settings);
-  registerPresentationRoutes(app, auth, settings, photos, store);
-  registerSiteSettingsRoutes(app, auth, settings, photos, store, media);
+  const branding = new BrandingStore(settings);
+  registerBrandingRoutes(app, auth, branding, store);
+  registerPresentationRoutes(app, auth, settings, photos, store, branding);
+  registerSiteSettingsRoutes(app, auth, settings, store, media, branding);
   registerAdminMediaRoutes(app, auth, {
     media,
     collection,

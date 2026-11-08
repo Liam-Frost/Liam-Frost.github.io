@@ -453,6 +453,43 @@ model AdminAuditEvent {
  @@index([action, createdAt])
 }
 
+/// The admin account once changed from the server's configured one; a single row.
+model AdminCredential {
+  id                   String    @id @default("admin")
+  username             String
+  passwordHash         String
+  passwordChangedAt    DateTime?
+  /// Sessions signed before this time (seconds) no longer count.
+  sessionsNotBefore    Int?
+  /// Sealed with a server key.
+  totpSecret           String?
+  totpPendingSecret    String?
+  totpPendingAt        DateTime?
+  totpEnabledAt        DateTime?
+  totpLastStep         Int?
+  /// Keyed hashes of the unused recovery codes.
+  recoveryCodes        Json      @default("[]")
+  adminPath            String?
+  adminPathPending     String?
+  adminPathRetiring    String?
+  adminPathRetireUntil DateTime?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+}
+
+/// A sign-in, listed on the security page and revocable from it.
+model AdminSession {
+  id         String    @id
+  createdAt  DateTime
+  lastSeenAt DateTime
+  expiresAt  DateTime
+  ip         String
+  userAgent  String
+  revokedAt  DateTime?
+
+  @@index([expiresAt])
+}
+
 model PersonIdentity {
   id String @id @default(uuid())
   personId String

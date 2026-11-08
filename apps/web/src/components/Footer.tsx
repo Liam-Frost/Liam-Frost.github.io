@@ -25,6 +25,22 @@ export default function Footer() {
         {owner}
         {settings?.footer.showRole !== false ? ` · ${pickLocalized(site.role, lang)}` : ""} ·{" "}
         <Link to="/privacy">{t("footer.privacy")}</Link>
+        {(settings?.footer.links ?? []).map((link) => {
+          const label = pickLocalized(link.label, lang);
+          if (!label) return null;
+          return (
+            <span key={link.url}>
+              {" · "}
+              {link.url.startsWith("/") ? (
+                <Link to={link.url}>{label}</Link>
+              ) : (
+                <a href={link.url} target="_blank" rel="noreferrer">
+                  {label}
+                </a>
+              )}
+            </span>
+          );
+        })}
       </p>
 
       <button className="btn btnGhost btnSmall" type="button" onClick={() => scrollToTop(true)}>

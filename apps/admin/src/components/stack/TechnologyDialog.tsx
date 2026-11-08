@@ -25,6 +25,8 @@ import { DiscardBar } from "./DiscardBar";
 import { IconCombobox } from "./IconCombobox";
 import { projectOptions } from "./linkOptions";
 import { TechIcon } from "./TechIcon";
+import { tr } from "../../lib/messages";
+import { Select } from "../ui/Select";
 
 type IconDraft = { provider: StackIconProvider; key: string | null; url: string | null };
 
@@ -47,15 +49,15 @@ const sameIds = (a: string[], b: string[]) =>
 
 function errorText(error: unknown) {
   if (error instanceof ApiError) {
-    if (error.code === "UNKNOWN_PROJECT") return "有关联的项目已被删除，请刷新后重试";
+    if (error.code === "UNKNOWN_PROJECT") return tr("有关联的项目已被删除，请刷新后重试");
     if (error.code === "TOO_MANY_TECHNOLOGIES")
-      return `有项目已关联 40 项技术，不能再添加：${error.message}`;
-    if (error.code === "NAME_TAKEN") return "这个分类里已经有同名的技术";
-    if (error.code === "UNKNOWN_ICON") return "图标库里找不到这个图标，请重新选择";
+      return tr("有项目已关联 40 项技术，不能再添加：{0}", error.message);
+    if (error.code === "NAME_TAKEN") return tr("这个分类里已经有同名的技术");
+    if (error.code === "UNKNOWN_ICON") return tr("图标库里找不到这个图标，请重新选择");
     if (error.code === "INVALID_IMAGE" || error.code === "FILE_TOO_LARGE") return error.message;
     return error.message;
   }
-  return error instanceof Error ? error.message : "保存失败";
+  return error instanceof Error ? error.message : tr("保存失败");
 }
 
 /**
@@ -143,8 +145,8 @@ export function TechnologyDialog({
 
   const pickFile = (chosen: File | undefined) => {
     if (!chosen) return;
-    if (!ICON_TYPES.includes(chosen.type)) return setError("图标请使用 SVG、PNG 或 WebP 文件");
-    if (chosen.size > MAX_ICON_BYTES) return setError("图标不能超过 2 MB");
+    if (!ICON_TYPES.includes(chosen.type)) return setError(tr("图标请使用 SVG、PNG 或 WebP 文件"));
+    if (chosen.size > MAX_ICON_BYTES) return setError(tr("图标不能超过 2 MB"));
     setError("");
     setFile(chosen);
     set("icon", { provider: "custom", key: null, url: null });
@@ -153,11 +155,11 @@ export function TechnologyDialog({
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     const name = draft.name.trim();
-    if (!name) return setError("请填写技术名称");
-    if (!draft.categoryId) return setError("请先添加一个分类");
+    if (!name) return setError(tr("请填写技术名称"));
+    if (!draft.categoryId) return setError(tr("请先添加一个分类"));
     const website = draft.websiteUrl.trim();
     if (website && !/^https?:\/\//i.test(website))
-      return setError("官方网站请填写以 https:// 开头的链接");
+      return setError(tr("官方网站请填写以 https:// 开头的链接"));
     setError("");
     setSaving(true);
     // A library icon or none goes with the save; an uploaded file follows it.
@@ -210,15 +212,15 @@ export function TechnologyDialog({
         } catch (uploadError) {
           // The technology is saved; only the logo failed. Keep the dialog open on the saved entry.
           setSaving(false);
-          setError(`已保存，但图标上传失败：${errorText(uploadError)}`);
+          setError(tr("已保存，但图标上传失败：{0}", errorText(uploadError)));
           if (!technology) {
-            toast("技术已添加，图标未上传", "info");
+            toast(tr("技术已添加，图标未上传"), "info");
             onClose();
           }
           return;
         }
       }
-      toast(technology ? "已保存" : `已添加 ${name}`);
+      toast(technology ? tr("已保存") : tr("已添加 {0}", name));
       onClose();
     } catch (saveError) {
       setSaving(false);
@@ -230,17 +232,17 @@ export function TechnologyDialog({
   const iconLabel =
     draft.icon.provider === "custom"
       ? file
-        ? `将上传：${file.name}`
-        : "已上传的自定义图标"
+        ? tr("将上传：{0}", file.name)
+        : tr("已上传的自定义图标")
       : draft.icon.provider === "none"
-        ? `无图标，网站上显示首字母“${stackInitials(draft.name || "?")}”`
-        : `${STACK_PROVIDER_LABELS[draft.icon.provider]} · ${draft.icon.key}`;
+        ? tr("无图标，网站上显示首字母“{0}”", stackInitials(draft.name || "?"))
+        : `${tr(STACK_PROVIDER_LABELS[draft.icon.provider])} · ${draft.icon.key}`;
 
   return (
     <Dialog
       open
       size="sm"
-      title={technology ? `编辑 ${technology.name}` : "添加技术"}
+      title={technology ? tr("编辑 {0}", technology.name) : tr("添加技术")}
       onClose={requestClose}
       footer={
         confirmDiscard ? (
@@ -248,10 +250,10 @@ export function TechnologyDialog({
         ) : (
           <>
             <button type="button" className="btn-secondary" onClick={requestClose}>
-              取消
+              {tr("取消")}
             </button>
             <button type="submit" form="stack-technology" className="btn-primary" disabled={saving}>
-              {saving ? "保存中…" : technology ? "保存" : "添加"}
+              {saving ? tr("保存中…") : technology ? tr("保存") : tr("添加")}
             </button>
           </>
         )
@@ -259,12 +261,12 @@ export function TechnologyDialog({
     >
       <form id="stack-technology" onSubmit={submit} noValidate className="space-y-4">
         <Field
-          label="名称"
+          label={tr("名称")}
           htmlFor="tech-name"
           hint={
             technology
               ? undefined
-              : "输入名称搜索图标库，选中后自动填入名称和图标；找不到时可以作为自定义技术添加"
+              : tr("输入名称搜索图标库，选中后自动填入名称和图标；找不到时可以作为自定义技术添加")
           }
         >
           {technology ? (
@@ -281,7 +283,7 @@ export function TechnologyDialog({
               id="tech-name"
               value={draft.name}
               autoFocus
-              placeholder="例如 React、Docker、Figma"
+              placeholder={tr("例如 React、Docker、Figma")}
               onChange={(text) => set("name", text)}
               onPick={(picked) => {
                 setFile(null);
@@ -303,23 +305,19 @@ export function TechnologyDialog({
           )}
         </Field>
 
-        <Field label="分类" htmlFor="tech-category">
-          <select
+        <Field label={tr("分类")} htmlFor="tech-category">
+          <Select
             id="tech-category"
-            className="field"
             value={draft.categoryId}
-            onChange={(e) => set("categoryId", e.target.value)}
-          >
-            {categories.map((c) => (
-              <option key={c.id} value={c.id}>
-                {pickText(c.name, "未命名分类")}
-              </option>
-            ))}
-          </select>
+            onChange={(value) => set("categoryId", value)}
+            options={[
+              ...categories.map((c) => ({ value: c.id, label: pickText(c.name, tr("未命名分类")) }))
+            ]}
+          />
         </Field>
 
         <div>
-          <p className="mb-1.5 text-[12.5px] font-medium text-brand-dark">图标</p>
+          <p className="mb-1.5 text-[12.5px] font-medium text-brand-dark">{tr("图标")}</p>
           <div className="flex items-center gap-3 rounded-xl p-2.5 ring-1 ring-line-soft">
             <TechIcon name={draft.name || "?"} url={shownIcon} size="lg" />
             <div className="min-w-0 flex-1">
@@ -327,22 +325,22 @@ export function TechnologyDialog({
               <div className="mt-1.5 flex flex-wrap gap-1.5">
                 <button
                   type="button"
-                  className="btn-secondary !px-2.5 !py-1 !text-[12px]"
+                  className="btn-secondary btn-sm"
                   onClick={() => fileInput.current?.click()}
                 >
                   <ImageUp aria-hidden="true" className="size-3.5" />
-                  {draft.icon.provider === "custom" ? "更换图标" : "上传图标"}
+                  {draft.icon.provider === "custom" ? tr("更换图标") : tr("上传图标")}
                 </button>
                 {draft.icon.provider !== "none" ? (
                   <button
                     type="button"
-                    className="btn-secondary !px-2.5 !py-1 !text-[12px]"
+                    className="btn-secondary btn-sm"
                     onClick={() => {
                       setFile(null);
                       set("icon", { provider: "none", key: null, url: null });
                     }}
                   >
-                    <Trash2 aria-hidden="true" className="size-3.5" /> 移除图标
+                    <Trash2 aria-hidden="true" className="size-3.5" /> {tr("移除图标")}
                   </button>
                 ) : null}
               </div>
@@ -353,29 +351,29 @@ export function TechnologyDialog({
             type="file"
             accept=".svg,.png,.webp,image/svg+xml,image/png,image/webp"
             className="hidden"
-            aria-label="上传图标文件"
+            aria-label={tr("上传图标文件")}
             onChange={(e) => {
               pickFile(e.target.files?.[0]);
               e.target.value = "";
             }}
           />
           <p className="mt-1 text-[11.5px] leading-relaxed text-faint">
-            上传 SVG、PNG 或 WebP（最大 2 MB）。SVG 会被安全地转成图片保存，保持原比例。
+            {tr("上传 SVG、PNG 或 WebP（最大 2 MB）。SVG 会被安全地转成图片保存，保持原比例。")}
           </p>
           {previewFailed ? (
             <p className="mt-1 text-[11.5px] leading-relaxed text-faint" role="status">
-              浏览器无法生成此文件的本地预览；保存后将显示服务端处理的图标。
+              {tr("浏览器无法生成此文件的本地预览；保存后将显示服务端处理的图标。")}
             </p>
           ) : null}
           {technology ? (
             <div className="mt-2.5">
               <label htmlFor="tech-icon-search" className="mb-1 block text-[12px] text-muted">
-                从图标库换一个
+                {tr("从图标库换一个")}
               </label>
               <IconCombobox
                 id="tech-icon-search"
                 value={iconSearch}
-                placeholder="搜索图标库"
+                placeholder={tr("搜索图标库")}
                 onChange={setIconSearch}
                 onPick={(picked) => {
                   setFile(null);
@@ -388,9 +386,9 @@ export function TechnologyDialog({
         </div>
 
         <Field
-          label="官方网站（可选）"
+          label={tr("官方网站（可选）")}
           htmlFor="tech-website"
-          hint="网站上的技术详情里会给出官网链接；没有关联项目时，点击这项技术直接打开官网"
+          hint={tr("网站上的技术详情里会给出官网链接；没有关联项目时，点击这项技术直接打开官网")}
         >
           <input
             id="tech-website"
@@ -405,13 +403,13 @@ export function TechnologyDialog({
         </Field>
 
         <Field
-          label="关联项目（Related Projects）"
+          label={tr("关联项目（Related Projects）")}
           htmlFor="tech-projects"
-          hint="网站上点击这项技术时列出这些项目；未公开的项目只在后台可见"
+          hint={tr("网站上点击这项技术时列出这些项目；未公开的项目只在后台可见")}
         >
           {projects.isError ? (
             <p role="alert" className="text-[12.5px] text-status-error">
-              无法加载项目列表
+              {tr("无法加载项目列表")}
             </p>
           ) : (
             <MultiCombobox
@@ -419,15 +417,17 @@ export function TechnologyDialog({
               options={options}
               value={draft.projectIds}
               onChange={(ids) => set("projectIds", ids)}
-              placeholder={projects.isPending ? "加载项目中…" : "搜索项目名称"}
-              listLabel="项目"
-              emptyText={options.length ? "没有匹配的项目" : "还没有项目"}
+              placeholder={projects.isPending ? tr("加载项目中…") : tr("搜索项目名称")}
+              listLabel={tr("项目")}
+              emptyText={options.length ? tr("没有匹配的项目") : tr("还没有项目")}
             />
           )}
         </Field>
 
         <fieldset>
-          <legend className="mb-1.5 text-[12.5px] font-medium text-brand-dark">展示优先级</legend>
+          <legend className="mb-1.5 text-[12.5px] font-medium text-brand-dark">
+            {tr("展示优先级")}
+          </legend>
           <div className="inline-flex rounded-full bg-brand-secondary/10 p-0.5">
             {(
               [
@@ -454,7 +454,9 @@ export function TechnologyDialog({
             ))}
           </div>
           <p className="mt-1 text-[11.5px] leading-relaxed text-faint">
-            Primary 在网站上名称略微加粗，表示常用的主力技术；不是熟练度评分。顺序以列表排序为准。
+            {tr(
+              "Primary 在网站上名称略微加粗，表示常用的主力技术；不是熟练度评分。顺序以列表排序为准。"
+            )}
           </p>
         </fieldset>
 
@@ -462,7 +464,7 @@ export function TechnologyDialog({
           id="tech-visible"
           checked={draft.visible}
           onChange={(value) => set("visible", value)}
-          label="在网站上显示"
+          label={tr("在网站上显示")}
         />
 
         {error ? (

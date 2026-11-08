@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "auth:hash": "tsx src/auth/hash-password.ts",
+    "admin:reset": "tsx src/db/reset-admin-account.ts",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev && prisma generate && npm run db:seed",
     "db:deploy": "prisma migrate deploy && prisma generate",
@@ -36,6 +37,7 @@
     "fastify": "^5.0.0",
     "maxmind": "^5.0.7",
     "prisma": "7.10.1",
+    "qrcode-generator": "^2.0.4",
     "sharp": "^0.35.5",
     "simple-icons": "^16.36.0",
     "zod": "^4.6.7"

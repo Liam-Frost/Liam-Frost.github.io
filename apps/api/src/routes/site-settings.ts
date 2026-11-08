@@ -1,14 +1,24 @@
 import { createHash } from "node:crypto";
 import sharp from "sharp";
 import { z } from "zod";
-import { DEFAULT_SITE_SETTINGS, type SiteSettingsGroup } from "@liam-frost/shared";
+import {
+  conflictingFields,
+  DEFAULT_SITE_SETTINGS,
+  type SettingsConflictDetails,
+  type SiteSettingsGroup
+} from "@liam-frost/shared";
 import type { FastifyInstance } from "fastify";
 import type { AdminAuthService } from "../auth/service";
 import type { MediaRepository } from "../media/types";
 import type { SettingsRepository } from "../settings/types";
-import type { PhotoRepository } from "../photos/types";
 import type { LocalImageStore } from "../storage/local";
-import { toPublicPhoto } from "../photos/mapping";
+import {
+  brandFileName,
+  brandKey,
+  brandUrl,
+  type BrandAsset,
+  type BrandingStore
+} from "../site/branding";
 import { KeyedLock } from "../lib/keyed-lock";
 import { HttpError } from "../lib/errors";
 import { parseInput } from "../lib/validation";
@@ -23,25 +33,56 @@ const text = (max: number) =>
       fr: z.string().max(max).optional()
     })
     .strict();
-const photoId = z
-  .string()
-  .min(1)
-  .max(100)
-  .regex(/^[A-Za-z0-9_-]+$/)
-  .nullable();
 const schemas = {
-  identity: z.object({ name: text(120), title: text(160), avatarPhotoId: photoId }).strict(),
+  identity: z
+    .object({
+      name: text(120),
+      title: text(160),
+      adminTitle: text(80).default({}),
+      // Saved before the avatar was uploaded; a gallery choice no longer applies.
+      avatarPhotoId: z.unknown().optional()
+    })
+    .strict()
+    .transform(({ avatarPhotoId: _avatarPhotoId, ...rest }) => rest),
   footer: z
     .object({
       owner: text(120),
       startYear: z.number().int().min(1900).max(3000).nullable(),
-      showRole: z.boolean()
+      showRole: z.boolean(),
+      links: z
+        .array(
+          z
+            .object({
+              label: text(40).refine(
+                (v) => Object.values(v).some((s) => s?.trim()),
+                "请填写链接文字"
+              ),
+              url: z
+                .string()
+                .trim()
+                .max(300)
+                .regex(/^(https:\/\/\S+|mailto:\S+|\/[^\s/]\S*)$/, "链接地址无效")
+            })
+            .strict()
+        )
+        .max(8)
+        .default([])
     })
     .strict(),
   preferences: z
     .object({
       theme: z.enum(["system", "light", "dark"]),
       language: z.enum(["auto", "zh", "zh-Hant", "en", "ja", "fr"])
+    })
+    .strict(),
+  navigation: z
+    .object({
+      tabBarMode: z.enum(["always", "adaptive", "hover"]),
+      glass: z.enum(["regular", "clear", "opaque"]),
+      selectedButton: z.enum(["lens", "ring", "text"]),
+      refraction: z.number().min(0).max(3),
+      showLabels: z.boolean(),
+      bottomOffset: z.number().int().min(16).max(40)
     })
     .strict(),
   privacy: z
@@ -75,18 +116,23 @@ const schemas = {
           aliases.add(key);
         }
       }
-    }),
-  favicon: z.object({ photoId }).strict()
+    })
 };
+export const settingsFieldPatch = z
+  .object({
+    changes: z.record(z.string(), z.unknown()),
+    base: z.record(z.string(), z.unknown())
+  })
+  .strict();
 const digest = (value: unknown) => createHash("sha256").update(JSON.stringify(value)).digest("hex");
 
 export function registerSiteSettingsRoutes(
   app: FastifyInstance,
   auth: AdminAuthService,
   repo: SettingsRepository | null,
-  photos: PhotoRepository | null,
   store: LocalImageStore,
-  media: MediaRepository | null
+  media: MediaRepository | null,
+  branding: BrandingStore
 ) {
   const lock = new KeyedLock();
   const groupOf = (params: unknown) =>
@@ -102,50 +148,39 @@ export function registerSiteSettingsRoutes(
     if (!parsed.success) throw new HttpError(503, "SETTINGS_INVALID", "设置无法读取，请联系管理员");
     return { value: parsed.data, revision: digest(parsed.data), saved: stored != null };
   };
-  const publicPhoto = async (id: string | null) => {
-    if (!id || !photos) return null;
-    const photo = await photos.get(id);
-    return photo?.visibility === "public" ? photo : null;
-  };
-  const faviconPhoto = async () => {
-    const value = (await read("favicon")).value as { photoId: string | null };
-    const p = await publicPhoto(value.photoId);
-    return p?.storage === "local" && p.storageKey && p.variants?.length ? p : null;
-  };
-  const faviconVersion = (p: NonNullable<Awaited<ReturnType<typeof faviconPhoto>>>) =>
-    digest([p.id, p.storageKey, p.updatedAt.toISOString()]).slice(0, 24);
+  const faviconVersion = (image: BrandAsset) => digest(image.id).slice(0, 24);
   app.get("/api/site-settings", async (_request, reply) => {
     reply.header("cache-control", "no-store");
     reply.header("x-snapshot-data-source", repo ? "database" : "fallback");
-    const [identityDoc, footerDoc, preferencesDoc, privacyDoc, dictionaryDoc, iconDoc] =
-      await Promise.all([
-        read("identity"),
-        read("footer"),
-        read("preferences"),
-        read("privacy"),
-        read("dictionary"),
-        read("favicon")
-      ]);
-    const identity = identityDoc.value as typeof DEFAULT_SITE_SETTINGS.identity,
-      icon = iconDoc.value as typeof DEFAULT_SITE_SETTINGS.favicon;
-    const ids = [
-      ...new Set([identity.avatarPhotoId, icon.photoId].filter((id): id is string => Boolean(id)))
-    ];
-    const selected = await Promise.all(ids.map(publicPhoto));
-    const avatar = selected.find((p) => p?.id === identity.avatarPhotoId),
-      candidate = selected.find((p) => p?.id === icon.photoId);
-    const favicon =
-      candidate?.storage === "local" && candidate.storageKey && candidate.variants?.length
-        ? candidate
-        : null;
+    const [
+      identityDoc,
+      footerDoc,
+      preferencesDoc,
+      navigationDoc,
+      privacyDoc,
+      dictionaryDoc,
+      assets
+    ] = await Promise.all([
+      read("identity"),
+      read("footer"),
+      read("preferences"),
+      read("navigation"),
+      read("privacy"),
+      read("dictionary"),
+      branding.get()
+    ]);
+    const identity = identityDoc.value as typeof DEFAULT_SITE_SETTINGS.identity;
     return {
       identity,
       footer: footerDoc.value,
       preferences: preferencesDoc.value,
+      navigation: navigationDoc.value,
       privacy: privacyDoc.value,
       dictionary: dictionaryDoc.value,
-      avatarUrl: avatar ? toPublicPhoto(avatar, store).src : null,
-      faviconUrl: favicon ? `/api/site-favicon/${faviconVersion(favicon)}/32.png` : null
+      avatarUrl: brandUrl("avatar", assets.avatar),
+      faviconUrl: assets.favicon
+        ? `/api/site-favicon/${faviconVersion(assets.favicon)}/32.png`
+        : null
     };
   });
   app.get("/api/site-favicon/:version/:file", async (request, reply) => {
@@ -156,11 +191,10 @@ export function registerSiteSettingsRoutes(
       }),
       request.params
     );
-    const p = await faviconPhoto();
-    if (!p || faviconVersion(p) !== version)
+    const image = (await branding.get()).favicon;
+    if (!image || faviconVersion(image) !== version)
       throw new HttpError(404, "NOT_FOUND", "Icon not found");
-    const variant = p.variants!.find((v) => v.width >= 512) ?? p.variants![p.variants!.length - 1]!;
-    const source = await store.readPublic(p.storageKey!, `${variant.width}.webp`);
+    const source = await store.readPublic(brandKey("favicon", image.id), brandFileName(image));
     if (!source) throw new HttpError(404, "NOT_FOUND", "Icon not found");
     const size = file === "favicon.ico" ? 32 : parseInt(file, 10),
       png = await sharp(source)
@@ -188,34 +222,21 @@ export function registerSiteSettingsRoutes(
   app.get("/api/admin/site-settings/privacy/history", admin, async () => ({
     history: (await repo?.get("site.privacy.history")) ?? []
   }));
-  app.put("/api/admin/site-settings/:group", admin, async (request, reply) => {
+  app.patch("/api/admin/site-settings/:group", admin, async (request, reply) => {
     if (!repo) throw new HttpError(503, "DATABASE_NOT_CONFIGURED", "网站设置需要数据库");
     const group = groupOf(request.params);
-    const body = parseInput(
-      z.object({ value: schemas[group], revision: z.string().length(64) }).strict(),
-      request.body
-    );
+    const patch = parseInput(settingsFieldPatch, request.body);
     return lock.run(group, async () => {
       const before = await read(group);
-      if (before.revision !== body.revision)
-        throw new HttpError(
-          409,
-          "SETTINGS_OUT_OF_DATE",
-          "设置已被其他页面修改；请先保留草稿再重新读取"
-        );
-      if (group === "identity" || group === "favicon") {
-        const id =
-          (body.value as { avatarPhotoId?: string | null; photoId?: string | null })
-            .avatarPhotoId ?? (body.value as { photoId?: string | null }).photoId;
-        const photo = id ? await publicPhoto(id) : null;
-        if (id && !photo) throw new HttpError(400, "INVALID_PHOTO", "只能选择当前公开的图库照片");
-        if (group === "favicon" && photo?.storage !== "local" && id)
-          throw new HttpError(
-            400,
-            "LOCAL_ICON_REQUIRED",
-            "图标请使用图库中本站托管的图片，生成多尺寸 PNG 与 ICO"
-          );
-      }
+      const fields = conflictingFields(before.value, patch);
+      if (fields.length)
+        throw new HttpError(409, "SETTINGS_CONFLICT", "设置已被其他页面修改", {
+          fields,
+          current: before
+        } satisfies SettingsConflictDetails);
+      const body = {
+        value: parseInput(schemas[group], { ...before.value, ...patch.changes })
+      };
       if (group === "dictionary") {
         const normalize = (v: string) => v.normalize("NFKC").trim().toLowerCase();
         const used = new Set(
@@ -256,11 +277,4 @@ export function registerSiteSettingsRoutes(
       return result;
     });
   });
-  app.get("/api/admin/site-settings/security/status", admin, async () => ({
-    username: auth.config.username,
-    accountManagedBy: "runtime",
-    pathManagedBy: "runtime",
-    security: { csrf: true, signedSessions: true, loginRateLimit: true },
-    supportedAdminLanguages: ["zh"]
-  }));
 }

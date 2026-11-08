@@ -1,5 +1,12 @@
 import { createHash } from "node:crypto";
-import { DEFAULT_PRESENTATION, HOME_SECTIONS, type PresentationSettings } from "@liam-frost/shared";
+import {
+  conflictingFields,
+  DEFAULT_PRESENTATION,
+  HOME_SECTIONS,
+  ROTATION_MODES,
+  type PresentationSettings,
+  type SettingsConflictDetails
+} from "@liam-frost/shared";
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import type { AdminAuthService } from "../auth/service";
@@ -9,7 +16,9 @@ import { parseInput } from "../lib/validation";
 import type { SettingsRepository } from "../settings/types";
 import type { PhotoRepository } from "../photos/types";
 import type { LocalImageStore } from "../storage/local";
-import { remoteThumbnail, toPublicPhoto } from "../photos/mapping";
+import { toPublicPhoto } from "../photos/mapping";
+import { brandUrl, type BrandingStore } from "../site/branding";
+import { settingsFieldPatch } from "./site-settings";
 
 const id = z
   .string()
@@ -19,10 +28,12 @@ const id = z
 const logo = z
   .object({
     text: z.string().trim().max(12),
-    photoId: id.nullable(),
+    // Saved before logos were uploaded; a gallery choice no longer applies.
+    photoId: z.unknown().optional(),
     alt: z.string().trim().max(120).optional()
   })
-  .strict();
+  .strict()
+  .transform(({ photoId: _photoId, ...rest }) => rest);
 const schema = z
   .object({
     sections: z
@@ -37,11 +48,17 @@ const schema = z
     adminLogo: logo,
     loginBackground: z
       .object({
-        mode: z.enum(["none", "fixed", "rotate"]),
+        // "none" and "rotate" (on a timer, with intervalSeconds) are from older saves.
+        mode: z.enum([...ROTATION_MODES, "none", "rotate"]),
         photoIds: z.array(id).max(20),
-        intervalSeconds: z.number().int().min(10).max(3600)
+        intervalSeconds: z.unknown().optional()
       })
       .strict()
+      .transform(({ mode, photoIds }): PresentationSettings["loginBackground"] =>
+        mode === "none"
+          ? { mode: "fixed", photoIds: [] }
+          : { mode: mode === "rotate" ? "visit" : mode, photoIds }
+      )
   })
   .strict();
 
@@ -50,7 +67,8 @@ export function registerPresentationRoutes(
   auth: AdminAuthService,
   repo: SettingsRepository | null,
   photos: PhotoRepository | null,
-  store: LocalImageStore
+  store: LocalImageStore,
+  branding: BrandingStore
 ) {
   const key = "presentation.v1",
     lock = new KeyedLock();
@@ -65,13 +83,7 @@ export function registerPresentationRoutes(
     reply.header("cache-control", "no-store");
     reply.header("x-snapshot-data-source", repo ? "database" : "fallback");
     const { settings } = await read();
-    const ids = new Set(
-      [
-        settings.publicLogo.photoId,
-        settings.adminLogo.photoId,
-        ...settings.loginBackground.photoIds
-      ].filter((v): v is string => v !== null)
-    );
+    const ids = new Set(settings.loginBackground.photoIds);
     const publicPhotos = ids.size && photos ? await photos.list() : [];
     // Resolve only currently public photos. Hidden/deleted images must never leak at the login screen.
     const images = Object.fromEntries(
@@ -83,56 +95,49 @@ export function registerPresentationRoutes(
           return [p.id, suitable?.url ?? photo.src];
         })
     );
-    const logoImages = Object.fromEntries(
-      publicPhotos
-        .filter(
-          (p) =>
-            p.visibility === "public" &&
-            (p.id === settings.publicLogo.photoId || p.id === settings.adminLogo.photoId)
-        )
-        .map((p) => {
-          const photo = toPublicPhoto(p, store);
-          return [p.id, photo.variants?.[0]?.url ?? remoteThumbnail(photo.src)];
-        })
-    );
-    return { ...settings, images, logoImages };
+    const assets = await branding.get();
+    return {
+      ...settings,
+      images,
+      logoUrls: {
+        publicLogo: brandUrl("publicLogo", assets.publicLogo),
+        adminLogo: brandUrl("adminLogo", assets.adminLogo)
+      }
+    };
   });
   const admin = { preHandler: auth.requireAdmin };
   app.get("/api/admin/presentation", admin, async () => {
     if (!repo) throw new HttpError(503, "DATABASE_NOT_CONFIGURED", "外观管理需要数据库");
     return read();
   });
-  app.put("/api/admin/presentation", admin, async (request) => {
+  app.patch("/api/admin/presentation", admin, async (request) => {
     if (!repo) throw new HttpError(503, "DATABASE_NOT_CONFIGURED", "外观管理需要数据库");
-    const input = parseInput(
-      z.object({ settings: schema, revision: z.string().length(64) }).strict(),
-      request.body
-    );
+    const patch = parseInput(settingsFieldPatch, request.body);
     return lock.run(key, async () => {
-      if ((await read()).revision !== input.revision)
-        throw new HttpError(409, "PRESENTATION_OUT_OF_DATE", "设置已在其他页面修改，请重新加载");
-      const ids = new Set(
-        [
-          input.settings.publicLogo.photoId,
-          input.settings.adminLogo.photoId,
-          ...input.settings.loginBackground.photoIds
-        ].filter((v): v is string => v !== null)
-      );
-      const available = new Set(
-        ((await photos?.list()) ?? []).filter((p) => p.visibility === "public").map((p) => p.id)
-      );
-      if ([...ids].some((v) => !available.has(v)))
-        throw new HttpError(400, "INVALID_PHOTO", "只能选择图库中当前公开的照片");
-      if (
-        input.settings.loginBackground.mode !== "none" &&
-        !input.settings.loginBackground.photoIds.length
-      )
-        throw new HttpError(400, "BACKGROUND_REQUIRED", "请选择至少一张背景图");
+      const before = await read();
+      const fields = conflictingFields(before.settings, patch);
+      if (fields.length)
+        throw new HttpError(409, "SETTINGS_CONFLICT", "设置已被其他页面修改", {
+          fields,
+          current: before
+        } satisfies SettingsConflictDetails);
+      const next = parseInput(schema, { ...before.settings, ...patch.changes });
+      if ("loginBackground" in patch.changes) {
+        // Only what this save adds must be public now. A chosen photo hidden later stays in the list
+        // (the login page shows public photos only), so it cannot block other changes.
+        const kept = new Set(before.settings.loginBackground.photoIds);
+        const added = next.loginBackground.photoIds.filter((photo) => !kept.has(photo));
+        const available = new Set(
+          ((await photos?.list()) ?? []).filter((p) => p.visibility === "public").map((p) => p.id)
+        );
+        if (added.some((photo) => !available.has(photo)))
+          throw new HttpError(400, "INVALID_PHOTO", "只能选择图库中当前公开的照片");
+      }
       const settings = {
-        ...input.settings,
+        ...next,
         loginBackground: {
-          ...input.settings.loginBackground,
-          photoIds: [...new Set(input.settings.loginBackground.photoIds)]
+          ...next.loginBackground,
+          photoIds: [...new Set(next.loginBackground.photoIds)]
         }
       };
       await repo.set(key, settings);

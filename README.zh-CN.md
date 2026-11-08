@@ -26,11 +26,11 @@
 
 个人主页：
 
-![个人主页](docs/images/home-preview.png)
+![个人主页](docs/images/home-preview-zh.png)
 
 管理后台概览（演示数据）：
 
-![管理后台概览](docs/images/admin-preview.png)
+![管理后台概览](docs/images/admin-preview-zh.png)
 
 网站持续迭代中。[预发布站](https://preview.twilightfrosty.com)用于验证开发版本；本 README 描述当前源码，具体上线状态以发布记录为准。主机、基础设施配置、凭据、诊断及运维资料均在私有位置维护。
 
@@ -132,12 +132,14 @@ docker compose exec app node apps/api/dist/seed.js
 
 提交前运行 lint、format:check、typecheck、test 和 build。CI 检查格式、代码、类型、测试与构建；Docker 冒烟测试验证生产镜像、认证、上传、迁移和持久化。针对 main 的 PR 需要 Quality checks 与 smoke 通过。分支与维护规则见[仓库维护](docs/repository-maintenance.md)。
 
-更多资料：[后台功能](docs/admin.md)、[数据库](docs/database.md)、[架构](docs/architecture.md)、[人物与收藏方案](docs/collection-admin-ux.md)、[认证保护与边界](docs/admin-security-review.md)、[性能系统](docs/performance.md)、[统一网站设置提案](docs/website-settings-proposal.zh-CN.md)。
+更多资料：[后台功能](docs/admin.md)、[数据库](docs/database.md)、[架构](docs/architecture.md)、[人物与收藏方案](docs/collection-admin-ux.md)、[认证保护与边界](docs/admin-security-review.md)、[性能系统](docs/performance.md)、[网站设置说明](docs/website-settings-ui.zh-CN.md)。
 
 ## 安全、许可与署名
 
 安全问题请按 [SECURITY.md](SECURITY.md) 通过 [GitHub 私密漏洞报告](https://github.com/Liam-Frost/Liam-Frost.github.io/security/advisories/new) 提交，不要在公开 issue 或日志中放置凭据、会话 cookie 或个人数据。
 
 原创软件源码和技术文档采用 **[MIT 许可证](LICENSE)**，复制或分发时保留版权与许可声明。页面可见署名非强制，欢迎链接回本仓库。
+
+`apps/web/src/vendor/cupertinocn` 中的 Tab Bar、玻璃材质和后台滑块改编自 [CupertinoCN](https://github.com/vantezzen/cupertinocn)。该项目未声明许可证，因此这个目录不在本仓库的 MIT 许可范围内。
 
 **照片、个人文字、肖像、品牌及第三方材料不属于软件许可范围。** 种子数据和引用链接的内容权利见 [CONTENT-LICENSE.md](CONTENT-LICENSE.md)。

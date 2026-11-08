@@ -12,33 +12,36 @@ import {
   useRange
 } from "./common";
 import { InfoTip } from "../ui/Tooltip";
+import { tr } from "../../lib/messages";
 
 type KpiKey = keyof AnalyticsKpis;
 export const KPIS: { key: KpiKey; label: string; hint: string }[] = [
   {
     key: "views",
-    label: "浏览量",
-    hint: "页面打开次数：首次加载和站内切换页面各算一次；同一页面里打开条目、切换标签不算。"
+    label: tr("浏览量"),
+    hint: tr("页面打开次数：首次加载和站内切换页面各算一次；同一页面里打开条目、切换标签不算。")
   },
   {
     key: "visitors",
-    label: "访客",
-    hint: "每天按“IP + 浏览器 + 当天的随机值”去重，多天的访客是每天人数之和：同一个人来了两天算两位。"
+    label: tr("访客"),
+    hint: tr(
+      "每天按“IP + 浏览器 + 当天的随机值”去重，多天的访客是每天人数之和：同一个人来了两天算两位。"
+    )
   },
   {
     key: "sessions",
-    label: "访问",
-    hint: "一次访问在 30 分钟无活动后结束；关闭标签页后再来也是新的访问。"
+    label: tr("访问"),
+    hint: tr("一次访问在 30 分钟无活动后结束；关闭标签页后再来也是新的访问。")
   },
   {
     key: "avgEngagedSeconds",
-    label: "平均停留",
-    hint: "每次访问中页面实际可见的时间（切到其他标签页时不计）。"
+    label: tr("平均停留"),
+    hint: tr("每次访问中页面实际可见的时间（切到其他标签页时不计）。")
   },
   {
     key: "bounceRate",
-    label: "跳出率",
-    hint: "只看了一个页面、而且停留不到 10 秒的访问所占的比例。越低越好。"
+    label: tr("跳出率"),
+    hint: tr("只看了一个页面、而且停留不到 10 秒的访问所占的比例。越低越好。")
   }
 ];
 
@@ -52,7 +55,7 @@ function formatKpi(key: KpiKey, value: number) {
 function change(key: KpiKey, current: number, previous: number) {
   if (key !== "bounceRate") return changeText(current, previous);
   const points = Math.round((current - previous) * 100);
-  return { text: `${points > 0 ? "+" : ""}${points} 个百分点`, sign: Math.sign(points) };
+  return { text: tr("{0}{1} 个百分点", points > 0 ? "+" : "", points), sign: Math.sign(points) };
 }
 
 export function useOverview() {
@@ -67,11 +70,11 @@ export function useOverview() {
 
 export function OverviewView({ data }: { data: AnalyticsOverview }) {
   const { range } = data;
-  const span = (a: string, b: string) => (a === b ? a : `${a} 至 ${b}`);
+  const span = (a: string, b: string) => (a === b ? a : tr("{0} 至 {1}", a, b));
   const hourly = data.trend.bucket === "hour";
   return (
     <>
-      <section aria-label="核心指标" className="grid gap-3 sm:grid-cols-3 lg:grid-cols-5">
+      <section aria-label={tr("核心指标")} className="grid gap-3 sm:grid-cols-3 lg:grid-cols-5">
         {KPIS.map(({ key, label, hint }) => {
           const delta = change(key, data.current[key], data.previous[key]);
           // A higher bounce rate is worse; everything else is better higher.
@@ -80,7 +83,7 @@ export function OverviewView({ data }: { data: AnalyticsOverview }) {
             <div key={key} className="card p-4">
               <p className="flex items-center gap-1 text-[12px] text-muted">
                 {label}
-                <InfoTip text={hint} label={`${label}：口径`} />
+                <InfoTip text={hint} label={tr("{0}：口径", label)} />
               </p>
               <p className="mt-1 text-[22px] font-semibold text-brand-dark">
                 {formatKpi(key, data.current[key])}
@@ -90,23 +93,29 @@ export function OverviewView({ data }: { data: AnalyticsOverview }) {
               >
                 {delta.sign > 0 ? "▲ " : delta.sign < 0 ? "▼ " : ""}
                 {delta.text}
-                <span className="text-faint">（上期 {formatKpi(key, data.previous[key])}）</span>
+                <span className="text-faint">
+                  {tr("（上期 {0}）", formatKpi(key, data.previous[key]))}
+                </span>
               </p>
             </div>
           );
         })}
       </section>
       <p className="text-[12px] text-faint">
-        {span(range.from, range.to)}，与上期 {span(range.previousFrom, range.previousTo)}
-        {range.range === "today" ? " 的同一时段" : ""}比较。把鼠标停在指标上可以看口径。
+        {tr(
+          "{0}，与上期 {1}{2}比较。把鼠标停在指标上可以看口径。",
+          span(range.from, range.to),
+          span(range.previousFrom, range.previousTo),
+          range.range === "today" ? tr(" 的同一时段") : ""
+        )}
       </p>
 
       <ColumnChart
-        title={(metric) => `${hourly ? "按小时" : "按天"}的${metric}`}
+        title={(metric) => tr("{0}的{1}", hourly ? tr("按小时") : tr("按天"), metric)}
         metrics={[
-          { key: "views", label: "浏览量" },
-          { key: "visitors", label: "访客" },
-          { key: "sessions", label: "访问" }
+          { key: "views", label: tr("浏览量") },
+          { key: "visitors", label: tr("访客") },
+          { key: "sessions", label: tr("访问") }
         ]}
         points={data.trend.points.map((point) => ({
           ...point,
@@ -115,14 +124,16 @@ export function OverviewView({ data }: { data: AnalyticsOverview }) {
         }))}
       />
 
-      <Card title="热门页面">
+      <Card title={tr("热门页面")}>
         {data.topPages.length ? (
           <table className="w-full text-left text-[13px]">
             <thead>
               <tr className="text-[12px] text-faint">
-                <th className="pb-2 font-normal">页面</th>
-                <th className="pb-2 text-right font-normal">浏览量</th>
-                <th className="hidden pb-2 text-right font-normal sm:table-cell">平均停留</th>
+                <th className="pb-2 font-normal">{tr("页面")}</th>
+                <th className="pb-2 text-right font-normal">{tr("浏览量")}</th>
+                <th className="hidden pb-2 text-right font-normal sm:table-cell">
+                  {tr("平均停留")}
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -138,19 +149,19 @@ export function OverviewView({ data }: { data: AnalyticsOverview }) {
             </tbody>
           </table>
         ) : (
-          <p className="text-[13px] text-muted">这段时间没有页面浏览。</p>
+          <p className="text-[13px] text-muted">{tr("这段时间没有页面浏览。")}</p>
         )}
       </Card>
       <Card
-        title="不存在的页面 · 实际路径"
-        hint="仅记录路径，不保存查询参数；历史汇总无法还原路径。最多显示前100项。"
+        title={tr("不存在的页面 · 实际路径")}
+        hint={tr("仅记录路径，不保存查询参数；历史汇总无法还原路径。最多显示前100项。")}
       >
         {data.missingPages?.length ? (
           <table className="w-full table-fixed text-left text-[13px]">
             <thead>
               <tr>
-                <th className="py-2">请求路径</th>
-                <th className="w-20 text-right">浏览量</th>
+                <th className="py-2">{tr("请求路径")}</th>
+                <th className="w-20 text-right">{tr("浏览量")}</th>
               </tr>
             </thead>
             <tbody>
@@ -163,7 +174,7 @@ export function OverviewView({ data }: { data: AnalyticsOverview }) {
             </tbody>
           </table>
         ) : (
-          <p className="text-[13px] text-muted">当前范围没有具体的不存在页面路径记录。</p>
+          <p className="text-[13px] text-muted">{tr("当前范围没有具体的不存在页面路径记录。")}</p>
         )}
       </Card>
     </>

@@ -3,7 +3,11 @@ import { useEffect, useState } from "react";
 import { apiFetchEnabled, apiUrl } from "../lib/api";
 import { useLayoutPending } from "../app/layoutPending";
 
-const fallback: PublicPresentation = { ...DEFAULT_PRESENTATION, images: {}, logoImages: {} };
+const fallback: PublicPresentation = {
+  ...DEFAULT_PRESENTATION,
+  images: {},
+  logoUrls: { publicLogo: null, adminLogo: null }
+};
 type LoadedPresentation = PublicPresentation & { unavailable?: boolean };
 const unavailable: LoadedPresentation = { ...fallback, unavailable: true };
 let pending: Promise<LoadedPresentation> | null = null;

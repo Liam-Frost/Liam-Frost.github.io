@@ -20,17 +20,18 @@ import { useArrivalParams } from "../hooks/useArrivalParams";
 import { ApiError } from "../lib/api";
 import { pickText, STATUS_LABELS, suggestSlug } from "../lib/i18n";
 import { useRecentCounts } from "../components/analytics/RecentStats";
+import { tr } from "../lib/messages";
 
 /** Quick filters for the overview's tasks; the same rules as the tasks (public projects only). */
 const SHOWS = [
   {
     value: "missing-en",
-    label: "公开但缺英文标题",
+    label: tr("公开但缺英文标题"),
     test: (p: AdminProject) => p.visibility === "public" && !p.title.en?.trim()
   },
   {
     value: "no-cover",
-    label: "公开但没有封面",
+    label: tr("公开但没有封面"),
     test: (p: AdminProject) => p.visibility === "public" && !p.cover
   }
 ] as const;
@@ -50,12 +51,12 @@ export function ProjectsPage() {
   const remove = useDeleteProject();
   const toast = useToast();
 
-  if (isPending) return <LoadingSkeleton label="加载中…" variant="rows" />;
+  if (isPending) return <LoadingSkeleton label={tr("加载中…")} variant="rows" />;
   if (error) {
     return (
       <>
-        <PageHeader title="项目" />
-        <DatabaseNotice error={error} subject="项目管理" />
+        <PageHeader title={tr("项目")} />
+        <DatabaseNotice error={error} subject={tr("项目管理")} />
       </>
     );
   }
@@ -75,11 +76,13 @@ export function ProjectsPage() {
     <>
       <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
         <PageHeader
-          title="项目"
-          description="新建的项目默认隐藏，填好内容、上传封面后再设为公开。开启“首页精选”的项目会显示在首页。"
+          title={tr("项目")}
+          description={tr(
+            "新建的项目默认隐藏，填好内容、上传封面后再设为公开。开启“首页精选”的项目会显示在首页。"
+          )}
         />
         <button type="button" className="btn-primary" onClick={() => setCreating(true)}>
-          <Plus aria-hidden="true" className="size-4" /> 新建项目
+          <Plus aria-hidden="true" className="size-4" /> {tr("新建项目")}
         </button>
       </div>
 
@@ -100,13 +103,15 @@ export function ProjectsPage() {
               </button>
             );
           })}
-          {show ? <span className="text-[12px] text-faint">取消筛选后可以调整顺序</span> : null}
+          {show ? (
+            <span className="text-[12px] text-faint">{tr("取消筛选后可以调整顺序")}</span>
+          ) : null}
         </div>
       ) : null}
 
       {list.length === 0 ? (
         <div className="card p-10 text-center text-[13.5px] text-muted">
-          {all.length ? "没有符合条件的项目" : "还没有项目，点击“新建项目”开始"}
+          {all.length ? tr("没有符合条件的项目") : tr("还没有项目，点击“新建项目”开始")}
         </div>
       ) : (
         <ul className="space-y-3">
@@ -117,7 +122,7 @@ export function ProjectsPage() {
                 <Link
                   to={`/projects/${project.id}`}
                   className="shrink-0"
-                  aria-label={`编辑 ${title}`}
+                  aria-label={tr("编辑 {0}", title)}
                 >
                   {/* 2:1 like the site's project cards, so a social-preview cover shows whole. */}
                   {project.cover ? (
@@ -141,38 +146,42 @@ export function ProjectsPage() {
                   </Link>
                   <p className="truncate text-[12px] text-subtle">
                     /projects/{project.slug}
-                    {views ? ` · 近 30 天 ${views[project.slug]?.views ?? 0} 次浏览` : ""}
+                    {views ? tr(" · 近 30 天 {0} 次浏览", views[project.slug]?.views ?? 0) : ""}
                   </p>
                   <div className="mt-1.5 flex flex-wrap gap-1.5">
                     <span className="chip">{STATUS_LABELS[project.status]}</span>
                     {project.visibility === "private" ? (
                       <span className="chip inline-flex items-center gap-1">
-                        <EyeOff aria-hidden="true" className="size-3" /> 隐藏
+                        <EyeOff aria-hidden="true" className="size-3" /> {tr("隐藏")}
                       </span>
                     ) : null}
                     {project.featured ? (
                       <span className="chip inline-flex items-center gap-1">
-                        <Star aria-hidden="true" className="size-3" /> 精选
+                        <Star aria-hidden="true" className="size-3" /> {tr("精选")}
                       </span>
                     ) : null}
                   </div>
                 </div>
                 <div className="flex shrink-0 items-center">
                   <IconButton
-                    label={`上移 ${title}`}
+                    label={tr("上移 {0}", title)}
                     disabled={show !== null || index === 0 || reorder.isPending}
                     onClick={() => move(index, index - 1)}
                   >
                     <ArrowUp aria-hidden="true" className="size-4" />
                   </IconButton>
                   <IconButton
-                    label={`下移 ${title}`}
+                    label={tr("下移 {0}", title)}
                     disabled={show !== null || index === list.length - 1 || reorder.isPending}
                     onClick={() => move(index, index + 1)}
                   >
                     <ArrowDown aria-hidden="true" className="size-4" />
                   </IconButton>
-                  <IconButton label={`删除 ${title}`} onClick={() => setDeleting(project)} danger>
+                  <IconButton
+                    label={tr("删除 {0}", title)}
+                    onClick={() => setDeleting(project)}
+                    danger
+                  >
                     <Trash2 aria-hidden="true" className="size-4" />
                   </IconButton>
                 </div>
@@ -187,12 +196,12 @@ export function ProjectsPage() {
       <Dialog
         open={Boolean(deleting)}
         size="sm"
-        title="删除项目"
+        title={tr("删除项目")}
         onClose={() => setDeleting(null)}
         footer={
           <>
             <button type="button" className="btn-secondary" onClick={() => setDeleting(null)}>
-              取消
+              {tr("取消")}
             </button>
             <button
               type="button"
@@ -202,21 +211,23 @@ export function ProjectsPage() {
                 deleting &&
                 remove.mutate(deleting.id, {
                   onSuccess: () => {
-                    toast("已删除");
+                    toast(tr("已删除"));
                     setDeleting(null);
                   },
                   onError: (e) => toast(e.message, "error")
                 })
               }
             >
-              {remove.isPending ? "删除中…" : "删除"}
+              {remove.isPending ? tr("删除中…") : tr("删除")}
             </button>
           </>
         }
       >
         <p className="text-[13.5px] leading-relaxed text-muted">
-          确定删除“{deleting ? pickText(deleting.title, deleting.slug) : ""}
-          ”吗？封面和截图文件也会一起删除，此操作无法撤销。
+          {tr(
+            "确定删除“{0}”吗？封面和截图文件也会一起删除，此操作无法撤销。",
+            deleting ? pickText(deleting.title, deleting.slug) : ""
+          )}
         </p>
       </Dialog>
     </>
@@ -234,7 +245,7 @@ function CreateProjectDialog({ onClose }: { onClose: () => void }) {
   const submit = (event: FormEvent) => {
     event.preventDefault();
     if (!title.trim() || !slug.trim()) {
-      setError("请填写标题和网址名");
+      setError(tr("请填写标题和网址名"));
       return;
     }
     create.mutate(
@@ -244,7 +255,7 @@ function CreateProjectDialog({ onClose }: { onClose: () => void }) {
         onError: (e) =>
           setError(
             e instanceof ApiError && e.code === "SLUG_TAKEN"
-              ? "这个网址名已被其它项目使用"
+              ? tr("这个网址名已被其它项目使用")
               : e.message
           )
       }
@@ -255,12 +266,12 @@ function CreateProjectDialog({ onClose }: { onClose: () => void }) {
     <Dialog
       open
       size="sm"
-      title="新建项目"
+      title={tr("新建项目")}
       onClose={onClose}
       footer={
         <>
           <button type="button" className="btn-secondary" onClick={onClose}>
-            取消
+            {tr("取消")}
           </button>
           <button
             type="submit"
@@ -268,13 +279,17 @@ function CreateProjectDialog({ onClose }: { onClose: () => void }) {
             className="btn-primary"
             disabled={create.isPending}
           >
-            {create.isPending ? "创建中…" : "创建并编辑"}
+            {create.isPending ? tr("创建中…") : tr("创建并编辑")}
           </button>
         </>
       }
     >
       <form id="create-project" onSubmit={submit} noValidate className="space-y-3.5">
-        <Field label="标题（简体中文）" htmlFor="new-project-title" hint="其它语言可以在编辑页填写">
+        <Field
+          label={tr("标题（简体中文）")}
+          htmlFor="new-project-title"
+          hint={tr("其它语言可以在编辑页填写")}
+        >
           <input
             id="new-project-title"
             className="field"
@@ -287,9 +302,9 @@ function CreateProjectDialog({ onClose }: { onClose: () => void }) {
           />
         </Field>
         <Field
-          label="网址名"
+          label={tr("网址名")}
           htmlFor="new-project-slug"
-          hint="显示在网址中：/projects/网址名。只能用小写字母、数字和短横线"
+          hint={tr("显示在网址中：/projects/网址名。只能用小写字母、数字和短横线")}
         >
           <input
             id="new-project-slug"

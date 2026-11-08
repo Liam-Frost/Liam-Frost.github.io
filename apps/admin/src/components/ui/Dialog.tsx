@@ -1,6 +1,7 @@
 import { X } from "lucide-react";
 import { useEffect, useId, useRef, type ReactNode } from "react";
 import { createPortal } from "react-dom";
+import { tr } from "../../lib/messages";
 
 type Props = {
   open: boolean;
@@ -56,7 +57,7 @@ export function Dialog({ open, title, onClose, children, footer, size = "lg" }: 
             <button
               type="button"
               onClick={onClose}
-              aria-label="关闭"
+              aria-label={tr("关闭")}
               className="rounded-full p-1.5 text-faint hover:bg-brand-secondary/12 hover:text-brand"
             >
               <X aria-hidden="true" className="size-4" />

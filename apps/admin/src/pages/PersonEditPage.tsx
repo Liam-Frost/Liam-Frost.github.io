@@ -8,7 +8,7 @@ import type {
 } from "@liam-frost/shared";
 import { ArrowLeft, ExternalLink, ImagePlus, RefreshCw, Trash2, UserRound, X } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent, useId } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 
 import { MusicCandidatesPanel } from "../components/people/MusicCandidatesPanel";
@@ -25,8 +25,13 @@ import {
   useUploadPersonPhoto
 } from "../hooks/usePeople";
 import { api, ApiError } from "../lib/api";
-import { LANG_LABELS, LANGS, pickText, type Lang } from "../lib/i18n";
+import { pickText, type Lang } from "../lib/i18n";
 import { RecentStats } from "../components/analytics/RecentStats";
+import { tr } from "../lib/messages";
+import { Select } from "../components/ui/Select";
+import { LanguageTabPanel, LanguageTabs } from "../components/ui/LanguageTabs";
+import { useUnsaved } from "../lib/unsaved";
+import { skipNavigationGuard } from "../lib/unsaved";
 
 const ACCEPT = "image/jpeg,image/png,image/webp,image/avif,image/tiff";
 
@@ -60,17 +65,17 @@ export function PersonEditPage() {
   const { id = "" } = useParams();
   const { data: person, isPending, error } = usePerson(id);
 
-  if (isPending) return <LoadingSkeleton label="加载中…" variant="form" />;
+  if (isPending) return <LoadingSkeleton label={tr("加载中…")} variant="form" />;
   if (error || !person) {
     return (
       <div className="card p-6 text-[13.5px]">
         <p role="alert" className="mb-3 text-status-error">
           {error instanceof ApiError && error.status === 404
-            ? "人物不存在"
-            : (error?.message ?? "无法加载人物")}
+            ? tr("人物不存在")
+            : (error?.message ?? tr("无法加载人物"))}
         </p>
         <Link to="/collection/people" className="btn-secondary">
-          返回人物
+          {tr("返回人物")}
         </Link>
       </div>
     );
@@ -84,6 +89,7 @@ function PersonEditor({ person }: { person: AdminPerson }) {
   const [saved, setSaved] = useState(draft);
   const dirty = JSON.stringify(draft) !== JSON.stringify(saved);
   const [lang, setLang] = useState<Lang>("zh");
+  const languageTabs = useId();
   const [linkInput, setLinkInput] = useState("");
   const [error, setError] = useState("");
   const [deleting, setDeleting] = useState(false);
@@ -95,7 +101,7 @@ function PersonEditor({ person }: { person: AdminPerson }) {
   const sync = useMutation({
     mutationFn: () => api.syncPersonRelations(person.id),
     onSuccess: ({ added }) => {
-      toast(added ? `已补齐 ${added} 个关联` : "关联已完整，没有新增关联");
+      toast(added ? tr("已补齐 {0} 个关联", added) : tr("关联已完整，没有新增关联"));
       void qc.invalidateQueries({ queryKey: ["admin", "people"] });
       void qc.invalidateQueries({ queryKey: ["admin", "relations"] });
       void qc.invalidateQueries({ queryKey: ["admin", "music-candidates"] });
@@ -103,12 +109,7 @@ function PersonEditor({ person }: { person: AdminPerson }) {
     onError: (error) => toast(error.message, "error")
   });
 
-  useEffect(() => {
-    if (!dirty) return;
-    const onBeforeUnload = (event: BeforeUnloadEvent) => event.preventDefault();
-    window.addEventListener("beforeunload", onBeforeUnload);
-    return () => window.removeEventListener("beforeunload", onBeforeUnload);
-  }, [dirty]);
+  useUnsaved(dirty, "page");
 
   const set = <K extends keyof Draft>(key: K, value: Draft[K]) =>
     setDraft((d) => ({ ...d, [key]: value }));
@@ -118,7 +119,7 @@ function PersonEditor({ person }: { person: AdminPerson }) {
   const addLink = () => {
     const value = linkInput.trim();
     if (!value) return;
-    if (!/^https:\/\/\S+$/.test(value)) return setError("链接需要以 https:// 开头");
+    if (!/^https:\/\/\S+$/.test(value)) return setError(tr("链接需要以 https:// 开头"));
     if (draft.links.length < 10 && !draft.links.includes(value))
       set("links", [...draft.links, value]);
     setLinkInput("");
@@ -128,7 +129,7 @@ function PersonEditor({ person }: { person: AdminPerson }) {
   const submit = (event: FormEvent) => {
     event.preventDefault();
     if (!Object.values(draft.name).some((t) => t?.trim()))
-      return setError("请至少用一种语言填写名字");
+      return setError(tr("请至少用一种语言填写名字"));
     setError("");
     update.mutate(
       {
@@ -148,14 +149,14 @@ function PersonEditor({ person }: { person: AdminPerson }) {
           const normalized = toDraft(next);
           setDraft(normalized);
           setSaved(normalized);
-          toast("已保存");
+          toast(tr("已保存"));
         },
         onError: (e) => setError(e.message)
       }
     );
   };
 
-  const name = pickText(draft.name, "未命名");
+  const name = pickText(draft.name, tr("未命名"));
 
   return (
     <form onSubmit={submit} noValidate>
@@ -163,10 +164,7 @@ function PersonEditor({ person }: { person: AdminPerson }) {
         <Link
           to="/collection/people"
           className="rounded-full p-1.5 text-subtle hover:bg-brand-secondary/12 hover:text-brand"
-          aria-label="返回人物"
-          onClick={(e) => {
-            if (dirty && !window.confirm("有未保存的修改，确定离开吗？")) e.preventDefault();
-          }}
+          aria-label={tr("返回人物")}
         >
           <ArrowLeft aria-hidden="true" className="size-5" />
         </Link>
@@ -181,15 +179,15 @@ function PersonEditor({ person }: { person: AdminPerson }) {
           onClick={() => sync.mutate()}
         >
           <RefreshCw aria-hidden="true" className="size-4" />
-          {sync.isPending ? "补齐中…" : "补齐作品关联"}
+          {sync.isPending ? tr("补齐中…") : tr("补齐作品关联")}
         </button>
         {dirty ? (
           <span className="text-[12.5px] text-status-warn" role="status">
-            有未保存的修改
+            {tr("有未保存的修改")}
           </span>
         ) : null}
         <button type="submit" className="btn-primary" disabled={update.isPending}>
-          {update.isPending ? "保存中…" : "保存"}
+          {update.isPending ? tr("保存中…") : tr("保存")}
         </button>
       </div>
 
@@ -204,27 +202,20 @@ function PersonEditor({ person }: { person: AdminPerson }) {
 
       <div className="grid gap-5 lg:grid-cols-[1fr_320px]">
         <div className="min-w-0 space-y-5">
-          <section className="card min-w-0 p-5" aria-label="文字">
-            <div role="tablist" aria-label="语言" className="mb-3 flex flex-wrap gap-1.5">
-              {LANGS.map((l) => (
-                <button
-                  key={l}
-                  type="button"
-                  role="tab"
-                  aria-selected={lang === l}
-                  onClick={() => setLang(l)}
-                  className={`rounded-full px-3 py-1.5 text-[12.5px] transition-colors ${lang === l ? "bg-brand text-white" : "bg-brand-secondary/10 text-brand hover:bg-brand-secondary/18"}`}
-                >
-                  {LANG_LABELS[l]}
-                  {draft.name[l]?.trim() ? " ✓" : ""}
-                </button>
-              ))}
-            </div>
+          <section className="card min-w-0 p-5" aria-label={tr("文字")}>
+            <LanguageTabs
+              id={languageTabs}
+              value={lang}
+              onChange={setLang}
+              isFilled={(l) => Boolean(draft.name[l]?.trim())}
+              mark="filled"
+              className="mb-3"
+            />
             <p className="mb-4 text-[11.5px] text-faint">
-              没填写的语言会在网站上回退到其它语言。标签后带 ✓ 表示该语言已有名字。
+              {tr("没填写的语言会在网站上回退到其它语言。标签后带 ✓ 表示该语言已有名字。")}
             </p>
-            <div className="space-y-3.5">
-              <Field label="名字" htmlFor="person-name">
+            <LanguageTabPanel id={languageTabs} lang={lang} className="space-y-3.5">
+              <Field label={tr("名字")} htmlFor="person-name">
                 <input
                   id="person-name"
                   className="field"
@@ -234,9 +225,9 @@ function PersonEditor({ person }: { person: AdminPerson }) {
                 />
               </Field>
               <Field
-                label="简介"
+                label={tr("简介")}
                 htmlFor="person-bio"
-                hint={person.source === "tmdb" ? "导入自 TMDB，可以修改" : undefined}
+                hint={person.source === "tmdb" ? tr("导入自 TMDB，可以修改") : undefined}
               >
                 <textarea
                   id="person-bio"
@@ -247,45 +238,39 @@ function PersonEditor({ person }: { person: AdminPerson }) {
                   onChange={(e) => setText("bio", e.target.value)}
                 />
               </Field>
-            </div>
+            </LanguageTabPanel>
           </section>
 
           {draft.kind !== "person" || draft.members.length ? (
-            <Panel title="团体成员">
+            <Panel title={tr("团体成员")}>
               <p className="text-xs text-muted">
-                成员关系与作品角色独立，不会把成员自动记作乐队全部作品的演唱者。年份可留空。
+                {tr("成员关系与作品角色独立，不会把成员自动记作乐队全部作品的演唱者。年份可留空。")}
               </p>
               {draft.members.map((member, index) => (
                 <div className="space-y-2 rounded-lg border border-line-soft p-3" key={index}>
                   <label className="block text-xs">
-                    成员
-                    <select
-                      className="field"
-                      aria-label={`成员 ${index + 1}`}
+                    {tr("成员")}
+                    <Select
+                      aria-label={tr("成员 {0}", index + 1)}
                       value={member.personId}
-                      onChange={(e) =>
+                      onChange={(value) =>
                         set(
                           "members",
-                          draft.members.map((m, i) =>
-                            i === index ? { ...m, personId: e.target.value } : m
-                          )
+                          draft.members.map((m, i) => (i === index ? { ...m, personId: value } : m))
                         )
                       }
-                    >
-                      <option value="">请选择人物</option>
-                      {(everyone ?? [])
-                        .filter((p) => p.id !== person.id && (p.kind ?? "person") === "person")
-                        .map((p) => (
-                          <option key={p.id} value={p.id}>
-                            {pickText(p.name)}
-                          </option>
-                        ))}
-                    </select>
+                      options={[
+                        { value: "", label: tr("请选择人物") },
+                        ...(everyone ?? [])
+                          .filter((p) => p.id !== person.id && (p.kind ?? "person") === "person")
+                          .map((p) => ({ value: p.id, label: pickText(p.name) }))
+                      ]}
+                    />
                   </label>
                   <input
                     className="field"
-                    aria-label={`成员 ${index + 1} 职责`}
-                    placeholder="职责，如主唱、吉他手"
+                    aria-label={tr("成员 {0} 职责", index + 1)}
+                    placeholder={tr("职责，如主唱、吉他手")}
                     value={member.role ?? ""}
                     maxLength={80}
                     onChange={(e) =>
@@ -300,7 +285,7 @@ function PersonEditor({ person }: { person: AdminPerson }) {
                   <div className="flex gap-2">
                     {(["startYear", "endYear"] as const).map((field) => (
                       <label className="min-w-0 text-xs" key={field}>
-                        {field === "startYear" ? "加入年份" : "离开年份"}
+                        {field === "startYear" ? tr("加入年份") : tr("离开年份")}
                         <input
                           type="number"
                           className="field"
@@ -334,7 +319,7 @@ function PersonEditor({ person }: { person: AdminPerson }) {
                       )
                     }
                   >
-                    移除成员
+                    {tr("移除成员")}
                   </button>
                 </div>
               ))}
@@ -349,7 +334,7 @@ function PersonEditor({ person }: { person: AdminPerson }) {
                   ])
                 }
               >
-                添加成员
+                {tr("添加成员")}
               </button>
             </Panel>
           ) : null}
@@ -360,43 +345,43 @@ function PersonEditor({ person }: { person: AdminPerson }) {
         <div className="space-y-5">
           <PhotoPanel person={person} />
 
-          <Panel title="发布">
+          <Panel title={tr("发布")}>
             <div className="flex flex-col items-start gap-2.5">
               <Switch
                 id="person-public"
                 checked={draft.visibility === "public"}
                 onChange={(on) => set("visibility", on ? "public" : "private")}
-                label="公开显示"
+                label={tr("公开显示")}
               />
               <Switch
                 id="person-featured"
                 checked={draft.featured}
                 onChange={(on) => set("featured", on)}
-                label="精选"
+                label={tr("精选")}
               />
             </div>
             <p className="text-[11.5px] leading-relaxed text-faint">
-              网站只显示参与了公开条目的人物。
+              {tr("网站只显示参与了公开条目的人物。")}
             </p>
           </Panel>
 
-          <Panel title="身份与别名">
-            <Field label="类型" htmlFor="person-kind">
-              <select
-                className="field"
+          <Panel title={tr("身份与别名")}>
+            <Field label={tr("类型")} htmlFor="person-kind">
+              <Select
                 id="person-kind"
                 value={draft.kind}
-                onChange={(e) => set("kind", e.target.value as PersonKind)}
-              >
-                <option value="person">人物</option>
-                <option value="group">团体 / 乐队</option>
-                <option value="organization">机构 / 工作室</option>
-              </select>
+                onChange={(value) => set("kind", value as PersonKind)}
+                options={[
+                  { value: "person", label: tr("人物") },
+                  { value: "group", label: tr("团体 / 乐队") },
+                  { value: "organization", label: tr("机构 / 工作室") }
+                ]}
+              />
             </Field>
             <Field
-              label="别名"
+              label={tr("别名")}
               htmlFor="person-aliases"
-              hint="每行一个，最多 50 个；用于建议匹配，不证明身份"
+              hint={tr("每行一个，最多 50 个；用于建议匹配，不证明身份")}
             >
               <textarea
                 className="field"
@@ -407,40 +392,41 @@ function PersonEditor({ person }: { person: AdminPerson }) {
               />
             </Field>
             <p className="text-xs text-muted">
-              确认来源 ID 后才参与音乐自动关联。相同来源身份只能属于一个人物；保存时校验。
+              {tr("确认来源 ID 后才参与音乐自动关联。相同来源身份只能属于一个人物；保存时校验。")}
             </p>
             {draft.identities.map((identity, index) => (
               <div key={index} className="space-y-2 rounded-lg border border-line-soft p-3">
                 <label className="block text-xs">
-                  来源
-                  <select
-                    aria-label={`身份 ${index + 1} 来源`}
-                    className="field"
+                  {tr("来源")}
+                  <Select
+                    aria-label={tr("身份 {0} 来源", index + 1)}
                     value={identity.provider}
-                    onChange={(e) =>
+                    onChange={(value) =>
                       set(
                         "identities",
                         draft.identities.map((v, i) =>
                           i === index
                             ? {
                                 ...v,
-                                provider: e.target.value as PersonIdentity["provider"],
+                                provider: value as PersonIdentity["provider"],
                                 confirmed: false
                               }
                             : v
                         )
                       )
                     }
-                  >
-                    {["musicbrainz", "spotify", "itunes", "tmdb"].map((provider) => (
-                      <option key={provider}>{provider}</option>
-                    ))}
-                  </select>
+                    options={[
+                      ...["musicbrainz", "spotify", "itunes", "tmdb"].map((provider) => ({
+                        value: provider,
+                        label: provider
+                      }))
+                    ]}
+                  />
                 </label>
                 <input
                   className="field"
-                  aria-label={`身份 ${index + 1} ID`}
-                  placeholder="艺人 ID（不是歌曲或专辑 ID）"
+                  aria-label={tr("身份 {0} ID", index + 1)}
+                  placeholder={tr("艺人 ID（不是歌曲或专辑 ID）")}
                   value={identity.externalId}
                   maxLength={100}
                   onChange={(e) =>
@@ -466,12 +452,12 @@ function PersonEditor({ person }: { person: AdminPerson }) {
                     target="_blank"
                     rel="noreferrer"
                   >
-                    打开来源核对
+                    {tr("打开来源核对")}
                   </a>
                 ) : null}
                 <Switch
                   id={`identity-confirm-${index}`}
-                  label="已核对，确认是同一人物"
+                  label={tr("已核对，确认是同一人物")}
                   checked={identity.confirmed ?? false}
                   onChange={(confirmed) =>
                     set(
@@ -490,7 +476,7 @@ function PersonEditor({ person }: { person: AdminPerson }) {
                     )
                   }
                 >
-                  移除此身份
+                  {tr("移除此身份")}
                 </button>
               </div>
             ))}
@@ -505,11 +491,11 @@ function PersonEditor({ person }: { person: AdminPerson }) {
                 ])
               }
             >
-              添加来源身份
+              {tr("添加来源身份")}
             </button>
           </Panel>
-          <Panel title="资料">
-            <Field label="原名" htmlFor="person-original" hint="母语写法，例如“宮崎駿”">
+          <Panel title={tr("资料")}>
+            <Field label={tr("原名")} htmlFor="person-original" hint={tr("母语写法，例如“宮崎駿”")}>
               <input
                 id="person-original"
                 className="field"
@@ -518,7 +504,11 @@ function PersonEditor({ person }: { person: AdminPerson }) {
                 onChange={(e) => set("originalName", e.target.value)}
               />
             </Field>
-            <Field label="链接" htmlFor="person-links" hint="官网、维基百科、Spotify 等，回车添加">
+            <Field
+              label={tr("链接")}
+              htmlFor="person-links"
+              hint={tr("官网、维基百科、Spotify 等，回车添加")}
+            >
               {draft.links.length ? (
                 <ul className="mb-2 space-y-1">
                   {draft.links.map((link) => (
@@ -533,7 +523,7 @@ function PersonEditor({ person }: { person: AdminPerson }) {
                       </a>
                       <button
                         type="button"
-                        aria-label={`删除 ${link}`}
+                        aria-label={tr("删除 {0}", link)}
                         className="rounded-full p-0.5 text-faint hover:text-status-error"
                         onClick={() =>
                           set(
@@ -571,13 +561,13 @@ function PersonEditor({ person }: { person: AdminPerson }) {
                 rel="noreferrer"
                 className="inline-flex items-center gap-1 text-[12.5px] text-brand hover:underline"
               >
-                在 TMDB 查看 <ExternalLink aria-hidden="true" className="size-3.5" />
+                {tr("在 TMDB 查看")} <ExternalLink aria-hidden="true" className="size-3.5" />
               </a>
             ) : null}
           </Panel>
 
           <button type="button" className="btn-danger w-full" onClick={() => setDeleting(true)}>
-            <Trash2 aria-hidden="true" className="size-4" /> 删除人物
+            <Trash2 aria-hidden="true" className="size-4" /> {tr("删除人物")}
           </button>
         </div>
       </div>
@@ -585,12 +575,12 @@ function PersonEditor({ person }: { person: AdminPerson }) {
       <Dialog
         open={deleting}
         size="sm"
-        title="删除人物"
+        title={tr("删除人物")}
         onClose={() => setDeleting(false)}
         footer={
           <>
             <button type="button" className="btn-secondary" onClick={() => setDeleting(false)}>
-              取消
+              {tr("取消")}
             </button>
             <button
               type="button"
@@ -599,20 +589,24 @@ function PersonEditor({ person }: { person: AdminPerson }) {
               onClick={() =>
                 remove.mutate(person.id, {
                   onSuccess: () => {
-                    toast("已删除");
+                    toast(tr("已删除"));
+                    skipNavigationGuard();
                     navigate("/collection/people");
                   },
                   onError: (e) => toast(e.message, "error")
                 })
               }
             >
-              {remove.isPending ? "删除中…" : "删除"}
+              {remove.isPending ? tr("删除中…") : tr("删除")}
             </button>
           </>
         }
       >
         <p className="text-[13.5px] leading-relaxed text-muted">
-          确定删除“{name}”吗？照片和 TA 与作品的关联都会删除，作品本身不受影响。此操作无法撤销。
+          {tr(
+            "确定删除“{0}”吗？照片和 TA 与作品的关联都会删除，作品本身不受影响。此操作无法撤销。",
+            name
+          )}
         </p>
       </Dialog>
     </form>
@@ -626,7 +620,7 @@ function PhotoPanel({ person }: { person: AdminPerson }) {
   const input = useRef<HTMLInputElement>(null);
 
   return (
-    <Panel title="照片">
+    <Panel title={tr("照片")}>
       {person.photo ? (
         <img
           src={person.photo.variants[person.photo.variants.length - 1].url}
@@ -645,7 +639,7 @@ function PhotoPanel({ person }: { person: AdminPerson }) {
         onClick={() => input.current?.click()}
       >
         <ImagePlus aria-hidden="true" className="size-4" />
-        {upload.isPending ? "上传中…" : person.photo ? "更换照片" : "上传照片"}
+        {upload.isPending ? tr("上传中…") : person.photo ? tr("更换照片") : tr("上传照片")}
       </button>
       <input
         ref={input}
@@ -657,7 +651,7 @@ function PhotoPanel({ person }: { person: AdminPerson }) {
           e.target.value = "";
           if (file)
             upload.mutate(file, {
-              onSuccess: () => toast("照片已更新"),
+              onSuccess: () => toast(tr("照片已更新")),
               onError: (err) => toast(err.message, "error")
             });
         }}

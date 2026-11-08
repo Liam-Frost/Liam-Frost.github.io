@@ -1,5 +1,11 @@
 import {
   ADMIN_REQUEST_HEADER,
+  type AdminAccountStatus,
+  type AdminLoginSecondFactor,
+  type AdminRecoveryCodes,
+  type AdminTotpSetup,
+  type AdminBranding,
+  type BrandSlot,
   type AdminAboutResponse,
   type AdminAboutUpdate,
   type AnalyticsAudience,
@@ -79,12 +85,14 @@ import {
   type SpotifyOwnPlaylist,
   type SpotifySettings
 } from "@liam-frost/shared";
+import { apiMessage, tr } from "./messages";
 
 export class ApiError extends Error {
   constructor(
     readonly status: number,
     readonly code: string,
-    message: string
+    message: string,
+    readonly details?: unknown
   ) {
     super(message);
     this.name = "ApiError";
@@ -115,7 +123,7 @@ export async function request<T>(
   try {
     response = await fetch(path, { ...init, headers, body, credentials: "same-origin" });
   } catch {
-    throw new ApiError(0, "NETWORK", "无法连接服务器，请检查网络");
+    throw new ApiError(0, "NETWORK", tr("无法连接服务器，请检查网络"));
   }
 
   if (response.status === 204) return undefined as T;
@@ -143,15 +151,21 @@ function toApiError(status: number, body: string) {
   return apiError(status, data);
 }
 
-const DATABASE_UNAVAILABLE_MESSAGE =
-  "数据库连接失败：请确认数据库已启动，并检查 apps/api/.env 中的 DATABASE_URL";
+const DATABASE_UNAVAILABLE_MESSAGE = tr(
+  "数据库连接失败：请确认数据库已启动，并检查 apps/api/.env 中的 DATABASE_URL"
+);
 
 function apiError(status: number, data: Partial<ApiErrorBody> | undefined) {
   const code = data?.error?.code ?? "HTTP";
   // Shown in toasts and inline errors anywhere in the admin, so it is translated here once.
   if (code === "DATABASE_UNAVAILABLE")
     return new ApiError(status, code, DATABASE_UNAVAILABLE_MESSAGE);
-  return new ApiError(status, code, data?.error?.message ?? `请求失败（HTTP ${status}）`);
+  return new ApiError(
+    status,
+    code,
+    data?.error?.message ? apiMessage(data.error.message) : tr("请求失败（HTTP {0}）", status),
+    data?.error?.details
+  );
 }
 
 /** Uploads one file with progress (fetch cannot report upload progress). */
@@ -175,7 +189,7 @@ function uploadFile<T>(
         reject(toApiError(xhr.status, xhr.responseText));
       }
     };
-    xhr.onerror = () => reject(new ApiError(0, "NETWORK", "无法连接服务器，请检查网络"));
+    xhr.onerror = () => reject(new ApiError(0, "NETWORK", tr("无法连接服务器，请检查网络")));
     const form = new FormData();
     form.append("file", file);
     xhr.send(form);
@@ -226,11 +240,48 @@ export const api = {
     }),
   session: () => request<AdminSessionResponse>("/api/admin/session"),
   dashboard: () => request<AdminDashboard>("/api/admin/dashboard"),
-  login: (username: string, password: string) =>
+  login: (username: string, password: string, second: AdminLoginSecondFactor = {}) =>
     request<AdminSessionResponse>("/api/admin/login", {
       method: "POST",
-      json: { username, password }
+      json: { username, password, ...second }
     }),
+  account: () => request<AdminAccountStatus>("/api/admin/account"),
+  changePassword: (currentPassword: string, newPassword: string) =>
+    request("/api/admin/account/password", {
+      method: "POST",
+      json: { currentPassword, newPassword }
+    }),
+  changeUsername: (currentPassword: string, username: string) =>
+    request("/api/admin/account/username", { method: "POST", json: { currentPassword, username } }),
+  revokeAdminSession: (id: string) =>
+    request(`/api/admin/account/sessions/${encodeURIComponent(id)}`, { method: "DELETE" }),
+  revokeOtherAdminSessions: () =>
+    request("/api/admin/account/sessions/revoke-others", { method: "POST" }),
+  beginTotp: (currentPassword: string) =>
+    request<AdminTotpSetup>("/api/admin/account/totp/setup", {
+      method: "POST",
+      json: { currentPassword }
+    }),
+  enableTotp: (code: string) =>
+    request<AdminRecoveryCodes>("/api/admin/account/totp/enable", {
+      method: "POST",
+      json: { code }
+    }),
+  disableTotp: (currentPassword: string, totp: string) =>
+    request("/api/admin/account/totp/disable", {
+      method: "POST",
+      json: { currentPassword, totp }
+    }),
+  regenerateRecoveryCodes: (currentPassword: string, totp: string) =>
+    request<AdminRecoveryCodes>("/api/admin/account/totp/recovery-codes", {
+      method: "POST",
+      json: { currentPassword, totp }
+    }),
+  beginAdminPath: (currentPassword: string, path: string) =>
+    request("/api/admin/account/path", { method: "POST", json: { currentPassword, path } }),
+  confirmAdminPath: (from: string) =>
+    request("/api/admin/account/path/confirm", { method: "POST", json: { from } }),
+  cancelAdminPath: () => request("/api/admin/account/path", { method: "DELETE" }),
   logout: () => request<{ authenticated: false }>("/api/admin/logout", { method: "POST" }),
 
   photos: () => request<AdminPhotosResponse>("/api/admin/photos"),
@@ -446,6 +497,11 @@ export const api = {
       method: "PUT",
       json: settings
     }),
+  branding: () => request<AdminBranding>("/api/admin/branding"),
+  uploadBranding: (slot: BrandSlot, file: File) =>
+    uploadFile<AdminBranding>(`/api/admin/branding/${slot}`, file),
+  removeBranding: (slot: BrandSlot) =>
+    request<AdminBranding>(`/api/admin/branding/${slot}`, { method: "DELETE" }),
   about: () => request<AdminAboutResponse>("/api/admin/about"),
   saveAbout: (body: AdminAboutUpdate) =>
     request<AdminAboutResponse>("/api/admin/about", { method: "PUT", json: body })

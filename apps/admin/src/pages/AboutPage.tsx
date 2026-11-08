@@ -11,7 +11,7 @@ import {
 } from "@liam-frost/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowDown, ArrowUp, ExternalLink, Eye, EyeOff, Pencil, Plus, Trash2 } from "lucide-react";
-import { useEffect, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 
 import { PageHeader } from "../components/layout/AdminLayout";
 import { Emphasis, GearCategoryDialog, ManifestoDialog } from "../components/about/dialogs";
@@ -21,14 +21,20 @@ import { Panel } from "../components/ui/Panel";
 import { useToast } from "../components/ui/Toast";
 import { api } from "../lib/api";
 import { LANGS, pickText } from "../lib/i18n";
+import { tr } from "../lib/messages";
+import { Select } from "../components/ui/Select";
+import { useUnsaved } from "../lib/unsaved";
 
 const aboutKey = ["admin", "about"] as const;
 
 const MODE_LABELS: Record<ManifestoRotationMode, { label: string; hint: string }> = {
-  fixed: { label: "固定", hint: "一直显示选定的一条" },
-  daily: { label: "每天", hint: "按温哥华日期加权选择，同一天所有访客一致" },
-  visit: { label: "每次访问", hint: "每次打开首页按权重抽取，允许连续出现同一条" },
-  session: { label: "每个浏览会话", hint: "按权重选择，同一标签页保持不变；权重调整后重新选择" }
+  fixed: { label: tr("固定"), hint: tr("一直显示选定的一条") },
+  daily: { label: tr("每天"), hint: tr("按温哥华日期加权选择，同一天所有访客一致") },
+  visit: { label: tr("每次访问"), hint: tr("每次打开首页按权重抽取，允许连续出现同一条") },
+  session: {
+    label: tr("每个浏览会话"),
+    hint: tr("按权重选择，同一标签页保持不变；权重调整后重新选择")
+  }
 };
 
 const BADGE =
@@ -47,12 +53,12 @@ const sameName = (a: string, b: string) => a.trim().toLowerCase() === b.trim().t
 /** The first problem that would make the server refuse the content, in words for this page. */
 function problemOf(about: AboutContent) {
   for (const category of about.gear) {
-    const title = pickText(category.name, "未命名分类");
-    if (category.items.some((item) => !item.name.trim())) return `“${title}”里有设备没有名称`;
+    const title = pickText(category.name, tr("未命名分类"));
+    if (category.items.some((item) => !item.name.trim())) return tr("“{0}”里有设备没有名称", title);
     const clash = category.items.find((item, i) =>
       category.items.some((other, j) => j < i && sameName(other.name, item.name))
     );
-    if (clash) return `“${title}”里有两个“${clash.name.trim()}”`;
+    if (clash) return tr("“{0}”里有两个“{1}”", title, clash.name.trim());
   }
   return "";
 }
@@ -92,7 +98,7 @@ export function AboutPage() {
           ? null
           : { ...current, revision: response.revision }
       );
-      toast("已保存，网站上马上生效");
+      toast(tr("已保存，网站上马上生效"));
     },
     onError: (e: Error) => toast(e.message, "error")
   });
@@ -100,19 +106,14 @@ export function AboutPage() {
   const about = draft?.about ?? data?.about ?? null;
   const dirty = draft !== null && JSON.stringify(draft.about) !== JSON.stringify(data?.about);
 
-  useEffect(() => {
-    if (!dirty) return;
-    const warn = (event: BeforeUnloadEvent) => event.preventDefault();
-    window.addEventListener("beforeunload", warn);
-    return () => window.removeEventListener("beforeunload", warn);
-  }, [dirty]);
+  useUnsaved(dirty, "page");
 
-  if (isPending) return <LoadingSkeleton label="加载中…" variant="form" />;
+  if (isPending) return <LoadingSkeleton label={tr("加载中…")} variant="form" />;
   if (error || !data || !about) {
     return (
       <>
-        <PageHeader title="关于" />
-        <DatabaseNotice error={error ?? new Error("无法加载")} subject="“关于我”管理" />
+        <PageHeader title={tr("关于")} />
+        <DatabaseNotice error={error ?? new Error(tr("无法加载"))} subject={tr("“关于我”管理")} />
       </>
     );
   }
@@ -141,7 +142,7 @@ export function AboutPage() {
     const name = (newItem[category.id] ?? "").trim();
     if (!name) return;
     if (category.items.some((item) => sameName(item.name, name)))
-      return toast(`“${name}”已经在这个分类里`, "error");
+      return toast(tr("“{0}”已经在这个分类里", name), "error");
     setCategory(category.id, (c) => ({
       ...c,
       items: [...c.items, { id: crypto.randomUUID(), name, visible: true }]
@@ -152,24 +153,26 @@ export function AboutPage() {
   return (
     <div className="max-w-[920px] pb-24">
       <PageHeader
-        title="关于"
-        description="首页“关于我”的宣言和设备。修改先保存在本页，点“保存”后一起生效；隐藏的宣言、设备和没有可见设备的分类不会出现在网站上。"
+        title={tr("关于")}
+        description={tr(
+          "首页“关于我”的宣言和设备。修改先保存在本页，点“保存”后一起生效；隐藏的宣言、设备和没有可见设备的分类不会出现在网站上。"
+        )}
         actions={
           <a href="/#/#about" target="_blank" rel="noreferrer" className="btn-secondary">
-            <ExternalLink aria-hidden="true" className="size-4" /> 预览网站
+            <ExternalLink aria-hidden="true" className="size-4" /> {tr("预览网站")}
           </a>
         }
       />
       {!data.saved ? (
         <p className="mb-4 rounded-xl bg-brand-secondary/8 px-4 py-3 text-[12.5px] text-muted">
-          还没有保存过：网站现在显示的是这里的默认内容，第一次保存后改由这里管理。
+          {tr("还没有保存过：网站现在显示的是这里的默认内容，第一次保存后改由这里管理。")}
         </p>
       ) : null}
 
       <div className="space-y-5">
-        <Panel title="轮换方式">
+        <Panel title={tr("轮换方式")}>
           <fieldset className="grid gap-2 sm:grid-cols-2">
-            <legend className="sr-only">宣言的轮换方式</legend>
+            <legend className="sr-only">{tr("宣言的轮换方式")}</legend>
             {MANIFESTO_ROTATION_MODES.map((mode) => (
               <label
                 key={mode}
@@ -199,40 +202,41 @@ export function AboutPage() {
           </fieldset>
           {about.rotation.mode === "fixed" ? (
             <label className="block text-[12.5px] font-medium text-brand-dark">
-              固定显示
-              <select
-                className="field mt-1.5"
+              {tr("固定显示")}
+              <Select
                 value={about.rotation.fixedId ?? ""}
-                onChange={(e) =>
+                onChange={(value) =>
                   change((a) => ({
                     ...a,
-                    rotation: { ...a.rotation, fixedId: e.target.value || null }
+                    rotation: { ...a.rotation, fixedId: value || null }
                   }))
                 }
-              >
-                <option value="">第一条可见的宣言</option>
-                {about.manifestos.map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {pickText(m.text).replaceAll("*", "")}
-                    {m.visible ? "" : "（已隐藏）"}
-                  </option>
-                ))}
-              </select>
+                className="mt-1.5"
+                options={[
+                  { value: "", label: tr("第一条可见的宣言") },
+                  ...about.manifestos.map((m) => ({
+                    value: m.id,
+                    label: `${pickText(m.text).replaceAll("*", "")}${m.visible ? "" : tr("（已隐藏）")}`
+                  }))
+                ]}
+              />
             </label>
           ) : null}
           {fixed && !fixed.visible && about.rotation.mode === "fixed" ? (
             <p className="text-[12px] text-status-warn">
-              选定的宣言已隐藏，网站会改为显示第一条可见的宣言。
+              {tr("选定的宣言已隐藏，网站会改为显示第一条可见的宣言。")}
             </p>
           ) : null}
           {visibleManifestos.length === 0 ? (
-            <p className="text-[12px] text-status-warn">没有可见的宣言，网站上不显示宣言。</p>
+            <p className="text-[12px] text-status-warn">
+              {tr("没有可见的宣言，网站上不显示宣言。")}
+            </p>
           ) : null}
         </Panel>
 
-        <Panel title={`宣言（${about.manifestos.length}/${ABOUT_LIMITS.manifestos}）`}>
+        <Panel title={tr("宣言（{0}/{1}）", about.manifestos.length, ABOUT_LIMITS.manifestos)}>
           {about.manifestos.length ? (
-            <ol className="divide-y divide-line-soft" aria-label="宣言">
+            <ol className="divide-y divide-line-soft" aria-label={tr("宣言")}>
               {about.manifestos.map((m, index) => {
                 const missing = LANGS.filter((l) => !m.text[l]);
                 return (
@@ -247,48 +251,50 @@ export function AboutPage() {
                       <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-[12px] text-muted">
                         {pickText(m.attribution) ? <span>— {pickText(m.attribution)}</span> : null}
                         {about.rotation.mode === "fixed" && m.id === about.rotation.fixedId ? (
-                          <span className={BADGE}>固定显示</span>
+                          <span className={BADGE}>{tr("固定显示")}</span>
                         ) : null}
                         {about.rotation.mode !== "fixed" ? (
                           <span className={BADGE}>
-                            权重 {m.weight ?? 1} ·{" "}
-                            {m.visible &&
-                            visibleManifestos.reduce((sum, v) => sum + (v.weight ?? 1), 0) > 0
-                              ? (
-                                  ((m.weight ?? 1) /
-                                    visibleManifestos.reduce(
-                                      (sum, v) => sum + (v.weight ?? 1),
-                                      0
-                                    )) *
-                                  100
-                                ).toFixed(1)
-                              : "0"}
-                            %
+                            {tr(
+                              "权重 {0} · {1}%",
+                              m.weight ?? 1,
+                              m.visible &&
+                                visibleManifestos.reduce((sum, v) => sum + (v.weight ?? 1), 0) > 0
+                                ? (
+                                    ((m.weight ?? 1) /
+                                      visibleManifestos.reduce(
+                                        (sum, v) => sum + (v.weight ?? 1),
+                                        0
+                                      )) *
+                                    100
+                                  ).toFixed(1)
+                                : "0"
+                            )}
                           </span>
                         ) : null}
-                        {m.visible ? null : <span className={BADGE}>已隐藏</span>}
+                        {m.visible ? null : <span className={BADGE}>{tr("已隐藏")}</span>}
                         {missing.length ? (
-                          <span className={BADGE}>缺 {missing.length} 种语言</span>
+                          <span className={BADGE}>{tr("缺 {0} 种语言", missing.length)}</span>
                         ) : null}
                       </div>
                     </div>
                     <div className="flex shrink-0 items-center">
                       <IconButton
-                        label="上移"
+                        label={tr("上移")}
                         disabled={index === 0}
                         onClick={() => setManifestos(moved(about.manifestos, index, index - 1))}
                       >
                         <ArrowUp className="size-4" />
                       </IconButton>
                       <IconButton
-                        label="下移"
+                        label={tr("下移")}
                         disabled={index === about.manifestos.length - 1}
                         onClick={() => setManifestos(moved(about.manifestos, index, index + 1))}
                       >
                         <ArrowDown className="size-4" />
                       </IconButton>
                       <IconButton
-                        label={m.visible ? "隐藏" : "显示"}
+                        label={m.visible ? tr("隐藏") : tr("显示")}
                         onClick={() =>
                           setManifestos(
                             about.manifestos.map((x) =>
@@ -300,13 +306,13 @@ export function AboutPage() {
                         {m.visible ? <Eye className="size-4" /> : <EyeOff className="size-4" />}
                       </IconButton>
                       <IconButton
-                        label="编辑"
+                        label={tr("编辑")}
                         onClick={() => setEditing({ kind: "manifesto", manifesto: m })}
                       >
                         <Pencil className="size-4" />
                       </IconButton>
                       <IconButton
-                        label="删除"
+                        label={tr("删除")}
                         danger
                         onClick={() => setManifestos(about.manifestos.filter((x) => x.id !== m.id))}
                       >
@@ -318,7 +324,7 @@ export function AboutPage() {
               })}
             </ol>
           ) : (
-            <p className="text-[13px] text-muted">还没有宣言</p>
+            <p className="text-[13px] text-muted">{tr("还没有宣言")}</p>
           )}
           <button
             type="button"
@@ -326,15 +332,15 @@ export function AboutPage() {
             disabled={about.manifestos.length >= ABOUT_LIMITS.manifestos}
             onClick={() => setEditing({ kind: "manifesto" })}
           >
-            <Plus aria-hidden="true" className="size-4" /> 添加宣言
+            <Plus aria-hidden="true" className="size-4" /> {tr("添加宣言")}
           </button>
         </Panel>
 
-        <Panel title="设备">
+        <Panel title={tr("设备")}>
           {about.gear.length ? (
-            <ol className="space-y-3" aria-label="设备分类">
+            <ol className="space-y-3" aria-label={tr("设备分类")}>
               {about.gear.map((category, index) => {
-                const title = pickText(category.name, "未命名分类");
+                const title = pickText(category.name, tr("未命名分类"));
                 return (
                   <li key={category.id} className="rounded-xl border border-line-soft p-3">
                     <div className="flex items-center gap-2">
@@ -347,24 +353,26 @@ export function AboutPage() {
                         <span className="ml-2 text-[12px] font-normal text-faint">
                           {category.items.length}/{ABOUT_LIMITS.gearItems}
                         </span>
-                        {category.visible ? null : <span className={`${BADGE} ml-2`}>已隐藏</span>}
+                        {category.visible ? null : (
+                          <span className={`${BADGE} ml-2`}>{tr("已隐藏")}</span>
+                        )}
                       </h3>
                       <IconButton
-                        label="上移分类"
+                        label={tr("上移分类")}
                         disabled={index === 0}
                         onClick={() => setGear(moved(about.gear, index, index - 1))}
                       >
                         <ArrowUp className="size-4" />
                       </IconButton>
                       <IconButton
-                        label="下移分类"
+                        label={tr("下移分类")}
                         disabled={index === about.gear.length - 1}
                         onClick={() => setGear(moved(about.gear, index, index + 1))}
                       >
                         <ArrowDown className="size-4" />
                       </IconButton>
                       <IconButton
-                        label={category.visible ? "隐藏分类" : "显示分类"}
+                        label={category.visible ? tr("隐藏分类") : tr("显示分类")}
                         onClick={() =>
                           setCategory(category.id, (c) => ({ ...c, visible: !c.visible }))
                         }
@@ -376,13 +384,13 @@ export function AboutPage() {
                         )}
                       </IconButton>
                       <IconButton
-                        label="重命名分类"
+                        label={tr("重命名分类")}
                         onClick={() => setEditing({ kind: "category", category })}
                       >
                         <Pencil className="size-4" />
                       </IconButton>
                       <IconButton
-                        label="删除分类及其设备"
+                        label={tr("删除分类及其设备")}
                         danger
                         onClick={() => setGear(about.gear.filter((c) => c.id !== category.id))}
                       >
@@ -390,12 +398,12 @@ export function AboutPage() {
                       </IconButton>
                     </div>
 
-                    <ol className="mt-2 space-y-1.5" aria-label={`${title}的设备`}>
+                    <ol className="mt-2 space-y-1.5" aria-label={tr("{0}的设备", title)}>
                       {category.items.map((item, i) => (
                         <li key={item.id} className="flex items-center gap-1.5">
                           <input
                             className={`field flex-1 ${item.visible ? "" : "opacity-55"}`}
-                            aria-label="设备名称"
+                            aria-label={tr("设备名称")}
                             value={item.name}
                             maxLength={ABOUT_LIMITS.gearItemName}
                             onChange={(e) =>
@@ -408,7 +416,7 @@ export function AboutPage() {
                             }
                           />
                           <IconButton
-                            label="上移"
+                            label={tr("上移")}
                             disabled={i === 0}
                             onClick={() =>
                               setCategory(category.id, (c) => ({
@@ -420,7 +428,7 @@ export function AboutPage() {
                             <ArrowUp className="size-4" />
                           </IconButton>
                           <IconButton
-                            label="下移"
+                            label={tr("下移")}
                             disabled={i === category.items.length - 1}
                             onClick={() =>
                               setCategory(category.id, (c) => ({
@@ -432,7 +440,7 @@ export function AboutPage() {
                             <ArrowDown className="size-4" />
                           </IconButton>
                           <IconButton
-                            label={item.visible ? "隐藏" : "显示"}
+                            label={item.visible ? tr("隐藏") : tr("显示")}
                             onClick={() =>
                               setCategory(category.id, (c) => ({
                                 ...c,
@@ -449,7 +457,7 @@ export function AboutPage() {
                             )}
                           </IconButton>
                           <IconButton
-                            label="删除"
+                            label={tr("删除")}
                             danger
                             onClick={() =>
                               setCategory(category.id, (c) => ({
@@ -466,8 +474,8 @@ export function AboutPage() {
                     <form onSubmit={addItem(category)} className="mt-2 flex gap-1.5">
                       <input
                         className="field flex-1"
-                        aria-label={`添加到${title}`}
-                        placeholder="输入设备名称，回车添加"
+                        aria-label={tr("添加到{0}", title)}
+                        placeholder={tr("输入设备名称，回车添加")}
                         maxLength={ABOUT_LIMITS.gearItemName}
                         value={newItem[category.id] ?? ""}
                         onChange={(e) =>
@@ -482,7 +490,7 @@ export function AboutPage() {
                           category.items.length >= ABOUT_LIMITS.gearItems
                         }
                       >
-                        <Plus aria-hidden="true" className="size-4" /> 添加
+                        <Plus aria-hidden="true" className="size-4" /> {tr("添加")}
                       </button>
                     </form>
                   </li>
@@ -490,7 +498,7 @@ export function AboutPage() {
               })}
             </ol>
           ) : (
-            <p className="text-[13px] text-muted">还没有设备分类，网站上不显示设备</p>
+            <p className="text-[13px] text-muted">{tr("还没有设备分类，网站上不显示设备")}</p>
           )}
           <button
             type="button"
@@ -498,7 +506,7 @@ export function AboutPage() {
             disabled={about.gear.length >= ABOUT_LIMITS.gearCategories}
             onClick={() => setEditing({ kind: "category" })}
           >
-            <Plus aria-hidden="true" className="size-4" /> 添加分类
+            <Plus aria-hidden="true" className="size-4" /> {tr("添加分类")}
           </button>
         </Panel>
       </div>
@@ -506,14 +514,14 @@ export function AboutPage() {
       {dirty ? (
         <div
           role="region"
-          aria-label="未保存的修改"
+          aria-label={tr("未保存的修改")}
           className="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-surface/95 px-4 py-3 backdrop-blur md:left-[220px]"
         >
           <div className="mx-auto flex max-w-[920px] flex-wrap items-center justify-end gap-2">
             <span
               className={`mr-auto text-[12.5px] ${problem ? "text-status-error" : "text-status-warn"}`}
             >
-              {problem || "有未保存的修改"}
+              {problem || tr("有未保存的修改")}
             </span>
             <button
               type="button"
@@ -521,7 +529,7 @@ export function AboutPage() {
               disabled={save.isPending}
               onClick={() => setDraft(null)}
             >
-              放弃修改
+              {tr("放弃修改")}
             </button>
             <button
               type="button"
@@ -529,7 +537,7 @@ export function AboutPage() {
               disabled={save.isPending || !!problem}
               onClick={() => save.mutate({ about, revision: draft?.revision ?? data.revision })}
             >
-              {save.isPending ? "保存中…" : "保存"}
+              {save.isPending ? tr("保存中…") : tr("保存")}
             </button>
           </div>
         </div>

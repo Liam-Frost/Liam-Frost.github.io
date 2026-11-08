@@ -31,11 +31,11 @@ A personal website for photography, software projects, and a collection of films
 
 Public homepage:
 
-![Public homepage with the site's editorial typography and photography identity](docs/images/home-preview.png)
+![Public homepage with the site's editorial typography and photography identity](docs/images/home-preview-en.png)
 
 Admin overview, shown with demonstration data:
 
-![Admin overview with quick actions, traffic cards and collection management navigation](docs/images/admin-preview.png)
+![Admin overview with quick actions, traffic cards and collection management navigation](docs/images/admin-preview-en.png)
 
 ### Project status
 
@@ -43,7 +43,7 @@ The public website and preview are available at the links above and **[preview.t
 
 This is a personal project under active development.
 
-See [admin features](docs/admin.md), [collection UX and artist-source plans](docs/collection-admin-ux.md), [authentication protections and limits](docs/admin-security-review.md), and [performance behavior](docs/performance.md). The current source includes MusicBrainz artist imports, editable person/group identities, confirmed-ID music matching, and explicit name-match suggestions. The unified website-settings design is documented in [the proposal](docs/website-settings-proposal.zh-CN.md); account and route changes remain proposals. Features reach production through the normal release process.
+See [admin features](docs/admin.md), [collection UX and artist-source plans](docs/collection-admin-ux.md), [authentication protections and limits](docs/admin-security-review.md), and [performance behavior](docs/performance.md). The current source includes MusicBrainz artist imports, editable person/group identities, confirmed-ID music matching, and explicit name-match suggestions. The unified website-settings design is documented in [the settings document](docs/website-settings-ui.zh-CN.md); account and route changes remain proposals. Features reach production through the normal release process.
 
 ## Technology
 
@@ -218,5 +218,7 @@ Report vulnerabilities privately through [GitHub's vulnerability reporting form]
 ## License and attribution
 
 Original software source code and technical documentation are available under the **[MIT License](LICENSE)**. Preserve the copyright and license notice when copying or redistributing the software or substantial portions of it. Visible website attribution is optional; a link to this repository is appreciated.
+
+The tab bar, glass surfaces and admin slider in `apps/web/src/vendor/cupertinocn` are adapted from [CupertinoCN](https://github.com/vantezzen/cupertinocn). That project declares no license, so that folder is not covered by this repository's MIT License.
 
 **Photographs, personal writing, portraits, branding, and third-party materials are excluded from the software license.** See [content and third-party rights](CONTENT-LICENSE.md), including the rules for content embedded in seed data or referenced by URL.

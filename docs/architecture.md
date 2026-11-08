@@ -1,8 +1,8 @@
 # Architecture
 
-## Current Target
+## Overview
 
-The project is migrating to a full-stack personal site deployed on a VPS.
+A full-stack personal site deployed on a VPS: one Node process serves the public site, the admin app and the API.
 
 ```txt
 apps/web        React + Vite front-end (public site)
@@ -16,28 +16,13 @@ scripts         Maintenance helpers
 
 ## Front-End
 
-The front-end remains React + Vite to preserve the existing visual design and behavior. In this first stage, pages still render immediately from shared seed content and then refresh from `/api/photos` when the API is available.
-
-This avoids layout breakage during the migration and keeps the current homepage and portfolio usable while backend work continues.
+The public site is React + Vite. Pages read their content from the API; photography seed data in `packages/content` is the fallback when the database is unavailable.
 
 ## Back-End
 
-The first-stage API uses Fastify and TypeScript. It currently provides:
+The API uses Fastify and TypeScript, with PostgreSQL through Prisma when `DATABASE_URL` is set. Public endpoints live under `/api`. Admin endpoints live under `/api/admin`, behind the session cookie, the optional IP allowlist and the CSRF header; `admin.md` lists them by feature.
 
-- `GET /api/health`
-- `GET /api/photos`
-- `GET /api/photos/:id`
-- `GET /api/spotify/player` (player settings and the synced playlist; see `admin.md`)
-- Admin collection routes under `/api/admin/media` and `/api/admin/collection/settings` (see `admin.md`)
-- `GET /api/collection`, `GET /api/collection/:id` (public collection)
-- `GET /api/admin/session`
-- `POST /api/admin/login`
-- `POST /api/admin/logout`
-- `GET /api/admin/me`
-
-The API has a PostgreSQL/Prisma foundation for photos. During migration, photo routes use the database when `DATABASE_URL` is configured and reachable, then fall back to shared seed data when the database is not configured or unavailable. This keeps the existing front-end stable while the admin/database workflow is built out.
-
-Admin authentication is in place with an HttpOnly cookie session and a reusable backend guard for future protected routes. CRUD, media metadata import, and upload processing are planned for later stages. See `admin.md` for the security model.
+Settings are validated documents in the `Setting` table. The admin saves them field by field (`PATCH` with the changed fields and the values they were edited from), so pages editing different fields of one document do not conflict.
 
 Production hosting: one Node process serves everything on one origin. `routes/web-app.ts` serves the site build (`apps/web/dist`) at `/`: only files that exist in the build at startup, looked up by exact path; other paths are the usual JSON 404 (the site uses hash routes, so `/` is its only page). `index.html` gets a CSP that allows the inline theme bootstrap script by its hash, computed from the build at startup. The admin build is served at `ADMIN_PATH`, uploads at `/uploads`. In Docker, Caddy sits in front (`compose.yaml`, `docs/local-development.md`).
 
@@ -48,7 +33,7 @@ apps/api/src
   config/env.ts     Zod-validated environment (fails fast on bad config)
   auth/             password hashing, signed sessions, AdminAuthService (CSRF, IP allowlist, rate limit, revocation)
   lib/              HttpError, Zod input validation, IP/CIDR lists
-  routes/           admin, admin-app, admin-photos, admin-projects, photos, projects, uploads, spotify
+  routes/           public and admin routes by feature (photos, projects, media, stack, settings, analytics…)
   photos/           PhotoRepository interface + Prisma implementation, image processing (sharp), EXIF, DTO mapping
   projects/         ProjectRepository interface + Prisma implementation, DTO mapping
   storage/local.ts  uploaded files under UPLOAD_DIR
@@ -68,6 +53,8 @@ packages/shared     constants and API types shared by API, web and admin (admin 
 - **Not found by default**: the app reads the mount path from that `<meta>`; without it (any other URL) it renders a bare 404 and never calls the API.
 - **Hosting** (`apps/api/src/routes/admin-app.ts`): only `index.html`, Vite's hashed `assets/*` files and `favicon.svg` are served; any other file-like path is 404. The page gets a strict CSP and `no-store`; hashed assets are cached for a year. IPs outside `ADMIN_ALLOWED_IPS` get the unknown-route 404. Without a build, nothing is registered.
 - **Development**: `npm run dev:admin` (port 5174) proxies `/api` and `/uploads` to `127.0.0.1:8787` (override with `ADMIN_API_PROXY`) and injects the same `<meta>` from `ADMIN_PATH` in `apps/api/.env`.
+- **Interface rules**: settings pages lay out with container queries, single choices use one `Select` built on Base UI, and unsaved work is guarded through the router's navigation blocker. See `website-settings-ui.zh-CN.md`.
+- **Tests**: `apps/admin/e2e` runs Playwright against the real API with in-memory data.
 - **Session**: TanStack Query holds `/api/admin/session`; any 401 returns the app to the login screen; logout drops all other cached admin data.
 
 ## Photos

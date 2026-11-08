@@ -7,58 +7,59 @@ import {
 import { useState, type ReactNode } from "react";
 import { useSearchParams } from "react-router";
 import { InfoTip } from "../ui/Tooltip";
+import { intlLocale, tr } from "../../lib/messages";
 
-export const number = new Intl.NumberFormat("zh-CN");
+export const number = new Intl.NumberFormat(intlLocale);
 
 export function formatSeconds(seconds: number) {
-  if (seconds < 60) return `${seconds} 秒`;
+  if (seconds < 60) return tr("{0} 秒", seconds);
   const minutes = Math.floor(seconds / 60);
   const rest = seconds % 60;
-  return rest ? `${minutes} 分 ${rest} 秒` : `${minutes} 分`;
+  return rest ? tr("{0} 分 {1} 秒", minutes, rest) : tr("{0} 分", minutes);
 }
 
 /** Percent change, or 新增 / 持平 when there was nothing before. */
 export function changeText(current: number, previous: number) {
-  if (!previous) return { text: current ? "新增" : "持平", sign: 0 };
+  if (!previous) return { text: current ? tr("新增") : tr("持平"), sign: 0 };
   const percent = Math.round(((current - previous) / previous) * 100);
   return { text: `${percent > 0 ? "+" : ""}${percent}%`, sign: Math.sign(percent) };
 }
 
 export const PAGE_NAMES: Record<string, string> = {
-  "/": "首页",
-  "/portfolio": "摄影",
-  "/projects": "项目列表",
-  "/projects/:slug": "项目详情",
-  "/collection": "收藏",
-  "/privacy": "隐私说明",
-  "*": "不存在的页面"
+  "/": tr("首页"),
+  "/portfolio": tr("摄影"),
+  "/projects": tr("项目列表"),
+  "/projects/:slug": tr("项目详情"),
+  "/collection": tr("收藏"),
+  "/privacy": tr("隐私说明"),
+  "*": tr("不存在的页面")
 };
 
 export const CONTENT_TYPES: Record<AnalyticsContentType, string> = {
-  project: "项目",
-  photo: "照片",
-  media: "收藏",
-  person: "人物",
-  playlist: "歌单"
+  project: tr("项目"),
+  photo: tr("照片"),
+  media: tr("收藏"),
+  person: tr("人物"),
+  playlist: tr("歌单")
 };
 
 export const MEDIA_KINDS: Record<string, string> = {
-  movie: "电影",
-  tv: "剧集",
-  anime: "动漫",
-  book: "图书",
-  comic: "漫画",
-  game: "游戏",
-  track: "歌曲",
-  album: "专辑"
+  movie: tr("电影"),
+  tv: tr("剧集"),
+  anime: tr("动漫"),
+  book: tr("图书"),
+  comic: tr("漫画"),
+  game: tr("游戏"),
+  track: tr("歌曲"),
+  album: tr("专辑")
 };
 
 const RANGE_LABELS: Record<AnalyticsRange, string> = {
-  today: "今天",
-  "7d": "7 天",
-  "30d": "30 天",
-  "90d": "90 天",
-  custom: "自定义"
+  today: tr("今天"),
+  "7d": tr("7 天"),
+  "30d": tr("30 天"),
+  "90d": tr("90 天"),
+  custom: tr("自定义")
 };
 
 /** The range in the address (?range=&from=&to=), shared by every view of the 统计 page. */
@@ -89,7 +90,7 @@ export function RangePicker({ firstDay }: { firstDay: string | null }) {
   const [draft, setDraft] = useState({ from: from || firstDay || today, to: to || today });
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <div role="group" aria-label="时间范围" className="flex flex-wrap gap-1">
+      <div role="group" aria-label={tr("时间范围")} className="flex flex-wrap gap-1">
         {ANALYTICS_RANGES.map((value) => (
           <button
             key={value}
@@ -122,24 +123,24 @@ export function RangePicker({ firstDay }: { firstDay: string | null }) {
         >
           <input
             type="date"
-            aria-label="开始日期"
-            className="field !w-auto !py-1.5"
+            aria-label={tr("开始日期")}
+            className="field field-sm w-auto"
             value={draft.from}
             max={draft.to}
             onChange={(e) => setDraft({ ...draft, from: e.target.value })}
           />
-          <span className="text-muted">至</span>
+          <span className="text-muted">{tr("至")}</span>
           <input
             type="date"
-            aria-label="结束日期"
-            className="field !w-auto !py-1.5"
+            aria-label={tr("结束日期")}
+            className="field field-sm w-auto"
             value={draft.to}
             min={draft.from}
             max={today}
             onChange={(e) => setDraft({ ...draft, to: e.target.value })}
           />
-          <button type="submit" className="btn-secondary !py-1.5">
-            应用
+          <button type="submit" className="btn-secondary btn-sm">
+            {tr("应用")}
           </button>
         </form>
       ) : null}
@@ -163,7 +164,7 @@ export function Card({
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <h2 className="flex flex-1 items-center gap-1 text-[14px] font-semibold text-brand-dark">
           {title}
-          {hint ? <InfoTip text={hint} label={`${title}：说明`} /> : null}
+          {hint ? <InfoTip text={hint} label={tr("{0}：说明", title)} /> : null}
         </h2>
         {actions}
       </div>
@@ -179,8 +180,8 @@ export function Card({
 export function BarList({
   rows,
   label = (key) => key,
-  otherLabel = "其他",
-  empty = "没有数据。",
+  otherLabel = tr("其他"),
+  empty = tr("没有数据。"),
   limit = 10,
   unit = ""
 }: {
@@ -224,7 +225,7 @@ export function BarList({
           className="mt-2 text-[12px] text-brand hover:underline"
           onClick={() => setAll(!all)}
         >
-          {all ? "收起" : `显示全部 ${rows.length} 项`}
+          {all ? tr("收起") : tr("显示全部 {0} 项", rows.length)}
         </button>
       ) : null}
     </>
@@ -282,7 +283,7 @@ export function ColumnChart({
       title={title(metricLabel)}
       actions={
         metrics.length > 1 ? (
-          <div role="group" aria-label="指标" className="flex gap-1">
+          <div role="group" aria-label={tr("指标")} className="flex gap-1">
             {metrics.map(({ key, label }) => (
               <button
                 key={key}
@@ -291,7 +292,7 @@ export function ColumnChart({
                 onClick={() => setMetric(key)}
                 className={
                   metric === key
-                    ? "chip !px-2.5 !py-1.5 font-semibold"
+                    ? "chip chip-lg font-semibold"
                     : "rounded-md px-2.5 py-1.5 text-[11px] text-muted hover:bg-brand-secondary/8"
                 }
               >
@@ -307,7 +308,7 @@ export function ColumnChart({
           viewBox={`0 0 ${width} ${height}`}
           className="block h-auto w-full"
           role="img"
-          aria-label={`${metricLabel}，最高 ${max}`}
+          aria-label={tr("{0}，最高 {1}", metricLabel, max)}
           onMouseLeave={() => setHover(null)}
         >
           {[0, top / 2, top].map((tick) => (
@@ -389,11 +390,11 @@ export function ColumnChart({
       </div>
 
       <details className="mt-2 text-[12.5px] text-muted">
-        <summary className="cursor-pointer text-faint">数据表</summary>
+        <summary className="cursor-pointer text-faint">{tr("数据表")}</summary>
         <table className="mt-2 w-full text-left">
           <thead>
             <tr className="text-faint">
-              <th className="py-1 font-normal">时间</th>
+              <th className="py-1 font-normal">{tr("时间")}</th>
               {metrics.map(({ key, label }) => (
                 <th key={key} className="py-1 text-right font-normal">
                   {label}

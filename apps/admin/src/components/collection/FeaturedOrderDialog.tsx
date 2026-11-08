@@ -9,6 +9,8 @@ import { COLLECTION_KIND_LABELS, pickText } from "../../lib/i18n";
 import { Dialog } from "../ui/Dialog";
 import { IconButton } from "../ui/IconButton";
 import { useToast } from "../ui/Toast";
+import { tr } from "../../lib/messages";
+import { Select } from "../ui/Select";
 
 /** Fixed order first; entries never ordered after them, newest first (as the site does). */
 export function featuredInOrder(items: AdminMediaItem[]) {
@@ -24,7 +26,7 @@ export function featuredInOrder(items: AdminMediaItem[]) {
 
 const kindLabel = (kind: string) =>
   COLLECTION_KIND_LABELS[kind as keyof typeof COLLECTION_KIND_LABELS] ??
-  (kind === "album" ? "专辑" : kind);
+  (kind === "album" ? tr("专辑") : kind);
 
 /**
  * The home page's featured entries in the fixed order: drag a row or use the arrows, then save. The
@@ -84,10 +86,10 @@ export function FeaturedOrderDialog({
     try {
       const { items: saved } = await api.setFeaturedOrder(order.map((item) => item.id));
       saved.forEach(setItem);
-      toast("已保存首页精选顺序");
+      toast(tr("已保存首页精选顺序"));
       onClose();
     } catch (e) {
-      toast(e instanceof Error ? e.message : "保存失败", "error");
+      toast(e instanceof Error ? e.message : tr("保存失败"), "error");
     } finally {
       setSaving(false);
     }
@@ -96,12 +98,12 @@ export function FeaturedOrderDialog({
   return (
     <FeaturedFrame
       page={page}
-      title="首页精选"
+      title={tr("首页精选")}
       onClose={onClose}
       footer={
         <>
           <button type="button" className="btn-secondary" onClick={onClose}>
-            取消
+            {tr("取消")}
           </button>
           <button
             type="button"
@@ -109,44 +111,54 @@ export function FeaturedOrderDialog({
             onClick={save}
             disabled={saving || !order.length || !dirty}
           >
-            {saving ? "保存中…" : "保存顺序"}
+            {saving ? tr("保存中…") : tr("保存顺序")}
           </button>
         </>
       }
     >
       {dirty && (
         <p className="mb-3 text-xs font-medium text-brand">
-          有未保存的顺序调整，保存后才会更新首页。
+          {tr("有未保存的顺序调整，保存后才会更新首页。")}
         </p>
       )}
       <p className="mb-3 text-[12.5px] leading-relaxed text-muted">
-        {manual
-          ? "精选墙严格按这里的顺序分行；隐藏的条目会跳过，超出展示行数的条目暂不显示。"
-          : "现在使用轮换（每天、每次访问或每个浏览会话），会混排音乐与其他收藏。要使用这里的顺序，请在“显示设置”里选择“固定”。"}
-        拖动或用箭头调整顺序。在条目的编辑页打开“首页精选”可以加入这里。
+        {tr(
+          "{0}拖动或用箭头调整顺序。在条目的编辑页打开“首页精选”可以加入这里。",
+          manual
+            ? tr("精选墙严格按这里的顺序分行；隐藏的条目会跳过，超出展示行数的条目暂不显示。")
+            : tr(
+                "现在使用轮换（每天、每次访问或每个浏览会话），会混排音乐与其他收藏。要使用这里的顺序，请在“显示设置”里选择“固定”。"
+              )
+        )}
       </p>
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <label className="flex-1 text-xs text-muted">
-          查找精选
+          {tr("查找精选")}
           <input
             className="field mt-1"
-            placeholder="标题 / 艺人"
+            placeholder={tr("标题 / 艺人")}
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
           />
         </label>
         <label className="text-xs text-muted">
-          类型
-          <select className="field mt-1" value={kind} onChange={(e) => setKind(e.target.value)}>
-            <option value="">全部类型</option>
-            {[...new Set(order.map((i) => i.kind))].map((k) => (
-              <option key={k} value={k}>
-                {kindLabel(k)}
-              </option>
-            ))}
-          </select>
+          {tr("类型")}
+          <Select
+            value={kind}
+            onChange={(value) => setKind(value)}
+            className="mt-1"
+            options={[
+              { value: "", label: tr("全部类型") },
+              ...[...new Set(order.map((i) => i.kind))].map((k) => ({
+                value: k,
+                label: kindLabel(k)
+              }))
+            ]}
+          />
         </label>
-        <span className="text-xs text-muted">共 {order.length} 项 · 筛选不改变完整排序</span>
+        <span className="text-xs text-muted">
+          {tr("共 {0} 项 · 筛选不改变完整排序", order.length)}
+        </span>
       </div>
       {visibleOrder.length ? (
         <ol className="space-y-1.5">
@@ -197,13 +209,13 @@ export function FeaturedOrderDialog({
                   <span className="block truncate text-[13px] text-ink">{title}</span>
                   <span className="block text-[11.5px] text-muted">
                     {kindLabel(item.kind)}
-                    {item.visibility === "private" ? " · 隐藏" : ""}
+                    {item.visibility === "private" ? tr(" · 隐藏") : ""}
                   </span>
                 </span>
                 <label className="hidden items-center gap-1 text-xs text-muted sm:flex">
-                  移至
+                  {tr("移至")}
                   <input
-                    aria-label={`移动 ${title} 到序号`}
+                    aria-label={tr("移动 {0} 到序号", title)}
                     type="number"
                     min={1}
                     max={order.length}
@@ -223,22 +235,22 @@ export function FeaturedOrderDialog({
                 </label>
                 <button
                   type="button"
-                  className="btn-secondary !px-2"
+                  className="btn-secondary btn-sm"
                   disabled={saving || index === 0}
                   onClick={() => move(index, 0)}
-                  aria-label={`置顶 ${title}`}
+                  aria-label={tr("置顶 {0}", title)}
                 >
-                  置顶
+                  {tr("置顶")}
                 </button>
                 <IconButton
-                  label={`上移 ${title}`}
+                  label={tr("上移 {0}", title)}
                   onClick={() => move(index, index - 1)}
                   disabled={saving || index === 0}
                 >
                   <ArrowUp aria-hidden="true" className="size-4" />
                 </IconButton>
                 <IconButton
-                  label={`下移 ${title}`}
+                  label={tr("下移 {0}", title)}
                   onClick={() => move(index, index + 1)}
                   disabled={saving || index === order.length - 1}
                 >
@@ -251,8 +263,8 @@ export function FeaturedOrderDialog({
       ) : (
         <p className="text-[13px] text-muted">
           {order.length
-            ? "没有符合筛选的精选条目。可清空搜索或切回全部类型。"
-            : "还没有首页精选的条目。"}
+            ? tr("没有符合筛选的精选条目。可清空搜索或切回全部类型。")
+            : tr("还没有首页精选的条目。")}
         </p>
       )}
     </FeaturedFrame>
@@ -282,7 +294,7 @@ function FeaturedFrame({
     <>
       <PageHeader
         title={title}
-        description="直接管理全部精选顺序。搜索、类型过滤、拖动、置顶或输入序号快速定位。"
+        description={tr("直接管理全部精选顺序。搜索、类型过滤、拖动、置顶或输入序号快速定位。")}
       />
       <div className="card p-4 sm:p-5">{children}</div>
       <div className="sticky bottom-3 mt-4 flex justify-end gap-3 rounded-xl border border-line bg-surface p-3 shadow-card">

@@ -3,15 +3,18 @@ import type {
   AdminStackCategoryDelete,
   LocalizedText
 } from "@liam-frost/shared";
-import { useState, type FormEvent } from "react";
+import { useState, type FormEvent, useId } from "react";
 
 import { useStackMutation } from "../../hooks/useStack";
 import { api } from "../../lib/api";
-import { LANG_LABELS, LANGS, pickText, type Lang } from "../../lib/i18n";
+import { pickText, type Lang } from "../../lib/i18n";
 import { Dialog } from "../ui/Dialog";
 import { Field, Switch } from "../ui/Field";
 import { useToast } from "../ui/Toast";
 import { DiscardBar } from "./DiscardBar";
+import { tr } from "../../lib/messages";
+import { Select } from "../ui/Select";
+import { LanguageTabPanel, LanguageTabs } from "../ui/LanguageTabs";
 
 const trimmed = (text: LocalizedText) =>
   Object.fromEntries(
@@ -35,6 +38,7 @@ export function CategoryDialog({
   const [description, setDescription] = useState<LocalizedText>(category?.description ?? {});
   const [visible, setVisible] = useState(category?.visible ?? true);
   const [lang, setLang] = useState<Lang>("zh");
+  const languageTabs = useId();
   const [error, setError] = useState("");
   const [confirmDiscard, setConfirmDiscard] = useState(false);
   const toast = useToast();
@@ -51,11 +55,11 @@ export function CategoryDialog({
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
-    if (!Object.keys(trimmed(name)).length) return setError("请至少填写一种语言的分类名称");
+    if (!Object.keys(trimmed(name)).length) return setError(tr("请至少填写一种语言的分类名称"));
     setError("");
     save.mutate(undefined, {
       onSuccess: () => {
-        toast(category ? "已保存" : "已添加分类");
+        toast(category ? tr("已保存") : tr("已添加分类"));
         onClose();
       },
       onError: (e) => setError(e.message)
@@ -66,7 +70,7 @@ export function CategoryDialog({
     <Dialog
       open
       size="sm"
-      title={category ? "编辑分类" : "添加分类"}
+      title={category ? tr("编辑分类") : tr("添加分类")}
       onClose={requestClose}
       footer={
         confirmDiscard ? (
@@ -74,7 +78,7 @@ export function CategoryDialog({
         ) : (
           <>
             <button type="button" className="btn-secondary" onClick={requestClose}>
-              取消
+              {tr("取消")}
             </button>
             <button
               type="submit"
@@ -82,64 +86,54 @@ export function CategoryDialog({
               className="btn-primary"
               disabled={save.isPending}
             >
-              {save.isPending ? "保存中…" : category ? "保存" : "添加"}
+              {save.isPending ? tr("保存中…") : category ? tr("保存") : tr("添加")}
             </button>
           </>
         )
       }
     >
       <form id="stack-category" onSubmit={submit} noValidate className="space-y-3.5">
-        <div role="tablist" aria-label="语言" className="flex flex-wrap gap-1.5">
-          {LANGS.map((l) => (
-            <button
-              key={l}
-              type="button"
-              role="tab"
-              aria-selected={lang === l}
-              onClick={() => setLang(l)}
-              className={`rounded-full px-2.5 py-1 text-[12px] whitespace-nowrap transition-colors ${
-                lang === l
-                  ? "bg-brand text-white"
-                  : "bg-brand-secondary/10 text-brand hover:bg-brand-secondary/18"
-              }`}
-            >
-              {LANG_LABELS[l]}
-              {name[l]?.trim() ? "" : " ·"}
-            </button>
-          ))}
-        </div>
+        <LanguageTabs
+          id={languageTabs}
+          value={lang}
+          onChange={setLang}
+          isFilled={(l) => Boolean(name[l]?.trim())}
+          mark="missing"
+        />
         <p className="text-[11.5px] text-faint">
-          没填写的语言在网站上回退到其它语言；带 · 的语言还没有名称。
+          {tr("没填写的语言在网站上回退到其它语言；带 · 的语言还没有名称。")}
         </p>
-        <Field label="分类名称" htmlFor="category-name">
-          <input
-            id="category-name"
-            className="field"
-            data-autofocus
-            value={name[lang] ?? ""}
-            maxLength={40}
-            placeholder="例如 Frontend"
-            onChange={(e) => setName((n) => ({ ...n, [lang]: e.target.value }))}
-          />
-        </Field>
-        <Field
-          label="说明（可选）"
-          htmlFor="category-description"
-          hint="一句话，显示在网站上的分类名下方"
-        >
-          <input
-            id="category-description"
-            className="field"
-            value={description[lang] ?? ""}
-            maxLength={200}
-            onChange={(e) => setDescription((d) => ({ ...d, [lang]: e.target.value }))}
-          />
-        </Field>
+        <LanguageTabPanel id={languageTabs} lang={lang} className="space-y-3.5">
+          <Field label={tr("分类名称")} htmlFor="category-name">
+            <input
+              id="category-name"
+              className="field"
+              data-autofocus
+              value={name[lang] ?? ""}
+              maxLength={40}
+              placeholder={tr("例如 Frontend")}
+              onChange={(e) => setName((n) => ({ ...n, [lang]: e.target.value }))}
+            />
+          </Field>
+          <Field
+            label={tr("说明（可选）")}
+            htmlFor="category-description"
+            hint={tr("一句话，显示在网站上的分类名下方")}
+          >
+            <input
+              id="category-description"
+              className="field"
+              value={description[lang] ?? ""}
+              maxLength={200}
+              onChange={(e) => setDescription((d) => ({ ...d, [lang]: e.target.value }))}
+            />
+          </Field>
+        </LanguageTabPanel>
         <Switch
           id="category-visible"
           checked={visible}
           onChange={setVisible}
-          label="在网站上显示"
+          label={tr("在网站上显示")}
         />
         {error ? (
           <p role="alert" className="text-[12.5px] text-status-error">
@@ -173,7 +167,7 @@ export function DeleteCategoryDialog({
   const remove = useStackMutation((choice: AdminStackCategoryDelete | undefined) =>
     api.deleteStackCategory(category.id, choice)
   );
-  const title = pickText(category.name, "未命名分类");
+  const title = pickText(category.name, tr("未命名分类"));
   const canDelete = count === 0 || (mode === "move" ? Boolean(target) : confirmed);
 
   const run = () =>
@@ -185,7 +179,7 @@ export function DeleteCategoryDialog({
           : { technologies: "delete" },
       {
         onSuccess: () => {
-          toast(`已删除分类 ${title}`);
+          toast(tr("已删除分类 {0}", title));
           onClose();
         },
         onError: (e) => toast(e.message, "error")
@@ -196,12 +190,12 @@ export function DeleteCategoryDialog({
     <Dialog
       open
       size="sm"
-      title="删除分类"
+      title={tr("删除分类")}
       onClose={onClose}
       footer={
         <>
           <button type="button" className="btn-secondary" onClick={onClose}>
-            取消
+            {tr("取消")}
           </button>
           <button
             type="button"
@@ -209,18 +203,22 @@ export function DeleteCategoryDialog({
             disabled={!canDelete || remove.isPending}
             onClick={run}
           >
-            {remove.isPending ? "删除中…" : count && mode === "move" ? "移动并删除" : "删除"}
+            {remove.isPending
+              ? tr("删除中…")
+              : count && mode === "move"
+                ? tr("移动并删除")
+                : tr("删除")}
           </button>
         </>
       }
     >
       {count === 0 ? (
-        <p className="text-[13.5px] leading-relaxed text-muted">确定删除空分类“{title}”吗？</p>
+        <p className="text-[13.5px] leading-relaxed text-muted">
+          {tr("确定删除空分类“{0}”吗？", title)}
+        </p>
       ) : (
         <div className="space-y-3 text-[13.5px] leading-relaxed text-muted">
-          <p>
-            “{title}”里还有 {count} 项技术。请选择它们的去处：
-          </p>
+          <p>{tr("“{0}”里还有 {1} 项技术。请选择它们的去处：", title, count)}</p>
           {others.length ? (
             <label className="flex items-start gap-2.5">
               <input
@@ -231,20 +229,20 @@ export function DeleteCategoryDialog({
                 onChange={() => setMode("move")}
               />
               <span className="min-w-0 flex-1">
-                移到另一个分类末尾
-                <select
-                  aria-label="移到哪个分类"
-                  className="field mt-1.5"
+                {tr("移到另一个分类末尾")}
+                <Select
+                  aria-label={tr("移到哪个分类")}
                   value={target}
                   disabled={mode !== "move"}
-                  onChange={(e) => setTarget(e.target.value)}
-                >
-                  {others.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {pickText(c.name, "未命名分类")}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(value) => setTarget(value)}
+                  className="mt-1.5"
+                  options={[
+                    ...others.map((c) => ({
+                      value: c.id,
+                      label: pickText(c.name, tr("未命名分类"))
+                    }))
+                  ]}
+                />
               </span>
             </label>
           ) : null}
@@ -256,7 +254,7 @@ export function DeleteCategoryDialog({
               checked={mode === "delete"}
               onChange={() => setMode("delete")}
             />
-            <span>连同这些技术一起删除</span>
+            <span>{tr("连同这些技术一起删除")}</span>
           </label>
           {mode === "delete" ? (
             <label className="flex items-start gap-2.5 rounded-xl bg-status-error/6 p-2.5 text-status-error">
@@ -267,8 +265,11 @@ export function DeleteCategoryDialog({
                 onChange={(e) => setConfirmed(e.target.checked)}
               />
               <span>
-                我确认删除 {count} 项技术（{category.technologies.map((t) => t.name).join("、")}
-                ）及其上传的图标，此操作无法撤销。
+                {tr(
+                  "我确认删除 {0} 项技术（{1}）及其上传的图标，此操作无法撤销。",
+                  count,
+                  category.technologies.map((t) => t.name).join("、")
+                )}
               </span>
             </label>
           ) : null}

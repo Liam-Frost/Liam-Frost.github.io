@@ -34,6 +34,8 @@ import { Dialog } from "../ui/Dialog";
 import { Field } from "../ui/Field";
 import { Panel } from "../ui/Panel";
 import { useToast } from "../ui/Toast";
+import { tr } from "../../lib/messages";
+import { Select } from "../ui/Select";
 
 type Subject = { type: "media"; id: string; kind: MediaKind } | { type: "person"; id: string };
 
@@ -73,9 +75,9 @@ export function RelationsPanel({ subject }: { subject: Subject }) {
     try {
       await api.deleteRelation(relation.id);
       refresh();
-      toast("已删除关联");
+      toast(tr("已删除关联"));
     } catch (e) {
-      toast(e instanceof Error ? e.message : "删除失败", "error");
+      toast(e instanceof Error ? e.message : tr("删除失败"), "error");
     }
   };
 
@@ -84,14 +86,14 @@ export function RelationsPanel({ subject }: { subject: Subject }) {
     groups.set(groupOf(relation), [...(groups.get(groupOf(relation)) ?? []), relation]);
 
   return (
-    <Panel title={subject.type === "person" ? "作品" : "关联"}>
-      {isPending ? <p className="text-[12.5px] text-subtle">加载中…</p> : null}
+    <Panel title={subject.type === "person" ? tr("作品") : tr("关联")}>
+      {isPending ? <p className="text-[12.5px] text-subtle">{tr("加载中…")}</p> : null}
       {error ? <p className="text-[12.5px] text-status-error">{error.message}</p> : null}
       {data && !data.length ? (
         <p className="text-[12.5px] text-subtle">
           {subject.type === "person"
-            ? "还没有关联作品。"
-            : "还没有关联。可以关联主题曲、原作、续作和参与的人物。"}
+            ? tr("还没有关联作品。")
+            : tr("还没有关联。可以关联主题曲、原作、续作和参与的人物。")}
         </p>
       ) : null}
 
@@ -114,11 +116,11 @@ export function RelationsPanel({ subject }: { subject: Subject }) {
       <div className="flex flex-wrap gap-2">
         <button type="button" className="btn-secondary" onClick={() => setAdding(true)}>
           <Plus aria-hidden="true" className="size-4" />{" "}
-          {subject.type === "person" ? "添加作品" : "添加关联"}
+          {subject.type === "person" ? tr("添加作品") : tr("添加关联")}
         </button>
         {subject.type === "media" ? (
           <button type="button" className="btn-secondary" onClick={() => setSuggesting(true)}>
-            <Lightbulb aria-hidden="true" className="size-4" /> 查找建议
+            <Lightbulb aria-hidden="true" className="size-4" /> {tr("查找建议")}
           </button>
         ) : null}
       </div>
@@ -172,7 +174,9 @@ function RelationRow({
 }) {
   const { other } = relation;
   const name =
-    other.type === "media" ? pickText(other.title, "未命名") : pickText(other.name, "未命名");
+    other.type === "media"
+      ? pickText(other.title, tr("未命名"))
+      : pickText(other.name, tr("未命名"));
   const note = pickText(relation.note);
   const meta =
     other.type === "media"
@@ -200,7 +204,9 @@ function RelationRow({
           {relation.role ? (
             <span className="chip ml-1.5">{roleLabel(relation.type, relation.role)}</span>
           ) : null}
-          {other.visibility === "private" ? <span className="chip ml-1.5">隐藏</span> : null}
+          {other.visibility === "private" ? (
+            <span className="chip ml-1.5">{tr("隐藏")}</span>
+          ) : null}
         </p>
         <p className="truncate text-[12px] text-subtle">
           {[meta, note].filter(Boolean).join(" · ")}
@@ -209,7 +215,7 @@ function RelationRow({
       <button
         type="button"
         className="rounded-full p-1.5 text-faint hover:bg-brand-secondary/12 hover:text-brand"
-        aria-label={`编辑与“${name}”的关联`}
+        aria-label={tr("编辑与“{0}”的关联", name)}
         onClick={onEdit}
       >
         <Pencil aria-hidden="true" className="size-4" />
@@ -217,7 +223,7 @@ function RelationRow({
       <button
         type="button"
         className="rounded-full p-1.5 text-faint hover:bg-status-error/10 hover:text-status-error"
-        aria-label={`删除与“${name}”的关联`}
+        aria-label={tr("删除与“{0}”的关联", name)}
         onClick={onRemove}
       >
         <Trash2 aria-hidden="true" className="size-4" />
@@ -235,13 +241,16 @@ function NoteFields({
   onChange: (value: LocalizedText) => void;
 }) {
   return (
-    <Field label="备注（可选）" hint="例如“第 12 集插曲”“饰 某某”。没填的语言会回退到其它语言。">
+    <Field
+      label={tr("备注（可选）")}
+      hint={tr("例如“第 12 集插曲”“饰 某某”。没填的语言会回退到其它语言。")}
+    >
       <div className="grid gap-2 sm:grid-cols-2">
         {LANGS.map((lang) => (
           <input
             key={lang}
             className="field"
-            aria-label={`备注（${LANG_LABELS[lang]}）`}
+            aria-label={tr("备注（{0}）", LANG_LABELS[lang])}
             placeholder={LANG_LABELS[lang]}
             maxLength={200}
             value={value[lang] ?? ""}
@@ -264,20 +273,16 @@ function RoleSelect({
 }) {
   const roles = type === "credit" ? PERSON_ROLES : SOUNDTRACK_ROLES;
   return (
-    <Field label={type === "credit" ? "身份" : "歌曲类型"} htmlFor="relation-role">
-      <select
+    <Field label={type === "credit" ? tr("身份") : tr("歌曲类型")} htmlFor="relation-role">
+      <Select
         id="relation-role"
-        className="field"
         value={value ?? ""}
-        onChange={(e) => onChange(e.target.value || null)}
-      >
-        {type === "soundtrack" ? <option value="">不注明</option> : null}
-        {roles.map((role) => (
-          <option key={role} value={role}>
-            {roleLabel(type, role)}
-          </option>
-        ))}
-      </select>
+        onChange={(value) => onChange(value || null)}
+        options={[
+          ...(type === "soundtrack" ? [{ value: "", label: tr("不注明") }] : []),
+          ...roles.map((role) => ({ value: role, label: roleLabel(type, role) }))
+        ]}
+      />
     </Field>
   );
 }
@@ -295,19 +300,21 @@ type Choice = {
 
 function choicesFor(subject: Subject): Choice[] {
   if (subject.type === "person")
-    return [{ id: "work", label: "参与的作品", pick: "work", type: "credit", pickedIsFrom: false }];
+    return [
+      { id: "work", label: tr("参与的作品"), pick: "work", type: "credit", pickedIsFrom: false }
+    ];
   if (subject.kind === "track") {
     return [
       {
         id: "person",
-        label: "参与者（歌手、作曲等）",
+        label: tr("参与者（歌手、作曲等）"),
         pick: "person",
         type: "credit",
         pickedIsFrom: true
       },
       {
         id: "soundtrack",
-        label: "出自作品（这首歌是它的主题曲、插曲……）",
+        label: tr("出自作品（这首歌是它的主题曲、插曲……）"),
         pick: "work",
         type: "soundtrack",
         pickedIsFrom: false
@@ -317,25 +324,31 @@ function choicesFor(subject: Subject): Choice[] {
   return [
     {
       id: "person",
-      label: "参与者（导演、演员、作者等）",
+      label: tr("参与者（导演、演员、作者等）"),
       pick: "person",
       type: "credit",
       pickedIsFrom: true
     },
-    { id: "song", label: "原声歌曲", pick: "song", type: "soundtrack", pickedIsFrom: true },
+    { id: "song", label: tr("原声歌曲"), pick: "song", type: "soundtrack", pickedIsFrom: true },
     {
       id: "source",
-      label: "改编自（原作）",
+      label: tr("改编自（原作）"),
       pick: "work",
       type: "adaptation",
       pickedIsFrom: false
     },
-    { id: "adaptation", label: "被改编为", pick: "work", type: "adaptation", pickedIsFrom: true },
-    { id: "prequel", label: "前作", pick: "work", type: "sequel", pickedIsFrom: false },
-    { id: "sequel", label: "续作", pick: "work", type: "sequel", pickedIsFrom: true },
+    {
+      id: "adaptation",
+      label: tr("被改编为"),
+      pick: "work",
+      type: "adaptation",
+      pickedIsFrom: true
+    },
+    { id: "prequel", label: tr("前作"), pick: "work", type: "sequel", pickedIsFrom: false },
+    { id: "sequel", label: tr("续作"), pick: "work", type: "sequel", pickedIsFrom: true },
     {
       id: "related",
-      label: "相关作品（外传、同系列……）",
+      label: tr("相关作品（外传、同系列……）"),
       pick: "work",
       type: "related",
       pickedIsFrom: false
@@ -375,7 +388,7 @@ function AddRelationDialog({
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
-    if (!picked) return setError(choice.pick === "person" ? "请选择人物" : "请选择条目");
+    if (!picked) return setError(choice.pick === "person" ? tr("请选择人物") : tr("请选择条目"));
     setSaving(true);
     setError("");
     const self = { type: subject.type, id: subject.id };
@@ -386,15 +399,15 @@ function AddRelationDialog({
     try {
       await api.createRelation(body);
       onDone();
-      toast("已添加关联");
+      toast(tr("已添加关联"));
       onClose();
     } catch (e) {
       setError(
         e instanceof ApiError && e.code === "RELATION_EXISTS"
-          ? "这个关联已经存在"
+          ? tr("这个关联已经存在")
           : e instanceof Error
             ? e.message
-            : "添加失败"
+            : tr("添加失败")
       );
     } finally {
       setSaving(false);
@@ -404,12 +417,12 @@ function AddRelationDialog({
   return (
     <Dialog
       open
-      title={subject.type === "person" ? "添加作品" : "添加关联"}
+      title={subject.type === "person" ? tr("添加作品") : tr("添加关联")}
       onClose={onClose}
       footer={
         <>
           <button type="button" className="btn-secondary" onClick={onClose}>
-            取消
+            {tr("取消")}
           </button>
           <button
             type="submit"
@@ -417,26 +430,20 @@ function AddRelationDialog({
             className="btn-primary"
             disabled={saving || !picked}
           >
-            {saving ? "添加中…" : "添加"}
+            {saving ? tr("添加中…") : tr("添加")}
           </button>
         </>
       }
     >
       <form id="add-relation" onSubmit={submit} className="space-y-4">
         {choices.length > 1 ? (
-          <Field label="关联类型" htmlFor="relation-choice">
-            <select
+          <Field label={tr("关联类型")} htmlFor="relation-choice">
+            <Select
               id="relation-choice"
-              className="field"
               value={choiceId}
-              onChange={(e) => select(e.target.value)}
-            >
-              {choices.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.label}
-                </option>
-              ))}
-            </select>
+              onChange={(value) => select(value)}
+              options={[...choices.map((c) => ({ value: c.id, label: c.label }))]}
+            />
           </Field>
         ) : null}
 
@@ -479,9 +486,10 @@ const defaultRole = (subject: Subject) =>
 function PickedChip({ picked, onClear }: { picked: Picked; onClear: () => void }) {
   return (
     <p className="flex items-center gap-2 text-[13px]">
-      已选择：<span className="font-semibold text-brand-dark">{picked.name}</span>
+      {tr("已选择：")}
+      <span className="font-semibold text-brand-dark">{picked.name}</span>
       <button type="button" className="text-[12px] text-brand hover:underline" onClick={onClear}>
-        重新选择
+        {tr("重新选择")}
       </button>
     </p>
   );
@@ -520,7 +528,10 @@ function MediaPicker({
 
   return (
     <div>
-      <Field label={pick === "song" ? "选择歌曲" : "选择作品"} htmlFor="relation-media-filter">
+      <Field
+        label={pick === "song" ? tr("选择歌曲") : tr("选择作品")}
+        htmlFor="relation-media-filter"
+      >
         <div className="relative">
           <Search
             aria-hidden="true"
@@ -529,7 +540,7 @@ function MediaPicker({
           <input
             id="relation-media-filter"
             className="field pl-9"
-            placeholder="筛选收藏里的标题"
+            placeholder={tr("筛选收藏里的标题")}
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
             data-autofocus
@@ -538,7 +549,7 @@ function MediaPicker({
       </Field>
       <ul className="mt-2 max-h-64 divide-y divide-line-soft overflow-y-auto rounded-xl border border-line-soft">
         {matches.map((item) => {
-          const name = pickText(item.title, "未命名");
+          const name = pickText(item.title, tr("未命名"));
           return (
             <li key={item.id}>
               <button
@@ -567,7 +578,7 @@ function MediaPicker({
         })}
         {!matches.length ? (
           <li className="p-3 text-[12.5px] text-subtle">
-            收藏里没有符合的{pick === "song" ? "歌曲" : "作品"}。
+            {tr("收藏里没有符合的{0}。", pick === "song" ? tr("歌曲") : tr("作品"))}
           </li>
         ) : null}
       </ul>
@@ -610,7 +621,7 @@ function PersonPicker({
       void qc.invalidateQueries({ queryKey: peopleKey });
       onPick({ type: "person", id: person.id, name });
     } catch (e) {
-      setError(e instanceof Error ? e.message : "创建失败");
+      setError(e instanceof Error ? e.message : tr("创建失败"));
     } finally {
       setCreating(false);
     }
@@ -619,9 +630,9 @@ function PersonPicker({
   return (
     <div>
       <Field
-        label="选择人物"
+        label={tr("选择人物")}
         htmlFor="relation-person-filter"
-        hint="要从 TMDB 导入资料和照片，先在“人物”页添加，或者用“查找建议”。"
+        hint={tr("要从 TMDB 导入资料和照片，先在“人物”页添加，或者用“查找建议”。")}
       >
         <div className="relative">
           <Search
@@ -631,7 +642,7 @@ function PersonPicker({
           <input
             id="relation-person-filter"
             className="field pl-9"
-            placeholder="名字"
+            placeholder={tr("名字")}
             value={filter}
             maxLength={120}
             onChange={(e) => setFilter(e.target.value)}
@@ -641,7 +652,7 @@ function PersonPicker({
       </Field>
       <ul className="mt-2 max-h-64 divide-y divide-line-soft overflow-y-auto rounded-xl border border-line-soft">
         {matches.map((person) => {
-          const name = pickText(person.name, "未命名");
+          const name = pickText(person.name, tr("未命名"));
           return (
             <li key={person.id}>
               <button
@@ -653,7 +664,7 @@ function PersonPicker({
                 <span className="min-w-0 flex-1 truncate text-[13px] font-semibold text-brand-dark">
                   {name}
                 </span>
-                <span className="text-[12px] text-subtle">{person.works} 部作品</span>
+                <span className="text-[12px] text-subtle">{tr("{0} 部作品", person.works)}</span>
               </button>
             </li>
           );
@@ -667,11 +678,11 @@ function PersonPicker({
               onClick={() => void create()}
             >
               <Plus aria-hidden="true" className="size-4" />{" "}
-              {creating ? "创建中…" : `新建人物“${filter.trim()}”`}
+              {creating ? tr("创建中…") : tr("新建人物“{0}”", filter.trim())}
             </button>
           </li>
         ) : !matches.length ? (
-          <li className="p-3 text-[12.5px] text-subtle">还没有人物，输入名字新建。</li>
+          <li className="p-3 text-[12.5px] text-subtle">{tr("还没有人物，输入名字新建。")}</li>
         ) : null}
       </ul>
       {error ? <p className="mt-2 text-[12.5px] text-status-error">{error}</p> : null}
@@ -703,15 +714,15 @@ function EditRelationDialog({
         relation.type === "credit" || relation.type === "soundtrack" ? { role, note } : { note }
       );
       onDone();
-      toast("已保存");
+      toast(tr("已保存"));
       onClose();
     } catch (e) {
       setError(
         e instanceof ApiError && e.code === "RELATION_EXISTS"
-          ? "已经有相同身份的关联"
+          ? tr("已经有相同身份的关联")
           : e instanceof Error
             ? e.message
-            : "保存失败"
+            : tr("保存失败")
       );
     } finally {
       setSaving(false);
@@ -722,12 +733,12 @@ function EditRelationDialog({
     <Dialog
       open
       size="sm"
-      title="编辑关联"
+      title={tr("编辑关联")}
       onClose={onClose}
       footer={
         <>
           <button type="button" className="btn-secondary" onClick={onClose}>
-            取消
+            {tr("取消")}
           </button>
           <button
             type="button"
@@ -735,7 +746,7 @@ function EditRelationDialog({
             disabled={saving}
             onClick={() => void save()}
           >
-            {saving ? "保存中…" : "保存"}
+            {saving ? tr("保存中…") : tr("保存")}
           </button>
         </>
       }
@@ -837,7 +848,7 @@ function SuggestionsDialog({
       void qc.invalidateQueries({ queryKey: peopleKey });
       onDone();
     } catch (e) {
-      toast(e instanceof Error ? e.message : "添加失败", "error");
+      toast(e instanceof Error ? e.message : tr("添加失败"), "error");
       // Someone may have been imported meanwhile; the next list knows them.
       void qc.invalidateQueries({ queryKey });
     } finally {
@@ -852,18 +863,17 @@ function SuggestionsDialog({
   const open = (data ?? []).filter((s) => !done.has(suggestionKey(s)));
 
   return (
-    <Dialog open title="关联建议" onClose={onClose}>
+    <Dialog open title={tr("关联建议")} onClose={onClose}>
       <p className="mb-3 text-[12px] leading-relaxed text-faint">
-        来自 TMDB 的演职员、歌曲的歌手、图书和漫画的作者、游戏的开发商，以及 AniList
-        上和这部作品有关、并且已在收藏里的作品（动漫、漫画、轻小说）。从 TMDB
-        添加人物时会导入资料和照片， 并按人物 ID
-        自动关联收藏里已有的作品；后续新增作品也会自动匹配已有人物。其他作品关系仍由你选择添加。
+        {tr(
+          "来自 TMDB 的演职员、歌曲的歌手、图书和漫画的作者、游戏的开发商，以及 AniList 上和这部作品有关、并且已在收藏里的作品（动漫、漫画、轻小说）。从 TMDB 添加人物时会导入资料和照片， 并按人物 ID 自动关联收藏里已有的作品；后续新增作品也会自动匹配已有人物。其他作品关系仍由你选择添加。"
+        )}
       </p>
-      {isPending ? <p className="text-[13px] text-subtle">查找中…</p> : null}
+      {isPending ? <p className="text-[13px] text-subtle">{tr("查找中…")}</p> : null}
       {error ? <p className="text-[13px] text-status-error">{error.message}</p> : null}
       {data && !open.length ? (
         <p className="text-[13px] text-subtle">
-          {data.length ? "建议都已添加。" : "没有找到建议。"}
+          {data.length ? tr("建议都已添加。") : tr("没有找到建议。")}
         </p>
       ) : null}
       {open.length ? (
@@ -877,7 +887,7 @@ function SuggestionsDialog({
                     detail: [
                       PERSON_ROLE_LABELS[suggestion.role],
                       suggestion.character,
-                      suggestion.personId ? "已在人物中" : "将从 TMDB 导入"
+                      suggestion.personId ? tr("已在人物中") : tr("将从 TMDB 导入")
                     ]
                       .filter(Boolean)
                       .join(" · "),
@@ -889,13 +899,13 @@ function SuggestionsDialog({
                       name: suggestion.name,
                       detail: [
                         PERSON_ROLE_LABELS[suggestion.role],
-                        suggestion.personId ? "已在人物中" : "将新建人物"
+                        suggestion.personId ? tr("已在人物中") : tr("将新建人物")
                       ].join(" · "),
                       thumb: null,
                       person: true
                     }
                   : {
-                      name: pickText(suggestion.other.title, "未命名"),
+                      name: pickText(suggestion.other.title, tr("未命名")),
                       detail:
                         RELATION_LABELS[suggestion.relation.type][
                           suggestion.relation.from.id === mediaId ? "from" : "to"
@@ -916,7 +926,7 @@ function SuggestionsDialog({
                   disabled={busy.has(key)}
                   onClick={() => void accept(suggestion)}
                 >
-                  {busy.has(key) ? "添加中…" : "添加"}
+                  {busy.has(key) ? tr("添加中…") : tr("添加")}
                 </button>
               </li>
             );

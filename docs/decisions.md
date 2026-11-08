@@ -44,19 +44,19 @@ The user had Codex replace the three featured cards with a seamless wall of cove
 
 ### 2026-11-04: Admin Overview and API Settings Layout (Stage 22)
 
-The user asked for a structural UI/UX pass on 概览 and API 配置 within the existing design language: a grouped accordion list for API settings, and an operations dashboard on one grid. Confirmed plan: `docs/plan-admin-ux.md`. The model chose: Spotify and Steam grouped as 账号与同步 (they also need an account connected); connection status only from existing records (job log, connected accounts), since nothing tests connections and no new third-party requests were wanted; drafts kept per service rather than confirming on switch.
+The user asked for a structural UI/UX pass on 概览 and API 配置 within the existing design language: a grouped accordion list for API settings, and an operations dashboard on one grid. Confirmed plan: `docs/archive/plans/plan-admin-ux.md`. The model chose: Spotify and Steam grouped as 账号与同步 (they also need an account connected); connection status only from existing records (job log, connected accounts), since nothing tests connections and no new third-party requests were wanted; drafts kept per service rather than confirming on switch.
 
 ### 2026-11-04: Home Page Collection (Stage 21)
 
-The user found the home page's one row of 最近在看 too little for the collection, and wanted featured entries before recent ones. Confirmed plan: `docs/plan-home-collection.md`. Both ways of choosing the featured entries were asked for: daily rotation and a fixed order dragged in the admin, switched in the collection's display settings.
+The user found the home page's one row of 最近在看 too little for the collection, and wanted featured entries before recent ones. Confirmed plan: `docs/archive/plans/plan-home-collection.md`. Both ways of choosing the featured entries were asked for: daily rotation and a fixed order dragged in the admin, switched in the collection's display settings.
 
 ### 2026-11-02: Admin Overview (Stage 20)
 
-The user wanted 概览 to show account connections and early statistics instead of links to the sections. Confirmed plan: `docs/plan-dashboard.md`: today's visits, things to fix, account and source status, content counts, recent activity and quick actions, from one admin request whose parts fail separately.
+The user wanted 概览 to show account connections and early statistics instead of links to the sections. Confirmed plan: `docs/archive/plans/plan-dashboard.md`: today's visits, things to fix, account and source status, content counts, recent activity and quick actions, from one admin request whose parts fail separately.
 
 ### 2026-11-02: Photo Sources (Stage 19)
 
-The user asked for photos to be added or replaced from the device, a folder on the primary VPS, a gallery link or an image / object-storage link. Confirmed plan: `docs/plan-photos.md`. Links are imported as site-hosted images by default (referencing the original link is an option); Flickr is the only gallery for now.
+The user asked for photos to be added or replaced from the device, a folder on the primary VPS, a gallery link or an image / object-storage link. Confirmed plan: `docs/archive/plans/plan-photos.md`. Links are imported as site-hosted images by default (referencing the original link is an option); Flickr is the only gallery for now.
 
 ### 2026-11-01: Cookieless Visitor Analytics, Admin Only
 
@@ -100,15 +100,15 @@ coverage and CI; do not suppress the scan findings.
 
 ### 2026-11-04: Stage 17 Scope
 
-Before the yearly review, Stage 17 adds bulk actions in the admin, music views by album / artist / playlist with real playlists, and a Steam library sync (playtime, last played; purchase dates are not available from Steam's public API and are entered by hand). Plan: `docs/plan-collection.md` (Stage 17a-d).
+Before the yearly review, Stage 17 adds bulk actions in the admin, music views by album / artist / playlist with real playlists, and a Steam library sync (playtime, last played; purchase dates are not available from Steam's public API and are entered by hand). Plan: `docs/archive/plans/plan-collection.md` (Stage 17a-d).
 
 ### 2026-11-01: More Collection Kinds and Links
 
-The collection should also cover books, comics, games and people (actors, directors, singers, writers and so on), and entries should link to each other: songs as soundtracks of works, adaptations of comics and books, and people's roles in works. Books, comics and games are new `MediaItem` kinds; people get their own table; links live in one relation table, stored once and shown on both sides. Plan: `docs/plan-collection.md` (Stages 14-16).
+The collection should also cover books, comics, games and people (actors, directors, singers, writers and so on), and entries should link to each other: songs as soundtracks of works, adaptations of comics and books, and people's roles in works. Books, comics and games are new `MediaItem` kinds; people get their own table; links live in one relation table, stored once and shown on both sides. Plan: `docs/archive/plans/plan-collection.md` (Stages 14-16).
 
 ### 2026-10-31: Collection Module Scope
 
-Movies, TV, anime and music get a collection module (`docs/plan-collection.md`). Mainland China accessibility is not a concern. There are no existing records for films, series or anime, so they are added one by one (search to prefill); music comes from a Spotify Liked Songs import plus manual additions. Ratings are out of five; short reviews are multilingual. Whether "want to watch" items show on the site is a global switch in the admin, plus each item's own visibility.
+Movies, TV, anime and music get a collection module (`docs/archive/plans/plan-collection.md`). Mainland China accessibility is not a concern. There are no existing records for films, series or anime, so they are added one by one (search to prefill); music comes from a Spotify Liked Songs import plus manual additions. Ratings are out of five; short reviews are multilingual. Whether "want to watch" items show on the site is a global switch in the admin, plus each item's own visibility.
 
 ### 2026-10-31: Spotify Player Managed in the Admin (Option B)
 
@@ -140,7 +140,7 @@ The future image storage direction is Cloudflare R2, but the system should also 
 
 ### 2026-10-31: Standalone Admin App
 
-The admin UI should be a separate app (`apps/admin`), borrowing auth, upload and admin UI patterns from `internal-developer-tools-portal`. The full stack should run locally first, then deploy to a VPS with CI/CD. Plan: `docs/plan-admin-projects-deploy.md`.
+The admin UI should be a separate app (`apps/admin`), borrowing auth, upload and admin UI patterns from `internal-developer-tools-portal`. The full stack should run locally first, then deploy to a VPS with CI/CD. Plan: `docs/archive/plans/plan-admin-projects-deploy.md`.
 
 ### 2026-10-31: Configurable Admin Path
 
@@ -155,6 +155,29 @@ React and related dependencies should be upgraded to the latest versions. This u
 ### 2026-11-02: Photo Source Details (Stage 19)
 
 The model chose: a new folder per hosted image (`photos/<photo folder>/<imageId>`) found by its storage key, because public image URLs are cached as immutable and a replaced image must get new URLs; older photos keep their flat folder until replaced. Server folder imports are always hosted (the folders are not served). Links are checked for https and public addresses before every request and redirect, with Node's fetch so a configured HTTPS_PROXY still applies; a name could resolve differently between check and request (DNS rebinding), which is accepted for an admin-only feature. 198.18.0.0/15 is allowed because proxies in fake-IP mode use it. Flickr pages use oEmbed (no key). No storage interface yet: it comes with the R2 backend in 19c.
+
+### 2026-11-09: Login Background Uses the Shared Rotation Modes
+
+The user asked for the login background to offer the same four modes as the other modules: fixed, daily, each visit and each browsing session. The model chose to:
+
+- Drop the timer and its interval, since the photo is now chosen once per mode.
+- Have no separate plain-background option, so there are exactly four choices: no photos chosen means a plain background.
+- Read older saves without a migration: `none` becomes `fixed` with no photos, and `rotate` becomes `visit`, the closest to a photo that keeps changing.
+- Show the numbering and move buttons only in the daily mode, the only one that follows the order.
+
+### 2026-11-08: Admin Language Has One Entry
+
+The user asked for the admin language to be set only from the sidebar, with no switch on the login page or in Website Settings, and for three choices: follow the system, Simplified Chinese and English. The model chose to store nothing when following the system, and to skip the reload and the unsaved-work prompt when a choice does not change the language in use.
+
+### 2026-11-08: Side-by-Side Cards Share a Row's Height
+
+The user required cards in one visual row to end on one line. The rule lives on the parent (`.settings-grid-equal`, `.card-row`), so a row is as tall as its tallest card and a row that falls back to one column keeps no extra height. The login appearance preview is a sticky companion to a stack of cards, not part of a row, so it is left out.
+
+### 2026-11-08: Custom Select on Base UI, Field-Level Settings Saves
+
+The admin audit (`docs/archive/admin-settings-audit/admin-settings-ui-audit.md`) and the user's remediation brief replaced the 2026-11-02 choice below for the admin. Native selects could not look the same across browsers, so every admin select now uses one `Select` built on `@base-ui/react` (only its select primitive is imported), which supplies keyboard, typeahead, focus and collision handling. A full UI framework was not adopted. The public site keeps its native selects.
+
+Settings documents are now saved with `PATCH` by field (`changes` plus the `base` values they were edited from) instead of `PUT` of the whole document with a revision. Reason: several pages edit different fields of one document, so a document-wide revision reported conflicts where there were none, and revalidating every field let an unrelated hidden login photo block saving. Field comparison still happens under the document's lock, so simultaneous edits of one field cannot be lost. Login photo checks apply only to photos a save adds; the public endpoint still returns only currently public photos.
 
 ### 2026-11-02: Styled Tooltips and Selects Without a UI Library
 
@@ -214,7 +237,7 @@ Reason: dialogs open from inside editors' `<form>`s; a form inside a dialog was 
 
 Songs are collection entries; the player plays the public ones marked "in player" that have a preview. A Spotify playlist is imported once (background job) instead of being synced at runtime, and iTunes provides search, covers and previews for single songs and for songs without a Spotify preview.
 
-Reason: the site no longer depends on Spotify's embed page while visitors browse; the collection is the single list the admin manages, as planned in `docs/plan-collection.md`. Stage 13 is split: 13a needs no credentials; 13b (Liked Songs) needs the user's Spotify developer app.
+Reason: the site no longer depends on Spotify's embed page while visitors browse; the collection is the single list the admin manages, as planned in `docs/archive/plans/plan-collection.md`. Stage 13 is split: 13a needs no credentials; 13b (Liked Songs) needs the user's Spotify developer app.
 
 ### 2026-10-31: Romaji Titles for Anime From AniList
 
@@ -567,6 +590,14 @@ Reason: the front-end and API are intended to be same-origin behind a VPS revers
 The model chose to remove the tracked `my-app` Vite starter scaffold.
 
 Reason: it was a standalone unused starter app and conflicted with the user's requirement for a clear repository structure.
+
+## Floating tab bar
+
+The glass, tab bar and gesture sources are copied from CupertinoCN into `apps/web/src/vendor/cupertinocn` instead of installing its registry, because the public site does not use Tailwind. The differences are listed in that folder's README. The CupertinoCN repository declares no license, and that folder is not covered by this repository's MIT license until the author grants one.
+
+The lens is placed from the list's own width (four equal cells) rather than from the tab component's measured values, which arrive at least a frame late while the bar changes size. The lens and the copy of the tabs inside it read one animated value, so the copy stays still on screen.
+
+Site buttons get their glass from `GlassButtons`, which mounts a surface in each `.btn`, so the many components that render buttons stay unchanged.
 
 ## Homepage contact settings
 

@@ -17,6 +17,7 @@ import { Dialog } from "../ui/Dialog";
 import { Field } from "../ui/Field";
 import { Time } from "../ui/Time";
 import { useToast } from "../ui/Toast";
+import { tr } from "../../lib/messages";
 
 export const INTEGRATIONS_KEY = ["admin", "integrations"] as const;
 
@@ -26,28 +27,28 @@ export const PROVIDERS: Record<
 > = {
   tmdb: {
     title: "TMDB",
-    summary: "电影、剧集和影视人物的搜索与资料",
-    help: "填写 v3 API Key 或 v4 Read Access Token，二选一。"
+    summary: tr("电影、剧集和影视人物的搜索与资料"),
+    help: tr("填写 v3 API Key 或 v4 Read Access Token，二选一。")
   },
   googlebooks: {
     title: "Google Books",
-    summary: "图书搜索与资料导入",
-    help: "不配置时图书仍可用 Open Library 和 Bangumi 搜索。"
+    summary: tr("图书搜索与资料导入"),
+    help: tr("不配置时图书仍可用 Open Library 和 Bangumi 搜索。")
   },
   igdb: {
     title: "Twitch / IGDB",
-    summary: "游戏搜索与资料导入",
-    help: "使用 Twitch 开发者应用的 Client ID 和 Client Secret。"
+    summary: tr("游戏搜索与资料导入"),
+    help: tr("使用 Twitch 开发者应用的 Client ID 和 Client Secret。")
   },
   spotify: {
     title: "Spotify",
-    summary: "导入点赞歌曲和歌单，连接 Spotify 账号",
-    help: "保存应用配置后，到 收藏 → 音乐 → Spotify 账号 连接账号。更换应用后需要重新连接。"
+    summary: tr("导入点赞歌曲和歌单，连接 Spotify 账号"),
+    help: tr("保存应用配置后，到 收藏 → 音乐 → Spotify 账号 连接账号。更换应用后需要重新连接。")
   },
   steam: {
     title: "Steam",
-    summary: "连接 Steam 账号，同步游戏库",
-    help: "Steam Web API Key。保存后到 收藏 → 游戏 → Steam 游戏库 连接账号并同步。"
+    summary: tr("连接 Steam 账号，同步游戏库"),
+    help: tr("Steam Web API Key。保存后到 收藏 → 游戏 → Steam 游戏库 连接账号并同步。")
   }
 };
 
@@ -67,9 +68,9 @@ export function credentialOf(status: IntegrationStatus): Credential {
 }
 
 const CREDENTIAL: Record<Credential, { label: string; className: string }> = {
-  configured: { label: "已配置", className: "bg-brand/10 text-brand" },
-  disabled: { label: "已停用", className: "bg-status-warn/12 text-status-warn" },
-  unset: { label: "未配置", className: "bg-line-soft text-subtle" }
+  configured: { label: tr("已配置"), className: "bg-brand/10 text-brand" },
+  disabled: { label: tr("已停用"), className: "bg-status-warn/12 text-status-warn" },
+  unset: { label: tr("未配置"), className: "bg-line-soft text-subtle" }
 };
 
 export function CredentialBadge({ credential }: { credential: Credential }) {
@@ -103,16 +104,16 @@ function Connection({
 }) {
   if (credential !== "configured") return <>—</>;
   const connections = dashboard?.connections.ok ? dashboard.connections.data : null;
-  if (!connections) return <>未检测</>;
+  if (!connections) return <>{tr("未检测")}</>;
   if (provider === "spotify") {
     const account = connections.spotify.account;
     return account ? (
-      <>已连接账号 {account.displayName}</>
+      <>{tr("已连接账号 {0}", account.displayName)}</>
     ) : (
       <>
-        未连接账号 ·{" "}
+        {tr("未连接账号 ·")}{" "}
         <Link to="/collection?kind=track&open=spotify" className="text-brand hover:underline">
-          去连接
+          {tr("去连接")}
         </Link>
       </>
     );
@@ -121,29 +122,30 @@ function Connection({
     const account = connections.steam.account;
     return account ? (
       <>
-        已连接 {account.name} · 上次同步{" "}
-        {account.lastSyncedAt ? <Time iso={account.lastSyncedAt} /> : "从未"}
+        {tr("已连接 {0} · 上次同步", account.name)}{" "}
+        {account.lastSyncedAt ? <Time iso={account.lastSyncedAt} /> : tr("从未")}
       </>
     ) : (
       <>
-        未连接账号 ·{" "}
+        {tr("未连接账号 ·")}{" "}
         <Link to="/collection?kind=game&open=steam" className="text-brand hover:underline">
-          去连接
+          {tr("去连接")}
         </Link>
       </>
     );
   }
   const source = connections.sources.find((s) => s.name === provider);
-  if (!source || (!source.lastOk && !source.lastError)) return <>未检测（还没有请求记录）</>;
+  if (!source || (!source.lastOk && !source.lastError))
+    return <>{tr("未检测（还没有请求记录）")}</>;
   const failing = source.lastError && (!source.lastOk || source.lastOk < source.lastError);
   return failing ? (
     <span className="text-status-error">
-      最近一次请求失败 · <Time iso={source.lastError!} />
+      {tr("最近一次请求失败 ·")} <Time iso={source.lastError!} />
       {source.lastErrorMessage ? `：${source.lastErrorMessage}` : ""}
     </span>
   ) : (
     <>
-      最近一次请求成功 · <Time iso={source.lastOk!} />
+      {tr("最近一次请求成功 ·")} <Time iso={source.lastOk!} />
     </>
   );
 }
@@ -195,10 +197,10 @@ export function IntegrationItem({
       void client.invalidateQueries({ queryKey: ["admin"] });
       toast(
         update.action === "save"
-          ? `${title} 已保存，配置已生效`
+          ? tr("{0} 已保存，配置已生效", title)
           : update.action === "disable"
-            ? `${title} 已停用`
-            : `${title} 已恢复使用服务器配置`
+            ? tr("{0} 已停用", title)
+            : tr("{0} 已恢复使用服务器配置", title)
       );
     },
     onError: (e, update) => {
@@ -223,10 +225,10 @@ export function IntegrationItem({
 
   const source =
     status.source === "admin"
-      ? "后台配置（覆盖服务器上的配置）"
+      ? tr("后台配置（覆盖服务器上的配置）")
       : status.source === "environment"
-        ? "服务器配置（环境变量）"
-        : "无";
+        ? tr("服务器配置（环境变量）")
+        : tr("无");
 
   return (
     <li>
@@ -245,7 +247,7 @@ export function IntegrationItem({
           </span>
           {dirty ? (
             <span className="hidden text-[11.5px] whitespace-nowrap text-status-warn sm:inline">
-              未保存
+              {tr("未保存")}
             </span>
           ) : null}
           {dirty ? (
@@ -255,7 +257,7 @@ export function IntegrationItem({
             />
           ) : null}
           <CredentialBadge credential={credential} />
-          <span className="sr-only">{dirty ? "，有未保存的修改" : ""}</span>
+          <span className="sr-only">{dirty ? tr("，有未保存的修改") : ""}</span>
           <ChevronDown
             aria-hidden="true"
             className={`size-4 shrink-0 text-faint transition-transform duration-200 motion-reduce:transition-none ${open ? "rotate-180" : ""}`}
@@ -273,10 +275,10 @@ export function IntegrationItem({
       >
         <div className="min-h-0 overflow-hidden">
           <div className="border-t border-line-soft bg-canvas/50 px-4 py-4 sm:px-5">
-            <dl className="mb-4 grid gap-x-4 gap-y-1.5 text-[12.5px] sm:grid-cols-[6.5rem_minmax(0,1fr)]">
-              <dt className="text-faint">配置来源</dt>
+            <dl className="settings-definitions mb-4 text-[12.5px]">
+              <dt className="text-faint">{tr("配置来源")}</dt>
               <dd className="text-ink">{source}</dd>
-              <dt className="text-faint">连接情况</dt>
+              <dt className="text-faint">{tr("连接情况")}</dt>
               <dd className="text-ink">
                 <Connection provider={provider} credential={credential} dashboard={dashboard} />
               </dd>
@@ -284,21 +286,21 @@ export function IntegrationItem({
             <p className="mb-4 text-[12.5px] leading-relaxed text-muted">{help}</p>
             {credential === "disabled" ? (
               <p className="mb-4 text-[12.5px] text-status-warn">
-                已停用：不使用后台和服务器上的凭据。填写完整凭据并保存即可重新启用。
+                {tr("已停用：不使用后台和服务器上的凭据。填写完整凭据并保存即可重新启用。")}
               </p>
             ) : null}
 
             <form onSubmit={save} noValidate>
               <fieldset disabled={!editable || busy} className="space-y-3.5">
-                <legend className="sr-only">{title} 凭据</legend>
+                <legend className="sr-only">{tr("{0} 凭据", title)}</legend>
                 {INTEGRATION_FIELDS[provider].map((field) => {
                   const fieldId = `integration-${provider}-${field}`;
                   const redirect = field === "redirectUri";
                   const placeholder = redirect
                     ? (status.redirectUri ?? defaultRedirect())
                     : status.fields[field]
-                      ? "已保存 · 留空保留，输入新值替换"
-                      : "尚未配置";
+                      ? tr("已保存 · 留空保留，输入新值替换")
+                      : tr("尚未配置");
                   return (
                     <Field
                       key={field}
@@ -307,24 +309,26 @@ export function IntegrationItem({
                       hint={
                         redirect ? (
                           <>
-                            须为本站的{" "}
+                            {tr("须为本站的")}{" "}
                             <span className="break-all">/api/admin/spotify/callback</span>
-                            ，并在{" "}
+                            {tr("，并在")}{" "}
                             <a
                               href="https://developer.spotify.com/dashboard"
                               target="_blank"
                               rel="noreferrer"
                               className="text-brand underline"
                             >
-                              Spotify 开发者后台
+                              {tr("Spotify 开发者后台")}
                             </a>
-                            登记完全相同的地址。
-                            {status.fields.redirectUri
-                              ? "留空保留已保存的地址。"
-                              : "留空使用当前站点的地址。"}
+                            {tr(
+                              "登记完全相同的地址。{0}",
+                              status.fields.redirectUri
+                                ? tr("留空保留已保存的地址。")
+                                : tr("留空使用当前站点的地址。")
+                            )}
                           </>
                         ) : status.fields[field] ? (
-                          "已保存的值不会显示。"
+                          tr("已保存的值不会显示。")
                         ) : undefined
                       }
                     >
@@ -350,7 +354,7 @@ export function IntegrationItem({
                 ) : null}
                 <div className="flex flex-wrap items-center gap-2 pt-1">
                   <button type="submit" className="btn-primary" disabled={!dirty || busy}>
-                    {busy && !confirm ? "保存中…" : "保存配置"}
+                    {busy && !confirm ? tr("保存中…") : tr("保存配置")}
                   </button>
                   <button
                     type="button"
@@ -361,7 +365,7 @@ export function IntegrationItem({
                       setError("");
                     }}
                   >
-                    取消修改
+                    {tr("取消修改")}
                   </button>
                 </div>
               </fieldset>
@@ -369,7 +373,7 @@ export function IntegrationItem({
 
             {status.configured || status.source === "admin" ? (
               <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1.5 border-t border-line-soft pt-3 text-[12.5px]">
-                <span className="text-faint">管理配置</span>
+                <span className="text-faint">{tr("管理配置")}</span>
                 {status.configured ? (
                   <button
                     type="button"
@@ -377,7 +381,7 @@ export function IntegrationItem({
                     onClick={() => setConfirm("disable")}
                     className="text-muted underline-offset-2 hover:text-brand hover:underline disabled:opacity-50"
                   >
-                    停用
+                    {tr("停用")}
                   </button>
                 ) : null}
                 {status.source === "admin" ? (
@@ -387,7 +391,7 @@ export function IntegrationItem({
                     onClick={() => setConfirm("use-environment")}
                     className="text-subtle underline-offset-2 hover:text-brand hover:underline disabled:opacity-50"
                   >
-                    恢复服务器配置
+                    {tr("恢复服务器配置")}
                   </button>
                 ) : null}
               </div>
@@ -400,7 +404,7 @@ export function IntegrationItem({
         <Dialog
           open
           size="sm"
-          title={confirm === "disable" ? `停用 ${title}` : `恢复 ${title} 的服务器配置`}
+          title={confirm === "disable" ? tr("停用 {0}", title) : tr("恢复 {0} 的服务器配置", title)}
           onClose={() => {
             if (!busy) setConfirm(null);
           }}
@@ -412,7 +416,7 @@ export function IntegrationItem({
                 disabled={busy}
                 onClick={() => setConfirm(null)}
               >
-                取消
+                {tr("取消")}
               </button>
               <button
                 type="button"
@@ -420,16 +424,24 @@ export function IntegrationItem({
                 disabled={busy}
                 onClick={() => mutation.mutate({ action: confirm })}
               >
-                {busy ? "处理中…" : confirm === "disable" ? "停用" : "恢复"}
+                {busy ? tr("处理中…") : confirm === "disable" ? tr("停用") : tr("恢复")}
               </button>
             </>
           }
         >
           <p className="text-[13px] leading-relaxed text-muted">
             {confirm === "disable"
-              ? `停用后不再使用 ${title} 的任何凭据（包括服务器上的配置），也无法用它搜索或同步；已导入的内容不受影响。之后填写凭据保存，或恢复服务器配置，都能重新启用。`
-              : `将删除后台保存的 ${title} 配置（${INTEGRATION_FIELDS[provider].map((f) => LABELS[f]).join("、")}），改用服务器环境变量里的配置；服务器没有配置时，${title} 会变成未配置。服务器上的配置不会被修改。`}
-            {provider === "spotify" ? " 配置改变后需要重新连接 Spotify 账号。" : ""}
+              ? tr(
+                  "停用后不再使用 {0} 的任何凭据（包括服务器上的配置），也无法用它搜索或同步；已导入的内容不受影响。之后填写凭据保存，或恢复服务器配置，都能重新启用。",
+                  title
+                )
+              : tr(
+                  "将删除后台保存的 {0} 配置（{1}），改用服务器环境变量里的配置；服务器没有配置时，{2} 会变成未配置。服务器上的配置不会被修改。",
+                  title,
+                  INTEGRATION_FIELDS[provider].map((f) => LABELS[f]).join("、"),
+                  title
+                )}
+            {provider === "spotify" ? tr(" 配置改变后需要重新连接 Spotify 账号。") : ""}
           </p>
           {error ? (
             <p role="alert" className="mt-3 text-[12.5px] text-status-error">

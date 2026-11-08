@@ -20,6 +20,8 @@ import { Field, Switch } from "../ui/Field";
 import { useToast } from "../ui/Toast";
 import { Tooltip } from "../ui/Tooltip";
 import { SongReviewDialog } from "./SongReviewDialog";
+import { tr } from "../../lib/messages";
+import { Select } from "../ui/Select";
 
 /** One shared <audio> for preview buttons: starting a preview stops the previous one. */
 export function usePreview() {
@@ -63,11 +65,11 @@ export function PreviewButton({
   if (!url) return null;
   const active = preview.playing === url;
   return (
-    <Tooltip content={active ? "暂停试听" : "试听"} describe={false}>
+    <Tooltip content={active ? tr("暂停试听") : tr("试听")} describe={false}>
       <button
         type="button"
         onClick={() => preview.toggle(url)}
-        aria-label={active ? "暂停试听" : "试听"}
+        aria-label={active ? tr("暂停试听") : tr("试听")}
         className={`flex size-8 shrink-0 items-center justify-center rounded-full transition-colors ${active ? "bg-brand text-white" : "bg-brand-secondary/12 text-brand hover:bg-brand-secondary/20"}`}
       >
         {active ? (
@@ -131,7 +133,7 @@ export function MusicSearchDialog({
     try {
       setResults((await api.searchMusic(query.trim(), country)).results);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "搜索失败");
+      setError(e instanceof Error ? e.message : tr("搜索失败"));
     } finally {
       setSearching(false);
     }
@@ -154,14 +156,16 @@ export function MusicSearchDialog({
           list?.map((r) => (r.itunesId === result.itunesId ? { ...r, existingId: item.id } : r)) ??
           null
       );
-      toast(`已添加：${result.title}${item.inPlayer ? "" : "（没有试听，未加入播放器）"}`);
+      toast(
+        tr("已添加：{0}{1}", result.title, item.inPlayer ? "" : tr("（没有试听，未加入播放器）"))
+      );
     } catch (e) {
       setError(
         e instanceof ApiError && e.code === "MEDIA_EXISTS"
-          ? "这首歌已在收藏中"
+          ? tr("这首歌已在收藏中")
           : e instanceof Error
             ? e.message
-            : "添加失败"
+            : tr("添加失败")
       );
     } finally {
       setAdding(null);
@@ -169,40 +173,34 @@ export function MusicSearchDialog({
   };
 
   return (
-    <Dialog open title={mode === "add" ? "添加歌曲" : "选择试听"} onClose={onClose}>
+    <Dialog open title={mode === "add" ? tr("添加歌曲") : tr("选择试听")} onClose={onClose}>
       <form onSubmit={search} className="flex flex-wrap items-end gap-2">
-        <Field label="商店" htmlFor="music-store">
-          <select
+        <Field label={tr("商店")} htmlFor="music-store">
+          <Select
             id="music-store"
-            className="field"
             value={country}
-            onChange={(e) => setCountry(e.target.value)}
-          >
-            {MUSIC_STORES.map(([code, label]) => (
-              <option key={code} value={code}>
-                {label}
-              </option>
-            ))}
-          </select>
+            onChange={(value) => setCountry(value)}
+            options={[...MUSIC_STORES.map(([code, label]) => ({ value: code, label: label }))]}
+          />
         </Field>
-        <Field label="在 iTunes 搜索" htmlFor="music-query" className="min-w-0 flex-1">
+        <Field label={tr("在 iTunes 搜索")} htmlFor="music-query" className="min-w-0 flex-1">
           <input
             id="music-query"
             className="field"
             value={query}
             maxLength={100}
-            placeholder="歌名和歌手"
+            placeholder={tr("歌名和歌手")}
             onChange={(e) => setQuery(e.target.value)}
             data-autofocus
           />
         </Field>
         <button type="submit" className="btn-primary" disabled={searching || !query.trim()}>
           <Search aria-hidden="true" className="size-4" />
-          {searching ? "搜索中…" : "搜索"}
+          {searching ? tr("搜索中…") : tr("搜索")}
         </button>
       </form>
       <p className="mt-2 text-[11.5px] text-faint">
-        日文歌在“日本”商店更容易找到，并显示日文歌名。
+        {tr("日文歌在“日本”商店更容易找到，并显示日文歌名。")}
       </p>
 
       {error ? (
@@ -235,11 +233,11 @@ export function MusicSearchDialog({
                     disabled={!result.previewUrl}
                     onClick={() => onPick?.(result)}
                   >
-                    用这个
+                    {tr("用这个")}
                   </button>
                 ) : result.existingId ? (
                   <Link to={`/collection/${result.existingId}`} className="btn-secondary shrink-0">
-                    已添加
+                    {tr("已添加")}
                   </Link>
                 ) : (
                   <button
@@ -248,14 +246,14 @@ export function MusicSearchDialog({
                     disabled={adding !== null}
                     onClick={() => void add(result)}
                   >
-                    {adding === result.itunesId ? "添加中…" : "添加"}
+                    {adding === result.itunesId ? tr("添加中…") : tr("添加")}
                   </button>
                 )}
               </li>
             ))}
           </ul>
         ) : (
-          <p className="mt-4 text-[13px] text-muted">没有找到，换个关键词或商店试试。</p>
+          <p className="mt-4 text-[13px] text-muted">{tr("没有找到，换个关键词或商店试试。")}</p>
         )
       ) : null}
     </Dialog>
@@ -283,7 +281,7 @@ function JobProgress({ job }: { job: MusicImportJob }) {
       className="mt-4 space-y-2 rounded-xl border border-line-soft p-3 text-[13px]"
       role="status"
     >
-      <p className="font-semibold text-brand-dark">{job.playlistName ?? "读取中…"}</p>
+      <p className="font-semibold text-brand-dark">{job.playlistName ?? tr("读取中…")}</p>
       {job.total ? (
         <>
           <div className="h-2 overflow-hidden rounded-full bg-line-soft">
@@ -293,17 +291,25 @@ function JobProgress({ job }: { job: MusicImportJob }) {
             />
           </div>
           <p className="text-muted">
-            {job.processed} / {job.total} · 新增 {job.added} · 已有 {job.skipped}
-            {job.noPreview ? ` · 没有试听 ${job.noPreview}` : ""}
+            {tr(
+              "{0} / {1} · 新增 {2} · 已有 {3}{4}",
+              job.processed,
+              job.total,
+              job.added,
+              job.skipped,
+              job.noPreview ? tr(" · 没有试听 {0}", job.noPreview) : ""
+            )}
           </p>
         </>
       ) : null}
       {job.state === "done" ? (
         <p className="text-status-ok">
-          导入完成。没有试听的歌不会加入播放器，可以在列表里为它们找试听。
+          {tr("导入完成。没有试听的歌不会加入播放器，可以在列表里为它们找试听。")}
         </p>
       ) : null}
-      {job.state === "failed" ? <p className="text-status-error">导入失败：{job.error}</p> : null}
+      {job.state === "failed" ? (
+        <p className="text-status-error">{tr("导入失败：{0}", job.error)}</p>
+      ) : null}
     </div>
   );
 }
@@ -323,19 +329,21 @@ export function PlaylistImportDialog({ onClose }: { onClose: () => void }) {
     try {
       setJobId((await api.startPlaylistImport(link.trim())).job.id);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "无法开始导入");
+      setError(e instanceof Error ? e.message : tr("无法开始导入"));
     } finally {
       setStarting(false);
     }
   };
 
   return (
-    <Dialog open size="sm" title="导入 Spotify 歌单" onClose={onClose}>
+    <Dialog open size="sm" title={tr("导入 Spotify 歌单")} onClose={onClose}>
       <form onSubmit={start} className="space-y-3">
         <Field
-          label="歌单链接"
+          label={tr("歌单链接")}
           htmlFor="playlist-link"
-          hint="公开歌单的分享链接。每首歌带 30 秒试听；已在收藏里的歌会跳过，所以可以重复导入同一个歌单来补充新歌。"
+          hint={tr(
+            "公开歌单的分享链接。每首歌带 30 秒试听；已在收藏里的歌会跳过，所以可以重复导入同一个歌单来补充新歌。"
+          )}
         >
           <input
             id="playlist-link"
@@ -353,7 +361,7 @@ export function PlaylistImportDialog({ onClose }: { onClose: () => void }) {
           className="btn-primary"
           disabled={!link.trim() || starting || running}
         >
-          {running ? "导入中…" : "开始导入"}
+          {running ? tr("导入中…") : tr("开始导入")}
         </button>
       </form>
 
@@ -394,14 +402,14 @@ export function SpotifyAccountDialog({ onClose }: { onClose: () => void }) {
       returnTo.searchParams.delete("reason");
       window.location.assign((await api.connectSpotify(returnTo.toString())).url);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "无法连接");
+      setError(e instanceof Error ? e.message : tr("无法连接"));
     }
   };
 
   const disconnect = async () => {
     await api.disconnectSpotify();
     await qc.invalidateQueries({ queryKey: ["admin", "spotify-account"] });
-    toast("已断开 Spotify");
+    toast(tr("已断开 Spotify"));
   };
 
   const importFrom = async (request: MusicImportRequest) => {
@@ -409,30 +417,30 @@ export function SpotifyAccountDialog({ onClose }: { onClose: () => void }) {
     try {
       setJobId((await api.startSpotifyImport(request)).job.id);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "无法开始导入");
+      setError(e instanceof Error ? e.message : tr("无法开始导入"));
     }
   };
 
   return (
-    <Dialog open title="Spotify 账号" onClose={onClose}>
-      {isPending ? <p className="text-[13px] text-subtle">加载中…</p> : null}
+    <Dialog open title={tr("Spotify 账号")} onClose={onClose}>
+      {isPending ? <p className="text-[13px] text-subtle">{tr("加载中…")}</p> : null}
       {status && !status.configured ? (
         <p className="text-[13px] leading-relaxed text-muted">
-          还没有配置 Spotify 应用。请到{" "}
+          {tr("还没有配置 Spotify 应用。请到")}{" "}
           <Link to="/integrations" className="text-brand underline">
-            API 配置
+            {tr("API 配置")}
           </Link>{" "}
-          填写 Client ID、Client Secret 和回调地址，保存后再连接账号。
+          {tr("填写 Client ID、Client Secret 和回调地址，保存后再连接账号。")}
         </p>
       ) : null}
       {status?.configured && !status.account ? (
         <div className="space-y-3 text-[13px] text-muted">
-          <p>连接你的 Spotify 账号后，可以导入“已点赞的歌曲”和你的歌单（只读权限）。</p>
+          <p>{tr("连接你的 Spotify 账号后，可以导入“已点赞的歌曲”和你的歌单（只读权限）。")}</p>
           <p className="text-[12px] text-faint">
-            Spotify 应用里登记的 Redirect URI 必须是：{status.redirectUri}
+            {tr("Spotify 应用里登记的 Redirect URI 必须是：{0}", status.redirectUri)}
           </p>
           <button type="button" className="btn-primary" onClick={() => void connect()}>
-            连接 Spotify
+            {tr("连接 Spotify")}
           </button>
         </div>
       ) : null}
@@ -440,7 +448,7 @@ export function SpotifyAccountDialog({ onClose }: { onClose: () => void }) {
         <div className="space-y-4">
           <div className="flex flex-wrap items-center gap-3 text-[13px]">
             <span className="text-muted">
-              已连接：
+              {tr("已连接：")}
               <span className="font-semibold text-brand-dark">{status.account.displayName}</span>
             </span>
             <button
@@ -449,14 +457,14 @@ export function SpotifyAccountDialog({ onClose }: { onClose: () => void }) {
               onClick={() => void disconnect()}
               disabled={running}
             >
-              断开
+              {tr("断开")}
             </button>
           </div>
           <div className="flex flex-wrap items-center gap-3 rounded-xl border border-line-soft p-3">
             <div className="min-w-0 flex-1">
-              <p className="text-[13.5px] font-semibold text-brand-dark">已点赞的歌曲</p>
+              <p className="text-[13.5px] font-semibold text-brand-dark">{tr("已点赞的歌曲")}</p>
               <p className="text-[12px] text-subtle">
-                试听优先用 Spotify 的，没有时到 iTunes 找同一首歌；歌多时需要几分钟。
+                {tr("试听优先用 Spotify 的，没有时到 iTunes 找同一首歌；歌多时需要几分钟。")}
               </p>
             </div>
             <button
@@ -465,11 +473,11 @@ export function SpotifyAccountDialog({ onClose }: { onClose: () => void }) {
               disabled={running}
               onClick={() => void importFrom({ source: "liked" })}
             >
-              导入
+              {tr("导入")}
             </button>
           </div>
           <div>
-            <p className="mb-2 text-[12.5px] font-medium text-brand-dark">我的歌单</p>
+            <p className="mb-2 text-[12.5px] font-medium text-brand-dark">{tr("我的歌单")}</p>
             {playlistsError ? (
               <p className="text-[12.5px] text-status-error">{playlistsError.message}</p>
             ) : null}
@@ -483,7 +491,7 @@ export function SpotifyAccountDialog({ onClose }: { onClose: () => void }) {
                         {playlist.name}
                       </p>
                       <p className="truncate text-[12px] text-subtle">
-                        {playlist.tracks} 首 · {playlist.owner}
+                        {tr("{0} 首 · {1}", playlist.tracks, playlist.owner)}
                       </p>
                     </div>
                     <button
@@ -494,13 +502,13 @@ export function SpotifyAccountDialog({ onClose }: { onClose: () => void }) {
                         void importFrom({ source: "playlist", playlistId: playlist.id })
                       }
                     >
-                      导入
+                      {tr("导入")}
                     </button>
                   </li>
                 ))}
               </ul>
             ) : playlists ? (
-              <p className="text-[12.5px] text-subtle">没有歌单。</p>
+              <p className="text-[12.5px] text-subtle">{tr("没有歌单。")}</p>
             ) : null}
           </div>
         </div>
@@ -551,11 +559,11 @@ export function MusicList({ items }: { items: AdminMediaItem[] }) {
         ))
   );
   const labels: Record<MusicFilter, string> = {
-    all: "全部",
-    featured: "精选歌曲",
-    player: "在播放器中",
-    notPlayer: "不在播放器中",
-    noPreview: "没有试听"
+    all: tr("全部"),
+    featured: tr("精选歌曲"),
+    player: tr("在播放器中"),
+    notPlayer: tr("不在播放器中"),
+    noPreview: tr("没有试听")
   };
   const order = useMemo(() => visible.map((item) => item.id), [visible]);
   const selection = useSelection(order);
@@ -582,15 +590,15 @@ export function MusicList({ items }: { items: AdminMediaItem[] }) {
             />
             <input
               className="field pl-9"
-              placeholder="筛选歌名、歌手、专辑"
-              aria-label="筛选歌曲"
+              placeholder={tr("筛选歌名、歌手、专辑")}
+              aria-label={tr("筛选歌曲")}
               value={needle}
               onChange={(e) => setNeedle(e.target.value)}
             />
           </div>
           {visible.length && !selection.active ? (
             <button type="button" className="btn-secondary shrink-0" onClick={selection.start}>
-              选择
+              {tr("选择")}
             </button>
           ) : null}
         </div>
@@ -599,8 +607,8 @@ export function MusicList({ items }: { items: AdminMediaItem[] }) {
       {visible.length === 0 ? (
         <div className="card p-10 text-center text-[13.5px] text-muted">
           {items.length
-            ? "没有符合条件的歌曲"
-            : "还没有歌曲，点击“添加歌曲”或“导入 Spotify 歌单”开始"}
+            ? tr("没有符合条件的歌曲")
+            : tr("还没有歌曲，点击“添加歌曲”或“导入 Spotify 歌单”开始")}
         </div>
       ) : (
         <ul className="card divide-y divide-line-soft">
@@ -644,7 +652,7 @@ function MusicRow({
 }) {
   const update = useUpdateMedia(item.id);
   const toast = useToast();
-  const title = pickText(item.title, "未命名");
+  const title = pickText(item.title, tr("未命名"));
   const previewUrl = item.music?.previewUrl ?? null;
   const selected = selection.isSelected(item.id);
 
@@ -654,7 +662,7 @@ function MusicRow({
         <button
           type="button"
           aria-pressed={selected}
-          aria-label={`选择 ${title}`}
+          aria-label={tr("选择 {0}", title)}
           className="rounded-md p-0.5"
           onClick={(e) => selection.toggle(item.id, e.shiftKey)}
         >
@@ -673,7 +681,7 @@ function MusicRow({
           {item.featured ? (
             <span className="chip inline-flex shrink-0 items-center gap-1">
               <Star aria-hidden="true" className="size-3 fill-current" />
-              精选
+              {tr("精选")}
             </span>
           ) : null}
         </div>
@@ -694,12 +702,15 @@ function MusicRow({
           </div>
         ) : null}
       </div>
-      {item.visibility === "private" ? <span className="chip">隐藏</span> : null}
+      {item.visibility === "private" ? <span className="chip">{tr("隐藏")}</span> : null}
       <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto">
-        <Tooltip content={item.featured ? "取消这首歌的精选" : "将这首歌设为精选"} describe={false}>
+        <Tooltip
+          content={item.featured ? tr("取消这首歌的精选") : tr("将这首歌设为精选")}
+          describe={false}
+        >
           <button
             type="button"
-            aria-label={`${item.featured ? "取消精选" : "设为精选"}：${title}`}
+            aria-label={`${item.featured ? tr("取消精选") : tr("设为精选")}：${title}`}
             aria-pressed={item.featured}
             disabled={update.isPending}
             className={`rounded-full border p-2 transition-colors disabled:opacity-50 ${item.featured ? "border-rating/25 bg-rating/10 text-rating" : "border-line text-faint hover:border-brand-secondary hover:text-brand"}`}
@@ -715,18 +726,18 @@ function MusicRow({
         </Tooltip>
         <button
           type="button"
-          className="btn-secondary !px-3 !py-2"
-          aria-label={`评分与短评：${title}`}
+          className="btn-secondary btn-sm"
+          aria-label={tr("评分与短评：{0}", title)}
           onClick={onReview}
         >
           <MessageSquare aria-hidden="true" className="size-3.5" />
-          <span>评分 / 短评</span>
+          <span>{tr("评分 / 短评")}</span>
         </button>
         {previewUrl ? (
           <PreviewButton url={previewUrl} preview={preview} />
         ) : (
           <button type="button" className="btn-secondary shrink-0" onClick={onFix}>
-            找试听
+            {tr("找试听")}
           </button>
         )}
         <Switch
@@ -735,12 +746,12 @@ function MusicRow({
           onChange={(on) => {
             if (update.isPending) return;
             if (on && !previewUrl) {
-              toast("先为这首歌找到试听，才能加入播放器", "error");
+              toast(tr("先为这首歌找到试听，才能加入播放器"), "error");
               return;
             }
             update.mutate({ inPlayer: on }, { onError: (e) => toast(e.message, "error") });
           }}
-          label={<span className="text-[12px] text-subtle">播放器</span>}
+          label={<span className="text-[12px] text-subtle">{tr("播放器")}</span>}
         />
       </div>
     </li>
@@ -761,7 +772,7 @@ export function FixPreviewDialog({ item, onClose }: { item: AdminMediaItem; onCl
           { music: { previewUrl: result.previewUrl, appleUrl: result.appleUrl }, inPlayer: true },
           {
             onSuccess: () => {
-              toast("已设置试听并加入播放器");
+              toast(tr("已设置试听并加入播放器"));
               onClose();
             },
             onError: (e) => toast(e.message, "error")

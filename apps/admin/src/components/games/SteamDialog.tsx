@@ -7,6 +7,7 @@ import { mediaKey } from "../../hooks/useMedia";
 import { api } from "../../lib/api";
 import { Dialog } from "../ui/Dialog";
 import { useToast } from "../ui/Toast";
+import { tr } from "../../lib/messages";
 
 export const steamAccountKey = ["admin", "steam-account"] as const;
 
@@ -43,7 +44,7 @@ export function SteamDialog({ onClose }: { onClose: () => void }) {
       returnTo.searchParams.delete("reason");
       window.location.assign((await api.connectSteam(returnTo.toString())).url);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "无法连接");
+      setError(e instanceof Error ? e.message : tr("无法连接"));
     }
   };
 
@@ -52,38 +53,41 @@ export function SteamDialog({ onClose }: { onClose: () => void }) {
     try {
       setJobId((await api.startSteamSync()).job.id);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "无法开始同步");
+      setError(e instanceof Error ? e.message : tr("无法开始同步"));
     }
   };
 
   const disconnect = async () => {
     await api.disconnectSteam();
     await qc.invalidateQueries({ queryKey: steamAccountKey });
-    toast("已断开 Steam");
+    toast(tr("已断开 Steam"));
   };
 
   const account = status?.account;
   return (
-    <Dialog open title="Steam 游戏库" onClose={onClose}>
-      {isPending ? <p className="text-[13px] text-subtle">加载中…</p> : null}
+    <Dialog open title={tr("Steam 游戏库")} onClose={onClose}>
+      {isPending ? <p className="text-[13px] text-subtle">{tr("加载中…")}</p> : null}
       {status && !status.configured ? (
         <p className="text-[13px] leading-relaxed text-muted">
-          还没有配置 Steam。请到{" "}
+          {tr("还没有配置 Steam。请到")}{" "}
           <Link to="/integrations" className="text-brand underline">
-            API 配置
+            {tr("API 配置")}
           </Link>{" "}
-          添加 Steam Web API Key，保存后再连接账号。
+          {tr("添加 Steam Web API Key，保存后再连接账号。")}
         </p>
       ) : null}
       {status?.configured && !account ? (
         <div className="space-y-3 text-[13px] text-muted">
           <p>
-            通过 Steam 登录确认你的账号（Steam 只告诉网站你的
-            SteamID，不会给出密码或其他权限），之后可以同步游戏库和游玩时长。
+            {tr(
+              "通过 Steam 登录确认你的账号（Steam 只告诉网站你的 SteamID，不会给出密码或其他权限），之后可以同步游戏库和游玩时长。"
+            )}
           </p>
-          <p className="text-[12px] text-faint">Steam 资料的隐私设置里，“游戏详情”需要是公开的。</p>
+          <p className="text-[12px] text-faint">
+            {tr("Steam 资料的隐私设置里，“游戏详情”需要是公开的。")}
+          </p>
           <button type="button" className="btn-primary" onClick={() => void connect()}>
-            通过 Steam 登录
+            {tr("通过 Steam 登录")}
           </button>
         </div>
       ) : null}
@@ -104,8 +108,8 @@ export function SteamDialog({ onClose }: { onClose: () => void }) {
               </a>
               <p className="text-[12px] text-subtle">
                 {account.lastSyncedAt
-                  ? `上次同步：${new Date(account.lastSyncedAt).toLocaleString()}`
-                  : "还没有同步过"}
+                  ? tr("上次同步：{0}", new Date(account.lastSyncedAt).toLocaleString())
+                  : tr("还没有同步过")}
               </p>
             </div>
             <button
@@ -114,18 +118,21 @@ export function SteamDialog({ onClose }: { onClose: () => void }) {
               onClick={() => void disconnect()}
               disabled={running}
             >
-              断开
+              {tr("断开")}
             </button>
           </div>
           <div className="rounded-xl border border-line-soft p-3 text-[12.5px] leading-relaxed text-muted">
-            <p>同步会做这些事：</p>
+            <p>{tr("同步会做这些事：")}</p>
             <ul className="mt-1 list-disc pl-5">
-              <li>已在收藏里的游戏：更新游玩时长和最后游玩日期，你的状态、评分和短评不变。</li>
               <li>
-                新游戏：优先用 IGDB 的资料导入，IGDB 没有的用 Steam
-                商店资料；默认隐藏，需要你挑选后公开。
+                {tr("已在收藏里的游戏：更新游玩时长和最后游玩日期，你的状态、评分和短评不变。")}
               </li>
-              <li>新游戏的状态：最近两周玩过为“在玩”，玩过为“玩过”，没玩过为“想玩”。</li>
+              <li>
+                {tr(
+                  "新游戏：优先用 IGDB 的资料导入，IGDB 没有的用 Steam 商店资料；默认隐藏，需要你挑选后公开。"
+                )}
+              </li>
+              <li>{tr("新游戏的状态：最近两周玩过为“在玩”，玩过为“玩过”，没玩过为“想玩”。")}</li>
             </ul>
           </div>
           <button
@@ -134,7 +141,7 @@ export function SteamDialog({ onClose }: { onClose: () => void }) {
             disabled={running}
             onClick={() => void sync()}
           >
-            {running ? "同步中…" : "同步游戏库"}
+            {running ? tr("同步中…") : tr("同步游戏库")}
           </button>
         </div>
       ) : null}
@@ -164,20 +171,28 @@ function SyncProgress({ job }: { job: SteamSyncJob }) {
             />
           </div>
           <p className="text-muted">
-            {job.processed} / {job.total} · 新增 {job.added}（其中 Steam 商店资料 {job.fromStore}）·
-            更新 {job.updated}
-            {job.failed ? ` · 失败 ${job.failed}` : ""}
+            {tr(
+              "{0} / {1} · 新增 {2}（其中 Steam 商店资料 {3}）· 更新 {4}{5}",
+              job.processed,
+              job.total,
+              job.added,
+              job.fromStore,
+              job.updated,
+              job.failed ? tr(" · 失败 {0}", job.failed) : ""
+            )}
           </p>
         </>
       ) : (
-        <p className="text-muted">读取游戏库…</p>
+        <p className="text-muted">{tr("读取游戏库…")}</p>
       )}
       {job.state === "done" ? (
         <p className="text-status-ok">
-          同步完成。新游戏都是隐藏的，可以在游戏标签里“选择”后批量公开。
+          {tr("同步完成。新游戏都是隐藏的，可以在游戏标签里“选择”后批量公开。")}
         </p>
       ) : null}
-      {job.state === "failed" ? <p className="text-status-error">同步失败：{job.error}</p> : null}
+      {job.state === "failed" ? (
+        <p className="text-status-error">{tr("同步失败：{0}", job.error)}</p>
+      ) : null}
       {job.errors.length ? (
         <ul className="list-disc pl-5 text-[12px] text-subtle">
           {job.errors.map((message) => (

@@ -1,0 +1,160 @@
+/*
+ * The slider rules of CupertinoCN's cupertino.css (see README.md), without Tailwind and @layer.
+ */
+
+@property --slider-outset {
+  syntax: "<length>";
+  inherits: true;
+  initial-value: 0px;
+}
+
+/* ---------------------------------------------------------------------------
+ * Slider: 6px track, 24×20 capsule thumb that grows into a lens while pressed.
+ * ------------------------------------------------------------------------ */
+.cupertino-slider {
+  min-width: 0;
+  --slider-thumb-w: 24px;
+  --slider-thumb-h: 20px;
+  --slider-outset: 0px;
+  --slider-outset-pressed: 7px;
+  --slider-stretch: 1;
+  --slider-squash: 1;
+}
+.cupertino-slider-control {
+  position: relative;
+  display: flex;
+  height: 44px;
+  width: 100%;
+  align-items: center;
+  touch-action: none;
+  user-select: none;
+  container-type: inline-size;
+}
+.cupertino-slider-control[data-orientation="vertical"] {
+  height: 100%;
+  justify-content: center;
+  container-type: size;
+}
+.cupertino-slider-track {
+  position: relative;
+  height: 6px;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--ios-fill);
+}
+.cupertino-slider-track[data-orientation="vertical"] {
+  height: 100%;
+  width: 6px;
+}
+.cupertino-slider-fill {
+  position: absolute;
+  border-radius: 999px;
+  background: var(--ios-blue);
+}
+.cupertino-slider-fill[data-orientation="horizontal"] {
+  height: 100%;
+}
+.cupertino-slider-fill[data-orientation="vertical"] {
+  width: 100%;
+}
+.cupertino-slider-thumb {
+  /*
+   * The handle grows past the thumb by the press outset plus the velocity stretch. Resizing
+   * instead of scaling keeps the refracted copy aligned with the real track.
+   */
+  --slider-outset-x: calc(
+    var(--slider-outset) * 1.15 + (var(--slider-stretch) - 1) * var(--slider-thumb-w) / 2
+  );
+  --slider-outset-y: calc(
+    var(--slider-outset) - (1 - var(--slider-squash)) * var(--slider-thumb-h) / 2
+  );
+  position: absolute;
+  width: var(--slider-thumb-w);
+  height: var(--slider-thumb-h);
+  border-radius: 999px;
+  outline: none;
+  transition: --slider-outset 320ms var(--ios-spring);
+}
+.cupertino-slider-thumb::after {
+  content: "";
+  position: absolute;
+  inset: -12px -8px;
+}
+.cupertino-slider-thumb:has(:focus-visible) {
+  outline: 3px solid color-mix(in srgb, var(--ios-blue) 75%, transparent);
+  outline-offset: 4px;
+}
+.cupertino-slider-handle {
+  --glass-wash: #fff;
+  position: absolute;
+  inset: calc(-1 * var(--slider-outset-y)) calc(-1 * var(--slider-outset-x));
+  isolation: isolate;
+  border-radius: inherit;
+  box-shadow:
+    0 0.5px 4px rgb(0 0 0 / 12%),
+    0 0 0 0.5px rgb(0 0 0 / 3%);
+  transition: box-shadow 220ms ease;
+  will-change: inset;
+}
+.cupertino-slider-handle .cupertino-glass-wash {
+  transition: background-color 160ms ease;
+}
+/*
+ * Aligned copy of the track and fill. The track is painted in its opaque equivalent, so the copy
+ * covers the real translucent track under the lens instead of darkening it.
+ */
+.cupertino-slider-copy {
+  position: absolute;
+  top: 50%;
+  height: 6px;
+  width: 100cqw;
+  border-radius: 999px;
+  background: var(--ios-fill-solid);
+  translate: 0 -50%;
+  left: calc(var(--slider-outset-x) - var(--slider-progress, 0) * (100cqw - var(--slider-thumb-w)));
+  overflow: hidden;
+}
+/* The real fill ends under the thumb center, which sits thumb-w/2 + progress × (track − thumb-w) in. */
+.cupertino-slider-copy::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  left: calc(
+    var(--slider-fill-start, 0) * (100% - var(--slider-thumb-w)) + var(--slider-range, 0) *
+      var(--slider-thumb-w) / 2
+  );
+  right: calc(
+    (1 - var(--slider-fill-end, 0)) * (100% - var(--slider-thumb-w)) + var(--slider-thumb-w) / 2
+  );
+  border-radius: 999px;
+  background: var(--ios-blue);
+}
+.cupertino-slider[data-orientation="vertical"] .cupertino-slider-copy {
+  display: none;
+}
+.cupertino-slider:not([data-disabled]):is([data-dragging], :active) .cupertino-slider-thumb,
+.cupertino-slider:not([data-disabled]) .cupertino-slider-thumb:active {
+  --slider-outset: var(--slider-outset-pressed);
+}
+.cupertino-slider:not([data-disabled]):is([data-dragging], :active) .cupertino-slider-handle,
+.cupertino-slider:not([data-disabled]) .cupertino-slider-thumb:active .cupertino-slider-handle {
+  --glass-wash: rgb(255 255 255 / 22%);
+  box-shadow:
+    0 8px 18px rgb(0 0 0 / 16%),
+    0 1px 2px rgb(0 0 0 / 6%);
+}
+
+/* Replaces the Tailwind utilities on the root. */
+.cupertino-slider {
+  width: 100%;
+}
+.cupertino-slider[data-disabled] {
+  opacity: 0.4;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .cupertino-slider:not([data-disabled]):not([data-dragging]) .cupertino-slider-thumb:hover {
+    --slider-outset: 2px;
+  }
+}

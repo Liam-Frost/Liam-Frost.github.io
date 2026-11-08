@@ -42,17 +42,23 @@ describe("presentation settings", () => {
     const initial = (await app.inject({ url: "/api/admin/presentation", headers })).json();
     const value = structuredClone(DEFAULT_PRESENTATION);
     value.sections.skills = false;
-    value.publicLogo.photoId = photo.id;
-    value.loginBackground = { mode: "rotate", photoIds: [photo.id], intervalSeconds: 20 };
-    const payload = { revision: initial.revision, settings: value };
+    value.publicLogo.text = "LF";
+    value.loginBackground = { mode: "daily", photoIds: [photo.id] };
+    const payload = { changes: value, base: initial.settings };
     expect(
-      (await app.inject({ method: "PUT", url: "/api/admin/presentation", headers: csrf, payload }))
-        .statusCode
+      (
+        await app.inject({
+          method: "PATCH",
+          url: "/api/admin/presentation",
+          headers: csrf,
+          payload
+        })
+      ).statusCode
     ).toBe(401);
     expect(
       (
         await app.inject({
-          method: "PUT",
+          method: "PATCH",
           url: "/api/admin/presentation",
           headers: { cookie },
           payload
@@ -60,8 +66,13 @@ describe("presentation settings", () => {
       ).statusCode
     ).toBe(403);
     const attempts = await Promise.all(
-      [1, 2].map(() =>
-        app.inject({ method: "PUT", url: "/api/admin/presentation", headers, payload })
+      ["LF", "XY"].map((text) =>
+        app.inject({
+          method: "PATCH",
+          url: "/api/admin/presentation",
+          headers,
+          payload: { ...payload, changes: { ...value, publicLogo: { text } } }
+        })
       )
     );
     expect(attempts.map((r) => r.statusCode).sort()).toEqual([200, 409]);
@@ -72,18 +83,7 @@ describe("presentation settings", () => {
     photos.rows.set(photo.id, { ...photo, visibility: "private" });
     const hidden = await app.inject("/api/presentation");
     expect(hidden.json().images).toEqual({});
-    expect(hidden.json().logoImages).toEqual({});
-    const current = (await app.inject({ url: "/api/admin/presentation", headers })).json();
-    expect(
-      (
-        await app.inject({
-          method: "PUT",
-          url: "/api/admin/presentation",
-          headers,
-          payload: { ...current, settings: value }
-        })
-      ).statusCode
-    ).toBe(400);
+    expect(hidden.json().logoUrls).toEqual({ publicLogo: null, adminLogo: null });
     await app.close();
   });
   it("uses defaults without a database and refuses unauthenticated settings reads", async () => {

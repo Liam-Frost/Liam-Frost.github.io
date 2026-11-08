@@ -11,17 +11,19 @@ import { useToast } from "../components/ui/Toast";
 import { usePlaylists } from "../hooks/usePlaylists";
 import { useSpotify, useUpdateSpotify } from "../hooks/useSpotify";
 import { pickText } from "../lib/i18n";
+import { tr } from "../lib/messages";
+import { Select } from "../components/ui/Select";
 
 /** Settings of the site's music player; its songs are managed in the collection's music tab. */
 export function MusicPage() {
   const { data, isPending, error } = useSpotify();
 
-  if (isPending) return <LoadingSkeleton label="加载中…" variant="rows" />;
+  if (isPending) return <LoadingSkeleton label={tr("加载中…")} variant="rows" />;
   if (error) {
     return (
       <>
-        <PageHeader title="播放器" />
-        <DatabaseNotice error={error} subject="播放器设置" />
+        <PageHeader title={tr("播放器")} />
+        <DatabaseNotice error={error} subject={tr("播放器设置")} />
       </>
     );
   }
@@ -29,23 +31,25 @@ export function MusicPage() {
   return (
     <>
       <PageHeader
-        title="播放器"
-        description="网站右下角的音乐播放器：网站自己的播放器（收藏里的歌，30 秒试听），或 Spotify 嵌入播放器。"
+        title={tr("播放器")}
+        description={tr(
+          "网站右下角的音乐播放器：网站自己的播放器（收藏里的歌，30 秒试听），或 Spotify 嵌入播放器。"
+        )}
       />
-      <div className="grid gap-5 lg:grid-cols-[1fr_minmax(0,360px)]">
+      <div className="card-row lg:grid-cols-[1fr_minmax(0,360px)]">
         <SettingsForm settings={data.settings} />
-        <Panel title="歌曲">
+        <Panel title={tr("歌曲")}>
           <p className="text-[13.5px] text-muted">
-            网站自己的播放器{data.settings.playlistId ? "（所选歌单）" : ""}里现在有{" "}
+            {tr("网站自己的播放器{0}里现在有", data.settings.playlistId ? tr("（所选歌单）") : "")}{" "}
             <span className="font-semibold text-brand-dark">{data.playerTracks}</span>{" "}
-            首歌（公开、加入播放器并且有试听）。
+            {tr("首歌（公开、加入播放器并且有试听）。")}
           </p>
           <Link to="/collection?kind=track" className="btn-secondary">
-            管理歌曲
+            {tr("管理歌曲")}
           </Link>
           {data.playerTracks === 0 ? (
             <p className="text-[12px] leading-relaxed text-faint">
-              没有歌曲时，网站会播放内置的几首备用歌曲。
+              {tr("没有歌曲时，网站会播放内置的几首备用歌曲。")}
             </p>
           ) : null}
         </Panel>
@@ -77,31 +81,38 @@ function SettingsForm({ settings }: { settings: SpotifySettings }) {
   const submit = (event: FormEvent) => {
     event.preventDefault();
     setError("");
-    update.mutate(draft, { onSuccess: () => toast("已保存"), onError: (e) => setError(e.message) });
+    update.mutate(draft, {
+      onSuccess: () => toast(tr("已保存")),
+      onError: (e) => setError(e.message)
+    });
   };
 
   return (
-    <form onSubmit={submit} noValidate className="space-y-5">
-      <Panel title="播放">
+    <form onSubmit={submit} noValidate>
+      <Panel title={tr("播放")}>
         <Switch
           id="spotify-enabled"
           checked={draft.enabled}
           onChange={(on) => set("enabled", on)}
-          label="在网站上显示播放器"
+          label={tr("在网站上显示播放器")}
         />
         <fieldset className="space-y-2">
-          <legend className="mb-1.5 text-[12.5px] font-medium text-brand-dark">播放器类型</legend>
+          <legend className="mb-1.5 text-[12.5px] font-medium text-brand-dark">
+            {tr("播放器类型")}
+          </legend>
           {(
             [
               [
                 "custom",
-                "网站自己的播放器",
-                "播放收藏里“加入播放器”的歌，每首 30 秒试听；样式和网站一致，支持随机播放。"
+                tr("网站自己的播放器"),
+                tr("播放收藏里“加入播放器”的歌，每首 30 秒试听；样式和网站一致，支持随机播放。")
               ],
               [
                 "embed",
-                "Spotify 嵌入播放器",
-                "Spotify 官方的播放器。在同一个浏览器登录了 Spotify 的访客能听整首，其他人听 30 秒试听；样式由 Spotify 决定。"
+                tr("Spotify 嵌入播放器"),
+                tr(
+                  "Spotify 官方的播放器。在同一个浏览器登录了 Spotify 的访客能听整首，其他人听 30 秒试听；样式由 Spotify 决定。"
+                )
               ]
             ] as const
           ).map(([value, label, hint]) => (
@@ -126,9 +137,9 @@ function SettingsForm({ settings }: { settings: SpotifySettings }) {
         </fieldset>
         {draft.mode === "embed" ? (
           <Field
-            label="Spotify 链接"
+            label={tr("Spotify 链接")}
             htmlFor="spotify-embed"
-            hint="歌单、专辑、歌曲或艺人的分享链接。"
+            hint={tr("歌单、专辑、歌曲或艺人的分享链接。")}
           >
             <input
               id="spotify-embed"
@@ -142,35 +153,39 @@ function SettingsForm({ settings }: { settings: SpotifySettings }) {
         ) : (
           <>
             <Field
-              label="播放内容"
+              label={tr("播放内容")}
               htmlFor="spotify-playlist"
-              hint="选一个歌单时，播放歌单里公开并且有试听的歌，按歌单顺序；歌单被隐藏或删除后回到全部歌曲。"
+              hint={tr(
+                "选一个歌单时，播放歌单里公开并且有试听的歌，按歌单顺序；歌单被隐藏或删除后回到全部歌曲。"
+              )}
             >
-              <select
+              <Select
                 id="spotify-playlist"
-                className="field"
                 value={draft.playlistId ?? ""}
-                onChange={(e) => set("playlistId", e.target.value || null)}
-              >
-                <option value="">所有“加入播放器”的歌</option>
-                {(playlists ?? []).map((playlist) => (
-                  <option key={playlist.id} value={playlist.id}>
-                    歌单：{pickText(playlist.name, "未命名歌单")}
-                    {playlist.visibility === "private" ? "（隐藏）" : ""}
-                  </option>
-                ))}
-              </select>
+                onChange={(value) => set("playlistId", value || null)}
+                options={[
+                  { value: "", label: tr("所有“加入播放器”的歌") },
+                  ...(playlists ?? []).map((playlist) => ({
+                    value: playlist.id,
+                    label: tr(
+                      "歌单：{0}{1}",
+                      pickText(playlist.name, tr("未命名歌单")),
+                      playlist.visibility === "private" ? tr("（隐藏）") : ""
+                    )
+                  }))
+                ]}
+              />
             </Field>
             <Switch
               id="spotify-shuffle"
               checked={draft.shuffle}
               onChange={(on) => set("shuffle", on)}
-              label="随机播放（关闭则按顺序）"
+              label={tr("随机播放（关闭则按顺序）")}
             />
           </>
         )}
         {draft.mode === "custom" ? (
-          <Field label={`默认音量：${draft.volume}%`} htmlFor="spotify-volume">
+          <Field label={tr("默认音量：{0}%", draft.volume)} htmlFor="spotify-volume">
             <input
               id="spotify-volume"
               type="range"
@@ -184,9 +199,9 @@ function SettingsForm({ settings }: { settings: SpotifySettings }) {
           </Field>
         ) : null}
         <Field
-          label="自动收起（秒）"
+          label={tr("自动收起（秒）")}
           htmlFor="spotify-collapse"
-          hint="页面打开后，播放器展开多少秒再收起成小图标。0 表示不自动收起。"
+          hint={tr("页面打开后，播放器展开多少秒再收起成小图标。0 表示不自动收起。")}
         >
           <input
             id="spotify-collapse"
@@ -209,27 +224,26 @@ function SettingsForm({ settings }: { settings: SpotifySettings }) {
             onBlur={() => setCollapseText(String(draft.autoCollapseSeconds))}
           />
         </Field>
-      </Panel>
-
-      {error ? (
-        <p
-          role="alert"
-          className="rounded-xl border border-status-error/30 bg-status-error/8 px-4 py-2.5 text-[12.5px] text-status-error"
-        >
-          {error}
-        </p>
-      ) : null}
-
-      <div className="flex items-center gap-3">
-        <button type="submit" className="btn-primary" disabled={update.isPending || !dirty}>
-          {update.isPending ? "保存中…" : "保存"}
-        </button>
-        {dirty ? (
-          <span className="text-[12.5px] text-status-warn" role="status">
-            有未保存的修改
-          </span>
+        {error ? (
+          <p
+            role="alert"
+            className="rounded-xl border border-status-error/30 bg-status-error/8 px-4 py-2.5 text-[12.5px] text-status-error"
+          >
+            {error}
+          </p>
         ) : null}
-      </div>
+
+        <div className="flex items-center gap-3">
+          <button type="submit" className="btn-primary" disabled={update.isPending || !dirty}>
+            {update.isPending ? tr("保存中…") : tr("保存")}
+          </button>
+          {dirty ? (
+            <span className="text-[12.5px] text-status-warn" role="status">
+              {tr("有未保存的修改")}
+            </span>
+          ) : null}
+        </div>
+      </Panel>
     </form>
   );
 }

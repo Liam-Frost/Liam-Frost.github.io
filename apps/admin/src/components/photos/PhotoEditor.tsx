@@ -5,17 +5,19 @@ import type {
   LocalizedText
 } from "@liam-frost/shared";
 import { CloudDownload, ExternalLink, Plus, Replace, X } from "lucide-react";
-import { useState, type FormEvent } from "react";
+import { useState, type FormEvent, useId } from "react";
 
 import { useSetPhoto, useUpdatePhoto } from "../../hooks/usePhotos";
 import { api, uploadPhotoImage } from "../../lib/api";
-import { LANG_LABELS, LANGS, type Lang } from "../../lib/i18n";
+import { type Lang } from "../../lib/i18n";
 import { Dialog } from "../ui/Dialog";
 import { Field, Switch } from "../ui/Field";
 import { useToast } from "../ui/Toast";
 import { RecentStats } from "../analytics/RecentStats";
 import { Tooltip } from "../ui/Tooltip";
 import { ImageSourcePicker, sourceLabel } from "./ImageSourcePicker";
+import { tr } from "../../lib/messages";
+import { LanguageTabPanel, LanguageTabs } from "../ui/LanguageTabs";
 
 type Draft = {
   title: LocalizedText;
@@ -72,6 +74,7 @@ export function PhotoEditor({
   const [imageError, setImageError] = useState("");
   const setPhoto = useSetPhoto();
   const [lang, setLang] = useState<Lang>("zh");
+  const languageTabs = useId();
   const [error, setError] = useState("");
   const update = useUpdatePhoto();
   const toast = useToast();
@@ -87,7 +90,7 @@ export function PhotoEditor({
   const submit = (event: FormEvent) => {
     event.preventDefault();
     if (!hasText(draft.title)) {
-      setError("请至少用一种语言填写标题");
+      setError(tr("请至少用一种语言填写标题"));
       return;
     }
     setError("");
@@ -104,7 +107,7 @@ export function PhotoEditor({
       { id: photo.id, update: body },
       {
         onSuccess: () => {
-          toast("已保存");
+          toast(tr("已保存"));
           onClose();
         },
         onError: (e) => setError(e.message)
@@ -134,17 +137,17 @@ export function PhotoEditor({
     try {
       applyImage((await work()).photo, message);
     } catch (e) {
-      setImageError(e instanceof Error ? e.message : "操作失败");
+      setImageError(e instanceof Error ? e.message : tr("操作失败"));
     } finally {
       setImageBusy(false);
     }
   };
 
   const replaceWithFile = (files: File[]) =>
-    runImage(() => uploadPhotoImage(photo.id, files[0]!, useExif), "已替换图片");
+    runImage(() => uploadPhotoImage(photo.id, files[0]!, useExif), tr("已替换图片"));
   const replaceWithImport = (items: AdminPhotoImport[]) =>
-    runImage(() => api.replacePhotoImage(photo.id, { ...items[0]!, useExif }), "已替换图片");
-  const host = () => runImage(() => api.hostPhoto(photo.id), "已转为本站托管");
+    runImage(() => api.replacePhotoImage(photo.id, { ...items[0]!, useExif }), tr("已替换图片"));
+  const host = () => runImage(() => api.hostPhoto(photo.id), tr("已转为本站托管"));
 
   const formId = `photo-editor-${photo.id}`;
   const source = photo.source;
@@ -152,15 +155,15 @@ export function PhotoEditor({
   return (
     <Dialog
       open
-      title="编辑照片"
+      title={tr("编辑照片")}
       onClose={onClose}
       footer={
         <>
           <button type="button" className="btn-secondary" onClick={onClose}>
-            取消
+            {tr("取消")}
           </button>
           <button type="submit" form={formId} className="btn-primary" disabled={update.isPending}>
-            {update.isPending ? "保存中…" : "保存"}
+            {update.isPending ? tr("保存中…") : tr("保存")}
           </button>
         </>
       }
@@ -185,12 +188,12 @@ export function PhotoEditor({
             ID：{photo.id}
           </p>
           <section
-            aria-label="图片"
+            aria-label={tr("图片")}
             className="space-y-2 rounded-xl border border-line-soft p-3 text-[12px]"
           >
             <p className="text-muted">
-              来源：
-              <span className="text-ink">{source ? sourceLabel(source) : "未记录"}</span>
+              {tr("来源：")}
+              <span className="text-ink">{source ? sourceLabel(source) : tr("未记录")}</span>
               {source?.importedAt ? (
                 <span className="text-faint"> · {source.importedAt.slice(0, 10)}</span>
               ) : null}
@@ -201,9 +204,9 @@ export function PhotoEditor({
               </Tooltip>
             ) : null}
             <p className="text-muted">
-              存放：
+              {tr("存放：")}
               {photo.storage === "local" ? (
-                <span className="text-ink">本站托管</span>
+                <span className="text-ink">{tr("本站托管")}</span>
               ) : (
                 <a
                   href={photo.src}
@@ -211,14 +214,14 @@ export function PhotoEditor({
                   rel="noreferrer"
                   className="inline-flex items-center gap-1 text-brand hover:underline"
                 >
-                  只引用原链接 <ExternalLink aria-hidden="true" className="size-3" />
+                  {tr("只引用原链接")} <ExternalLink aria-hidden="true" className="size-3" />
                 </a>
               )}
             </p>
             <div className="flex flex-wrap gap-1.5 pt-1">
               <button
                 type="button"
-                className="btn-secondary !px-3 !py-1.5 !text-[12px]"
+                className="btn-secondary btn-sm"
                 disabled={imageBusy}
                 onClick={() => {
                   setImageError("");
@@ -226,17 +229,17 @@ export function PhotoEditor({
                 }}
               >
                 <Replace aria-hidden="true" className="size-3.5" />
-                替换图片
+                {tr("替换图片")}
               </button>
               {photo.storage === "remote-url" ? (
                 <button
                   type="button"
-                  className="btn-secondary !px-3 !py-1.5 !text-[12px]"
+                  className="btn-secondary btn-sm"
                   disabled={imageBusy}
                   onClick={() => void host()}
                 >
                   <CloudDownload aria-hidden="true" className="size-3.5" />
-                  {imageBusy ? "处理中…" : "转为本站托管"}
+                  {imageBusy ? tr("处理中…") : tr("转为本站托管")}
                 </button>
               ) : null}
             </div>
@@ -251,44 +254,33 @@ export function PhotoEditor({
               id="photo-public"
               checked={draft.visibility === "public"}
               onChange={(on) => setDraft((d) => ({ ...d, visibility: on ? "public" : "private" }))}
-              label="公开显示"
+              label={tr("公开显示")}
             />
             <Switch
               id="photo-featured"
               checked={draft.featured}
               onChange={(on) => setDraft((d) => ({ ...d, featured: on }))}
-              label="首页精选"
+              label={tr("首页精选")}
             />
           </div>
         </div>
 
         <div className="min-w-0 space-y-5">
           <div>
-            <div role="tablist" aria-label="语言" className="mb-3 flex flex-wrap gap-1.5">
-              {LANGS.map((l) => (
-                <button
-                  key={l}
-                  type="button"
-                  role="tab"
-                  aria-selected={lang === l}
-                  onClick={() => setLang(l)}
-                  className={`rounded-full px-3 py-1.5 text-[12.5px] transition-colors ${
-                    lang === l
-                      ? "bg-brand text-white"
-                      : "bg-brand-secondary/10 text-brand hover:bg-brand-secondary/18"
-                  }`}
-                >
-                  {LANG_LABELS[l]}
-                  {draft.title[l]?.trim() ? "" : " ·"}
-                </button>
-              ))}
-            </div>
+            <LanguageTabs
+              id={languageTabs}
+              value={lang}
+              onChange={setLang}
+              isFilled={(l) => Boolean(draft.title[l]?.trim())}
+              mark="missing"
+              className="mb-3"
+            />
             <p className="mb-3 text-[11.5px] text-faint">
-              没填写的语言会在网站上回退到其它语言。标签页名后带 · 表示该语言还没有标题。
+              {tr("没填写的语言会在网站上回退到其它语言。标签页名后带 · 表示该语言还没有标题。")}
             </p>
 
-            <div className="grid gap-3.5 sm:grid-cols-2">
-              <Field label="标题" htmlFor="photo-title">
+            <LanguageTabPanel id={languageTabs} lang={lang} className="grid gap-3.5 sm:grid-cols-2">
+              <Field label={tr("标题")} htmlFor="photo-title">
                 <input
                   id="photo-title"
                   className="field"
@@ -297,7 +289,11 @@ export function PhotoEditor({
                   maxLength={120}
                 />
               </Field>
-              <Field label="分类" htmlFor="photo-category" hint="例如：城市、街头、建筑">
+              <Field
+                label={tr("分类")}
+                htmlFor="photo-category"
+                hint={tr("例如：城市、街头、建筑")}
+              >
                 <input
                   id="photo-category"
                   className="field"
@@ -306,7 +302,7 @@ export function PhotoEditor({
                   maxLength={40}
                 />
               </Field>
-              <Field label="地点" htmlFor="photo-location" className="sm:col-span-2">
+              <Field label={tr("地点")} htmlFor="photo-location" className="sm:col-span-2">
                 <input
                   id="photo-location"
                   className="field"
@@ -315,7 +311,7 @@ export function PhotoEditor({
                   maxLength={120}
                 />
               </Field>
-              <Field label="描述" htmlFor="photo-description" className="sm:col-span-2">
+              <Field label={tr("描述")} htmlFor="photo-description" className="sm:col-span-2">
                 <textarea
                   id="photo-description"
                   rows={3}
@@ -326,9 +322,9 @@ export function PhotoEditor({
                 />
               </Field>
               <Field
-                label="替代文本"
+                label={tr("替代文本")}
                 htmlFor="photo-alt"
-                hint="给读屏软件和图片加载失败时使用，描述画面内容"
+                hint={tr("给读屏软件和图片加载失败时使用，描述画面内容")}
                 className="sm:col-span-2"
               >
                 <input
@@ -339,10 +335,12 @@ export function PhotoEditor({
                   maxLength={300}
                 />
               </Field>
-            </div>
+            </LanguageTabPanel>
 
             <fieldset className="mt-3.5">
-              <legend className="mb-1.5 text-[12.5px] font-medium text-brand-dark">标签</legend>
+              <legend className="mb-1.5 text-[12.5px] font-medium text-brand-dark">
+                {tr("标签")}
+              </legend>
               <div className="flex flex-wrap gap-2">
                 {draft.tags.map((tag, index) => (
                   <span
@@ -350,7 +348,7 @@ export function PhotoEditor({
                     className="inline-flex items-center gap-1 rounded-xl border border-line bg-white py-1 pr-1 pl-2"
                   >
                     <input
-                      aria-label={`标签 ${index + 1}`}
+                      aria-label={tr("标签 {0}", index + 1)}
                       className="w-24 bg-transparent text-[13px] outline-none"
                       value={tag[lang] ?? ""}
                       placeholder={Object.values(tag).find(Boolean) ?? ""}
@@ -359,7 +357,7 @@ export function PhotoEditor({
                     />
                     <button
                       type="button"
-                      aria-label={`删除标签 ${index + 1}`}
+                      aria-label={tr("删除标签 {0}", index + 1)}
                       onClick={() =>
                         setDraft((d) => ({ ...d, tags: d.tags.filter((_, i) => i !== index) }))
                       }
@@ -375,18 +373,18 @@ export function PhotoEditor({
                     className="btn-secondary px-3 py-1.5"
                     onClick={() => setDraft((d) => ({ ...d, tags: [...d.tags, {}] }))}
                   >
-                    <Plus aria-hidden="true" className="size-3.5" /> 添加标签
+                    <Plus aria-hidden="true" className="size-3.5" /> {tr("添加标签")}
                   </button>
                 ) : null}
               </div>
               <p className="mt-1 text-[11.5px] text-faint">
-                每个标签在各语言下分别填写，占位文字是其它语言的内容。
+                {tr("每个标签在各语言下分别填写，占位文字是其它语言的内容。")}
               </p>
             </fieldset>
           </div>
 
           <div className="grid gap-3.5 border-t border-line-soft pt-4 sm:grid-cols-2">
-            <Field label="拍摄日期" htmlFor="photo-date">
+            <Field label={tr("拍摄日期")} htmlFor="photo-date">
               <input
                 id="photo-date"
                 type="date"
@@ -396,7 +394,7 @@ export function PhotoEditor({
                 required
               />
             </Field>
-            <Field label="相机" htmlFor="photo-camera">
+            <Field label={tr("相机")} htmlFor="photo-camera">
               <input
                 id="photo-camera"
                 className="field"
@@ -405,7 +403,7 @@ export function PhotoEditor({
                 maxLength={120}
               />
             </Field>
-            <Field label="镜头" htmlFor="photo-lens">
+            <Field label={tr("镜头")} htmlFor="photo-lens">
               <input
                 id="photo-lens"
                 className="field"
@@ -414,7 +412,11 @@ export function PhotoEditor({
                 maxLength={120}
               />
             </Field>
-            <Field label="拍摄参数" htmlFor="photo-settings" hint="例如：1/100 · f/4 · ISO 800">
+            <Field
+              label={tr("拍摄参数")}
+              htmlFor="photo-settings"
+              hint={tr("例如：1/100 · f/4 · ISO 800")}
+            >
               <input
                 id="photo-settings"
                 className="field"
@@ -432,10 +434,14 @@ export function PhotoEditor({
           ) : null}
         </div>
       </form>
-      <Dialog open={replacing} title="替换图片" onClose={() => !imageBusy && setReplacing(false)}>
+      <Dialog
+        open={replacing}
+        title={tr("替换图片")}
+        onClose={() => !imageBusy && setReplacing(false)}
+      >
         <div className="space-y-4">
           <p className="text-[13px] text-muted">
-            标题、说明、排序和公开状态都保留；原来由本站托管的图片文件会删除。
+            {tr("标题、说明、排序和公开状态都保留；原来由本站托管的图片文件会删除。")}
           </p>
           <label className="flex items-center gap-2 text-[13px]">
             <input
@@ -443,12 +449,12 @@ export function PhotoEditor({
               checked={useExif}
               onChange={(e) => setUseExif(e.target.checked)}
             />
-            用新图片的 EXIF 覆盖拍摄日期和相机信息
+            {tr("用新图片的 EXIF 覆盖拍摄日期和相机信息")}
           </label>
           <ImageSourcePicker
             multiple={false}
             busy={imageBusy}
-            action={imageBusy ? "处理中…" : "替换"}
+            action={imageBusy ? tr("处理中…") : tr("替换")}
             onFiles={(files) => void replaceWithFile(files)}
             onImports={(items) => void replaceWithImport(items)}
           />

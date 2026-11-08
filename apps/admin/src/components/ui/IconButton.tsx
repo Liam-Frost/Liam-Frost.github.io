@@ -8,12 +8,14 @@ export function IconButton({
   onClick,
   disabled,
   danger,
+  size = "sm",
   children
 }: {
   label: string;
   onClick: () => void;
   disabled?: boolean;
   danger?: boolean;
+  size?: "sm" | "md";
   children: ReactNode;
 }) {
   return (
@@ -23,11 +25,7 @@ export function IconButton({
         aria-label={label}
         onClick={onClick}
         disabled={disabled}
-        className={`rounded-full p-1.5 text-faint transition-colors disabled:opacity-30 ${
-          danger
-            ? "hover:bg-status-error/10 hover:text-status-error"
-            : "hover:bg-brand-secondary/12 hover:text-brand"
-        }`}
+        className={`icon-btn ${size === "md" ? "icon-btn-md" : ""} ${danger ? "icon-btn-danger" : ""}`}
       >
         {children}
       </button>

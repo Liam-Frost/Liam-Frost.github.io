@@ -2,12 +2,12 @@
 
 ## 功能阶段，不等于一次发布全部完成
 
-| 阶段 | 范围                                                           | 当前状态                                                                       |
-| ---- | -------------------------------------------------------------- | ------------------------------------------------------------------------------ |
-| 1    | 公开资料、头像、品牌、首页开关、版权、默认偏好和隐私           | 已完成开发并在 preview 验证；本轮继续重构这些功能的界面                        |
-| 2    | 标签词典、后台消息目录及完整国际化、日期/数字格式              | 标签词典已提供；本轮建立设置公共消息和格式入口。完整后台翻译及语言切换尚未完成 |
-| 3    | 当前密码重新验证、改密、会话撤销、TOTP、恢复码及安全参数管理   | 尚未实施；当前仅展示实际只读状态，不假装提供可编辑控件                         |
-| 4    | 后台地址预检、候选发布、新入口验证、受保护旧地址过渡及失败恢复 | 尚未实施，最后单独做发布级变更                                                 |
+| 阶段 | 范围                                                         | 当前状态                                                          |
+| ---- | ------------------------------------------------------------ | ----------------------------------------------------------------- |
+| 1    | 公开资料、头像、品牌、首页开关、版权、默认偏好和隐私         | 已上线生产；Logo 与图标改为直接上传，新增前后台页面标题和页脚链接 |
+| 2    | 标签词典、后台消息目录及完整国际化、日期/数字格式            | 已实现简体中文和英文及语言切换；繁中、法文、日文按需补充翻译文件  |
+| 3    | 当前密码重新验证、改密、会话撤销、TOTP、恢复码及安全参数显示 | 已实现（账号与安全页）；限速阈值仍是代码常量，只显示不可编辑      |
+| 4    | 后台地址预检、新入口试用与确认、受保护旧地址过渡及失败恢复   | 已实现为应用内切换，无需重启；前提是反向代理未单独写死后台路径    |
 
 本文件仅记录网站设置的功能阶段。运维计划与线上执行记录另行私有维护。
 
@@ -20,50 +20,69 @@
 | 站点与品牌 | 基本资料        | site/identity          | Standard 880px |
 | 站点与品牌 | Logo 与网站图标 | site/branding          | Standard 880px |
 | 站点与品牌 | 页脚与版权      | site/footer            | Compact 640px  |
-| 页面与体验 | 首页模块        | experience/home        | Wide 1100px    |
+| 页面与体验 | 首页模块        | experience/home        | Wide 1032px    |
 | 页面与体验 | 默认显示与语言  | experience/preferences | Compact 640px  |
-| 页面与体验 | 标签词典        | experience/dictionary  | Wide 1100px    |
+| 页面与体验 | 标签词典        | experience/dictionary  | Wide 1032px    |
 | 隐私与集成 | 隐私说明        | privacy/content        | Standard 880px |
 | 隐私与集成 | 集成与 API      | privacy/integrations   | Standard 880px |
-| 后台管理   | 登录外观        | admin/login            | Wide 1100px    |
+| 后台管理   | 登录外观        | admin/login            | Wide 1032px    |
 | 后台管理   | 账号与安全      | admin/security         | Compact 640px  |
 
-宽度是上限，窄屏随容器收缩。1280px 以下用原生分组页面选择器，避免双侧栏挤压；大屏设置导航独立滚动。普通页面沿用原后台宽度，只有设置模块开放更宽外层布局。页面切换管理焦点及滚动，前进/后退复用浏览记录位置。
+宽度是上限，窄屏随容器收缩。Wide 为 1032px，与普通后台页面的内容宽度相同；设置页主容器最宽 1480px，宽屏下设置内容的左边界与普通页面重合，二级导航占用其左侧留白。1280px 以下用分组页面选择器，避免双侧栏挤压；大屏设置导航独立滚动。
 
 旧 appearance、integrations 及 frontend/_、backend/_ 设置路径仍跳转到对应配置，保留 query/hash。旧 backend/statistics、backend/audit 跳回独立统计设置/审计页面。不存在配置删除、数据库改表或新 API 协议。
 
-## 组件与页面
+## 布局与组件规则
 
-- SettingsPage / SettingsSection：统一页面和区域标题、间距及白色表面；不使用压边 legend。
-- SettingsActions：无修改时只显示低权重状态；有草稿才出现紧凑保存/放弃区，显示保存中与原始失败原因。粘性保存区在正常文档流中保留空间，照顾安全区，小高度视口改为非粘性。品牌页的 Logo/图标各自保存，均使用非悬浮操作区，避免互相覆盖。
-- SettingsAssetPicker / AssetPreview / SettingsPreview：可搜索的公开图库对话框、原生选择器及资源/效果预览。沿用原图库上传入口，不添加私有照片或绕过本地图标来源限制。
-- SettingsLanguages / SettingsState / SettingsConflict：统一五语编辑切换、可恢复的加载/错误/空状态及并发版本比较。
-- 列表模式沿用技术栈管理的分隔行密度：首页七个模块显示候选数、可见性、开关和编辑入口；词典默认折叠、只展开当前条目，区分词典为空与筛选无匹配。
-- Logo 与图标合并；预览文字/图片回退及浏览器标签页，PNG/ICO 生成能力保持。登录背景提供已选顺序列表、上移/下移、移除、搜索图库及实际轮换/减少动态预览，不添加无效拖拽柄。
-- 身份字段和版权年份限制合理宽度；默认显示合并只读后台语言状态；隐私历史支持加载、错误重试及恢复为待保存草稿；集成继续按服务独立编辑、保存与连通性操作。
+设置页内部不使用视口断点决定列数。`.settings-content`、`.settings-section` 和 aside 布局的子列都是尺寸容器，列数由实际可用宽度决定：
 
-## 草稿与协议
+- `SettingsGrid variant="equal"`：容器不小于 540px 时两列等分（每列至少约 260px），否则单列。
+- `SettingsGrid variant="aside"`：容器不小于 620px 时为主列加 260–320px 辅助列（预览），否则单列。
+- 列表：`.settings-list` 配 `.surface-row`，整宽。
+- 并列卡片：`SettingsGrid variant="equal"`，设置页外用 `.card-row`。同一行的卡片由父容器拉伸到同高，行高取决于内容最多的那张；退回单列时互不影响。`variant="aside"` 的预览是跟随滚动的伴随区，不参与等高。
+- `Field width`：`meta`（176px，日期、数字）、`short`（320px，姓名、搜索）、`long`（560px，一句话）、不传则占满所在列。不要在设置页里写 `max-w-*`。
 
-公开设置及 presentation 接口、revision、校验和持久化不变。新增会话内存草稿容器，切页和前进/后退保留草稿；刷新/关闭仍有离开提示，退出或会话失效清空。不会将凭据或设置草稿写入 localStorage。把字段改回已保存值会清除 dirty 状态。语言切换不清空其他语言草稿；保存中按设置组/服务共享提交状态，切走再返回仍禁用同组编辑与重复提交；成功仅清除与本次提交一致的草稿，避免旧回执覆盖新编辑。
+Surface 只有四类：表单与列表（`.settings-section`、`.settings-list`、`.card`，同圆角、边框、阴影）、媒体（`.surface-media`，放在表单内的预览）、浮层（`.surface-overlay`）。`Panel` 是密集编辑器里的 `.card`，标题用 `.surface-title-dense`。
 
-同组冲突仍要求比较与再次确认。presentation 共用一个后端 revision，但首页模块、Logo、背景页面分别编辑；冲突后“保留草稿”仅将当前页面负责的字段合入最新文档，避免覆盖另一个页面已保存的字段。图标与 Logo 分别提交，不伪称跨 API 原子保存。
+控件尺寸：`.field` 与 `.btn-*` 默认 38px，`.field-sm`、`.btn-sm`、`Select size="sm"` 为 32px，`.btn-lg` 为 44px；`IconButton` 为 28/32px，粗指针设备扩大点击区域。需要紧凑控件时用这些尺寸，不用 `!important`。
 
-## 修改文件
+- `Select`（基于 Base UI）：全后台唯一的单选下拉，支持分组、占位、键盘与 typeahead、深色表面，弹层自动避让视口，并渲染进当前打开的 `<dialog>`。
+- `LanguageTabs` / `LanguageTabPanel`：五种内容语言的编辑切换，放在它所控制的字段旁边。它与后台界面语言无关。
+- `SettingsActions`：无修改时只显示低权重状态；有草稿时出现吸底条，显示作用范围、保存中和失败原因。
+- `SettingsConflict`：逐字段用文字比较两个版本，不展示原始数据。
+- `ImmediateBadge`：标记上传后立即生效的控件，与需要保存的字段区分。
+- 预览复用真实组件：Logo 用 `SiteMark`，登录外观把真实登录页按桌面尺寸缩放显示。
 
-- apps/admin/src/App.tsx：新路由、完整旧路径跳转及会话失效清草稿。
-- apps/admin/src/components/layout/AdminLayout.tsx：仅设置模块扩宽、全局会话草稿离开提示。
-- apps/admin/src/components/settings/SettingsLayout.tsx：任务分组、响应式导航、宽度约束、滚动与焦点。
-- apps/admin/src/components/settings/SettingsUI.tsx：共享区域、动作、资源选择、预览、状态与冲突组件。
-- apps/admin/src/components/settings/copy.ts：设置公共消息及日期格式。
-- apps/admin/src/components/settings/drafts.ts：会话内存草稿。
-- apps/admin/src/pages/AppearancePage.tsx：品牌、首页模块和登录外观的独立编辑视图。
-- apps/admin/src/pages/SiteSettingsPage.tsx：普通设置、词典、图标及只读安全视图。
-- apps/admin/src/pages/IntegrationsPage.tsx：统一布局、错误恢复，保持服务级保存能力。
-- apps/admin/src/components/integrations/IntegrationItem.tsx、drafts.ts：跨切页的保存状态与会话内存草稿，成功后同步清理。
-- apps/admin/src/hooks/useSession.ts：登录、退出时清除旧会话草稿。
-- apps/admin/src/components/ui/Toast.tsx：设置页通知定位钩子，通知移到顶部以免遮挡保存；其他页面位置不变。
-- apps/admin/src/styles.css：设置专用布局、表面与安全保存区。
-- docs/admin.md、docs/website-settings-proposal.zh-CN.md、本文件：更新信息架构、阶段及边界。
+## 卡片组合规则
+
+- 单个设置区域：一张 `SettingsSection`。
+- 紧密相关的多个区域：一张 `SettingsSurface`，内部用 `SettingsGroup` 分组并以细线分隔。宽度足够时可并列（`equal`、`primary`、`aside`），不够时自动单列。基本资料、Logo、图标与标题、登录外观的配置与预览属于此类。
+- `SettingsSurface` 目前没有页面在用，基本资料用的是并列的两张 `SettingsSection`。
+- 真正独立且信息量相近的区域：可用并列的 `SettingsSection`（放在 `SettingsGrid variant="equal"` 内），它们自动等高。不要仅因为有两个类别就并列两张卡。
+- 列表、图库和复杂选择器：独立的整宽 Surface。
+
+同一页的主体、冲突提示和保存条共用内容区宽度。冲突提示是紧凑的状态区；保存条是页面上的一条带细线的吸底栏，不是卡片。不要用固定高度、`min-height`、占位元素或加大内边距来对齐。
+
+## 语言
+
+后台界面语言只存在浏览器（`lf-admin-locale`，跟随系统时不写入），入口只有侧栏底部（手机在导航抽屉里），登录页没有语言切换；「默认显示与语言」只管访客默认值。切换语言需要重新加载：有未保存内容时先确认，确认前不写入存储，取消后什么都不变。其它标签页切换后，本页在没有未保存内容时跟随。
+
+## 草稿、保存与离开
+
+| 类型       | 页面                                                                                        | 保存                           | SPA 内离开       | 刷新/关闭            |
+| ---------- | ------------------------------------------------------------------------------------------- | ------------------------------ | ---------------- | -------------------- |
+| 文档草稿   | 基本资料姓名、页脚、默认显示、导航外观、词典、隐私、首页模块、登录外观、Logo 文字、页面标题 | 吸底条显式保存                 | 草稿保留，不提示 | 浏览器提示，草稿丢失 |
+| 立即上传   | 头像、Logo、图标                                                                            | 上传成功即生效，恢复默认需确认 | 无               | 无                   |
+| 服务级草稿 | 集成与 API                                                                                  | 每个服务独立                   | 内存保留，不提示 | 浏览器提示           |
+| 独立提交   | 账号与安全                                                                                  | 每个表单独立                   | 有输入时确认     | 浏览器提示           |
+
+离开保护由 `lib/unsaved.ts` 登记未保存来源（`session` 或 `page`），`NavigationGuard` 用路由的 `useBlocker` 统一处理链接、选择器、代码跳转和浏览器后退。
+
+保存按字段：`PATCH` 只发送改动的顶层字段及其修改前的值。服务端在同一把锁内比较，他人未改动的字段直接合并；同一字段被改成不同的值时返回 409 和字段名，由 `SettingsConflict` 让用户选择。登录背景只校验本次新增的照片必须公开，已选照片后来被隐藏不会阻塞保存，公开接口仍只返回公开照片。
+
+## 回归测试
+
+`npm run test:e2e -w apps/admin` 在内存数据的真实 API 上运行 Playwright：布局规则覆盖 6 个视口的全部设置页，行为测试覆盖草稿、离开、语言、并发、上传、Select 键盘和手机导航。布局和视觉快照只跑 Chromium，行为测试跑 Chromium、Firefox、WebKit。
 
 ## 验收记录
 

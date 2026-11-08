@@ -1,17 +1,18 @@
 import type { AdminMediaItem } from "@liam-frost/shared";
 import { pickText } from "./i18n";
+import { intlLocale, tr } from "./messages";
 
 export const COLLECTION_SORTS = {
-  updated: "最近修改",
-  newest: "添加时间 · 新到旧",
-  oldest: "添加时间 · 旧到新",
-  title: "标题/拼音 · A → Z",
-  "title-desc": "标题/拼音 · Z → A",
-  year: "发行年份 · 新到旧",
-  rating: "评分 · 高到低"
+  updated: tr("最近修改"),
+  newest: tr("添加时间 · 新到旧"),
+  oldest: tr("添加时间 · 旧到新"),
+  title: tr("标题/拼音 · A → Z"),
+  "title-desc": tr("标题/拼音 · Z → A"),
+  year: tr("发行年份 · 新到旧"),
+  rating: tr("评分 · 高到低")
 } as const;
 export type CollectionSort = keyof typeof COLLECTION_SORTS;
-const collator = new Intl.Collator("zh-CN", { numeric: true, sensitivity: "base" });
+const collator = new Intl.Collator(intlLocale, { numeric: true, sensitivity: "base" });
 /** Stable, non-mutating management ordering; missing ratings/years always sort last. */
 export function sortCollection(items: AdminMediaItem[], sort: CollectionSort) {
   return [...items].sort((a, b) => {

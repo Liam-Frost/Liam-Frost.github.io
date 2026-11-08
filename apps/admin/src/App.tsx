@@ -1,17 +1,26 @@
 import SiteFavicon from "../../web/src/components/SiteFavicon";
+import { AdminDocumentTitle } from "./hooks/useAdminTitle";
 import { clearSettingsDrafts } from "./components/settings/drafts";
 import { clearIntegrationDrafts } from "./components/integrations/drafts";
 import { SettingsLayout, SettingsRedirect } from "./components/settings/SettingsLayout";
-import { SiteSettingsPage, RuntimeSettingsPage } from "./pages/SiteSettingsPage";
+import { SiteSettingsPage } from "./pages/SiteSettingsPage";
 import { AuditPage } from "./pages/AuditPage";
 import { AppearancePage } from "./pages/AppearancePage";
 import { FeaturedPage } from "./pages/FeaturedPage";
 import { ContactPage } from "./pages/ContactPage";
 import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Navigate, Route, Routes, useParams } from "react-router";
+import {
+  createBrowserRouter,
+  Navigate,
+  Route,
+  RouterProvider,
+  Routes,
+  useParams
+} from "react-router";
 
 import { AdminLayout } from "./components/layout/AdminLayout";
 import { CollectionLayout } from "./components/collection/CollectionLayout";
+import { ConfirmProvider } from "./components/ui/Confirm";
 import { ToastProvider } from "./components/ui/Toast";
 import { sessionKey, useSession } from "./hooks/useSession";
 import { ApiError } from "./lib/api";
@@ -28,8 +37,10 @@ import { PhotosPage } from "./pages/PhotosPage";
 import { ProjectEditPage } from "./pages/ProjectEditPage";
 import { ProjectsPage } from "./pages/ProjectsPage";
 import { AboutPage } from "./pages/AboutPage";
+import { AccountSecurityPage } from "./pages/AccountSecurityPage";
 import { StackPage } from "./pages/StackPage";
 import { NotFoundPage, OverviewPage, SectionNotFound } from "./pages/OverviewPage";
+import { tr } from "./lib/messages";
 
 // Any 401 (session expired or revoked elsewhere) sends the app back to the login screen.
 const onUnauthorized = (error: Error) => {
@@ -53,6 +64,21 @@ const queryClient: QueryClient = new QueryClient({
   }
 });
 
+function Root() {
+  return (
+    <>
+      <SiteFavicon />
+      <AdminDocumentTitle />
+      <SessionGate />
+    </>
+  );
+}
+
+// A data router, for its navigation blocking; the routes themselves stay declared in SessionGate.
+const router = ADMIN_BASE
+  ? createBrowserRouter([{ path: "*", element: <Root /> }], { basename: ADMIN_BASE })
+  : null;
+
 export function App() {
   // No admin path in the page means it was not served as the admin app: show nothing about the admin.
   if (!ADMIN_BASE) return <NotFoundPage />;
@@ -60,10 +86,9 @@ export function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <ToastProvider>
-        <BrowserRouter basename={ADMIN_BASE}>
-          <SiteFavicon />
-          <SessionGate />
-        </BrowserRouter>
+        <ConfirmProvider>
+          <RouterProvider router={router!} />
+        </ConfirmProvider>
       </ToastProvider>
     </QueryClientProvider>
   );
@@ -73,13 +98,13 @@ function SessionGate() {
   const { data: session, isPending, error } = useSession();
 
   if (isPending) {
-    return <p className="py-24 text-center text-[13px] text-subtle">加载中…</p>;
+    return <p className="py-24 text-center text-[13px] text-subtle">{tr("加载中…")}</p>;
   }
   if (error || !session) {
     return (
       <CenteredCard>
         <p role="alert" className="text-[13.5px] text-status-error">
-          {error?.message ?? "无法加载登录状态"}
+          {error?.message ?? tr("无法加载登录状态")}
         </p>
       </CenteredCard>
     );
@@ -127,6 +152,10 @@ function SessionGate() {
             element={<SiteSettingsPage key="preferences" group="preferences" />}
           />
           <Route
+            path="experience/navigation"
+            element={<SiteSettingsPage key="navigation" group="navigation" />}
+          />
+          <Route
             path="experience/dictionary"
             element={<SiteSettingsPage key="dictionary" group="dictionary" />}
           />
@@ -136,7 +165,7 @@ function SessionGate() {
           />
           <Route path="privacy/integrations" element={<IntegrationsPage />} />
           <Route path="admin/login" element={<AppearancePage key="login" mode="login" />} />
-          <Route path="admin/security" element={<RuntimeSettingsPage />} />
+          <Route path="admin/security" element={<AccountSecurityPage />} />
           <Route
             path="frontend/identity"
             element={<SettingsRedirect to="/settings/site/identity" />}

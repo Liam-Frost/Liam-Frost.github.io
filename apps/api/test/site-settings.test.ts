@@ -1,7 +1,6 @@
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import sharp from "sharp";
 import { describe, expect, it } from "vitest";
 import { DEFAULT_SITE_SETTINGS } from "@liam-frost/shared";
 import { MemorySettingsRepository } from "../src/settings/types";
@@ -20,13 +19,15 @@ async function setup() {
     headers = { ...csrf, cookie: await login(app) };
   const read = async (group: string) =>
     (await app.inject({ url: `/api/admin/site-settings/${group}`, headers })).json();
-  const save = async (group: string, value: unknown, revision?: string) =>
-    app.inject({
-      method: "PUT",
+  const save = async (group: string, value: object, start?: object) => {
+    const base = start ?? (await read(group)).value;
+    return app.inject({
+      method: "PATCH",
       url: `/api/admin/site-settings/${group}`,
       headers,
-      payload: { value, revision: revision ?? (await read(group)).revision }
+      payload: { changes: value, base }
     });
+  };
   return { app, settings, media, photos, store, headers, read, save };
 }
 describe("grouped website settings", () => {
@@ -39,16 +40,16 @@ describe("grouped website settings", () => {
       expect(
         (
           await app.inject({
-            method: "PUT",
+            method: "PATCH",
             url: "/api/admin/site-settings/identity",
             headers: { cookie: headers.cookie },
-            payload: { value, revision: initial.revision }
+            payload: { changes: value, base: initial.value }
           })
         ).statusCode
       ).toBe(403);
       const writes = await Promise.all([
-        save("identity", value, initial.revision),
-        save("identity", { ...value, title: { en: "Other tab" } }, initial.revision)
+        save("identity", value, initial.value),
+        save("identity", { ...value, title: { en: "Other tab" } }, initial.value)
       ]);
       expect(writes.map((r) => r.statusCode).sort()).toEqual([200, 409]);
       expect((await read("footer")).value).toEqual(DEFAULT_SITE_SETTINGS.footer);
@@ -56,7 +57,7 @@ describe("grouped website settings", () => {
         400
       );
       const security = await app.inject({
-        url: "/api/admin/site-settings/security/status",
+        url: "/api/admin/account",
         headers
       });
       expect(security.statusCode).toBe(200);
@@ -99,6 +100,24 @@ describe("grouped website settings", () => {
       expect((await app.inject({ url: "/api/site-settings" })).json().privacy.body.en).toBe(
         "Second"
       );
+      expect((await app.inject({ url: "/api/site-settings" })).json().navigation).toEqual(
+        DEFAULT_SITE_SETTINGS.navigation
+      );
+      expect(
+        (await save("navigation", { ...DEFAULT_SITE_SETTINGS.navigation, refraction: 4 }))
+          .statusCode
+      ).toBe(400);
+      expect(
+        (await save("navigation", { ...DEFAULT_SITE_SETTINGS.navigation, tabBarMode: "fixed" }))
+          .statusCode
+      ).toBe(400);
+      expect(
+        (await save("navigation", { ...DEFAULT_SITE_SETTINGS.navigation, refraction: 2.5 }))
+          .statusCode
+      ).toBe(200);
+      expect((await app.inject({ url: "/api/site-settings" })).json().navigation.refraction).toBe(
+        2.5
+      );
       await settings.set("site.preferences", { theme: "broken" });
       expect((await app.inject({ url: "/api/site-settings" })).statusCode).toBe(503);
       expect(await settings.get("site.preferences")).toEqual({ theme: "broken" });
@@ -134,72 +153,6 @@ describe("grouped website settings", () => {
         (await save("dictionary", { entries: [{ ...entry, labels: { zh: "更新译名" } }] }))
           .statusCode
       ).toBe(200);
-    } finally {
-      await app.close();
-    }
-  });
-  it("resolves only public avatars and generates versioned PNG/ICO from local public photos", async () => {
-    const { app, photos, store, save } = await setup();
-    try {
-      const now = new Date();
-      photos.rows.set("icon-photo", {
-        id: "icon-photo",
-        slug: "icon-photo",
-        title: { en: "Icon" },
-        date: "2026-11-08",
-        category: {},
-        location: null,
-        camera: null,
-        lens: null,
-        settings: null,
-        description: null,
-        tags: [],
-        alt: {},
-        width: 640,
-        height: 480,
-        src: "",
-        storage: "local",
-        storageKey: "photos/icon-photo",
-        variants: [{ width: 640, height: 480 }],
-        source: null,
-        visibility: "public",
-        featured: false,
-        sortOrder: 0,
-        createdAt: now,
-        updatedAt: now
-      });
-      await store.write(
-        "photos/icon-photo",
-        "640.webp",
-        await sharp({ create: { width: 640, height: 480, channels: 3, background: "#345" } })
-          .webp()
-          .toBuffer()
-      );
-      expect(
-        (await save("identity", { ...DEFAULT_SITE_SETTINGS.identity, avatarPhotoId: "icon-photo" }))
-          .statusCode
-      ).toBe(200);
-      expect((await save("favicon", { photoId: "icon-photo" })).statusCode).toBe(200);
-      const pub = (await app.inject({ url: "/api/site-settings" })).json();
-      expect(pub.avatarUrl).toMatch(/^\/uploads\//);
-      expect(pub.faviconUrl).toMatch(/^\/api\/site-favicon\/[a-f0-9]{24}\/32\.png$/);
-      const png = await app.inject({ url: pub.faviconUrl });
-      expect(png.statusCode).toBe(200);
-      expect(await sharp(png.rawPayload).metadata()).toMatchObject({
-        format: "png",
-        width: 32,
-        height: 32
-      });
-      const ico = await app.inject({ url: pub.faviconUrl.replace("32.png", "favicon.ico") });
-      expect(ico.rawPayload.readUInt16LE(2)).toBe(1);
-      expect(ico.rawPayload.readUInt32LE(18)).toBe(22);
-      await photos.update("icon-photo", { visibility: "private" });
-      expect((await app.inject({ url: pub.faviconUrl })).statusCode).toBe(404);
-      expect((await app.inject({ url: "/api/site-settings" })).json()).toMatchObject({
-        avatarUrl: null,
-        faviconUrl: null
-      });
-      expect((await save("favicon", { photoId: "icon-photo" })).statusCode).toBe(400);
     } finally {
       await app.close();
     }

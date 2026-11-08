@@ -13,6 +13,8 @@ npm test
 npm run build
 ```
 
+Admin layout and behaviour checks run separately with `npm run test:e2e -w apps/admin` (run `npx playwright install` once first). They are not part of CI.
+
 `npm run format` establishes the formatting baseline. Prettier skips generated
 clients, build outputs, uploads, the lockfile, local agent configuration and
 historical review records. ESLint checks recommended JavaScript/TypeScript rules
