@@ -3,6 +3,7 @@ import type { AdminProject, AdminStackCategory } from "@liam-frost/shared";
 import { pickText, STATUS_LABELS } from "../../lib/i18n";
 import type { MultiOption } from "../ui/MultiCombobox";
 import { TechIcon } from "./TechIcon";
+import { tr } from "../../lib/messages";
 
 /** Projects as options for a technology's "关联项目": cover thumbnail (2:1, as on the site), title, and whether it is public. */
 export function projectOptions(projects: AdminProject[]): MultiOption[] {
@@ -15,7 +16,7 @@ export function projectOptions(projects: AdminProject[]): MultiOption[] {
       detail:
         project.visibility === "public"
           ? STATUS_LABELS[project.status]
-          : "未公开 · 不会在网站上显示",
+          : tr("未公开 · 不会在网站上显示"),
       icon: (
         <span
           aria-hidden="true"
@@ -37,8 +38,8 @@ export function technologyOptions(categories: AdminStackCategory[]): MultiOption
       id: technology.id,
       label: technology.name,
       detail:
-        pickText(category.name, "未命名分类") +
-        (technology.visible && category.visible ? "" : " · 已隐藏，不在网站上显示"),
+        pickText(category.name, tr("未命名分类")) +
+        (technology.visible && category.visible ? "" : tr(" · 已隐藏，不在网站上显示")),
       icon: <TechIcon name={technology.name} url={technology.iconUrl} size="sm" />
     }))
   );

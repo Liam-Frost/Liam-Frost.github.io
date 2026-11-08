@@ -1,4 +1,5 @@
-const relative = new Intl.RelativeTimeFormat("zh-CN", { numeric: "auto" });
+import { intlLocale, tr } from "../../lib/messages";
+const relative = new Intl.RelativeTimeFormat(intlLocale, { numeric: "auto" });
 
 /** "3 天前", "刚刚". */
 export function ago(iso: string) {
@@ -11,13 +12,13 @@ export function ago(iso: string) {
   ] as const) {
     if (abs >= size) return relative.format(Math.round(seconds / size), unit);
   }
-  return "刚刚";
+  return tr("刚刚");
 }
 
 /** A relative time; the exact time is in the title and the datetime attribute. */
 export function Time({ iso }: { iso: string }) {
   return (
-    <time dateTime={iso} title={new Date(iso).toLocaleString("zh-CN")}>
+    <time dateTime={iso} title={new Date(iso).toLocaleString(intlLocale)}>
       {ago(iso)}
     </time>
   );

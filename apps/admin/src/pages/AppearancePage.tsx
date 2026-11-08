@@ -28,15 +28,16 @@ import {
   SettingsState
 } from "../components/settings/SettingsUI";
 import { BrandUpload, useBranding } from "../components/settings/BrandUpload";
+import { tr } from "../lib/messages";
 
 const labels = {
-  top: "首屏介绍",
-  about: "关于 / 宣言与设备",
-  skills: "技术栈",
-  projects: "精选项目",
-  watching: "收藏",
-  featured: "精选照片",
-  contact: "联系我"
+  top: tr("首屏介绍"),
+  about: tr("关于 / 宣言与设备"),
+  skills: tr("技术栈"),
+  projects: tr("精选项目"),
+  watching: tr("收藏"),
+  featured: tr("精选照片"),
+  contact: tr("联系我")
 };
 const links = {
   top: "/settings/site/identity",
@@ -93,7 +94,7 @@ export function AppearancePage({ mode }: { mode: Mode }) {
         try {
           setConflict(await request<AdminPresentation>("/api/admin/presentation"));
         } catch {
-          toast("最新版本读取失败，草稿仍保留。", "error");
+          toast(tr("最新版本读取失败，草稿仍保留。"), "error");
         }
       }
     }
@@ -141,7 +142,7 @@ export function AppearancePage({ mode }: { mode: Mode }) {
     value.loginBackground.intervalSeconds,
     selectedPhotos.length
   ]);
-  if (q.isPending) return <LoadingSkeleton label="加载外观设置…" variant="form" />;
+  if (q.isPending) return <LoadingSkeleton label={tr("加载外观设置…")} variant="form" />;
   if (q.error) return <SettingsState error={q.error.message} onRetry={() => void q.refetch()} />;
   const logoPreview = (logo: SiteLogo, admin = true) => {
     return (
@@ -160,20 +161,20 @@ export function AppearancePage({ mode }: { mode: Mode }) {
       <SettingsSection
         title={title}
         description={
-          name === "publicLogo" ? "用于个人主页的品牌标记。" : "用于管理后台导航和登录页。"
+          name === "publicLogo" ? tr("用于个人主页的品牌标记。") : tr("用于管理后台导航和登录页。")
         }
       >
         <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_160px]">
           <div className="min-w-0 space-y-4">
             <BrandUpload
               slot={name}
-              label={`${title}图片`}
-              hint="SVG、PNG、WebP 或 JPEG，不超过 2 MB，建议使用透明背景。上传后立即生效。"
+              label={tr("{0}图片", title)}
+              hint={tr("SVG、PNG、WebP 或 JPEG，不超过 2 MB，建议使用透明背景。上传后立即生效。")}
             />
             <Field
-              label="文字标记"
+              label={tr("文字标记")}
               htmlFor={`${name}-text`}
-              hint="留空使用默认 Logo。"
+              hint={tr("留空使用默认 Logo。")}
               className="max-w-xs"
             >
               <input
@@ -185,9 +186,9 @@ export function AppearancePage({ mode }: { mode: Mode }) {
               />
             </Field>
             <Field
-              label="Logo 替代文字"
+              label={tr("Logo 替代文字")}
               htmlFor={`${name}-alt`}
-              hint="留空时作为装饰；填写后向屏幕阅读器说明品牌。"
+              hint={tr("留空时作为装饰；填写后向屏幕阅读器说明品牌。")}
               className="max-w-sm"
             >
               <input
@@ -199,7 +200,7 @@ export function AppearancePage({ mode }: { mode: Mode }) {
               />
             </Field>
           </div>
-          <SettingsPreview title={`${title}效果`}>
+          <SettingsPreview title={tr("{0}效果", title)}>
             <div
               className={`flex min-h-24 items-center justify-center gap-2 rounded-lg p-3 ${name === "adminLogo" ? "bg-brand-dark text-white" : "bg-white text-brand"}`}
             >
@@ -208,10 +209,11 @@ export function AppearancePage({ mode }: { mode: Mode }) {
           </SettingsPreview>
         </div>
         <details className="text-xs text-muted">
-          <summary className="cursor-pointer">图片与文字的回退规则</summary>
+          <summary className="cursor-pointer">{tr("图片与文字的回退规则")}</summary>
           <p className="mt-2">
-            有上传的图片时显示图片；没有图片时显示文字标记，文字也为空则使用默认
-            Logo。文字和替代文字需要点“保存 Logo”。
+            {tr(
+              "有上传的图片时显示图片；没有图片时显示文字标记，文字也为空则使用默认 Logo。文字和替代文字需要点“保存 Logo”。"
+            )}
           </p>
         </details>
       </SettingsSection>
@@ -228,34 +230,40 @@ export function AppearancePage({ mode }: { mode: Mode }) {
       : undefined;
   return (
     <SettingsPage
-      title={mode === "branding" ? "Logo 与网站图标" : mode === "home" ? "首页模块" : "登录外观"}
+      title={
+        mode === "branding"
+          ? tr("Logo 与网站图标")
+          : mode === "home"
+            ? tr("首页模块")
+            : tr("登录外观")
+      }
       description={
         mode === "branding"
-          ? "统一管理主页、后台品牌和浏览器图标。"
+          ? tr("统一管理主页、后台品牌和浏览器图标。")
           : mode === "home"
-            ? "控制首页显示哪些内容，关闭后仍保留原有资料。"
-            : "选择登录背景，并预览固定或轮换效果。"
+            ? tr("控制首页显示哪些内容，关闭后仍保留原有资料。")
+            : tr("选择登录背景，并预览固定或轮换效果。")
       }
     >
       <fieldset disabled={busy} className="min-w-0 space-y-5">
         {mode === "branding" ? (
           <>
-            {logoEditor("publicLogo", "主页 Logo")}
-            {logoEditor("adminLogo", "后台 Logo")}
+            {logoEditor("publicLogo", tr("主页 Logo"))}
+            {logoEditor("adminLogo", tr("后台 Logo"))}
           </>
         ) : null}
         {mode === "home" ? (
           <>
             <p className="text-xs text-muted">
-              开关开启且存在公开内容才显示；无内容时自动隐藏，加载期间保留骨架反馈。
+              {tr("开关开启且存在公开内容才显示；无内容时自动隐藏，加载期间保留骨架反馈。")}
             </p>
             <div className="settings-list">
               <div className="hidden grid-cols-[minmax(0,1fr)_88px_100px_60px_80px] gap-3 bg-canvas px-4 py-2 text-[11px] text-muted lg:grid">
-                <span>模块</span>
-                <span>候选内容</span>
-                <span>可见性</span>
-                <span>开关</span>
-                <span>内容管理</span>
+                <span>{tr("模块")}</span>
+                <span>{tr("候选内容")}</span>
+                <span>{tr("可见性")}</span>
+                <span>{tr("开关")}</span>
+                <span>{tr("内容管理")}</span>
               </div>
               {HOME_SECTIONS.map((id) => (
                 <div
@@ -268,21 +276,21 @@ export function AppearancePage({ mode }: { mode: Mode }) {
                   </span>
                   <span className="text-xs text-muted">
                     {content.isPending
-                      ? "核验中…"
+                      ? tr("核验中…")
                       : content.data?.[id] == null
-                        ? "无法核验"
-                        : `${content.data[id]} 项`}
+                        ? tr("无法核验")
+                        : tr("{0} 项", content.data[id])}
                   </span>
                   <span className="text-xs text-muted">
                     {!value.sections[id]
-                      ? "已关闭"
+                      ? tr("已关闭")
                       : content.isPending
-                        ? "加载中"
+                        ? tr("加载中")
                         : content.data?.[id] == null
-                          ? "待核验"
+                          ? tr("待核验")
                           : content.data[id] === 0
-                            ? "无内容，隐藏"
-                            : "可显示"}
+                            ? tr("无内容，隐藏")
+                            : tr("可显示")}
                   </span>
                   <Switch
                     id={`section-${id}`}
@@ -295,9 +303,9 @@ export function AppearancePage({ mode }: { mode: Mode }) {
                   <Link
                     className="inline-flex items-center gap-1 text-xs text-brand hover:underline"
                     to={links[id]}
-                    aria-label={`编辑内容：${labels[id]}`}
+                    aria-label={tr("编辑内容：{0}", labels[id])}
                   >
-                    编辑内容
+                    {tr("编辑内容")}
                     <ArrowUpRight aria-hidden="true" className="size-3" />
                   </Link>
                 </div>
@@ -305,7 +313,7 @@ export function AppearancePage({ mode }: { mode: Mode }) {
             </div>
             {content.data && Object.values(content.data).some((count) => count == null) ? (
               <SettingsState
-                error="部分公开内容暂时无法核验，开关草稿不受影响。"
+                error={tr("部分公开内容暂时无法核验，开关草稿不受影响。")}
                 onRetry={() => void content.refetch()}
               />
             ) : null}
@@ -315,11 +323,11 @@ export function AppearancePage({ mode }: { mode: Mode }) {
           <>
             <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_300px]">
               <SettingsSection
-                title="背景设置"
-                description="仅使用公开图库照片；固定模式使用第一张，轮换按已选顺序播放。"
+                title={tr("背景设置")}
+                description={tr("仅使用公开图库照片；固定模式使用第一张，轮换按已选顺序播放。")}
               >
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <Field label="展示方式" htmlFor="background-mode">
+                  <Field label={tr("展示方式")} htmlFor="background-mode">
                     <select
                       id="background-mode"
                       className="field"
@@ -334,15 +342,15 @@ export function AppearancePage({ mode }: { mode: Mode }) {
                         })
                       }
                     >
-                      <option value="none">纯色背景</option>
-                      <option value="fixed">固定照片</option>
-                      <option value="rotate">轮换照片</option>
+                      <option value="none">{tr("纯色背景")}</option>
+                      <option value="fixed">{tr("固定照片")}</option>
+                      <option value="rotate">{tr("轮换照片")}</option>
                     </select>
                   </Field>
                   <Field
-                    label="轮换间隔（秒）"
+                    label={tr("轮换间隔（秒）")}
                     htmlFor="background-interval"
-                    hint="10–3600 秒，轮换模式生效。"
+                    hint={tr("10–3600 秒，轮换模式生效。")}
                   >
                     <input
                       id="background-interval"
@@ -364,13 +372,13 @@ export function AppearancePage({ mode }: { mode: Mode }) {
                   </Field>
                 </div>
                 <p className="text-xs text-muted">
-                  减少动态效果时保持第一张照片。
+                  {tr("减少动态效果时保持第一张照片。")}
                   <Link className="ml-1 text-brand underline" to="/settings/site/branding">
-                    修改后台 Logo
+                    {tr("修改后台 Logo")}
                   </Link>
                 </p>
               </SettingsSection>
-              <SettingsPreview title="登录页效果预览">
+              <SettingsPreview title={tr("登录页效果预览")}>
                 <div className="relative flex min-h-64 items-center justify-center overflow-hidden rounded-xl bg-canvas p-5">
                   {background ? (
                     <>
@@ -385,7 +393,7 @@ export function AppearancePage({ mode }: { mode: Mode }) {
                   <div className="relative w-full max-w-56 rounded-xl border border-line bg-white p-4">
                     <div className="mb-3 flex items-center gap-2 text-brand">
                       {logoPreview(value.adminLogo)}
-                      <span className="text-sm font-semibold">管理员登录</span>
+                      <span className="text-sm font-semibold">{tr("管理员登录")}</span>
                     </div>
                     <div className="space-y-3" aria-hidden="true">
                       <div className="h-8 rounded-lg border border-line bg-canvas" />
@@ -396,13 +404,17 @@ export function AppearancePage({ mode }: { mode: Mode }) {
                 </div>
                 <p className="mt-2 text-xs text-muted">
                   {value.loginBackground.mode === "rotate" && selectedPhotos.length > 1
-                    ? `当前第 ${(previewIndex % selectedPhotos.length) + 1} / ${selectedPhotos.length} 张`
-                    : "配置预览，保存后生效"}
+                    ? tr(
+                        "当前第 {0} / {1} 张",
+                        (previewIndex % selectedPhotos.length) + 1,
+                        selectedPhotos.length
+                      )
+                    : tr("配置预览，保存后生效")}
                 </p>
               </SettingsPreview>
             </div>
             <SettingsSection
-              title={`已选照片 · ${value.loginBackground.photoIds.length} / 20`}
+              title={tr("已选照片 · {0} / 20", value.loginBackground.photoIds.length)}
               actions={
                 <button
                   type="button"
@@ -415,7 +427,7 @@ export function AppearancePage({ mode }: { mode: Mode }) {
                     })
                   }
                 >
-                  清空选择
+                  {tr("清空选择")}
                 </button>
               }
             >
@@ -434,12 +446,12 @@ export function AppearancePage({ mode }: { mode: Mode }) {
                           />
                         ) : null}
                         <span className="min-w-0 flex-1 truncate text-xs">
-                          {photo ? pickText(photo.title, photo.id) : "照片已隐藏或删除"}
+                          {photo ? pickText(photo.title, photo.id) : tr("照片已隐藏或删除")}
                         </span>
                         <button
                           type="button"
                           className="rounded-lg p-2 text-brand disabled:opacity-40"
-                          aria-label={`上移第${index + 1}张背景`}
+                          aria-label={tr("上移第{0}张背景", index + 1)}
                           disabled={!index}
                           onClick={() => movePhoto(index, -1)}
                         >
@@ -448,7 +460,7 @@ export function AppearancePage({ mode }: { mode: Mode }) {
                         <button
                           type="button"
                           className="rounded-lg p-2 text-brand disabled:opacity-40"
-                          aria-label={`下移第${index + 1}张背景`}
+                          aria-label={tr("下移第{0}张背景", index + 1)}
                           disabled={index === value.loginBackground.photoIds.length - 1}
                           onClick={() => movePhoto(index, 1)}
                         >
@@ -457,7 +469,7 @@ export function AppearancePage({ mode }: { mode: Mode }) {
                         <button
                           type="button"
                           className="rounded-lg px-2 py-2 text-xs text-brand"
-                          aria-label={`移除第${index + 1}张背景`}
+                          aria-label={tr("移除第{0}张背景", index + 1)}
                           onClick={() =>
                             change({
                               ...value,
@@ -470,26 +482,26 @@ export function AppearancePage({ mode }: { mode: Mode }) {
                             })
                           }
                         >
-                          移除
+                          {tr("移除")}
                         </button>
                       </li>
                     );
                   })}
                 </ol>
               ) : (
-                <SettingsState empty="尚未选择背景照片" />
+                <SettingsState empty={tr("尚未选择背景照片")} />
               )}
             </SettingsSection>
             <SettingsSection
-              title="公开图库"
-              description="选择顺序即轮换顺序；最多20张。"
+              title={tr("公开图库")}
+              description={tr("选择顺序即轮换顺序；最多20张。")}
               actions={
                 <Link className="btn-secondary" to="/photos">
-                  管理照片
+                  {tr("管理照片")}
                 </Link>
               }
             >
-              <Field label="搜索背景照片" htmlFor="background-search" className="max-w-sm">
+              <Field label={tr("搜索背景照片")} htmlFor="background-search" className="max-w-sm">
                 <input
                   id="background-search"
                   className="field"
@@ -498,7 +510,7 @@ export function AppearancePage({ mode }: { mode: Mode }) {
                 />
               </Field>
               {photoQuery.isPending ? (
-                <LoadingSkeleton label="加载图库…" variant="cards" />
+                <LoadingSkeleton label={tr("加载图库…")} variant="cards" />
               ) : photoQuery.error ? (
                 <SettingsState
                   error={photoQuery.error.message}
@@ -508,7 +520,7 @@ export function AppearancePage({ mode }: { mode: Mode }) {
               <div
                 className="grid max-h-[440px] grid-cols-2 gap-3 overflow-y-auto p-1 sm:grid-cols-3 lg:grid-cols-4"
                 role="region"
-                aria-label="可选背景照片"
+                aria-label={tr("可选背景照片")}
                 tabIndex={0}
               >
                 {available
@@ -563,7 +575,9 @@ export function AppearancePage({ mode }: { mode: Mode }) {
               ) ? (
                 <SettingsState
                   empty={
-                    available.length ? "没有匹配的背景照片" : "图库暂无公开照片，请先上传并公开。"
+                    available.length
+                      ? tr("没有匹配的背景照片")
+                      : tr("图库暂无公开照片，请先上传并公开。")
                   }
                 />
               ) : null}
@@ -599,7 +613,7 @@ export function AppearancePage({ mode }: { mode: Mode }) {
         error={save.error?.message}
         blocked={Boolean(conflict)}
         inline={mode === "branding"}
-        label={mode === "branding" ? "保存 Logo" : undefined}
+        label={mode === "branding" ? tr("保存 Logo") : undefined}
         onDiscard={() => {
           setDraft(null);
           setConflict(null);
@@ -608,21 +622,26 @@ export function AppearancePage({ mode }: { mode: Mode }) {
         onSave={() => draft && save.mutate(draft)}
       />
       {mode === "branding" ? (
-        <SettingsSection title="网站图标" description="同时用于前台和后台的浏览器标签页。">
+        <SettingsSection
+          title={tr("网站图标")}
+          description={tr("同时用于前台和后台的浏览器标签页。")}
+        >
           <div className="grid items-start gap-5 lg:grid-cols-2">
             <BrandUpload
               slot="favicon"
-              label="图标图片"
-              hint="建议使用正方形图片；非正方形会完整缩放并留出透明边。SVG、PNG、WebP 或 JPEG，不超过 2 MB。上传后自动生成 32 / 180 / 192 / 512 PNG 和 ICO，立即生效。"
+              label={tr("图标图片")}
+              hint={tr(
+                "建议使用正方形图片；非正方形会完整缩放并留出透明边。SVG、PNG、WebP 或 JPEG，不超过 2 MB。上传后自动生成 32 / 180 / 192 / 512 PNG 和 ICO，立即生效。"
+              )}
             />
-            <SettingsPreview title="浏览器标签页预览">
+            <SettingsPreview title={tr("浏览器标签页预览")}>
               <div className="flex min-w-0 items-center gap-2 rounded-t-lg border border-line bg-white px-3 py-2">
                 <img
                   className="size-4 shrink-0 object-contain"
                   src={branding.data?.favicon ?? new URL("favicon.svg", document.baseURI).href}
                   alt=""
                 />
-                <span className="truncate text-xs text-brand">网站标题</span>
+                <span className="truncate text-xs text-brand">{tr("网站标题")}</span>
                 <span className="ml-auto text-xs text-muted" aria-hidden="true">
                   ×
                 </span>

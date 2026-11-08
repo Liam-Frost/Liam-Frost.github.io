@@ -27,20 +27,22 @@ import {
   SettingsSection,
   SettingsState
 } from "../components/settings/SettingsUI";
+import { LanguageSwitch } from "../components/ui/LanguageSwitch";
+import { tr } from "../lib/messages";
 
 const titles: Record<SiteSettingsGroup, string> = {
-  identity: "基本资料",
-  footer: "页脚与版权",
-  preferences: "默认显示与语言",
-  privacy: "隐私说明",
-  dictionary: "标签词典"
+  identity: tr("基本资料"),
+  footer: tr("页脚与版权"),
+  preferences: tr("默认显示与语言"),
+  privacy: tr("隐私说明"),
+  dictionary: tr("标签词典")
 };
 const descriptions: Record<SiteSettingsGroup, string> = {
-  identity: "设置公开姓名、前台和后台的页面标题，以及首屏头像。",
-  footer: "设置版权署名及年份范围。",
-  preferences: "决定访客首次访问时的显示偏好。",
-  privacy: "编辑公开隐私说明，历史版本可载入为草稿。",
-  dictionary: "为收藏标签补齐多语言翻译，保留原有内容标识。"
+  identity: tr("设置公开姓名、前台和后台的页面标题，以及首屏头像。"),
+  footer: tr("设置版权署名及年份范围。"),
+  preferences: tr("决定访客首次访问时的显示偏好。"),
+  privacy: tr("编辑公开隐私说明，历史版本可载入为草稿。"),
+  dictionary: tr("为收藏标签补齐多语言翻译，保留原有内容标识。")
 };
 export function SiteSettingsPage({
   group,
@@ -135,7 +137,7 @@ export function SiteSettingsPage({
         try {
           setConflict(await request<SiteSettingsDocument>(`/api/admin/site-settings/${group}`));
         } catch {
-          toast("最新版本读取失败；草稿仍保留，请稍后重试。", "error");
+          toast(tr("最新版本读取失败；草稿仍保留，请稍后重试。"), "error");
         }
       }
     }
@@ -173,7 +175,13 @@ export function SiteSettingsPage({
           id={`settings-${group}-${label}-${suffix}`}
           className="field"
           maxLength={
-            group === "identity" && label === "站点标题" ? 160 : group === "privacy" ? 160 : 120
+            group === "identity" && label === tr("后台页面标题")
+              ? 80
+              : group === "identity" && label === tr("前台页面标题")
+                ? 160
+                : group === "privacy"
+                  ? 160
+                  : 120
           }
           value={data[lang] ?? ""}
           onChange={(event) => onChange({ ...data, [lang]: event.target.value })}
@@ -181,10 +189,13 @@ export function SiteSettingsPage({
       )}
     </Field>
   );
-  if (q.isPending) return <LoadingSkeleton label="加载网站设置…" variant="form" />;
+  if (q.isPending) return <LoadingSkeleton label={tr("加载网站设置…")} variant="form" />;
   if (q.error || !value)
     return (
-      <SettingsState error={q.error?.message ?? "无法读取设置"} onRetry={() => void q.refetch()} />
+      <SettingsState
+        error={q.error?.message ?? tr("无法读取设置")}
+        onRetry={() => void q.refetch()}
+      />
     );
   const identity = value as SiteSettingsGroups["identity"],
     footer = value as SiteSettingsGroups["footer"],
@@ -225,33 +236,38 @@ export function SiteSettingsPage({
         {group === "identity" ? (
           <>
             <SettingsSection
-              title="身份信息"
-              description="当前语言未填写时，沿用站点现有语言回退。"
+              title={tr("身份信息")}
+              description={tr("当前语言未填写时，沿用站点现有语言回退。")}
             >
               <div className="grid gap-4 sm:grid-cols-2">
-                {localized("显示姓名", identity.name, (name) => change({ ...identity, name }))}
+                {localized(tr("显示姓名"), identity.name, (name) => change({ ...identity, name }))}
               </div>
             </SettingsSection>
             <SettingsSection
-              title="页面标题"
-              description="显示在浏览器标签页上。后台标题也用作侧栏顶部的名称。留空使用默认标题。"
+              title={tr("页面标题")}
+              description={tr(
+                "显示在浏览器标签页上。后台标题也用作侧栏顶部的名称。留空使用默认标题。"
+              )}
             >
               <div className="grid gap-4 sm:grid-cols-2">
-                {localized("前台页面标题", identity.title, (title) =>
+                {localized(tr("前台页面标题"), identity.title, (title) =>
                   change({ ...identity, title })
                 )}
-                {localized("后台页面标题", identity.adminTitle ?? {}, (adminTitle) =>
+                {localized(tr("后台页面标题"), identity.adminTitle ?? {}, (adminTitle) =>
                   change({ ...identity, adminTitle })
                 )}
               </div>
             </SettingsSection>
-            <SettingsSection title="首屏头像" description="选择公开图库照片；留空沿用现有头像。">
+            <SettingsSection
+              title={tr("首屏头像")}
+              description={tr("选择公开图库照片；留空沿用现有头像。")}
+            >
               <SettingsAssetPicker
-                label="首屏头像"
+                label={tr("首屏头像")}
                 photos={available}
                 selected={identity.avatarPhotoId}
                 onChange={(avatarPhotoId) => change({ ...identity, avatarPhotoId })}
-                defaultLabel="现有默认头像"
+                defaultLabel={tr("现有默认头像")}
                 loading={photoQuery.isPending}
                 error={photoQuery.error?.message}
                 onRetry={() => void photoQuery.refetch()}
@@ -261,14 +277,14 @@ export function SiteSettingsPage({
         ) : null}
         {group === "footer" ? (
           <>
-            <SettingsSection title="版权信息">
+            <SettingsSection title={tr("版权信息")}>
               <div className="space-y-4">
-                {localized("版权署名", footer.owner, (owner) => change({ ...footer, owner }))}
+                {localized(tr("版权署名"), footer.owner, (owner) => change({ ...footer, owner }))}
                 <Field
-                  label="起始年份"
+                  label={tr("起始年份")}
                   htmlFor="settings-year"
                   className="max-w-40"
-                  hint="留空只显示当年；填写后自动延续至当年。"
+                  hint={tr("留空只显示当年；填写后自动延续至当年。")}
                 >
                   <input
                     className="field"
@@ -286,7 +302,7 @@ export function SiteSettingsPage({
                   />
                 </Field>
                 <div className="space-y-2 border-t border-line-soft pt-4">
-                  <p className="text-sm text-brand-dark">页脚链接</p>
+                  <p className="text-sm text-brand-dark">{tr("页脚链接")}</p>
                   {(footer.links ?? []).map((link, index) => {
                     const setLink = (next: typeof link) =>
                       change({
@@ -297,8 +313,8 @@ export function SiteSettingsPage({
                       <div key={index} className="grid gap-2 sm:grid-cols-[1fr_2fr_auto]">
                         <input
                           className="field"
-                          aria-label={`链接 ${index + 1} 的文字`}
-                          placeholder="文字"
+                          aria-label={tr("链接 {0} 的文字", index + 1)}
+                          placeholder={tr("文字")}
                           maxLength={40}
                           value={link.label[lang] ?? ""}
                           onChange={(event) =>
@@ -310,8 +326,8 @@ export function SiteSettingsPage({
                         />
                         <input
                           className="field"
-                          aria-label={`链接 ${index + 1} 的地址`}
-                          placeholder="https://… 或 /privacy"
+                          aria-label={tr("链接 {0} 的地址", index + 1)}
+                          placeholder={tr("https://… 或 /privacy")}
                           maxLength={300}
                           value={link.url}
                           onChange={(event) => setLink({ ...link, url: event.target.value })}
@@ -326,7 +342,7 @@ export function SiteSettingsPage({
                             })
                           }
                         >
-                          移除
+                          {tr("移除")}
                         </button>
                       </div>
                     );
@@ -342,37 +358,40 @@ export function SiteSettingsPage({
                       })
                     }
                   >
-                    添加链接
+                    {tr("添加链接")}
                   </button>
                 </div>
                 <div className="flex items-center justify-between gap-3 border-t border-line-soft pt-4">
-                  <span className="text-sm text-brand-dark">显示身份说明</span>
+                  <span className="text-sm text-brand-dark">{tr("显示身份说明")}</span>
                   <Switch
                     id="settings-show-role"
-                    label={<span className="sr-only">显示身份说明</span>}
+                    label={<span className="sr-only">{tr("显示身份说明")}</span>}
                     checked={footer.showRole}
                     onChange={(showRole) => change({ ...footer, showRole })}
                   />
                 </div>
               </div>
             </SettingsSection>
-            <SettingsPreview title="版权署名预览">
+            <SettingsPreview title={tr("版权署名预览")}>
               <p className="break-words text-sm text-muted">
                 ©{" "}
                 {footer.startYear && footer.startYear !== new Date().getFullYear()
                   ? `${footer.startYear}–`
                   : ""}
                 {new Date().getFullYear()}{" "}
-                {footer.owner[lang] || footer.owner.en || footer.owner.zh || "沿用站点署名"}
+                {footer.owner[lang] || footer.owner.en || footer.owner.zh || tr("沿用站点署名")}
               </p>
             </SettingsPreview>
           </>
         ) : null}
         {group === "preferences" ? (
           <>
-            <SettingsSection title="首次访问默认值" description="访客自己保存的主题和语言优先。">
+            <SettingsSection
+              title={tr("首次访问默认值")}
+              description={tr("访客自己保存的主题和语言优先。")}
+            >
               <div className="grid gap-4 sm:grid-cols-2">
-                <Field label="默认主题" htmlFor="settings-theme">
+                <Field label={tr("默认主题")} htmlFor="settings-theme">
                   <select
                     className="field"
                     id="settings-theme"
@@ -384,12 +403,12 @@ export function SiteSettingsPage({
                       })
                     }
                   >
-                    <option value="system">跟随系统</option>
-                    <option value="light">浅色</option>
-                    <option value="dark">深色</option>
+                    <option value="system">{tr("跟随系统")}</option>
+                    <option value="light">{tr("浅色")}</option>
+                    <option value="dark">{tr("深色")}</option>
                   </select>
                 </Field>
-                <Field label="默认语言" htmlFor="settings-language">
+                <Field label={tr("默认语言")} htmlFor="settings-language">
                   <select
                     className="field"
                     id="settings-language"
@@ -401,7 +420,7 @@ export function SiteSettingsPage({
                       })
                     }
                   >
-                    <option value="auto">自动识别浏览器</option>
+                    <option value="auto">{tr("自动识别浏览器")}</option>
                     {LANGS.map((language) => (
                       <option key={language} value={language}>
                         {LANG_LABELS[language]}
@@ -412,32 +431,39 @@ export function SiteSettingsPage({
               </div>
             </SettingsSection>
             <SettingsSection
-              title="后台语言与格式"
-              description="当前后台支持简体中文；与前台默认语言独立。"
+              title={tr("后台语言与格式")}
+              description={tr("后台支持简体中文和英文，与前台默认语言独立；切换后页面会重新加载。")}
             >
               <dl className="flex flex-wrap gap-x-8 gap-y-2 text-xs">
                 <div>
-                  <dt className="text-muted">语言</dt>
-                  <dd className="mt-1 text-brand-dark">简体中文</dd>
+                  <dt className="text-muted">{tr("语言")}</dt>
+                  <dd className="mt-1 text-brand-dark">
+                    <LanguageSwitch />
+                  </dd>
                 </div>
                 <div>
-                  <dt className="text-muted">日期示例</dt>
+                  <dt className="text-muted">{tr("日期示例")}</dt>
                   <dd className="mt-1 text-brand-dark">{settingsDate(new Date().toISOString())}</dd>
                 </div>
               </dl>
-              <p className="text-xs text-muted">
-                完整后台国际化将在后续阶段实施，届时开放语言选择。
-              </p>
             </SettingsSection>
           </>
         ) : null}
         {group === "privacy" ? (
           <>
-            <SettingsSection title="公开说明" description="支持 Markdown；不渲染原始 HTML。">
-              {localized("隐私标题", privacy.title, (title) => change({ ...privacy, title }))}
-              {localized("隐私正文", privacy.body, (body) => change({ ...privacy, body }), true)}
+            <SettingsSection
+              title={tr("公开说明")}
+              description={tr("支持 Markdown；不渲染原始 HTML。")}
+            >
+              {localized(tr("隐私标题"), privacy.title, (title) => change({ ...privacy, title }))}
+              {localized(
+                tr("隐私正文"),
+                privacy.body,
+                (body) => change({ ...privacy, body }),
+                true
+              )}
               <div className="flex flex-wrap items-start justify-between gap-3">
-                <Field label="生效日期" htmlFor="privacy-date" className="max-w-56">
+                <Field label={tr("生效日期")} htmlFor="privacy-date" className="max-w-56">
                   <input
                     className="field"
                     id="privacy-date"
@@ -449,16 +475,16 @@ export function SiteSettingsPage({
                   />
                 </Field>
                 <p className="max-w-sm text-xs leading-relaxed text-muted">
-                  正文留空时沿用现有隐私说明。公开页面继续显示实际统计采集状态。
+                  {tr("正文留空时沿用现有隐私说明。公开页面继续显示实际统计采集状态。")}
                 </p>
               </div>
             </SettingsSection>
             <SettingsSection
-              title="历史版本"
-              description="保留最近10个旧版本；载入后需检查并保存。"
+              title={tr("历史版本")}
+              description={tr("保留最近10个旧版本；载入后需检查并保存。")}
             >
               {history.isPending ? (
-                <LoadingSkeleton label="读取历史版本…" variant="rows" count={1} />
+                <LoadingSkeleton label={tr("读取历史版本…")} variant="rows" count={1} />
               ) : history.error ? (
                 <SettingsState
                   error={history.error.message}
@@ -479,13 +505,13 @@ export function SiteSettingsPage({
                         className="btn-secondary"
                         onClick={() => change(old.value)}
                       >
-                        载入为草稿
+                        {tr("载入为草稿")}
                       </button>
                     </li>
                   ))}
                 </ul>
               ) : (
-                <SettingsState empty="暂无历史版本" />
+                <SettingsState empty={tr("暂无历史版本")} />
               )}
             </SettingsSection>
           </>
@@ -501,19 +527,19 @@ export function SiteSettingsPage({
                 onClick={addEntry}
               >
                 <Plus aria-hidden="true" className="size-4" />
-                添加词条
+                {tr("添加词条")}
               </button>
             </div>
             <div className="flex flex-wrap items-end gap-4">
               <Field
-                label="查找词条"
+                label={tr("查找词条")}
                 htmlFor="dictionary-filter"
                 className="min-w-0 flex-1 sm:max-w-sm"
               >
                 <input
                   id="dictionary-filter"
                   className="field"
-                  placeholder="原标签、别名或翻译"
+                  placeholder={tr("原标签、别名或翻译")}
                   value={filter}
                   onChange={(event) => setFilter(event.target.value)}
                 />
@@ -521,24 +547,26 @@ export function SiteSettingsPage({
               <div className="pb-2">
                 <Switch
                   id="dictionary-missing"
-                  label="只看当前语言缺译"
+                  label={tr("只看当前语言缺译")}
                   checked={missingOnly}
                   onChange={setMissingOnly}
                 />
               </div>
               <p className="pb-2 text-xs text-muted">
-                {filtered.length} / {dictionary.entries.length} 条
+                {tr("{0} / {1} 条", filtered.length, dictionary.entries.length)}
               </p>
             </div>
             <details className="text-xs text-muted">
-              <summary className="cursor-pointer">翻译与引用规则</summary>
+              <summary className="cursor-pointer">{tr("翻译与引用规则")}</summary>
               <p className="mt-2 leading-relaxed">
-                已有内容翻译优先，词典补齐当前语言与英文，最后回退内置词典及原标签。别名匹配不改写原内容；稳定ID不可编辑。在用词条及别名不能直接删除，服务端会再次核验。
+                {tr(
+                  "已有内容翻译优先，词典补齐当前语言与英文，最后回退内置词典及原标签。别名匹配不改写原内容；稳定ID不可编辑。在用词条及别名不能直接删除，服务端会再次核验。"
+                )}
               </p>
             </details>
             {usage.error ? (
               <SettingsState
-                error="引用情况暂时无法核验，移除功能暂停；仍可编辑翻译。"
+                error={tr("引用情况暂时无法核验，移除功能暂停；仍可编辑翻译。")}
                 onRetry={() => void usage.refetch()}
               />
             ) : null}
@@ -561,14 +589,18 @@ export function SiteSettingsPage({
                       >
                         <span className="min-w-0 flex-1">
                           <span className="block truncate text-sm font-medium text-brand-dark">
-                            {entry.aliases[0] || "新词条"}
+                            {entry.aliases[0] || tr("新词条")}
                           </span>
                           <span className="mt-1 block truncate text-xs text-muted">
-                            {entry.labels[lang] || "当前语言缺译"}
+                            {entry.labels[lang] || tr("当前语言缺译")}
                           </span>
                         </span>
                         <span className="shrink-0 text-xs text-muted">
-                          {usage.isPending ? "核验中" : usage.error ? "未核验" : `${count} 项引用`}
+                          {usage.isPending
+                            ? tr("核验中")
+                            : usage.error
+                              ? tr("未核验")
+                              : tr("{0} 项引用", count)}
                         </span>
                         <ChevronDown
                           aria-hidden="true"
@@ -582,7 +614,7 @@ export function SiteSettingsPage({
                         >
                           <div className="grid items-start gap-4 sm:grid-cols-2">
                             <Field
-                              label="匹配别名（每行一个）"
+                              label={tr("匹配别名（每行一个）")}
                               htmlFor={`dictionary-alias-${entry.id}`}
                             >
                               <textarea
@@ -602,7 +634,7 @@ export function SiteSettingsPage({
                               />
                             </Field>
                             {localized(
-                              "标签翻译",
+                              tr("标签翻译"),
                               entry.labels,
                               (labels) =>
                                 change({
@@ -617,8 +649,8 @@ export function SiteSettingsPage({
                           <div className="flex flex-wrap items-center justify-between gap-3">
                             <p className="text-xs text-muted">
                               {count
-                                ? "此词条正在使用；可补充别名与翻译，请保留原匹配别名。"
-                                : "无引用词条可以移除。"}
+                                ? tr("此词条正在使用；可补充别名与翻译，请保留原匹配别名。")
+                                : tr("无引用词条可以移除。")}
                             </p>
                             <button
                               type="button"
@@ -630,7 +662,7 @@ export function SiteSettingsPage({
                                 })
                               }
                             >
-                              移除词条
+                              {tr("移除词条")}
                             </button>
                           </div>
                         </div>
@@ -643,8 +675,8 @@ export function SiteSettingsPage({
               <SettingsState
                 empty={
                   dictionary.entries.length
-                    ? "没有匹配的词条，试试调整搜索或缺译筛选。"
-                    : "词典还没有词条。添加原标签与别名，为收藏补齐翻译。"
+                    ? tr("没有匹配的词条，试试调整搜索或缺译筛选。")
+                    : tr("词典还没有词条。添加原标签与别名，为收藏补齐翻译。")
                 }
               >
                 {dictionary.entries.length ? (
@@ -656,11 +688,11 @@ export function SiteSettingsPage({
                       setMissingOnly(false);
                     }}
                   >
-                    清除筛选
+                    {tr("清除筛选")}
                   </button>
                 ) : (
                   <button className="btn-primary mt-3" type="button" onClick={addEntry}>
-                    添加第一个词条
+                    {tr("添加第一个词条")}
                   </button>
                 )}
               </SettingsState>
@@ -693,7 +725,7 @@ export function SiteSettingsPage({
         error={save.error?.message}
         blocked={Boolean(conflict)}
         inline={embedded}
-        label={embedded ? "保存网站图标" : undefined}
+        label={embedded ? tr("保存网站图标") : undefined}
         onSave={() => draft && save.mutate(draft)}
         onDiscard={() => {
           setDraft(null);

@@ -7,6 +7,7 @@ import { refreshPresentation } from "../../../../web/src/data/usePresentation";
 import { refreshSiteSettings } from "../../../../web/src/data/useSiteSettings";
 import { api } from "../../lib/api";
 import { useToast } from "../ui/Toast";
+import { tr } from "../../lib/messages";
 
 const brandingKey = ["admin", "branding"] as const;
 
@@ -37,12 +38,12 @@ export function BrandUpload({
   };
   const upload = useMutation({
     mutationFn: (file: File) => api.uploadBranding(slot, file),
-    onSuccess: (result) => done(result, "已上传，网站上马上生效"),
+    onSuccess: (result) => done(result, tr("已上传，网站上马上生效")),
     onError: (error: Error) => toast(error.message, "error")
   });
   const remove = useMutation({
     mutationFn: () => api.removeBranding(slot),
-    onSuccess: (result) => done(result, "已恢复默认"),
+    onSuccess: (result) => done(result, tr("已恢复默认")),
     onError: (error: Error) => toast(error.message, "error")
   });
   const busy = upload.isPending || remove.isPending;
@@ -74,7 +75,7 @@ export function BrandUpload({
           onClick={() => input.current?.click()}
         >
           <Upload aria-hidden="true" className="size-4" />
-          {upload.isPending ? "上传中…" : data?.[slot] ? "更换图片" : "上传图片"}
+          {upload.isPending ? tr("上传中…") : data?.[slot] ? tr("更换图片") : tr("上传图片")}
         </button>
         {data?.[slot] ? (
           <button
@@ -84,7 +85,7 @@ export function BrandUpload({
             onClick={() => remove.mutate()}
           >
             <Trash2 aria-hidden="true" className="size-4" />
-            {remove.isPending ? "移除中…" : "恢复默认"}
+            {remove.isPending ? tr("移除中…") : tr("恢复默认")}
           </button>
         ) : null}
       </div>

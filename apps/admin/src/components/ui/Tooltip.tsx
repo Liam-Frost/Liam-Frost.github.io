@@ -11,6 +11,7 @@ import {
   type ReactNode
 } from "react";
 import { createPortal } from "react-dom";
+import { tr } from "../../lib/messages";
 
 const SHOW_DELAY_MS = 150;
 
@@ -121,7 +122,7 @@ export function Tooltip({
 }
 
 /** A small (i) button that explains the thing next to it, on hover or keyboard focus. */
-export function InfoTip({ text, label = "说明" }: { text: string; label?: string }) {
+export function InfoTip({ text, label = tr("说明") }: { text: string; label?: string }) {
   return (
     <Tooltip content={text}>
       <button

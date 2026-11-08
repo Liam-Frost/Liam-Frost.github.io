@@ -1,4 +1,5 @@
 import { Link, Outlet, useLocation } from "react-router";
+import { tr } from "../../lib/messages";
 
 /** People belong to the collection, alongside its works. */
 export function CollectionLayout() {
@@ -7,11 +8,11 @@ export function CollectionLayout() {
   const featured = pathname === "/collection/featured";
   return (
     <>
-      <nav aria-label="收藏分类" className="mb-6 flex gap-2 border-b border-line pb-3">
+      <nav aria-label={tr("收藏分类")} className="mb-6 flex gap-2 border-b border-line pb-3">
         {[
-          { to: "/collection", label: "作品", active: !people && !featured },
-          { to: "/collection/people", label: "人物与团体", active: people },
-          { to: "/collection/featured", label: "首页精选", active: featured }
+          { to: "/collection", label: tr("作品"), active: !people && !featured },
+          { to: "/collection/people", label: tr("人物与团体"), active: people },
+          { to: "/collection/featured", label: tr("首页精选"), active: featured }
         ].map(({ to, label, active }) => (
           <Link
             key={to}

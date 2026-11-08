@@ -8,6 +8,7 @@ import { PageHeader } from "../layout/AdminLayout";
 import { LANGS, LANG_LABELS, pickText, type Lang } from "../../lib/i18n";
 import LoadingSkeleton from "../../../../web/src/components/LoadingSkeleton";
 import { settingsCopy as copy } from "./copy";
+import { tr } from "../../lib/messages";
 
 export function SettingsPage({
   title,
@@ -87,7 +88,7 @@ export function SettingsActions({
   return (
     <div
       className={`settings-actions ${inline ? "settings-actions-inline" : ""}`}
-      aria-label="保存操作"
+      aria-label={tr("保存操作")}
     >
       <div className="min-w-0 flex-1">
         <p className="text-xs font-medium text-brand">{copy.unsaved}</p>
@@ -147,7 +148,7 @@ export function SettingsLanguages({
   onChange: (value: Lang) => void;
 }) {
   return (
-    <div className="flex flex-wrap gap-1" role="group" aria-label="编辑语言">
+    <div className="flex flex-wrap gap-1" role="group" aria-label={tr("编辑语言")}>
       {LANGS.map((lang) => (
         <button
           type="button"
@@ -214,7 +215,7 @@ export function SettingsBrandPreview({
     src && !failed.includes(src) ? src : !text && !failed.includes(defaultSrc) ? defaultSrc : null;
   return image ? (
     <img
-      alt={alt || "Logo 预览"}
+      alt={alt || tr("Logo 预览")}
       className="size-9 object-contain"
       src={image}
       onError={() => setFailed((value) => [...value, image])}
@@ -258,7 +259,10 @@ export function SettingsAssetPicker({
   return (
     <div>
       <div className="flex flex-wrap items-center gap-4">
-        <AssetPreview src={current?.variants[0]?.url ?? current?.src} label={`${label}预览`} />
+        <AssetPreview
+          src={current?.variants[0]?.url ?? current?.src}
+          label={tr("{0}预览", label)}
+        />
         <div className="min-w-0 flex-1 basis-48 space-y-2">
           <Field label={label} htmlFor={id} className="max-w-sm">
             <select
@@ -290,17 +294,17 @@ export function SettingsAssetPicker({
         </div>
       </div>
       {loading ? (
-        <LoadingSkeleton label="读取图库…" variant="rows" count={1} />
+        <LoadingSkeleton label={tr("读取图库…")} variant="rows" count={1} />
       ) : error ? (
         <SettingsState error={error} onRetry={onRetry} />
       ) : !photos.length ? (
         <p className="mt-2 text-xs text-muted">{copy.galleryEmpty}</p>
       ) : null}
-      <Dialog open={open} onClose={() => setOpen(false)} title={`选择${label}`}>
+      <Dialog open={open} onClose={() => setOpen(false)} title={tr("选择{0}", label)}>
         <p className="mb-3 text-xs text-muted">
           {copy.galleryHelp}{" "}
           <Link className="text-brand underline" to="/photos">
-            照片管理
+            {tr("照片管理")}
           </Link>
         </p>
         <Field label={copy.gallerySearch} htmlFor={`${id}-search`}>
@@ -359,14 +363,14 @@ export function SettingsConflict({
 }) {
   return (
     <section role="alert" className="settings-section">
-      <h2 className="text-sm font-semibold text-brand-dark">其他页面已修改这组设置</h2>
+      <h2 className="text-sm font-semibold text-brand-dark">{tr("其他页面已修改这组设置")}</h2>
       <p className="my-2 text-xs text-muted">
-        草稿尚未保存。比较后选择最新值，或保留草稿并再次确认保存。
+        {tr("草稿尚未保存。比较后选择最新值，或保留草稿并再次确认保存。")}
       </p>
       <div className="grid min-w-0 gap-3 sm:grid-cols-2">
         {[
-          ["最新已保存值", current],
-          ["当前草稿", draft]
+          [tr("最新已保存值"), current],
+          [tr("当前草稿"), draft]
         ].map(([label, value]) => (
           <details className="min-w-0" key={String(label)}>
             <summary className="cursor-pointer text-xs text-brand">{String(label)}</summary>
@@ -378,10 +382,10 @@ export function SettingsConflict({
       </div>
       <div className="mt-3 flex flex-wrap gap-2">
         <button type="button" className="btn-secondary" onClick={onUseCurrent}>
-          采用最新已保存值
+          {tr("采用最新已保存值")}
         </button>
         <button type="button" className="btn-secondary" onClick={onKeepDraft}>
-          保留草稿，待再次确认保存
+          {tr("保留草稿，待再次确认保存")}
         </button>
       </div>
     </section>

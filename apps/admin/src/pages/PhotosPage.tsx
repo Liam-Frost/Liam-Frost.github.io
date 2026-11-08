@@ -29,13 +29,14 @@ import { useArrivalParams } from "../hooks/useArrivalParams";
 import { useDeletePhoto, usePhotos, useReorderPhotos, useSetPhoto } from "../hooks/usePhotos";
 import { api, uploadPhoto } from "../lib/api";
 import { pickText } from "../lib/i18n";
+import { tr } from "../lib/messages";
 
 type Filter = "all" | "public" | "private";
 
 const FILTERS: { value: Filter; label: string }[] = [
-  { value: "all", label: "全部" },
-  { value: "public", label: "公开" },
-  { value: "private", label: "隐藏" }
+  { value: "all", label: tr("全部") },
+  { value: "public", label: tr("公开") },
+  { value: "private", label: tr("隐藏") }
 ];
 
 /**
@@ -51,10 +52,14 @@ type SourceFilter = "all" | PhotoSourceType | "unknown";
 
 /** Quick filters for the overview's tasks; the same rules as the tasks. */
 const SHOWS = [
-  { value: "referenced", label: "只看引用", test: (p: AdminPhoto) => p.storage === "remote-url" },
+  {
+    value: "referenced",
+    label: tr("只看引用"),
+    test: (p: AdminPhoto) => p.storage === "remote-url"
+  },
   {
     value: "missing-en",
-    label: "公开但缺英文标题",
+    label: tr("公开但缺英文标题"),
     test: (p: AdminPhoto) => p.visibility === "public" && !p.title.en?.trim()
   }
 ] as const;
@@ -106,7 +111,7 @@ export function PhotosPage() {
       } catch (e) {
         patchUpload(item.key, {
           status: "error",
-          error: e instanceof Error ? e.message : "上传失败"
+          error: e instanceof Error ? e.message : tr("上传失败")
         });
       }
     }
@@ -132,7 +137,7 @@ export function PhotosPage() {
       } catch (e) {
         patchUpload(item.key, {
           status: "error",
-          error: e instanceof Error ? e.message : "添加失败"
+          error: e instanceof Error ? e.message : tr("添加失败")
         });
       }
     }
@@ -154,12 +159,12 @@ export function PhotosPage() {
     reorder.mutate(next, { onError: (e) => toast(e.message, "error") });
   };
 
-  if (isPending) return <LoadingSkeleton label="加载中…" variant="rows" />;
+  if (isPending) return <LoadingSkeleton label={tr("加载中…")} variant="rows" />;
   if (error) {
     return (
       <>
-        <PageHeader title="照片" />
-        <DatabaseNotice error={error} subject="照片管理" />
+        <PageHeader title={tr("照片")} />
+        <DatabaseNotice error={error} subject={tr("照片管理")} />
       </>
     );
   }
@@ -196,18 +201,20 @@ export function PhotosPage() {
     >
       <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
         <PageHeader
-          title="照片"
-          description="从本机、服务器文件夹、图库或图片链接添加；新照片默认隐藏，编辑好信息再设为公开。也可以把图片直接拖到页面上上传。"
+          title={tr("照片")}
+          description={tr(
+            "从本机、服务器文件夹、图库或图片链接添加；新照片默认隐藏，编辑好信息再设为公开。也可以把图片直接拖到页面上上传。"
+          )}
         />
         <button type="button" className="btn-primary" onClick={() => setAdding(true)}>
-          <Plus aria-hidden="true" className="size-4" /> 添加照片
+          <Plus aria-hidden="true" className="size-4" /> {tr("添加照片")}
         </button>
       </div>
 
-      <Dialog open={adding} title="添加照片" onClose={() => setAdding(false)}>
+      <Dialog open={adding} title={tr("添加照片")} onClose={() => setAdding(false)}>
         <ImageSourcePicker
           multiple
-          action="添加"
+          action={tr("添加")}
           onFiles={(files) => {
             setAdding(false);
             void uploadFiles(files);
@@ -221,7 +228,11 @@ export function PhotosPage() {
 
       <UploadQueue items={uploads} onClear={() => setUploads([])} />
 
-      <div role="tablist" aria-label="筛选" className="mb-4 flex flex-wrap items-center gap-2">
+      <div
+        role="tablist"
+        aria-label={tr("筛选")}
+        className="mb-4 flex flex-wrap items-center gap-2"
+      >
         {FILTERS.map(({ value, label }) => (
           <button
             key={value}
@@ -240,17 +251,17 @@ export function PhotosPage() {
         ))}
         <select
           className="field !w-auto !py-1.5 !text-[12.5px]"
-          aria-label="来源"
+          aria-label={tr("来源")}
           value={sourceFilter}
           onChange={(e) => setSourceFilter(e.target.value as SourceFilter)}
         >
-          <option value="all">全部来源</option>
+          <option value="all">{tr("全部来源")}</option>
           {Object.entries(SOURCE_LABELS).map(([value, label]) => (
             <option key={value} value={value}>
               {label}
             </option>
           ))}
-          <option value="unknown">未记录来源</option>
+          <option value="unknown">{tr("未记录来源")}</option>
         </select>
         {SHOWS.map(({ value, label, test }) => {
           const count = all.filter(test).length;
@@ -272,13 +283,13 @@ export function PhotosPage() {
           );
         })}
         {filtered ? (
-          <span className="text-[12px] text-faint">在“全部”且不筛选时可以调整顺序</span>
+          <span className="text-[12px] text-faint">{tr("在“全部”且不筛选时可以调整顺序")}</span>
         ) : null}
       </div>
 
       {visible.length === 0 ? (
         <div className="card p-10 text-center text-[13.5px] text-muted">
-          {all.length ? "没有符合条件的照片" : "还没有照片，点击“添加照片”或把图片拖到这里"}
+          {all.length ? tr("没有符合条件的照片") : tr("还没有照片，点击“添加照片”或把图片拖到这里")}
         </div>
       ) : (
         <ul className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-4">
@@ -310,7 +321,7 @@ export function PhotosPage() {
                   type="button"
                   onClick={() => setEditing(photo)}
                   className="block w-full"
-                  aria-label={`编辑 ${title}`}
+                  aria-label={tr("编辑 {0}", title)}
                 >
                   <img
                     src={photo.thumbnail}
@@ -342,20 +353,20 @@ export function PhotosPage() {
                   photo.featured ||
                   photo.source ||
                   photo.storage === "remote-url" ? (
-                    <ul aria-label="状态和来源" className="mt-2 flex flex-wrap gap-1">
+                    <ul aria-label={tr("状态和来源")} className="mt-2 flex flex-wrap gap-1">
                       {photo.visibility === "private" ? (
                         <li className={STATUS_BADGE}>
-                          <EyeOff aria-hidden="true" className="size-3 shrink-0" /> 隐藏
+                          <EyeOff aria-hidden="true" className="size-3 shrink-0" /> {tr("隐藏")}
                         </li>
                       ) : null}
                       {photo.featured ? (
                         <li className={STATUS_BADGE}>
-                          <Star aria-hidden="true" className="size-3 shrink-0" /> 精选
+                          <Star aria-hidden="true" className="size-3 shrink-0" /> {tr("精选")}
                         </li>
                       ) : null}
                       {photo.storage === "remote-url" ? (
                         <li className={STATUS_BADGE}>
-                          <Link2 aria-hidden="true" className="size-3 shrink-0" /> 引用
+                          <Link2 aria-hidden="true" className="size-3 shrink-0" /> {tr("引用")}
                         </li>
                       ) : null}
                       {photo.source ? (
@@ -371,14 +382,14 @@ export function PhotosPage() {
                       {canReorder ? (
                         <>
                           <IconButton
-                            label={`上移 ${title}`}
+                            label={tr("上移 {0}", title)}
                             disabled={index === 0}
                             onClick={() => move(ids, index, index - 1)}
                           >
                             <ArrowUp aria-hidden="true" className="size-3.5" />
                           </IconButton>
                           <IconButton
-                            label={`下移 ${title}`}
+                            label={tr("下移 {0}", title)}
                             disabled={index === ids.length - 1}
                             onClick={() => move(ids, index, index + 1)}
                           >
@@ -388,10 +399,14 @@ export function PhotosPage() {
                       ) : null}
                     </div>
                     <div className="flex items-center gap-0.5">
-                      <IconButton label={`编辑 ${title}`} onClick={() => setEditing(photo)}>
+                      <IconButton label={tr("编辑 {0}", title)} onClick={() => setEditing(photo)}>
                         <Pencil aria-hidden="true" className="size-3.5" />
                       </IconButton>
-                      <IconButton label={`删除 ${title}`} onClick={() => setDeleting(photo)} danger>
+                      <IconButton
+                        label={tr("删除 {0}", title)}
+                        onClick={() => setDeleting(photo)}
+                        danger
+                      >
                         <Trash2 aria-hidden="true" className="size-3.5" />
                       </IconButton>
                     </div>
@@ -410,12 +425,12 @@ export function PhotosPage() {
       <Dialog
         open={Boolean(deleting)}
         size="sm"
-        title="删除照片"
+        title={tr("删除照片")}
         onClose={() => setDeleting(null)}
         footer={
           <>
             <button type="button" className="btn-secondary" onClick={() => setDeleting(null)}>
-              取消
+              {tr("取消")}
             </button>
             <button
               type="button"
@@ -425,21 +440,24 @@ export function PhotosPage() {
                 deleting &&
                 remove.mutate(deleting.id, {
                   onSuccess: () => {
-                    toast("已删除");
+                    toast(tr("已删除"));
                     setDeleting(null);
                   },
                   onError: (e) => toast(e.message, "error")
                 })
               }
             >
-              {remove.isPending ? "删除中…" : "删除"}
+              {remove.isPending ? tr("删除中…") : tr("删除")}
             </button>
           </>
         }
       >
         <p className="text-[13.5px] leading-relaxed text-muted">
-          确定删除“{deleting ? pickText(deleting.title, deleting.id) : ""}”吗？
-          {deleting?.storage === "local" ? "服务器上的图片文件也会一起删除，" : ""}此操作无法撤销。
+          {tr(
+            "确定删除“{0}”吗？{1}此操作无法撤销。",
+            deleting ? pickText(deleting.title, deleting.id) : "",
+            deleting?.storage === "local" ? tr("服务器上的图片文件也会一起删除，") : ""
+          )}
         </p>
       </Dialog>
     </div>

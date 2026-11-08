@@ -3,6 +3,7 @@ import { CheckSquare, X } from "lucide-react";
 import type { ReactNode } from "react";
 
 import type { Selection } from "../../hooks/useSelection";
+import { tr } from "../../lib/messages";
 
 /** Bar along the bottom of the page while selecting: count, select all / none, the actions, and exit. */
 export function BatchBar({
@@ -19,24 +20,25 @@ export function BatchBar({
   return (
     <div
       role="toolbar"
-      aria-label="批量操作"
+      aria-label={tr("批量操作")}
       className="sticky bottom-3 z-20 mt-5 flex flex-wrap items-center gap-2 rounded-2xl border border-line bg-surface/95 px-4 py-3 shadow-[0_12px_40px_rgba(27,60,83,0.22)] backdrop-blur"
     >
       <span className="mr-1 text-[13px] font-semibold text-brand-dark" role="status">
-        已选 {count} / {total}
+        {tr("已选 {0} / {1}", count, total)}
       </span>
       <button
         type="button"
         className="btn-secondary"
         onClick={count === total ? selection.clear : selection.selectAll}
       >
-        <CheckSquare aria-hidden="true" className="size-4" /> {count === total ? "全不选" : "全选"}
+        <CheckSquare aria-hidden="true" className="size-4" />{" "}
+        {count === total ? tr("全不选") : tr("全选")}
       </button>
       <div className="flex flex-1 flex-wrap items-center gap-2">{children}</div>
       <button
         type="button"
         className="rounded-full p-1.5 text-subtle hover:bg-brand-secondary/12 hover:text-brand"
-        aria-label="退出选择"
+        aria-label={tr("退出选择")}
         onClick={selection.stop}
       >
         <X aria-hidden="true" className="size-5" />
@@ -47,10 +49,17 @@ export function BatchBar({
 
 /** A short summary of a bulk action for a toast: how many changed, and the first reasons for the rest. */
 export function describeBatch(result: AdminBatchResult, verb: string) {
-  if (!result.failed.length) return { text: `已${verb} ${result.done.length} 项`, ok: true };
+  if (!result.failed.length)
+    return { text: tr("已{0} {1} 项", verb, result.done.length), ok: true };
   const reasons = [...new Set(result.failed.map((f) => f.message))].slice(0, 2).join("；");
   return {
-    text: `已${verb} ${result.done.length} 项，${result.failed.length} 项未处理：${reasons}`,
+    text: tr(
+      "已{0} {1} 项，{2} 项未处理：{3}",
+      verb,
+      result.done.length,
+      result.failed.length,
+      reasons
+    ),
     ok: result.done.length > 0
   };
 }

@@ -22,19 +22,21 @@ import { useLogout } from "../../hooks/useSession";
 import { useToast } from "../ui/Toast";
 import SiteMark from "../../../../web/src/components/SiteMark";
 import { Settings2 } from "lucide-react";
+import { LanguageSwitch } from "../ui/LanguageSwitch";
+import { tr } from "../../lib/messages";
 
 const NAV = [
-  { to: "/", label: "概览", icon: LayoutDashboard, end: true },
-  { to: "/about", label: "关于", icon: Quote, end: false },
-  { to: "/stack", label: "技术栈", icon: Layers, end: false },
-  { to: "/projects", label: "项目", icon: FolderKanban, end: false },
-  { to: "/collection", label: "收藏", icon: Clapperboard, end: false },
-  { to: "/photos", label: "照片", icon: Images, end: false },
-  { to: "/contact", label: "联系我", icon: Mail, end: false },
-  { to: "/music", label: "播放器", icon: Music, end: false },
-  { to: "/analytics", label: "统计", icon: ChartColumn, end: false },
-  { to: "/audit", label: "审计日志", icon: ShieldCheck, end: false },
-  { to: "/settings", label: "网站设置", icon: Settings2, end: false }
+  { to: "/", label: tr("概览"), icon: LayoutDashboard, end: true },
+  { to: "/about", label: tr("关于"), icon: Quote, end: false },
+  { to: "/stack", label: tr("技术栈"), icon: Layers, end: false },
+  { to: "/projects", label: tr("项目"), icon: FolderKanban, end: false },
+  { to: "/collection", label: tr("收藏"), icon: Clapperboard, end: false },
+  { to: "/photos", label: tr("照片"), icon: Images, end: false },
+  { to: "/contact", label: tr("联系我"), icon: Mail, end: false },
+  { to: "/music", label: tr("播放器"), icon: Music, end: false },
+  { to: "/analytics", label: tr("统计"), icon: ChartColumn, end: false },
+  { to: "/audit", label: tr("审计日志"), icon: ShieldCheck, end: false },
+  { to: "/settings", label: tr("网站设置"), icon: Settings2, end: false }
 ];
 
 export function AdminLayout({ user }: { user: AdminUser }) {
@@ -57,7 +59,7 @@ export function AdminLayout({ user }: { user: AdminUser }) {
           <span className="truncate text-[15px] font-semibold">{adminTitle}</span>
         </div>
 
-        <nav aria-label="管理后台" className="flex flex-1 gap-1 overflow-x-auto md:flex-col">
+        <nav aria-label={tr("管理后台")} className="flex flex-1 gap-1 overflow-x-auto md:flex-col">
           {NAV.map(({ to, label, icon: Icon, end }) => (
             <NavLink
               key={to}
@@ -77,17 +79,20 @@ export function AdminLayout({ user }: { user: AdminUser }) {
 
         <div className="flex items-center gap-2 md:flex-col md:items-stretch md:border-t md:border-white/15 md:pt-4">
           <span className="hidden truncate px-2 text-[12px] text-white/70 md:block">
-            已登录：{user.username}
+            {tr("已登录：{0}", user.username)}
           </span>
+          <LanguageSwitch className="mb-1 md:px-2" />
           <button
             type="button"
             onClick={onLogout}
             disabled={logout.isPending}
-            aria-label="退出登录"
+            aria-label={tr("退出登录")}
             className="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-[13px] text-white/85 transition-colors hover:bg-white/12 disabled:opacity-50"
           >
             <LogOut aria-hidden="true" className="size-4" />
-            <span className="hidden sm:inline">{logout.isPending ? "退出中…" : "退出登录"}</span>
+            <span className="hidden sm:inline">
+              {logout.isPending ? tr("退出中…") : tr("退出登录")}
+            </span>
           </button>
         </div>
       </aside>

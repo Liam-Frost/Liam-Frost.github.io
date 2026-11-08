@@ -6,6 +6,8 @@ import SiteMark from "../../../web/src/components/SiteMark";
 import { Field } from "../components/ui/Field";
 import { useLogin } from "../hooks/useSession";
 import { ApiError } from "../lib/api";
+import { LanguageSwitch } from "../components/ui/LanguageSwitch";
+import { tr } from "../lib/messages";
 
 export function LoginPage() {
   const [username, setUsername] = useState("");
@@ -54,12 +56,12 @@ export function LoginPage() {
             <Lock aria-hidden="true" className="size-4" />
           </span>
           <div>
-            <h1 className="text-[17px] font-semibold text-brand-dark">管理员登录</h1>
-            <p className="text-[12px] text-muted">登录后可以管理照片与项目</p>
+            <h1 className="text-[17px] font-semibold text-brand-dark">{tr("管理员登录")}</h1>
+            <p className="text-[12px] text-muted">{tr("登录后可以管理照片与项目")}</p>
           </div>
         </div>
 
-        <Field label="用户名" htmlFor="admin-username" className="mb-3.5">
+        <Field label={tr("用户名")} htmlFor="admin-username" className="mb-3.5">
           <input
             id="admin-username"
             className="field"
@@ -69,7 +71,7 @@ export function LoginPage() {
             onChange={(e) => setUsername(e.target.value)}
           />
         </Field>
-        <Field label="密码" htmlFor="admin-password">
+        <Field label={tr("密码")} htmlFor="admin-password">
           <input
             id="admin-password"
             type="password"
@@ -86,10 +88,12 @@ export function LoginPage() {
         {needsCode ? (
           <div className="mt-3.5">
             <Field
-              label={useRecovery ? "恢复码" : "验证码"}
+              label={useRecovery ? tr("恢复码") : tr("验证码")}
               htmlFor="admin-code"
               hint={
-                useRecovery ? "每个恢复码只能使用一次。" : "输入手机验证器 App 显示的 6 位数字。"
+                useRecovery
+                  ? tr("每个恢复码只能使用一次。")
+                  : tr("输入手机验证器 App 显示的 6 位数字。")
               }
             >
               <input
@@ -111,10 +115,14 @@ export function LoginPage() {
                 setCode("");
               }}
             >
-              {useRecovery ? "使用验证码" : "手机不在身边？使用恢复码"}
+              {useRecovery ? tr("使用验证码") : tr("手机不在身边？使用恢复码")}
             </button>
           </div>
         ) : null}
+
+        <div className="mt-3 flex justify-end text-muted">
+          <LanguageSwitch />
+        </div>
 
         {error ? (
           <p id="login-error" role="alert" className="mt-3 text-[12.5px] text-status-error">
@@ -127,7 +135,7 @@ export function LoginPage() {
           disabled={login.isPending || !username || !password || (needsCode && !code)}
           className="btn-primary mt-5 w-full"
         >
-          {login.isPending ? "登录中…" : "登录"}
+          {login.isPending ? tr("登录中…") : tr("登录")}
         </button>
       </form>
     </CenteredCard>
@@ -137,11 +145,11 @@ export function LoginPage() {
 export function NotConfiguredPage() {
   return (
     <CenteredCard>
-      <h1 className="mb-2 text-[17px] font-semibold text-brand-dark">管理功能尚未启用</h1>
+      <h1 className="mb-2 text-[17px] font-semibold text-brand-dark">{tr("管理功能尚未启用")}</h1>
       <p className="text-[13.5px] leading-relaxed text-muted">
-        服务端未配置管理员凭据。请在 <code className="chip">apps/api/.env</code> 中设置{" "}
-        <code className="chip">ADMIN_PASSWORD_HASH</code> 和{" "}
-        <code className="chip">ADMIN_SESSION_SECRET</code> 后重启 API（见{" "}
+        {tr("服务端未配置管理员凭据。请在")} <code className="chip">apps/api/.env</code>{" "}
+        {tr("中设置")} <code className="chip">ADMIN_PASSWORD_HASH</code> {tr("和")}{" "}
+        <code className="chip">ADMIN_SESSION_SECRET</code> {tr("后重启 API（见")}{" "}
         <code className="chip">docs/admin.md</code>）。
       </p>
     </CenteredCard>

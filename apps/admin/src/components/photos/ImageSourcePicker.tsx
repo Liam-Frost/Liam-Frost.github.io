@@ -11,22 +11,23 @@ import { useRef, useState } from "react";
 
 import { api, serverPreviewUrl } from "../../lib/api";
 import { InfoTip } from "../ui/Tooltip";
+import { tr } from "../../lib/messages";
 
 type Tab = "upload" | "server" | "gallery" | "url";
 
 const TABS: { value: Tab; label: string; icon: typeof Upload }[] = [
-  { value: "upload", label: "本机上传", icon: Upload },
-  { value: "server", label: "服务器文件夹", icon: HardDrive },
-  { value: "gallery", label: "图库", icon: Images },
-  { value: "url", label: "图片链接", icon: Link2 }
+  { value: "upload", label: tr("本机上传"), icon: Upload },
+  { value: "server", label: tr("服务器文件夹"), icon: HardDrive },
+  { value: "gallery", label: tr("图库"), icon: Images },
+  { value: "url", label: tr("图片链接"), icon: Link2 }
 ];
 
 /** How the admin names where a photo's image came from. */
 export const SOURCE_LABELS: Record<PhotoSourceType, string> = {
-  upload: "本机上传",
-  server: "服务器文件",
-  gallery: "图库",
-  url: "图片链接"
+  upload: tr("本机上传"),
+  server: tr("服务器文件"),
+  gallery: tr("图库"),
+  url: tr("图片链接")
 };
 
 const GALLERY_NAMES: Record<PhotoGalleryProvider, string> = { flickr: "Flickr" };
@@ -36,7 +37,7 @@ export function sourceLabel(source: PhotoSource) {
   // Values this admin does not know (data written by another version) still get a readable label.
   if (source.type === "gallery" && source.provider)
     return GALLERY_NAMES[source.provider] ?? source.provider;
-  return SOURCE_LABELS[source.type] ?? "未知来源";
+  return SOURCE_LABELS[source.type] ?? tr("未知来源");
 }
 
 export const PHOTO_ACCEPT = "image/jpeg,image/png,image/webp,image/avif,image/tiff";
@@ -69,7 +70,7 @@ export function ImageSourcePicker({
   const [tab, setTab] = useState<Tab>("upload");
   return (
     <div className="space-y-4">
-      <div role="tablist" aria-label="图片来源" className="flex flex-wrap gap-1.5">
+      <div role="tablist" aria-label={tr("图片来源")} className="flex flex-wrap gap-1.5">
         {TABS.map(({ value, label, icon: Icon }) => (
           <button
             key={value}
@@ -142,18 +143,18 @@ function UploadPane({
     >
       <Upload aria-hidden="true" className="size-6 text-faint" />
       <p>
-        把图片拖到这里，或
+        {tr("把图片拖到这里，或")}
         <button
           type="button"
           className="mx-1 font-semibold text-brand hover:underline disabled:opacity-50"
           disabled={busy}
           onClick={() => input.current?.click()}
         >
-          选择{multiple ? "图片" : "一张图片"}
+          {tr("选择{0}", multiple ? tr("图片") : tr("一张图片"))}
         </button>
       </p>
       <p className="text-[12px] text-faint">
-        JPEG、PNG、WebP、AVIF、TIFF；生成多个尺寸并去掉 EXIF（含 GPS），原图私有保存。
+        {tr("JPEG、PNG、WebP、AVIF、TIFF；生成多个尺寸并去掉 EXIF（含 GPS），原图私有保存。")}
       </p>
       <input
         ref={input}
@@ -183,7 +184,7 @@ function ModeChoice({
   return (
     <div
       role="radiogroup"
-      aria-label="存放方式"
+      aria-label={tr("存放方式")}
       className="flex flex-wrap gap-x-4 gap-y-1.5 text-[13px]"
     >
       <label className="flex items-center gap-1.5">
@@ -193,8 +194,8 @@ function ModeChoice({
           checked={mode === "import"}
           onChange={() => onChange("import")}
         />
-        导入为本站托管（推荐）
-        <InfoTip text="下载后生成多个尺寸、去掉 EXIF，由本站提供；原链接以后失效也不影响。" />
+        {tr("导入为本站托管（推荐）")}
+        <InfoTip text={tr("下载后生成多个尺寸、去掉 EXIF，由本站提供；原链接以后失效也不影响。")} />
       </label>
       <label className="flex items-center gap-1.5">
         <input
@@ -203,8 +204,12 @@ function ModeChoice({
           checked={mode === "reference"}
           onChange={() => onChange("reference")}
         />
-        只引用原链接
-        <InfoTip text="不复制，访客直接从原地址加载。省空间，但链接失效时照片会坏，也没有多尺寸图。之后可以在编辑页“转为本站托管”。" />
+        {tr("只引用原链接")}
+        <InfoTip
+          text={tr(
+            "不复制，访客直接从原地址加载。省空间，但链接失效时照片会坏，也没有多尺寸图。之后可以在编辑页“转为本站托管”。"
+          )}
+        />
       </label>
     </div>
   );
@@ -233,11 +238,11 @@ function LinkPane({
   const submit = () => {
     const bad = links.find((link) => !link.startsWith("https://"));
     if (bad) {
-      setError(`只支持 https 链接：${bad}`);
+      setError(tr("只支持 https 链接：{0}", bad));
       return;
     }
     if (!multiple && links.length > 1) {
-      setError("替换图片时只能填一个链接");
+      setError(tr("替换图片时只能填一个链接"));
       return;
     }
     setError("");
@@ -249,9 +254,11 @@ function LinkPane({
       <label className="block space-y-1.5 text-[13px]">
         <span className="text-muted">
           {type === "gallery"
-            ? "图库照片页链接，自动识别网站。目前支持 Flickr（flickr.com/photos/…、flic.kr/p/… 或 live.staticflickr.com 图片链接）"
-            : "图片链接（https）：图床、R2 / S3 对象存储的公开链接等"}
-          {multiple ? "，每行一个" : ""}
+            ? tr(
+                "图库照片页链接，自动识别网站。目前支持 Flickr（flickr.com/photos/…、flic.kr/p/… 或 live.staticflickr.com 图片链接）"
+              )
+            : tr("图片链接（https）：图床、R2 / S3 对象存储的公开链接等")}
+          {multiple ? tr("，每行一个") : ""}
         </span>
         <textarea
           className="field min-h-[96px] font-mono !text-[12.5px]"
@@ -277,7 +284,7 @@ function LinkPane({
         onClick={submit}
       >
         {action}
-        {multiple && links.length > 1 ? ` ${links.length} 张` : ""}
+        {multiple && links.length > 1 ? tr(" {0} 张", links.length) : ""}
       </button>
     </div>
   );
@@ -307,15 +314,15 @@ function ServerPane({
     setPicked([]);
   };
 
-  if (isPending) return <p className="text-[13px] text-subtle">读取中…</p>;
+  if (isPending) return <p className="text-[13px] text-subtle">{tr("读取中…")}</p>;
   if (error) return <p className="text-[13px] text-status-error">{error.message}</p>;
   if (!data.roots.length) {
     return (
       <p className="rounded-xl border border-line-soft p-4 text-[13px] leading-relaxed text-muted">
-        还没有配置服务器导入目录。在 <code className="chip">apps/api/.env</code> 中设置{" "}
-        <code className="chip">PHOTO_IMPORT_DIRS</code>（逗号分隔的绝对路径，例如{" "}
-        <code className="chip">/srv/photos/inbox</code>）后重启 API。可以先用 rsync 或 SFTP
-        把原图传到那里，再在这里挑选导入。
+        {tr("还没有配置服务器导入目录。在")} <code className="chip">apps/api/.env</code>{" "}
+        {tr("中设置")} <code className="chip">PHOTO_IMPORT_DIRS</code>
+        {tr("（逗号分隔的绝对路径，例如")} <code className="chip">/srv/photos/inbox</code>
+        {tr("）后重启 API。可以先用 rsync 或 SFTP 把原图传到那里，再在这里挑选导入。")}
       </p>
     );
   }
@@ -333,7 +340,7 @@ function ServerPane({
         {data.roots.length > 1 ? (
           <select
             className="field !w-auto !py-1"
-            aria-label="导入目录"
+            aria-label={tr("导入目录")}
             value={root}
             onChange={(e) => {
               setRoot(Number(e.target.value));
@@ -412,7 +419,7 @@ function ServerPane({
           )}
         </ul>
       ) : (
-        <p className="text-[13px] text-muted">这个文件夹里没有图片或子文件夹。</p>
+        <p className="text-[13px] text-muted">{tr("这个文件夹里没有图片或子文件夹。")}</p>
       )}
 
       <div className="flex flex-wrap items-center gap-2">
@@ -424,7 +431,9 @@ function ServerPane({
               setPicked(picked.length === images.length ? [] : images.map((i) => i.path))
             }
           >
-            {picked.length === images.length ? "取消全选" : `全选本文件夹（${images.length}）`}
+            {picked.length === images.length
+              ? tr("取消全选")
+              : tr("全选本文件夹（{0}）", images.length)}
           </button>
         ) : null}
         <button
@@ -442,10 +451,10 @@ function ServerPane({
           }}
         >
           {action}
-          {multiple && picked.length ? ` ${picked.length} 张` : ""}
+          {multiple && picked.length ? tr(" {0} 张", picked.length) : ""}
         </button>
         <span className="text-[12px] text-faint">
-          服务器上的文件会复制并处理为本站托管，原文件保留。
+          {tr("服务器上的文件会复制并处理为本站托管，原文件保留。")}
         </span>
       </div>
     </div>

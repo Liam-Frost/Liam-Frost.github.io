@@ -12,6 +12,7 @@ import { Menu } from "../components/ui/Menu";
 import { DatabaseNotice } from "../components/ui/DatabaseNotice";
 import { useToast } from "../components/ui/Toast";
 import { request } from "../lib/api";
+import { tr } from "../lib/messages";
 
 const key = ["admin", "contact"];
 type ContactLink = ContactContent["links"][number];
@@ -54,7 +55,7 @@ export function ContactPage() {
     onSuccess: (response) => {
       qc.setQueryData(key, response);
       setDraft(null);
-      toast("联系方式已保存，网站上马上生效");
+      toast(tr("联系方式已保存，网站上马上生效"));
     },
     onError: (e: Error) => toast(e.message, "error")
   });
@@ -79,13 +80,13 @@ export function ContactPage() {
     <>
       <PageHeader
         className="max-sm:flex-col max-sm:items-stretch"
-        title="联系我"
-        description="管理主页公开邮箱与联系方式，支持排序及显示控制。"
+        title={tr("联系我")}
+        description={tr("管理主页公开邮箱与联系方式，支持排序及显示控制。")}
         actions={
           <>
             <a className="btn-secondary" href="/#/#contact" target="_blank" rel="noreferrer">
               <ExternalLink className={icon} aria-hidden="true" />
-              预览网站
+              {tr("预览网站")}
             </a>
             <button
               className="btn-primary"
@@ -94,15 +95,15 @@ export function ContactPage() {
               onClick={add}
             >
               <Plus className={icon} aria-hidden="true" />
-              添加联系方式
+              {tr("添加联系方式")}
             </button>
           </>
         }
       />
       {isPending ? (
-        <LoadingSkeleton label="加载中…" variant="form" />
+        <LoadingSkeleton label={tr("加载中…")} variant="form" />
       ) : error ? (
-        <DatabaseNotice error={error} subject="联系方式管理" />
+        <DatabaseNotice error={error} subject={tr("联系方式管理")} />
       ) : (
         value && (
           <form
@@ -115,9 +116,9 @@ export function ContactPage() {
             <fieldset disabled={save.isPending} className="min-w-0 space-y-5 disabled:opacity-60">
               <div className="border-b border-line pb-5">
                 <Field
-                  label="公开邮箱"
+                  label={tr("公开邮箱")}
                   htmlFor="contact-email"
-                  hint="留空即可隐藏邮箱；不会影响下面的联系方式。"
+                  hint={tr("留空即可隐藏邮箱；不会影响下面的联系方式。")}
                   className="max-w-md"
                 >
                   <input
@@ -130,15 +131,15 @@ export function ContactPage() {
                   />
                 </Field>
               </div>
-              <section className="card min-w-0" aria-label="联系方式">
+              <section className="card min-w-0" aria-label={tr("联系方式")}>
                 <div className="flex items-center justify-between border-b border-line-soft px-4 py-3">
                   <h2 className="text-[14px] font-semibold text-brand-dark">
-                    联系方式{" "}
+                    {tr("联系方式")}{" "}
                     <span className="ml-1 text-[12px] font-normal text-faint">
                       {value.contact.links.length} / 20
                     </span>
                   </h2>
-                  <span className="text-[11.5px] text-faint">拖动或用菜单排序</span>
+                  <span className="text-[11.5px] text-faint">{tr("拖动或用菜单排序")}</span>
                 </div>
                 <ul className="divide-y divide-line-soft">
                   {value.contact.links.map((link, index) => (
@@ -190,28 +191,28 @@ export function ContactPage() {
                         </a>
                       </div>
                       <IconButton
-                        label={`编辑 ${link.label}`}
+                        label={tr("编辑 {0}", link.label)}
                         onClick={() => setEditing({ index, link })}
                       >
                         <Pencil className={icon} />
                       </IconButton>
                       <Menu
-                        label={`${link.label}：更多操作`}
+                        label={tr("{0}：更多操作", link.label)}
                         items={[
                           {
-                            label: "上移",
+                            label: tr("上移"),
                             icon: <ArrowUp className={icon} />,
                             disabled: index === 0,
                             onSelect: () => move(index, index - 1)
                           },
                           {
-                            label: "下移",
+                            label: tr("下移"),
                             icon: <ArrowDown className={icon} />,
                             disabled: index === value.contact.links.length - 1,
                             onSelect: () => move(index, index + 1)
                           },
                           {
-                            label: "删除",
+                            label: tr("删除"),
                             icon: <Trash2 className={icon} />,
                             danger: true,
                             onSelect: () =>
@@ -227,10 +228,12 @@ export function ContactPage() {
                 </ul>
                 {!value.contact.links.length && (
                   <div className="px-4 py-8 text-center">
-                    <p className="text-[13px] text-muted">还没有联系方式，网站将隐藏这部分链接。</p>
+                    <p className="text-[13px] text-muted">
+                      {tr("还没有联系方式，网站将隐藏这部分链接。")}
+                    </p>
                     <button className="btn-secondary mt-3" type="button" onClick={add}>
                       <Plus className={icon} />
-                      添加联系方式
+                      {tr("添加联系方式")}
                     </button>
                   </div>
                 )}
@@ -238,12 +241,12 @@ export function ContactPage() {
             </fieldset>
             {save.error && (
               <p role="alert" className="text-[13px] text-status-error">
-                保存失败，草稿已保留。{save.error.message}
+                {tr("保存失败，草稿已保留。{0}", save.error.message)}
               </p>
             )}
             <div className="sticky bottom-3 z-20 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line bg-surface p-3 shadow-card">
               <p role="status" className="text-[12.5px] text-muted">
-                {dirty ? "有未保存的更改" : "没有未保存的更改"}
+                {dirty ? tr("有未保存的更改") : tr("没有未保存的更改")}
               </p>
               <div className="flex gap-2">
                 <button
@@ -255,10 +258,10 @@ export function ContactPage() {
                     save.reset();
                   }}
                 >
-                  取消修改
+                  {tr("取消修改")}
                 </button>
                 <button className="btn-primary" type="submit" disabled={!dirty || save.isPending}>
-                  {save.isPending ? "保存中…" : "保存更改"}
+                  {save.isPending ? tr("保存中…") : tr("保存更改")}
                 </button>
               </div>
             </div>
@@ -300,14 +303,14 @@ function ContactLinkEditor({
     <Dialog
       open
       onClose={onClose}
-      title={adding ? "添加联系方式" : "编辑联系方式"}
+      title={adding ? tr("添加联系方式") : tr("编辑联系方式")}
       footer={
         <>
           <button className="btn-secondary" type="button" onClick={onClose}>
-            取消
+            {tr("取消")}
           </button>
           <button className="btn-primary" type="submit" form="contact-link-editor">
-            {adding ? "添加到草稿" : "应用到草稿"}
+            {adding ? tr("添加到草稿") : tr("应用到草稿")}
           </button>
         </>
       }
@@ -321,17 +324,17 @@ function ContactLinkEditor({
             const url = new URL(link.href.trim());
             if (url.protocol !== "https:" || url.username || url.password) throw new Error();
           } catch {
-            setError("请填写不含登录凭据的有效 HTTPS 链接。");
+            setError(tr("请填写不含登录凭据的有效 HTTPS 链接。"));
             return;
           }
           if (!link.label.trim()) {
-            setError("请填写显示名称。");
+            setError(tr("请填写显示名称。"));
             return;
           }
           onApply({ label: link.label.trim(), href: link.href.trim() });
         }}
       >
-        <Field label="显示名称" htmlFor="contact-link-label">
+        <Field label={tr("显示名称")} htmlFor="contact-link-label">
           <input
             data-autofocus
             id="contact-link-label"
@@ -345,7 +348,7 @@ function ContactLinkEditor({
         <Field
           label="HTTPS URL"
           htmlFor="contact-link-url"
-          hint="应用到草稿后，点击页面“保存更改”才会发布。"
+          hint={tr("应用到草稿后，点击页面“保存更改”才会发布。")}
         >
           <input
             id="contact-link-url"
