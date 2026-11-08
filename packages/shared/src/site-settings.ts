@@ -10,7 +10,6 @@ export type SiteSettingsGroups = {
     title: LocalizedText;
     /** The browser tab title and name of the admin. */
     adminTitle: LocalizedText;
-    avatarPhotoId: string | null;
   };
   footer: {
     owner: LocalizedText;
@@ -26,7 +25,7 @@ export type SiteSettingsGroups = {
   dictionary: { entries: DictionaryEntry[] };
 };
 export const DEFAULT_SITE_SETTINGS: SiteSettingsGroups = {
-  identity: { name: {}, title: {}, adminTitle: {}, avatarPhotoId: null },
+  identity: { name: {}, title: {}, adminTitle: {} },
   footer: { owner: {}, startYear: null, showRole: true, links: [] },
   preferences: { theme: "system", language: "auto" },
   privacy: { title: {}, body: {}, effectiveDate: null },

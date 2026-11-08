@@ -8,8 +8,8 @@ export const HOME_SECTIONS = [
   "contact"
 ] as const;
 export type HomeSection = (typeof HOME_SECTIONS)[number];
-/** The uploaded images: front-end logo, admin logo, and the icon used by both. */
-export const BRAND_SLOTS = ["publicLogo", "adminLogo", "favicon"] as const;
+/** The uploaded images: front-end logo, admin logo, the icon used by both, and the home avatar. */
+export const BRAND_SLOTS = ["publicLogo", "adminLogo", "favicon", "avatar"] as const;
 export type BrandSlot = (typeof BRAND_SLOTS)[number];
 /** The current image address in each slot; null means the default. */
 export type AdminBranding = Record<BrandSlot, string | null>;

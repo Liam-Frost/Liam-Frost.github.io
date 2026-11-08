@@ -35,6 +35,7 @@ import { Time } from "../components/ui/Time";
 import { InfoTip, Tooltip } from "../components/ui/Tooltip";
 import { api } from "../lib/api";
 import { SOURCE_LABELS } from "../lib/i18n";
+import { apiMessage, intlLocale, tr } from "../lib/messages";
 
 const STEAM_LINK = "/collection?kind=game&open=steam";
 const SPOTIFY_LINK = "/collection?kind=track&open=spotify";
@@ -58,7 +59,7 @@ function Section({
       <div className="mb-3 flex items-center gap-2">
         <h2 className="flex flex-1 items-center gap-1 text-[14px] font-semibold text-brand-dark">
           {title}
-          {hint ? <InfoTip text={hint} label={`${title}：说明`} /> : null}
+          {hint ? <InfoTip text={hint} label={tr("{0}：说明", title)} /> : null}
         </h2>
         {action}
       </div>
@@ -83,7 +84,7 @@ function Part<T>({
   return (
     <Section title={title} className={className}>
       <p role="alert" className="text-[13px] text-status-error">
-        无法加载：{part.error}
+        {tr("无法加载：{0}", apiMessage(part.error))}
       </p>
     </Section>
   );
@@ -92,9 +93,9 @@ function Part<T>({
 // ---- KPIs ----
 
 const KPI_LABELS: Partial<Record<keyof AnalyticsKpis, string>> = {
-  views: "今日浏览量",
-  visitors: "今日访客",
-  sessions: "今日访问"
+  views: tr("今日浏览量"),
+  visitors: tr("今日访客"),
+  sessions: tr("今日访问")
 };
 const hintOf = (key: keyof AnalyticsKpis) => KPIS.find((k) => k.key === key)!.hint;
 
@@ -113,7 +114,7 @@ function KpiCard({
     <div className="card flex min-w-0 flex-col p-4">
       <p className="flex items-center gap-1 text-[12px] text-muted">
         {label}
-        <InfoTip text={hint} label={`${label}：口径`} />
+        <InfoTip text={hint} label={tr("{0}：口径", label)} />
       </p>
       <p className="mt-1 text-[26px] leading-tight font-semibold text-brand-dark tabular-nums">
         {number.format(value)}
@@ -133,12 +134,12 @@ function WeekBars({ week }: { week: DashboardTraffic["week"] }) {
         {week.map((day, i) => (
           <Tooltip
             key={day.day}
-            content={`${day.day}：${number.format(day.views)} 次浏览`}
+            content={tr("{0}：{1} 次浏览", day.day, number.format(day.views))}
             className="flex h-full flex-1 items-end"
           >
             <span
               tabIndex={0}
-              aria-label={`${day.day}：${day.views} 次浏览`}
+              aria-label={tr("{0}：{1} 次浏览", day.day, day.views)}
               className={`block w-full rounded-t-sm outline-offset-1 ${i === week.length - 1 ? "bg-brand" : "bg-brand-secondary/35"}`}
               style={{ height: `${Math.max(6, (day.views / most) * 100)}%` }}
             />
@@ -147,8 +148,8 @@ function WeekBars({ week }: { week: DashboardTraffic["week"] }) {
       </div>
       <figcaption className="mt-1 flex justify-between text-[11px] text-faint tabular-nums">
         <span>{week[0]!.day.slice(5)}</span>
-        <span>近 7 天浏览量</span>
-        <span>今天</span>
+        <span>{tr("近 7 天浏览量")}</span>
+        <span>{tr("今天")}</span>
       </figcaption>
     </figure>
   );
@@ -158,29 +159,33 @@ function Kpis({ traffic }: { traffic: AdminDashboard["traffic"] }) {
   if (!traffic) {
     return (
       <p className="card p-4 text-[13px] text-muted">
-        访问统计未开启，可在
+        {tr("访问统计未开启，可在")}
         <Link to="/analytics" className="text-brand hover:underline">
-          统计
+          {tr("统计")}
         </Link>
-        页面打开总开关。
+        {tr("页面打开总开关。")}
       </p>
     );
   }
   return (
-    <Part part={traffic} title="今日访问">
+    <Part part={traffic} title={tr("今日访问")}>
       {(data) => (
         <section aria-labelledby="kpi-title">
           <div className="mb-2 flex items-baseline justify-between gap-3">
             <h2 id="kpi-title" className="text-[12px] font-medium text-faint">
-              今天 · 与昨天同一时段比较
+              {tr("今天 · 与昨天同一时段比较")}
             </h2>
             <Link to="/analytics?range=today" className="text-[12px] text-brand hover:underline">
-              查看统计
+              {tr("查看统计")}
             </Link>
           </div>
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-            <KpiCard label="当前在线" hint="最近 5 分钟内有活动的访问数。" value={data.online}>
-              <p className="mt-1 text-[12px] text-faint">最近 5 分钟</p>
+            <KpiCard
+              label={tr("当前在线")}
+              hint={tr("最近 5 分钟内有活动的访问数。")}
+              value={data.online}
+            >
+              <p className="mt-1 text-[12px] text-faint">{tr("最近 5 分钟")}</p>
             </KpiCard>
             {(["views", "visitors", "sessions"] as const).map((key) => {
               const delta = changeText(data.today[key], data.yesterday[key]);
@@ -204,7 +209,7 @@ function Kpis({ traffic }: { traffic: AdminDashboard["traffic"] }) {
                       {delta.sign > 0 ? "▲ " : delta.sign < 0 ? "▼ " : ""}
                       {delta.text}
                     </span>{" "}
-                    · 昨天 {number.format(data.yesterday[key])}
+                    {tr("· 昨天 {0}", number.format(data.yesterday[key]))}
                   </p>
                   {key === "views" ? <WeekBars week={data.week} /> : null}
                 </KpiCard>
@@ -227,56 +232,59 @@ const TASKS: Record<
   "photos-referenced": (t) => ({
     title: (
       <>
-        <b>{t.count}</b> 张照片还在引用外链
+        <b>{t.count}</b> {tr("张照片还在引用外链")}
       </>
     ),
-    detail: "链接失效时照片会坏，可在编辑照片里转为本站托管",
+    detail: tr("链接失效时照片会坏，可在编辑照片里转为本站托管"),
     to: "/photos?show=referenced"
   }),
   "photos-missing-en": (t) => ({
     title: (
       <>
-        <b>{t.count}</b> 张公开照片缺少英文标题
+        <b>{t.count}</b> {tr("张公开照片缺少英文标题")}
       </>
     ),
-    detail: "英文访客会看到其他语言的标题",
+    detail: tr("英文访客会看到其他语言的标题"),
     to: "/photos?show=missing-en"
   }),
   "projects-missing-en": (t) => ({
     title: (
       <>
-        <b>{t.count}</b> 个公开项目缺少英文标题
+        <b>{t.count}</b> {tr("个公开项目缺少英文标题")}
       </>
     ),
-    detail: "英文访客会看到其他语言的标题",
+    detail: tr("英文访客会看到其他语言的标题"),
     to: "/projects?show=missing-en"
   }),
   "projects-no-cover": (t) => ({
     title: (
       <>
-        <b>{t.count}</b> 个公开项目没有封面
+        <b>{t.count}</b> {tr("个公开项目没有封面")}
       </>
     ),
-    detail: "项目列表和首页会显示占位图",
+    detail: tr("项目列表和首页会显示占位图"),
     to: "/projects?show=no-cover"
   }),
   "media-unrated": (t) => ({
     title: (
       <>
-        <b>{t.count}</b> 条已完成的收藏还没有评分
+        <b>{t.count}</b> {tr("条已完成的收藏还没有评分")}
       </>
     ),
-    detail: "看完、读完或玩过的条目（不含音乐）",
+    detail: tr("看完、读完或玩过的条目（不含音乐）"),
     to: `/collection?kind=${t.kind ?? "movie"}&status=done&rating=none`
   }),
   "steam-stale": () => ({
-    title: "Steam 游戏库超过 30 天没有同步",
-    detail: "同步会更新游戏时长和最近游玩日期",
+    title: tr("Steam 游戏库超过 30 天没有同步"),
+    detail: tr("同步会更新游戏时长和最近游玩日期"),
     to: STEAM_LINK
   }),
   "source-failing": (t) => ({
-    title: `${SOURCE_LABELS[t.subject as keyof typeof SOURCE_LABELS] ?? t.subject} 最近一次请求失败`,
-    detail: "可能是 key 失效、额度用完或网络不通",
+    title: tr(
+      "{0} 最近一次请求失败",
+      SOURCE_LABELS[t.subject as keyof typeof SOURCE_LABELS] ?? t.subject
+    ),
+    detail: tr("可能是 key 失效、额度用完或网络不通"),
     to: "/analytics/health"
   })
 };
@@ -284,12 +292,12 @@ const TASKS: Record<
 function Tasks({ tasks, className }: { tasks: DashboardTask[]; className: string }) {
   return (
     <Section
-      title="待处理"
-      hint="按规则自动检查，处理完后这里会消失。点击进入已筛选好的列表。"
+      title={tr("待处理")}
+      hint={tr("按规则自动检查，处理完后这里会消失。点击进入已筛选好的列表。")}
       className={className}
       action={
         tasks.length ? (
-          <span className="text-[12px] text-faint tabular-nums">{tasks.length} 项</span>
+          <span className="text-[12px] text-faint tabular-nums">{tr("{0} 项", tasks.length)}</span>
         ) : null
       }
     >
@@ -304,7 +312,7 @@ function Tasks({ tasks, className }: { tasks: DashboardTask[]; className: string
                   className="group flex items-start gap-2.5 rounded-lg px-2 py-2 transition-colors hover:bg-brand-secondary/6 focus-visible:bg-brand-secondary/6"
                 >
                   <CircleAlert
-                    aria-label={task.severity === "warning" ? "需要处理" : "建议处理"}
+                    aria-label={task.severity === "warning" ? tr("需要处理") : tr("建议处理")}
                     className={`mt-0.5 size-4 shrink-0 ${task.severity === "warning" ? "text-status-warn" : "text-brand-secondary"}`}
                   />
                   <span className="min-w-0 flex-1">
@@ -332,7 +340,7 @@ function Tasks({ tasks, className }: { tasks: DashboardTask[]; className: string
                         )}
                       </span>
                     ))}
-                    {task.count > task.examples.length ? " 等" : ""}
+                    {task.count > task.examples.length ? tr(" 等") : ""}
                   </p>
                 ) : null}
               </li>
@@ -342,7 +350,7 @@ function Tasks({ tasks, className }: { tasks: DashboardTask[]; className: string
       ) : (
         <p className="flex items-center gap-2 py-2 text-[13px] text-muted">
           <CircleCheck aria-hidden="true" className="size-4 text-status-ok" />
-          没有需要处理的事项。
+          {tr("没有需要处理的事项。")}
         </p>
       )}
     </Section>
@@ -355,37 +363,42 @@ function Content({ data, className }: { data: DashboardContent; className: strin
   const rows = [
     {
       to: "/photos",
-      label: "照片",
+      label: tr("照片"),
       total: data.photos.total,
-      detail: `隐藏 ${data.photos.hidden} · 精选 ${data.photos.featured} · 引用 ${data.photos.referenced}`
+      detail: tr(
+        "隐藏 {0} · 精选 {1} · 引用 {2}",
+        data.photos.hidden,
+        data.photos.featured,
+        data.photos.referenced
+      )
     },
     {
       to: "/projects",
-      label: "项目",
+      label: tr("项目"),
       total: data.projects.total,
-      detail: `隐藏 ${data.projects.hidden} · 精选 ${data.projects.featured}`
+      detail: tr("隐藏 {0} · 精选 {1}", data.projects.hidden, data.projects.featured)
     },
     {
       to: "/collection",
-      label: "收藏",
+      label: tr("收藏"),
       total: data.media.total,
-      detail: `隐藏 ${data.media.hidden} · 进行中 ${data.media.watching}`
+      detail: tr("隐藏 {0} · 进行中 {1}", data.media.hidden, data.media.watching)
     },
     {
       to: "/collection/people",
-      label: "人物",
+      label: tr("人物"),
       total: data.people.total,
-      detail: `隐藏 ${data.people.hidden}`
+      detail: tr("隐藏 {0}", data.people.hidden)
     },
     {
       to: "/collection?kind=track&view=playlists",
-      label: "歌单",
+      label: tr("歌单"),
       total: data.playlists.total,
-      detail: `隐藏 ${data.playlists.hidden}`
+      detail: tr("隐藏 {0}", data.playlists.hidden)
     }
   ];
   return (
-    <Section title="内容概况" className={className}>
+    <Section title={tr("内容概况")} className={className}>
       <ul className="-mx-2 divide-y divide-line-soft">
         {rows.map((row) => (
           <li key={row.label}>
@@ -409,7 +422,7 @@ function Content({ data, className }: { data: DashboardContent; className: strin
               aria-hidden="true"
               className="mr-0.5 inline size-3.5 align-[-2px] transition-transform group-open:rotate-90 motion-reduce:transition-none"
             />
-            收藏按类型
+            {tr("收藏按类型")}
           </summary>
           <ul className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 sm:grid-cols-3">
             {data.media.byKind.map(({ kind, count }) => (
@@ -479,36 +492,40 @@ function Integrations({ data, className }: { data: DashboardConnections; classNa
 
   return (
     <Section
-      title="账号与服务"
-      hint="只根据最近的同步和请求记录判断，不会主动检测服务是否在线。"
+      title={tr("账号与服务")}
+      hint={tr("只根据最近的同步和请求记录判断，不会主动检测服务是否在线。")}
       className={className}
       action={
         <Link to="/integrations" className="text-[12px] text-brand hover:underline">
-          API 配置
+          {tr("API 配置")}
         </Link>
       }
     >
-      <h3 className="text-[12px] font-medium text-faint">已授权账号</h3>
+      <h3 className="text-[12px] font-medium text-faint">{tr("已授权账号")}</h3>
       <ul className="divide-y divide-line-soft">
         <AccountRow
           name="Steam"
           tone={!steam.configured || !steam.account ? "none" : steam.account.stale ? "warn" : "ok"}
           detail={
             !steam.configured ? (
-              "未配置 API Key"
+              tr("未配置 API Key")
             ) : !steam.account ? (
-              "未连接账号"
+              tr("未连接账号")
             ) : (
               <>
-                {steam.account.name} · 上次同步{" "}
-                {steam.account.lastSyncedAt ? <Time iso={steam.account.lastSyncedAt} /> : "从未"}
+                {tr("{0} · 上次同步", steam.account.name)}{" "}
+                {steam.account.lastSyncedAt ? (
+                  <Time iso={steam.account.lastSyncedAt} />
+                ) : (
+                  tr("从未")
+                )}
               </>
             )
           }
           action={
             steam.configured
-              ? { label: steam.account ? "同步" : "连接", to: STEAM_LINK }
-              : { label: "配置", to: "/integrations" }
+              ? { label: steam.account ? tr("同步") : tr("连接"), to: STEAM_LINK }
+              : { label: tr("配置"), to: "/integrations" }
           }
         />
         <AccountRow
@@ -516,21 +533,21 @@ function Integrations({ data, className }: { data: DashboardConnections; classNa
           tone={spotify.configured && spotify.account ? "ok" : "none"}
           detail={
             !spotify.configured
-              ? "未配置应用"
+              ? tr("未配置应用")
               : spotify.account
-                ? `已连接 ${spotify.account.displayName}`
-                : "未连接账号"
+                ? tr("已连接 {0}", spotify.account.displayName)
+                : tr("未连接账号")
           }
           action={
             spotify.configured
-              ? { label: spotify.account ? "管理" : "连接", to: SPOTIFY_LINK }
-              : { label: "配置", to: "/integrations" }
+              ? { label: spotify.account ? tr("管理") : tr("连接"), to: SPOTIFY_LINK }
+              : { label: tr("配置"), to: "/integrations" }
           }
         />
       </ul>
 
       <h3 className="mt-3 mb-1 border-t border-line-soft pt-3 text-[12px] font-medium text-faint">
-        资料服务
+        {tr("资料服务")}
       </h3>
       {/* Problems first and in full; the rest as one line per state. */}
       {failing.length ? (
@@ -539,7 +556,7 @@ function Integrations({ data, className }: { data: DashboardConnections; classNa
             <li key={s.name} className="rounded-lg bg-status-error/6 px-2.5 py-2 text-[12.5px]">
               <span className="flex items-center gap-2 font-medium text-status-error">
                 <Dot tone="error" />
-                {SOURCE_LABELS[s.name]} 最近一次请求失败
+                {tr("{0} 最近一次请求失败", SOURCE_LABELS[s.name])}
                 <span className="ml-auto font-normal text-faint">
                   <Time iso={s.lastError!} />
                 </span>
@@ -558,13 +575,15 @@ function Integrations({ data, className }: { data: DashboardConnections; classNa
           <div className="flex gap-2">
             <dt className="flex shrink-0 items-center gap-1.5 text-muted">
               <Dot tone="ok" />
-              最近请求成功
+              {tr("最近请求成功")}
             </dt>
             <dd className="min-w-0 text-ink">
               {recentOk.map((s, i) => (
                 <span key={s.name}>
                   {i ? "、" : ""}
-                  <Tooltip content={`上次成功：${new Date(s.lastOk!).toLocaleString("zh-CN")}`}>
+                  <Tooltip
+                    content={tr("上次成功：{0}", new Date(s.lastOk!).toLocaleString(intlLocale))}
+                  >
                     <span tabIndex={0}>{SOURCE_LABELS[s.name]}</span>
                   </Tooltip>
                 </span>
@@ -576,7 +595,7 @@ function Integrations({ data, className }: { data: DashboardConnections; classNa
           <div className="flex gap-2">
             <dt className="flex shrink-0 items-center gap-1.5 text-muted">
               <Dot tone="none" />
-              暂无请求记录
+              {tr("暂无请求记录")}
             </dt>
             <dd className="min-w-0 text-ink">{names(untested)}</dd>
           </div>
@@ -585,12 +604,12 @@ function Integrations({ data, className }: { data: DashboardConnections; classNa
           <div className="flex gap-2">
             <dt className="flex shrink-0 items-center gap-1.5 text-muted">
               <Dot tone="none" />
-              未配置
+              {tr("未配置")}
             </dt>
             <dd className="min-w-0 text-ink">
               {names(unset)} ·{" "}
               <Link to="/integrations" className="text-brand hover:underline">
-                去配置
+                {tr("去配置")}
               </Link>
             </dd>
           </div>
@@ -603,11 +622,11 @@ function Integrations({ data, className }: { data: DashboardConnections; classNa
 // ---- Recent activity ----
 
 const EDITED_TYPES: Record<DashboardEditedType, string> = {
-  photo: "照片",
-  project: "项目",
-  media: "收藏",
-  person: "人物",
-  playlist: "歌单"
+  photo: tr("照片"),
+  project: tr("项目"),
+  media: tr("收藏"),
+  person: tr("人物"),
+  playlist: tr("歌单")
 };
 const FEED_LENGTH = 10;
 
@@ -629,7 +648,10 @@ function feedOf({ jobs, edited }: DashboardActivity): FeedItem[] {
       at: item.updatedAt,
       icon: Pencil,
       tone: "text-brand-secondary",
-      event: `编辑了${item.kind ? (MEDIA_KINDS[item.kind] ?? EDITED_TYPES[item.type]) : EDITED_TYPES[item.type]}`,
+      event: tr(
+        "编辑了{0}",
+        item.kind ? (MEDIA_KINDS[item.kind] ?? EDITED_TYPES[item.type]) : EDITED_TYPES[item.type]
+      ),
       subject: item.name,
       to: item.to
     })),
@@ -638,7 +660,7 @@ function feedOf({ jobs, edited }: DashboardActivity): FeedItem[] {
       at: job.at,
       icon: job.ok ? (job.name === "steam-sync" ? RefreshCw : Download) : CircleAlert,
       tone: job.ok ? "text-status-ok" : "text-status-error",
-      event: `${JOBS[job.name] ?? job.name}${job.ok ? "完成" : "失败"}`,
+      event: `${JOBS[job.name] ?? job.name}${job.ok ? tr("完成") : tr("失败")}`,
       subject: job.message ?? "",
       to: job.name === "steam-sync" ? STEAM_LINK : null
     }))
@@ -649,7 +671,7 @@ function feedOf({ jobs, edited }: DashboardActivity): FeedItem[] {
 function Activity({ data, className }: { data: DashboardActivity; className: string }) {
   const feed = feedOf(data);
   return (
-    <Section title="最近动态" hint="最近的编辑和导入、同步任务。" className={className}>
+    <Section title={tr("最近动态")} hint={tr("最近的编辑和导入、同步任务。")} className={className}>
       {feed.length ? (
         <ol className="-mx-2">
           {feed.map(({ key, at, icon: Icon, tone, event, subject, to }) => {
@@ -683,7 +705,7 @@ function Activity({ data, className }: { data: DashboardActivity; className: str
           })}
         </ol>
       ) : (
-        <p className="py-2 text-[13px] text-muted">还没有编辑或导入记录。</p>
+        <p className="py-2 text-[13px] text-muted">{tr("还没有编辑或导入记录。")}</p>
       )}
     </Section>
   );
@@ -692,13 +714,13 @@ function Activity({ data, className }: { data: DashboardActivity; className: str
 // ---- Page ----
 
 const QUICK = [
-  { to: "/photos?open=add", label: "添加照片" },
-  { to: "/projects?open=new", label: "新建项目" },
-  { to: "/collection?open=add", label: "添加收藏" },
-  { to: "/about?open=manifesto", label: "添加宣言" },
-  { to: "/about?open=gear", label: "添加设备分类" },
-  { to: "/stack", label: "管理技术栈" },
-  { to: "/collection/people?open=add", label: "添加人物" }
+  { to: "/photos?open=add", label: tr("添加照片") },
+  { to: "/projects?open=new", label: tr("新建项目") },
+  { to: "/collection?open=add", label: tr("添加收藏") },
+  { to: "/about?open=manifesto", label: tr("添加宣言") },
+  { to: "/about?open=gear", label: tr("添加设备分类") },
+  { to: "/stack", label: tr("管理技术栈") },
+  { to: "/collection/people?open=add", label: tr("添加人物") }
 ];
 
 function DashboardSkeleton() {
@@ -727,8 +749,8 @@ export function OverviewPage() {
 
   return (
     <>
-      <PageHeader title="概览" description="网站运行情况、需要处理的事和最近的动态。" />
-      <div role="group" aria-label="快捷入口" className="mb-6 flex flex-wrap gap-2">
+      <PageHeader title={tr("概览")} description={tr("网站运行情况、需要处理的事和最近的动态。")} />
+      <div role="group" aria-label={tr("快捷入口")} className="mb-6 flex flex-wrap gap-2">
         {QUICK.map(({ to, label }) => (
           <Link key={to} to={to} className="btn-secondary">
             <Plus aria-hidden="true" className="size-4" /> {label}
@@ -736,11 +758,11 @@ export function OverviewPage() {
         ))}
       </div>
       {error ? (
-        <DatabaseNotice error={error} subject="概览" />
+        <DatabaseNotice error={error} subject={tr("概览")} />
       ) : isPending || !data ? (
         <>
           <p className="sr-only" role="status">
-            加载中…
+            {tr("加载中…")}
           </p>
           <DashboardSkeleton />
         </>
@@ -750,16 +772,16 @@ export function OverviewPage() {
           {/* One 12-column grid: to do + content, then services + activity; one column when narrow. Cards in
               a row share its height, so their bottoms line up. */}
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
-            <Part part={data.tasks} title="待处理" className="lg:col-span-7">
+            <Part part={data.tasks} title={tr("待处理")} className="lg:col-span-7">
               {(tasks) => <Tasks tasks={tasks} className="lg:col-span-7" />}
             </Part>
-            <Part part={data.content} title="内容概况" className="lg:col-span-5">
+            <Part part={data.content} title={tr("内容概况")} className="lg:col-span-5">
               {(content) => <Content data={content} className="lg:col-span-5" />}
             </Part>
-            <Part part={data.connections} title="账号与服务" className="lg:col-span-5">
+            <Part part={data.connections} title={tr("账号与服务")} className="lg:col-span-5">
               {(connections) => <Integrations data={connections} className="lg:col-span-5" />}
             </Part>
-            <Part part={data.activity} title="最近动态" className="lg:col-span-7">
+            <Part part={data.activity} title={tr("最近动态")} className="lg:col-span-7">
               {(activity) => <Activity data={activity} className="lg:col-span-7" />}
             </Part>
           </div>
@@ -773,9 +795,9 @@ export function OverviewPage() {
 export function SectionNotFound() {
   return (
     <>
-      <PageHeader title="页面不存在" />
+      <PageHeader title={tr("页面不存在")} />
       <Link to="/" className="btn-secondary">
-        返回概览
+        {tr("返回概览")}
       </Link>
     </>
   );
@@ -786,7 +808,7 @@ export function NotFoundPage() {
   return (
     <div className="flex min-h-dvh flex-col items-center justify-center gap-2 px-4 text-center">
       <h1 className="text-[40px] font-semibold text-brand-dark">404</h1>
-      <p className="text-[13px] text-muted">页面不存在</p>
+      <p className="text-[13px] text-muted">{tr("页面不存在")}</p>
     </div>
   );
 }

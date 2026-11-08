@@ -32,6 +32,7 @@ import { AboutPage } from "./pages/AboutPage";
 import { AccountSecurityPage } from "./pages/AccountSecurityPage";
 import { StackPage } from "./pages/StackPage";
 import { NotFoundPage, OverviewPage, SectionNotFound } from "./pages/OverviewPage";
+import { tr } from "./lib/messages";
 
 // Any 401 (session expired or revoked elsewhere) sends the app back to the login screen.
 const onUnauthorized = (error: Error) => {
@@ -76,13 +77,13 @@ function SessionGate() {
   const { data: session, isPending, error } = useSession();
 
   if (isPending) {
-    return <p className="py-24 text-center text-[13px] text-subtle">加载中…</p>;
+    return <p className="py-24 text-center text-[13px] text-subtle">{tr("加载中…")}</p>;
   }
   if (error || !session) {
     return (
       <CenteredCard>
         <p role="alert" className="text-[13.5px] text-status-error">
-          {error?.message ?? "无法加载登录状态"}
+          {error?.message ?? tr("无法加载登录状态")}
         </p>
       </CenteredCard>
     );

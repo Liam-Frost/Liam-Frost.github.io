@@ -18,9 +18,11 @@ const asset = z
   .strict()
   .nullable()
   .default(null);
-const schema = z.object({ publicLogo: asset, adminLogo: asset, favicon: asset }).strict();
+const schema = z
+  .object({ publicLogo: asset, adminLogo: asset, favicon: asset, avatar: asset })
+  .strict();
 
-const EMPTY: BrandAssets = { publicLogo: null, adminLogo: null, favicon: null };
+const EMPTY: BrandAssets = { publicLogo: null, adminLogo: null, favicon: null, avatar: null };
 
 /** "publicLogo" -> "public-logo": storage keys and URLs are lowercase. */
 export const brandFolder = (slot: BrandSlot) =>

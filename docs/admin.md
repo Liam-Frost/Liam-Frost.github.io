@@ -10,7 +10,11 @@ Each new setting group has its own save/revision. Failed saves preserve the draf
 
 The favicon uses a public, locally hosted gallery photo and generates versioned PNG/ICO assets for both apps. Anonymous `GET /api/site-settings` exposes only public fields; account/security state and integration secrets stay behind authentication. Ordinary setting changes record the group and resulting revision in the read-only audit trail, without storing values or privacy text.
 
-Account/password changes, entry-path changes, TOTP and complete admin translations remain separate implementation stages. The current security page reports runtime-managed state and the language page exposes only the currently supported Chinese interface. This phase uses the existing Setting storage and adds no database migration. See the [implementation plan and status](website-settings-proposal.zh-CN.md).
+网站设置 → 账号与安全 manages the password, username, two-step sign-in (TOTP with recovery codes), signed-in devices and the admin address. The account is kept in the database once changed; `ADMIN_USERNAME` / `ADMIN_PASSWORD_HASH` / `ADMIN_PATH` stay the starting point. Without a database the page is read-only.
+
+If locked out, run on the server and restart the application: `npm run admin:reset -w apps/api -- --totp` (turn two-step sign-in off), `-- --path` (back to `ADMIN_PATH`) or `-- --all` (back to the configured account). Every option also ends all sessions.
+
+The admin is available in Simplified Chinese and English (`apps/admin/src/lib/messages.ts`). Messages are written in Chinese with `tr("…")`, and the Chinese is the key into `messages.en.ts`; a test fails if one has no translation. The language is per browser, and changing it reloads the page.
 
 ## Read-only audit log
 

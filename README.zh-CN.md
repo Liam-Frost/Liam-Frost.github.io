@@ -26,11 +26,11 @@
 
 个人主页：
 
-![个人主页](docs/images/home-preview.png)
+![个人主页](docs/images/home-preview-zh.png)
 
 管理后台概览（演示数据）：
 
-![管理后台概览](docs/images/admin-preview.png)
+![管理后台概览](docs/images/admin-preview-zh.png)
 
 网站持续迭代中。[预发布站](https://preview.twilightfrosty.com)用于验证开发版本；本 README 描述当前源码，具体上线状态以发布记录为准。主机、基础设施配置、凭据、诊断及运维资料均在私有位置维护。
 

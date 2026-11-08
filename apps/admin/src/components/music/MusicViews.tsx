@@ -24,14 +24,15 @@ import { Field, Switch } from "../ui/Field";
 import { useToast } from "../ui/Toast";
 import { MusicList } from "./MusicTools";
 import { Tooltip } from "../ui/Tooltip";
+import { intlLocale, tr } from "../../lib/messages";
 
 type View = "songs" | "albums" | "artists" | "playlists";
 
 const VIEWS: [View, string, typeof Music][] = [
-  ["songs", "全部歌曲", Music],
-  ["albums", "专辑", Disc3],
-  ["artists", "艺人", Mic2],
-  ["playlists", "歌单", ListMusic]
+  ["songs", tr("全部歌曲"), Music],
+  ["albums", tr("专辑"), Disc3],
+  ["artists", tr("艺人"), Mic2],
+  ["playlists", tr("歌单"), ListMusic]
 ];
 
 type Group = {
@@ -62,7 +63,7 @@ export function groupAlbums(items: AdminMediaItem[]): Group[] {
     .map(([key, songs]) => ({
       key,
       title: key.split("\u0000")[0],
-      subtitle: `${songs[0].credits[0] ?? "未知歌手"} · ${songs.length} 首`,
+      subtitle: tr("{0} · {1} 首", songs[0].credits[0] ?? tr("未知歌手"), songs.length),
       covers: coversOf(songs).slice(0, 1),
       items: songs
     }))
@@ -80,7 +81,7 @@ export function groupArtists(items: AdminMediaItem[]): Group[] {
       .map(([key, songs]) => ({
         key,
         title: key,
-        subtitle: `${songs.length} 首`,
+        subtitle: tr("{0} 首", songs.length),
         covers: coversOf(songs).slice(0, 1),
         items: songs
       }))
@@ -104,7 +105,7 @@ export function MusicTab({
     [...groups].sort((a, b) => {
       if (sort === "title" || sort === "title-desc")
         return (
-          a.title.localeCompare(b.title, "zh-CN", { numeric: true, sensitivity: "base" }) *
+          a.title.localeCompare(b.title, intlLocale, { numeric: true, sensitivity: "base" }) *
           (sort === "title-desc" ? -1 : 1)
         );
       return (
@@ -123,7 +124,7 @@ export function MusicTab({
 
   return (
     <>
-      <div role="tablist" aria-label="音乐视图" className="mb-4 flex flex-wrap gap-1.5">
+      <div role="tablist" aria-label={tr("音乐视图")} className="mb-4 flex flex-wrap gap-1.5">
         {VIEWS.map(([v, label, Icon]) => (
           <button
             key={v}
@@ -143,7 +144,7 @@ export function MusicTab({
         <GroupView
           groups={sortedGroups(view === "albums" ? groupAlbums(items) : groupArtists(items))}
           open={open}
-          noun={view === "albums" ? "专辑" : "艺人"}
+          noun={view === "albums" ? tr("专辑") : tr("艺人")}
           onOpen={(group) => go({ group })}
         />
       ) : null}
@@ -197,7 +198,7 @@ function BackHeader({
       <button
         type="button"
         onClick={onBack}
-        aria-label="返回"
+        aria-label={tr("返回")}
         className="rounded-full p-1.5 text-subtle hover:bg-brand-secondary/12 hover:text-brand"
       >
         <ArrowLeft aria-hidden="true" className="size-5" />
@@ -246,8 +247,8 @@ function GroupView({
         />
         <input
           className="field pl-9"
-          placeholder={`筛选${noun}`}
-          aria-label={`筛选${noun}`}
+          placeholder={tr("筛选{0}", noun)}
+          aria-label={tr("筛选{0}", noun)}
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
         />
@@ -261,7 +262,7 @@ function GroupView({
                 className="card group block w-full overflow-hidden p-2.5 text-left transition-shadow hover:shadow-card-hover"
                 onClick={() => onOpen(group.key)}
               >
-                <Mosaic covers={group.covers} round={noun === "艺人"} />
+                <Mosaic covers={group.covers} round={noun === tr("艺人")} />
                 <Tooltip content={group.title} describe={false} className="block min-w-0">
                   <p className="mt-2 truncate text-[13px] font-semibold text-brand-dark group-hover:text-brand">
                     {group.title}
@@ -275,8 +276,12 @@ function GroupView({
       ) : (
         <div className="card p-10 text-center text-[13.5px] text-muted">
           {groups.length
-            ? `没有符合条件的${noun}`
-            : `还没有${noun}：歌曲的${noun === "专辑" ? "专辑" : "歌手"}信息会自动归组到这里`}
+            ? tr("没有符合条件的{0}", noun)
+            : tr(
+                "还没有{0}：歌曲的{1}信息会自动归组到这里",
+                noun,
+                noun === tr("专辑") ? tr("专辑") : tr("歌手")
+              )}
         </div>
       )}
     </>
@@ -297,7 +302,7 @@ function PlaylistsView({
   const byId = useMemo(() => new Map(items.map((item) => [item.id, item])), [items]);
   const current = playlists?.find((playlist) => playlist.id === open);
 
-  if (isPending) return <p className="py-6 text-[13px] text-subtle">加载中…</p>;
+  if (isPending) return <p className="py-6 text-[13px] text-subtle">{tr("加载中…")}</p>;
   if (error) return <p className="py-6 text-[13px] text-status-error">{error.message}</p>;
   if (current)
     return (
@@ -308,10 +313,10 @@ function PlaylistsView({
     <>
       <div className="mb-4 flex items-center justify-between gap-3">
         <p className="text-[12.5px] text-subtle">
-          导入 Spotify 歌单或“已点赞的歌曲”时会自动建同名歌单；也可以自己建。
+          {tr("导入 Spotify 歌单或“已点赞的歌曲”时会自动建同名歌单；也可以自己建。")}
         </p>
         <button type="button" className="btn-primary shrink-0" onClick={() => setCreating(true)}>
-          <Plus aria-hidden="true" className="size-4" /> 新建歌单
+          <Plus aria-hidden="true" className="size-4" /> {tr("新建歌单")}
         </button>
       </div>
       {playlists?.length ? (
@@ -329,13 +334,13 @@ function PlaylistsView({
                 >
                   <Mosaic covers={coversOf(songs)} />
                   <p className="mt-2 truncate text-[13px] font-semibold text-brand-dark group-hover:text-brand">
-                    {pickText(playlist.name, "未命名歌单")}
+                    {pickText(playlist.name, tr("未命名歌单"))}
                   </p>
                   <p className="truncate text-[12px] text-subtle">
                     {[
-                      `${songs.length} 首`,
+                      tr("{0} 首", songs.length),
                       playlist.source === "spotify" ? "Spotify" : "",
-                      playlist.visibility === "private" ? "隐藏" : ""
+                      playlist.visibility === "private" ? tr("隐藏") : ""
                     ]
                       .filter(Boolean)
                       .join(" · ")}
@@ -346,7 +351,7 @@ function PlaylistsView({
           })}
         </ul>
       ) : (
-        <div className="card p-10 text-center text-[13.5px] text-muted">还没有歌单</div>
+        <div className="card p-10 text-center text-[13.5px] text-muted">{tr("还没有歌单")}</div>
       )}
       {creating ? (
         <CreatePlaylistDialog onClose={() => setCreating(false)} onCreated={(id) => onOpen(id)} />
@@ -375,14 +380,14 @@ function CreatePlaylistDialog({
       onClose();
       onCreated(playlist.id);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "创建失败");
+      setError(e instanceof Error ? e.message : tr("创建失败"));
     }
   };
 
   return (
-    <Dialog open size="sm" title="新建歌单" onClose={onClose}>
+    <Dialog open size="sm" title={tr("新建歌单")} onClose={onClose}>
       <form onSubmit={(e) => void submit(e)} className="space-y-3">
-        <Field label="名称" htmlFor="playlist-name">
+        <Field label={tr("名称")} htmlFor="playlist-name">
           <input
             id="playlist-name"
             className="field"
@@ -394,7 +399,7 @@ function CreatePlaylistDialog({
         </Field>
         {error ? <p className="text-[12.5px] text-status-error">{error}</p> : null}
         <button type="submit" className="btn-primary" disabled={!name.trim()}>
-          创建
+          {tr("创建")}
         </button>
       </form>
     </Dialog>
@@ -428,7 +433,7 @@ function PlaylistDetail({
       setPlaylist((await action()).playlist);
       if (done) toast(done);
     } catch (e) {
-      toast(e instanceof Error ? e.message : "操作失败", "error");
+      toast(e instanceof Error ? e.message : tr("操作失败"), "error");
     }
   };
   const move = (index: number, by: number) => {
@@ -443,20 +448,24 @@ function PlaylistDetail({
   return (
     <>
       <BackHeader
-        title={pickText(playlist.name, "未命名歌单")}
-        subtitle={`${songs.length} 首${playlist.source === "spotify" ? " · 来自 Spotify 导入" : ""}`}
+        title={pickText(playlist.name, tr("未命名歌单"))}
+        subtitle={tr(
+          "{0} 首{1}",
+          songs.length,
+          playlist.source === "spotify" ? tr(" · 来自 Spotify 导入") : ""
+        )}
         onBack={onBack}
       >
         <button type="button" className="btn-secondary" onClick={() => setAdding(true)}>
-          <Plus aria-hidden="true" className="size-4" /> 添加歌曲
+          <Plus aria-hidden="true" className="size-4" /> {tr("添加歌曲")}
         </button>
         <button type="button" className="btn-danger" onClick={() => setDeleting(true)}>
-          <Trash2 aria-hidden="true" className="size-4" /> 删除歌单
+          <Trash2 aria-hidden="true" className="size-4" /> {tr("删除歌单")}
         </button>
       </BackHeader>
 
       <div className="card mb-4 flex flex-wrap items-end gap-3 p-4">
-        <Field label="中文名" htmlFor="playlist-zh" className="min-w-40 flex-1">
+        <Field label={tr("中文名")} htmlFor="playlist-zh" className="min-w-40 flex-1">
           <input
             id="playlist-zh"
             className="field"
@@ -481,11 +490,11 @@ function PlaylistDetail({
           onClick={() =>
             void call(
               () => api.updatePlaylist(playlist.id, { name: { zh: zh.trim(), en: en.trim() } }),
-              "已保存"
+              tr("已保存")
             )
           }
         >
-          保存名称
+          {tr("保存名称")}
         </button>
         <Switch
           id="playlist-public"
@@ -495,7 +504,7 @@ function PlaylistDetail({
               api.updatePlaylist(playlist.id, { visibility: on ? "public" : "private" })
             )
           }
-          label="在网站上显示"
+          label={tr("在网站上显示")}
         />
       </div>
 
@@ -519,7 +528,7 @@ function PlaylistDetail({
                   to={`/collection/${song.id}`}
                   className="block truncate text-[13px] font-semibold text-brand-dark hover:text-brand"
                 >
-                  {pickText(song.title, "未命名")}
+                  {pickText(song.title, tr("未命名"))}
                 </Link>
                 <p className="truncate text-[12px] text-subtle">
                   {[song.credits.join(", "), song.music?.album].filter(Boolean).join(" · ")}
@@ -527,7 +536,7 @@ function PlaylistDetail({
               </div>
               <button
                 type="button"
-                aria-label="上移"
+                aria-label={tr("上移")}
                 disabled={index === 0}
                 className="rounded-full p-1.5 text-faint hover:text-brand disabled:opacity-30"
                 onClick={() => move(index, -1)}
@@ -536,7 +545,7 @@ function PlaylistDetail({
               </button>
               <button
                 type="button"
-                aria-label="下移"
+                aria-label={tr("下移")}
                 disabled={index === songs.length - 1}
                 className="rounded-full p-1.5 text-faint hover:text-brand disabled:opacity-30"
                 onClick={() => move(index, 1)}
@@ -545,7 +554,7 @@ function PlaylistDetail({
               </button>
               <button
                 type="button"
-                aria-label={`从歌单移除 ${pickText(song.title)}`}
+                aria-label={tr("从歌单移除 {0}", pickText(song.title))}
                 className="rounded-full p-1.5 text-faint hover:text-status-error"
                 onClick={() =>
                   void call(() =>
@@ -560,7 +569,7 @@ function PlaylistDetail({
         </ol>
       ) : (
         <div className="card p-10 text-center text-[13.5px] text-muted">
-          歌单还是空的，点击“添加歌曲”，或在歌曲列表里选择多首后“加入歌单”
+          {tr("歌单还是空的，点击“添加歌曲”，或在歌曲列表里选择多首后“加入歌单”")}
         </div>
       )}
 
@@ -575,12 +584,12 @@ function PlaylistDetail({
       <Dialog
         open={deleting}
         size="sm"
-        title="删除歌单"
+        title={tr("删除歌单")}
         onClose={() => setDeleting(false)}
         footer={
           <>
             <button type="button" className="btn-secondary" onClick={() => setDeleting(false)}>
-              取消
+              {tr("取消")}
             </button>
             <button
               type="button"
@@ -589,20 +598,20 @@ function PlaylistDetail({
                 try {
                   await api.deletePlaylist(playlist.id);
                   setPlaylist({ id: playlist.id, deleted: true });
-                  toast("已删除歌单");
+                  toast(tr("已删除歌单"));
                   onBack();
                 } catch (e) {
-                  toast(e instanceof Error ? e.message : "删除失败", "error");
+                  toast(e instanceof Error ? e.message : tr("删除失败"), "error");
                 }
               }}
             >
-              删除
+              {tr("删除")}
             </button>
           </>
         }
       >
         <p className="text-[13.5px] leading-relaxed text-muted">
-          确定删除歌单“{pickText(playlist.name)}”吗？歌曲本身不会删除。
+          {tr("确定删除歌单“{0}”吗？歌曲本身不会删除。", pickText(playlist.name))}
         </p>
       </Dialog>
     </>
@@ -645,10 +654,10 @@ function AddSongsDialog({
         ids: [...picked]
       });
       onAdded(next);
-      toast(`已加入 ${picked.size} 首`);
+      toast(tr("已加入 {0} 首", picked.size));
       onClose();
     } catch (e) {
-      toast(e instanceof Error ? e.message : "添加失败", "error");
+      toast(e instanceof Error ? e.message : tr("添加失败"), "error");
     } finally {
       setSaving(false);
     }
@@ -657,12 +666,12 @@ function AddSongsDialog({
   return (
     <Dialog
       open
-      title={`添加歌曲到“${pickText(playlist.name)}”`}
+      title={tr("添加歌曲到“{0}”", pickText(playlist.name))}
       onClose={onClose}
       footer={
         <>
           <button type="button" className="btn-secondary" onClick={onClose}>
-            取消
+            {tr("取消")}
           </button>
           <button
             type="button"
@@ -670,7 +679,7 @@ function AddSongsDialog({
             disabled={!picked.size || saving}
             onClick={() => void add()}
           >
-            加入 {picked.size} 首
+            {tr("加入 {0} 首", picked.size)}
           </button>
         </>
       }
@@ -682,8 +691,8 @@ function AddSongsDialog({
         />
         <input
           className="field pl-9"
-          placeholder="筛选歌名、歌手、专辑"
-          aria-label="筛选歌曲"
+          placeholder={tr("筛选歌名、歌手、专辑")}
+          aria-label={tr("筛选歌曲")}
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
           data-autofocus
@@ -708,7 +717,7 @@ function AddSongsDialog({
               />
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-[13px] font-semibold text-brand-dark">
-                  {pickText(item.title, "未命名")}
+                  {pickText(item.title, tr("未命名"))}
                 </span>
                 <span className="block truncate text-[12px] text-subtle">
                   {[item.credits.join(", "), item.music?.album].filter(Boolean).join(" · ")}
@@ -718,7 +727,7 @@ function AddSongsDialog({
           </li>
         ))}
         {!candidates.length ? (
-          <li className="p-4 text-[12.5px] text-subtle">没有可以添加的歌曲</li>
+          <li className="p-4 text-[12.5px] text-subtle">{tr("没有可以添加的歌曲")}</li>
         ) : null}
       </ul>
     </Dialog>

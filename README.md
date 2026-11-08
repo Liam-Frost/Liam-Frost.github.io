@@ -31,11 +31,11 @@ A personal website for photography, software projects, and a collection of films
 
 Public homepage:
 
-![Public homepage with the site's editorial typography and photography identity](docs/images/home-preview.png)
+![Public homepage with the site's editorial typography and photography identity](docs/images/home-preview-en.png)
 
 Admin overview, shown with demonstration data:
 
-![Admin overview with quick actions, traffic cards and collection management navigation](docs/images/admin-preview.png)
+![Admin overview with quick actions, traffic cards and collection management navigation](docs/images/admin-preview-en.png)
 
 ### Project status
 

@@ -16,6 +16,7 @@ import { api } from "../../lib/api";
 import { Field } from "../ui/Field";
 import { Panel } from "../ui/Panel";
 import { useToast } from "../ui/Toast";
+import { tr } from "../../lib/messages";
 
 export function SettingsView() {
   const query = useQuery({
@@ -31,30 +32,35 @@ export function SettingsView() {
   return query.data ? (
     <SettingsForm key={query.data.revision} data={query.data} />
   ) : (
-    <div className="card h-72 animate-pulse bg-brand/5" aria-label="正在加载统计设置" />
+    <div className="card h-72 animate-pulse bg-brand/5" aria-label={tr("正在加载统计设置")} />
   );
 }
 
 const MODES = [
   {
     value: "header",
-    title: "可信代理请求头",
-    description: "使用 Cloudflare 提供的国家代码，无需维护数据库。",
+    title: tr("可信代理请求头"),
+    description: tr("使用 Cloudflare 提供的国家代码，无需维护数据库。"),
     icon: Globe2
   },
   {
     value: "database",
-    title: "本地地理数据库",
-    description: "上传 Country MMDB，由服务器根据 IP 查询国家。",
+    title: tr("本地地理数据库"),
+    description: tr("上传 Country MMDB，由服务器根据 IP 查询国家。"),
     icon: Database
   },
   {
     value: "environment",
-    title: "服务器默认",
-    description: "沿用部署时的国家识别配置。",
+    title: tr("服务器默认"),
+    description: tr("沿用部署时的国家识别配置。"),
     icon: ShieldCheck
   },
-  { value: "none", title: "关闭国家识别", description: "保留访问统计，不记录国家和地区。", icon: X }
+  {
+    value: "none",
+    title: tr("关闭国家识别"),
+    description: tr("保留访问统计，不记录国家和地区。"),
+    icon: X
+  }
 ] as const;
 
 function SettingsForm({ data }: { data: AnalyticsPreferencesStatus }) {
@@ -75,7 +81,7 @@ function SettingsForm({ data }: { data: AnalyticsPreferencesStatus }) {
         confirmRetention
       }),
     onSuccess: async () => {
-      toast("统计设置已保存，立即生效");
+      toast(tr("统计设置已保存，立即生效"));
       await client.invalidateQueries({ queryKey: ["admin"] });
     }
   });
@@ -84,7 +90,7 @@ function SettingsForm({ data }: { data: AnalyticsPreferencesStatus }) {
     onSuccess: (result) => {
       setDatabase(result);
       setValues((old) => ({ ...old, countryMode: "database", databaseId: result.id }));
-      toast("数据库校验通过，保存设置后启用");
+      toast(tr("数据库校验通过，保存设置后启用"));
     }
   });
   useEffect(() => {
@@ -98,9 +104,10 @@ function SettingsForm({ data }: { data: AnalyticsPreferencesStatus }) {
   const takeFile = (file: File) => {
     if (pending || !data.editable) return;
     setUploadError("");
-    if (!/\.mmdb$/i.test(file.name)) return setUploadError("请选择 .mmdb 格式的 Country 数据库。");
+    if (!/\.mmdb$/i.test(file.name))
+      return setUploadError(tr("请选择 .mmdb 格式的 Country 数据库。"));
     if (file.size > 32 * 1024 ** 2 || file.size === 0)
-      return setUploadError("数据库不能为空，且不能超过 32 MiB。");
+      return setUploadError(tr("数据库不能为空，且不能超过 32 MiB。"));
     upload.mutate(file);
   };
   return (
@@ -121,15 +128,15 @@ function SettingsForm({ data }: { data: AnalyticsPreferencesStatus }) {
         className="grid min-w-0 items-start gap-5 lg:grid-cols-[minmax(0,1fr)_320px]"
       >
         <div className="min-w-0 space-y-5">
-          <Panel title="采集与隐私">
+          <Panel title={tr("采集与隐私")}>
             <p className="text-[13px] leading-relaxed text-muted">
-              控制记录保留时间和隐私边界。统计总开关仍在页面右上方。
+              {tr("控制记录保留时间和隐私边界。统计总开关仍在页面右上方。")}
             </p>
             <div className="grid gap-4 sm:grid-cols-2">
               <Field
-                label="原始记录保留天数"
+                label={tr("原始记录保留天数")}
                 htmlFor="analytics-retention"
-                hint="7–730 天；过期后只保留按天汇总。"
+                hint={tr("7–730 天；过期后只保留按天汇总。")}
               >
                 <input
                   id="analytics-retention"
@@ -143,9 +150,9 @@ function SettingsForm({ data }: { data: AnalyticsPreferencesStatus }) {
                 />
               </Field>
               <Field
-                label="分组最少访客数"
+                label={tr("分组最少访客数")}
                 htmlFor="analytics-group"
-                hint="不足此人数时隐藏分组的具体数字。"
+                hint={tr("不足此人数时隐藏分组的具体数字。")}
               >
                 <input
                   id="analytics-group"
@@ -160,9 +167,9 @@ function SettingsForm({ data }: { data: AnalyticsPreferencesStatus }) {
               </Field>
             </div>
             <Field
-              label="每 IP 每分钟事件请求上限"
+              label={tr("每 IP 每分钟事件请求上限")}
               htmlFor="analytics-rate"
-              hint="仍受全站安全限流约束；不影响普通页面浏览。"
+              hint={tr("仍受全站安全限流约束；不影响普通页面浏览。")}
             >
               <input
                 id="analytics-rate"
@@ -178,9 +185,11 @@ function SettingsForm({ data }: { data: AnalyticsPreferencesStatus }) {
               />
             </Field>
             <Field
-              label="排除的 IP / CIDR"
+              label={tr("排除的 IP / CIDR")}
               htmlFor="analytics-exclude"
-              hint="每行一项，支持 IPv4 / IPv6。规则仅管理员可见，这些来源不会被计入访问统计。"
+              hint={tr(
+                "每行一项，支持 IPv4 / IPv6。规则仅管理员可见，这些来源不会被计入访问统计。"
+              )}
             >
               <textarea
                 id="analytics-exclude"
@@ -193,8 +202,12 @@ function SettingsForm({ data }: { data: AnalyticsPreferencesStatus }) {
               />
             </Field>
           </Panel>
-          <Panel title="国家和地区识别">
-            <div className="grid gap-2.5 sm:grid-cols-2" role="group" aria-label="国家识别方式">
+          <Panel title={tr("国家和地区识别")}>
+            <div
+              className="grid gap-2.5 sm:grid-cols-2"
+              role="group"
+              aria-label={tr("国家识别方式")}
+            >
               {MODES.map(({ value, title, description, icon: Icon }) => (
                 <button
                   key={value}
@@ -227,20 +240,23 @@ function SettingsForm({ data }: { data: AnalyticsPreferencesStatus }) {
             </div>
             {values.countryMode === "environment" ? (
               <p className="rounded-xl bg-brand-secondary/6 px-3 py-2.5 text-[12px] text-muted">
-                当前默认：
-                {data.environmentCountrySource === "header"
-                  ? "代理请求头"
-                  : data.environmentCountrySource === "geoip"
-                    ? "地理数据库"
-                    : "未配置国家识别"}
-                。
+                {tr(
+                  "当前默认：{0}。",
+                  data.environmentCountrySource === "header"
+                    ? tr("代理请求头")
+                    : data.environmentCountrySource === "geoip"
+                      ? tr("地理数据库")
+                      : tr("未配置国家识别")
+                )}
               </p>
             ) : null}
             {values.countryMode === "header" ? (
               <Field
-                label="国家代码请求头"
+                label={tr("国家代码请求头")}
                 htmlFor="analytics-country-header"
-                hint="仅在可信代理覆盖请求头、源站受保护时使用；这不会修改代理信任范围或防火墙。"
+                hint={tr(
+                  "仅在可信代理覆盖请求头、源站受保护时使用；这不会修改代理信任范围或防火墙。"
+                )}
               >
                 <input
                   id="analytics-country-header"
@@ -256,7 +272,7 @@ function SettingsForm({ data }: { data: AnalyticsPreferencesStatus }) {
                   className="mt-2 text-[12px] font-medium text-brand hover:underline"
                   onClick={() => setValues({ ...values, countryHeader: "cf-ipcountry" })}
                 >
-                  使用 Cloudflare 默认值：cf-ipcountry
+                  {tr("使用 Cloudflare 默认值：cf-ipcountry")}
                 </button>
               </Field>
             ) : null}
@@ -276,45 +292,54 @@ function SettingsForm({ data }: { data: AnalyticsPreferencesStatus }) {
                     <div className="min-w-0">
                       <p className="text-[12.5px] font-semibold text-brand-dark">{database.type}</p>
                       <p className="mt-1 text-[11.5px] text-muted">
-                        数据日期 {database.builtAt.slice(0, 10)} ·{" "}
-                        {database.bytes < 1024 ** 2
-                          ? `${Math.ceil(database.bytes / 1024)} KiB`
-                          : `${(database.bytes / 1024 ** 2).toFixed(1)} MiB`}
+                        {tr(
+                          "数据日期 {0} · {1}",
+                          database.builtAt.slice(0, 10),
+                          database.bytes < 1024 ** 2
+                            ? `${Math.ceil(database.bytes / 1024)} KiB`
+                            : `${(database.bytes / 1024 ** 2).toFixed(1)} MiB`
+                        )}
                       </p>
                       <p className="mt-1 text-[11.5px] text-muted">
                         {database.id === data.values.databaseId &&
                         data.values.countryMode === "database"
-                          ? "当前正在使用"
-                          : "校验通过，保存设置后启用"}
+                          ? tr("当前正在使用")
+                          : tr("校验通过，保存设置后启用")}
                       </p>
                     </div>
                   </div>
                 ) : null}
                 <p className="text-[11.5px] leading-relaxed text-faint">
-                  数据库只在服务器使用，不提供公开下载。更新时上传新版本；请确认来源和使用许可。
+                  {tr(
+                    "数据库只在服务器使用，不提供公开下载。更新时上传新版本；请确认来源和使用许可。"
+                  )}
                 </p>
               </>
             ) : null}
           </Panel>
         </div>
         <aside className="space-y-5">
-          <Panel title="生效方式">
+          <Panel title={tr("生效方式")}>
             <div className="flex items-start gap-2.5 text-[13px] leading-relaxed text-muted">
               <ShieldCheck
                 aria-hidden="true"
                 className="mt-0.5 size-4 shrink-0 text-brand-secondary"
               />
-              <p>保存后立即生效，无需重启。设置仅属于当前环境，预发布与正式环境独立。</p>
+              <p>{tr("保存后立即生效，无需重启。设置仅属于当前环境，预发布与正式环境独立。")}</p>
             </div>
             <p className="border-t border-line-soft pt-3 text-[12px] leading-relaxed text-muted">
-              {data.saved ? "当前使用后台保存的配置。" : "尚未保存，当前沿用服务器默认配置。"}
-              更改国家识别方式只影响之后的新访问，已有数据保留。
+              {tr(
+                "{0}更改国家识别方式只影响之后的新访问，已有数据保留。",
+                data.saved
+                  ? tr("当前使用后台保存的配置。")
+                  : tr("尚未保存，当前沿用服务器默认配置。")
+              )}
             </p>
           </Panel>
-          <Panel title="统计时区">
+          <Panel title={tr("统计时区")}>
             <p className="font-mono text-[13px] text-brand-dark">{data.timezone}</p>
             <p className="text-[12px] leading-relaxed text-muted">
-              历史数据已按此时区汇总。更改时区需要先处理历史日期口径，由运维完成。
+              {tr("历史数据已按此时区汇总。更改时区需要先处理历史日期口径，由运维完成。")}
             </p>
           </Panel>
         </aside>
@@ -328,7 +353,7 @@ function SettingsForm({ data }: { data: AnalyticsPreferencesStatus }) {
             checked={confirmRetention}
             onChange={(e) => setConfirmRetention(e.target.checked)}
           />
-          我确认：下一次维护将永久删除新保留期之外的原始记录；已有按天汇总保留。
+          {tr("我确认：下一次维护将永久删除新保留期之外的原始记录；已有按天汇总保留。")}
         </label>
       ) : null}
       {error ? (
@@ -344,7 +369,11 @@ function SettingsForm({ data }: { data: AnalyticsPreferencesStatus }) {
           className={`text-[12px] ${dirty || data.error ? "text-status-warn" : "text-faint"}`}
           role="status"
         >
-          {data.error ? "修正后保存，可恢复统计采集" : dirty ? "有未保存的修改" : "当前设置已同步"}
+          {data.error
+            ? tr("修正后保存，可恢复统计采集")
+            : dirty
+              ? tr("有未保存的修改")
+              : tr("当前设置已同步")}
         </p>
         <button
           className="btn-primary"
@@ -356,7 +385,7 @@ function SettingsForm({ data }: { data: AnalyticsPreferencesStatus }) {
           ) : (
             <Check aria-hidden="true" className="size-4" />
           )}
-          {save.isPending ? "保存中…" : "保存统计设置"}
+          {save.isPending ? tr("保存中…") : tr("保存统计设置")}
         </button>
       </div>
     </form>
@@ -399,9 +428,11 @@ function DatabaseUpload({
       </span>
       <div>
         <p className="text-[13px] font-medium text-brand-dark">
-          {busy ? "正在上传并校验数据库…" : "将 Country MMDB 拖到这里"}
+          {busy ? tr("正在上传并校验数据库…") : tr("将 Country MMDB 拖到这里")}
         </p>
-        <p className="mt-1 text-[11.5px] text-faint">.mmdb 格式 · 最大 32 MiB · 通过校验后可启用</p>
+        <p className="mt-1 text-[11.5px] text-faint">
+          {tr(".mmdb 格式 · 最大 32 MiB · 通过校验后可启用")}
+        </p>
       </div>
       <button
         className="btn-secondary"
@@ -409,14 +440,14 @@ function DatabaseUpload({
         disabled={disabled}
         onClick={() => input.current?.click()}
       >
-        {busy ? "校验中…" : "选择数据库文件"}
+        {busy ? tr("校验中…") : tr("选择数据库文件")}
       </button>
       <input
         ref={input}
         hidden
         type="file"
         accept=".mmdb"
-        aria-label="上传 Country MMDB"
+        aria-label={tr("上传 Country MMDB")}
         disabled={disabled}
         onChange={(event) => {
           const file = event.target.files?.[0];

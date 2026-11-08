@@ -7,6 +7,7 @@ import { Link } from "react-router";
 import { api } from "../../lib/api";
 import { BarList, Card, changeText, ColumnChart, number, useRange } from "./common";
 import { itemLabel } from "./ContentView";
+import { tr } from "../../lib/messages";
 
 /** Where to edit a piece of content, for the types whose editor is addressed by the same id. */
 const EDIT: Partial<Record<AnalyticsContentType, (id: string) => string>> = {
@@ -27,24 +28,24 @@ export function ContentDetailView({ type, id }: { type: AnalyticsContentType; id
       className="inline-flex items-center gap-1 text-[13px] text-brand hover:underline"
     >
       <ArrowLeft aria-hidden="true" className="size-4" />
-      内容排行
+      {tr("内容排行")}
     </Link>
   );
   if (error)
     return (
       <>
         {back}
-        <p className="text-[13px] text-muted">这项内容还没有统计数据。</p>
+        <p className="text-[13px] text-muted">{tr("这项内容还没有统计数据。")}</p>
       </>
     );
-  if (!data) return <LoadingSkeleton label="加载统计…" count={3} />;
+  if (!data) return <LoadingSkeleton label={tr("加载统计…")} count={3} />;
   const { item } = data;
   const isSong = item.type === "media" && item.kind === "track";
   const kpis = [
-    { label: "浏览", current: item.views, previous: data.previous.views },
-    { label: "访客", current: item.visitors, previous: data.previous.visitors },
+    { label: tr("浏览"), current: item.views, previous: data.previous.views },
+    { label: tr("访客"), current: item.visitors, previous: data.previous.visitors },
     ...(isSong
-      ? [{ label: "播放 / 载入", current: item.plays, previous: data.previous.plays }]
+      ? [{ label: tr("播放 / 载入"), current: item.plays, previous: data.previous.plays }]
       : [])
   ];
   const edit = EDIT[item.type];
@@ -55,20 +56,23 @@ export function ContentDetailView({ type, id }: { type: AnalyticsContentType; id
       <div className="flex flex-wrap items-baseline gap-2">
         <h2 className="text-[18px] font-semibold text-brand-dark">{item.name || item.id}</h2>
         <span className="chip">{itemLabel(item)}</span>
-        {item.removed ? <span className="text-[12px] text-faint">已隐藏或删除</span> : null}
+        {item.removed ? <span className="text-[12px] text-faint">{tr("已隐藏或删除")}</span> : null}
         {edit && !item.removed ? (
           <Link to={edit(item.id)} className="text-[12px] text-brand hover:underline">
-            编辑
+            {tr("编辑")}
           </Link>
         ) : null}
       </div>
 
       {isSong && (
         <p className="text-sm text-muted">
-          本站点击播放：{number.format(item.requests ?? 0)} 次（此版本起采集，旧记录不补造）
+          {tr(
+            "本站点击播放：{0} 次（此版本起采集，旧记录不补造）",
+            number.format(item.requests ?? 0)
+          )}
         </p>
       )}
-      <section aria-label="指标" className="grid gap-3 sm:grid-cols-3">
+      <section aria-label={tr("指标")} className="grid gap-3 sm:grid-cols-3">
         {kpis.map(({ label, current, previous }) => {
           const delta = changeText(current, previous);
           return (
@@ -78,7 +82,7 @@ export function ContentDetailView({ type, id }: { type: AnalyticsContentType; id
                 {number.format(current)}
               </p>
               <p className="mt-1 text-[12px] text-faint">
-                {delta.text}（上期 {number.format(previous)}）
+                {tr("{0}（上期 {1}）", delta.text, number.format(previous))}
               </p>
             </div>
           );
@@ -86,25 +90,25 @@ export function ContentDetailView({ type, id }: { type: AnalyticsContentType; id
       </section>
 
       <ColumnChart
-        title={(metric) => `按天的${metric}`}
+        title={(metric) => tr("按天的{0}", metric)}
         // Songs are played rather than opened: start with plays.
         metrics={[
-          ...(isSong ? [{ key: "plays", label: "播放" }] : []),
-          { key: "views", label: "浏览" },
-          { key: "visitors", label: "访客" }
+          ...(isSong ? [{ key: "plays", label: tr("播放") }] : []),
+          { key: "views", label: tr("浏览") },
+          { key: "visitors", label: tr("访客") }
         ]}
         points={data.trend.map((point) => ({ ...point, label: point.key.slice(5) }))}
       />
 
       <Card
-        title="这些访问从哪里来"
-        hint="打开过它的访问的来源网站；只算原始记录还在保留期内的日子。"
+        title={tr("这些访问从哪里来")}
+        hint={tr("打开过它的访问的来源网站；只算原始记录还在保留期内的日子。")}
       >
         <BarList
           rows={data.referrers}
           label={(key) => key}
-          otherLabel="直接访问或未知"
-          empty="没有来源记录。"
+          otherLabel={tr("直接访问或未知")}
+          empty={tr("没有来源记录。")}
         />
       </Card>
     </>

@@ -9,10 +9,11 @@ import { useToast } from "../components/ui/Toast";
 import { sessionKey } from "../hooks/useSession";
 import { ADMIN_BASE } from "../lib/adminBase";
 import { api } from "../lib/api";
+import { intlLocale, tr } from "../lib/messages";
 
 const accountKey = ["admin", "account"] as const;
 const when = (value: string) =>
-  new Intl.DateTimeFormat("zh-CN", { dateStyle: "medium", timeStyle: "short" }).format(
+  new Intl.DateTimeFormat(intlLocale, { dateStyle: "medium", timeStyle: "short" }).format(
     new Date(value)
   );
 
@@ -55,7 +56,7 @@ function CodeField({
   onChange: (value: string) => void;
 }) {
   return (
-    <Field label="验证码" htmlFor={id} className="max-w-[160px]">
+    <Field label={tr("验证码")} htmlFor={id} className="max-w-[160px]">
       <input
         id={id}
         className="field"
@@ -74,7 +75,7 @@ function RecoveryCodes({ codes, onDone }: { codes: string[]; onDone: () => void 
   return (
     <div className="space-y-3 rounded-xl border border-status-warn/40 bg-status-warn/5 p-4">
       <p className="text-[13px] font-medium text-brand-dark">
-        请现在保存这些恢复码，它们只显示这一次。每个恢复码只能用一次，手机丢失时用来登录。
+        {tr("请现在保存这些恢复码，它们只显示这一次。每个恢复码只能用一次，手机丢失时用来登录。")}
       </p>
       <ul className="grid grid-cols-2 gap-1.5 font-mono text-[13px] text-brand-dark">
         {codes.map((code) => (
@@ -87,10 +88,10 @@ function RecoveryCodes({ codes, onDone }: { codes: string[]; onDone: () => void 
           className="btn-secondary"
           onClick={() => void navigator.clipboard.writeText(codes.join("\n"))}
         >
-          复制
+          {tr("复制")}
         </button>
         <button type="button" className="btn-primary" onClick={onDone}>
-          我已保存
+          {tr("我已保存")}
         </button>
       </div>
     </div>
@@ -117,7 +118,7 @@ function PasswordSection() {
   const [again, setAgain] = useState("");
   const change = useAccountAction(
     () => api.changePassword(current, next),
-    "密码已修改，其他设备已退出登录"
+    tr("密码已修改，其他设备已退出登录")
   );
   const mismatch = again !== "" && next !== again;
   const submit = (event: FormEvent) => {
@@ -131,24 +132,32 @@ function PasswordSection() {
     });
   };
   return (
-    <SettingsSection title="修改密码" description="修改后，其他设备上的登录会全部失效。">
+    <SettingsSection
+      title={tr("修改密码")}
+      description={tr("修改后，其他设备上的登录会全部失效。")}
+    >
       <form onSubmit={submit} className="space-y-3.5" noValidate>
-        <PasswordField id="pw-current" label="当前密码" value={current} onChange={setCurrent} />
+        <PasswordField
+          id="pw-current"
+          label={tr("当前密码")}
+          value={current}
+          onChange={setCurrent}
+        />
         <PasswordField
           id="pw-new"
-          label="新密码"
+          label={tr("新密码")}
           value={next}
           onChange={setNext}
           autoComplete="new-password"
-          hint={`至少 ${ADMIN_PASSWORD_MIN} 个字符。`}
+          hint={tr("至少 {0} 个字符。", ADMIN_PASSWORD_MIN)}
         />
         <PasswordField
           id="pw-again"
-          label="再次输入新密码"
+          label={tr("再次输入新密码")}
           value={again}
           onChange={setAgain}
           autoComplete="new-password"
-          hint={mismatch ? "两次输入不一致" : undefined}
+          hint={mismatch ? tr("两次输入不一致") : undefined}
         />
         <button
           type="submit"
@@ -157,7 +166,7 @@ function PasswordSection() {
             change.isPending || !current || next.length < ADMIN_PASSWORD_MIN || next !== again
           }
         >
-          {change.isPending ? "保存中…" : "修改密码"}
+          {change.isPending ? tr("保存中…") : tr("修改密码")}
         </button>
       </form>
     </SettingsSection>
@@ -167,9 +176,9 @@ function PasswordSection() {
 function UsernameSection({ username }: { username: string }) {
   const [current, setCurrent] = useState("");
   const [name, setName] = useState(username);
-  const change = useAccountAction(() => api.changeUsername(current, name), "用户名已修改");
+  const change = useAccountAction(() => api.changeUsername(current, name), tr("用户名已修改"));
   return (
-    <SettingsSection title="用户名">
+    <SettingsSection title={tr("用户名")}>
       <form
         className="space-y-3.5"
         noValidate
@@ -178,7 +187,7 @@ function UsernameSection({ username }: { username: string }) {
           change.mutate(undefined, { onSuccess: () => setCurrent("") });
         }}
       >
-        <Field label="用户名" htmlFor="account-username" className="max-w-sm">
+        <Field label={tr("用户名")} htmlFor="account-username" className="max-w-sm">
           <input
             id="account-username"
             className="field"
@@ -188,13 +197,18 @@ function UsernameSection({ username }: { username: string }) {
             onChange={(event) => setName(event.target.value)}
           />
         </Field>
-        <PasswordField id="name-current" label="当前密码" value={current} onChange={setCurrent} />
+        <PasswordField
+          id="name-current"
+          label={tr("当前密码")}
+          value={current}
+          onChange={setCurrent}
+        />
         <button
           type="submit"
           className="btn-primary"
           disabled={change.isPending || !current || !name.trim() || name === username}
         >
-          修改用户名
+          {tr("修改用户名")}
         </button>
       </form>
     </SettingsSection>
@@ -221,11 +235,11 @@ function TotpSection({ status }: { status: AdminAccountStatus }) {
         setSetup(null);
         reset();
       }),
-    "两步验证已开启"
+    tr("两步验证已开启")
   );
   const disable = useAccountAction(
     () => api.disableTotp(password, code).then(reset),
-    "两步验证已关闭"
+    tr("两步验证已关闭")
   );
   const regenerate = useAccountAction(
     () =>
@@ -233,26 +247,29 @@ function TotpSection({ status }: { status: AdminAccountStatus }) {
         setCodes(result.recoveryCodes);
         reset();
       }),
-    "已生成新的恢复码，旧的已失效"
+    tr("已生成新的恢复码，旧的已失效")
   );
 
   return (
     <SettingsSection
-      title="两步验证"
-      description="登录时除了密码，还需要手机验证器 App（如 Google Authenticator、1Password）里的动态验证码。"
+      title={tr("两步验证")}
+      description={tr(
+        "登录时除了密码，还需要手机验证器 App（如 Google Authenticator、1Password）里的动态验证码。"
+      )}
     >
       {codes ? <RecoveryCodes codes={codes} onDone={() => setCodes(null)} /> : null}
       {status.totp.enabled ? (
         <div className="space-y-3.5">
           <p className="text-[13px] text-muted">
-            已开启
-            {status.totp.enabledAt ? `（${when(status.totp.enabledAt)}）` : ""}
-            ，剩余恢复码 {status.totp.recoveryCodesLeft}{" "}
-            个。关闭或重新生成恢复码需要当前密码和验证码。
+            {tr(
+              "已开启{0}，剩余恢复码 {1} 个。关闭或重新生成恢复码需要当前密码和验证码。",
+              status.totp.enabledAt ? `（${when(status.totp.enabledAt)}）` : "",
+              status.totp.recoveryCodesLeft
+            )}
           </p>
           <PasswordField
             id="totp-password"
-            label="当前密码"
+            label={tr("当前密码")}
             value={password}
             onChange={setPassword}
           />
@@ -264,7 +281,7 @@ function TotpSection({ status }: { status: AdminAccountStatus }) {
               disabled={regenerate.isPending || !password || code.length !== 6}
               onClick={() => regenerate.mutate(undefined)}
             >
-              重新生成恢复码
+              {tr("重新生成恢复码")}
             </button>
             <button
               type="button"
@@ -272,18 +289,23 @@ function TotpSection({ status }: { status: AdminAccountStatus }) {
               disabled={disable.isPending || !password || code.length !== 6}
               onClick={() => disable.mutate(undefined)}
             >
-              关闭两步验证
+              {tr("关闭两步验证")}
             </button>
           </div>
         </div>
       ) : setup ? (
         <div className="space-y-3.5">
           <p className="text-[13px] text-muted">
-            用验证器 App 扫描二维码，然后输入它显示的 6 位数字。
+            {tr("用验证器 App 扫描二维码，然后输入它显示的 6 位数字。")}
           </p>
-          <img src={setup.qrCode} alt="两步验证二维码" className="size-44 rounded-lg bg-white" />
+          <img
+            src={setup.qrCode}
+            alt={tr("两步验证二维码")}
+            className="size-44 rounded-lg bg-white"
+          />
           <p className="break-all text-[12px] text-muted">
-            无法扫描时手动输入密钥：<code className="font-mono">{setup.secret}</code>
+            {tr("无法扫描时手动输入密钥：")}
+            <code className="font-mono">{setup.secret}</code>
           </p>
           <CodeField id="totp-enable-code" value={code} onChange={setCode} />
           <div className="flex gap-2">
@@ -293,23 +315,28 @@ function TotpSection({ status }: { status: AdminAccountStatus }) {
               disabled={enable.isPending || code.length !== 6}
               onClick={() => enable.mutate(undefined)}
             >
-              确认并开启
+              {tr("确认并开启")}
             </button>
             <button type="button" className="btn-secondary" onClick={() => setSetup(null)}>
-              取消
+              {tr("取消")}
             </button>
           </div>
         </div>
       ) : (
         <div className="space-y-3.5">
-          <PasswordField id="totp-begin" label="当前密码" value={password} onChange={setPassword} />
+          <PasswordField
+            id="totp-begin"
+            label={tr("当前密码")}
+            value={password}
+            onChange={setPassword}
+          />
           <button
             type="button"
             className="btn-primary"
             disabled={begin.isPending || !password}
             onClick={() => begin.mutate(undefined)}
           >
-            开始设置
+            {tr("开始设置")}
           </button>
         </div>
       )}
@@ -318,12 +345,15 @@ function TotpSection({ status }: { status: AdminAccountStatus }) {
 }
 
 function SessionsSection({ status }: { status: AdminAccountStatus }) {
-  const revoke = useAccountAction((id: string) => api.revokeAdminSession(id), "已退出该设备");
-  const revokeOthers = useAccountAction(() => api.revokeOtherAdminSessions(), "其他设备已全部退出");
+  const revoke = useAccountAction((id: string) => api.revokeAdminSession(id), tr("已退出该设备"));
+  const revokeOthers = useAccountAction(
+    () => api.revokeOtherAdminSessions(),
+    tr("其他设备已全部退出")
+  );
   const others = status.sessions.filter((session) => !session.current);
   return (
     <SettingsSection
-      title="登录设备"
+      title={tr("登录设备")}
       actions={
         others.length ? (
           <button
@@ -332,7 +362,7 @@ function SessionsSection({ status }: { status: AdminAccountStatus }) {
             disabled={revokeOthers.isPending}
             onClick={() => revokeOthers.mutate(undefined)}
           >
-            退出其他设备
+            {tr("退出其他设备")}
           </button>
         ) : undefined
       }
@@ -342,15 +372,19 @@ function SessionsSection({ status }: { status: AdminAccountStatus }) {
           <li key={session.id} className="flex items-center gap-3 py-2.5 text-[13px]">
             <div className="min-w-0 flex-1">
               <p className="truncate text-brand-dark" title={session.userAgent}>
-                {session.userAgent || "未知设备"}
+                {session.userAgent || tr("未知设备")}
               </p>
               <p className="text-[12px] text-muted">
-                {session.ip} · 登录于 {when(session.createdAt)} · 最近活动{" "}
-                {when(session.lastSeenAt)}
+                {tr(
+                  "{0} · 登录于 {1} · 最近活动 {2}",
+                  session.ip,
+                  when(session.createdAt),
+                  when(session.lastSeenAt)
+                )}
               </p>
             </div>
             {session.current ? (
-              <span className="shrink-0 text-[12px] text-brand">当前设备</span>
+              <span className="shrink-0 text-[12px] text-brand">{tr("当前设备")}</span>
             ) : (
               <button
                 type="button"
@@ -358,14 +392,14 @@ function SessionsSection({ status }: { status: AdminAccountStatus }) {
                 disabled={revoke.isPending}
                 onClick={() => revoke.mutate(session.id)}
               >
-                退出
+                {tr("退出")}
               </button>
             )}
           </li>
         ))}
       </ul>
       {!status.sessions.length ? (
-        <p className="text-[13px] text-muted">没有可显示的登录记录。</p>
+        <p className="text-[13px] text-muted">{tr("没有可显示的登录记录。")}</p>
       ) : null}
     </SettingsSection>
   );
@@ -377,37 +411,47 @@ function PathSection({ status }: { status: AdminAccountStatus }) {
   const [password, setPassword] = useState("");
   const start = useAccountAction(
     () => api.beginAdminPath(password, path).then(() => (setPassword(""), setPath(""))),
-    "新地址已可以访问，请打开确认"
+    tr("新地址已可以访问，请打开确认")
   );
-  const confirm = useAccountAction(() => api.confirmAdminPath(ADMIN_BASE ?? ""), "后台地址已切换");
-  const cancel = useAccountAction(() => api.cancelAdminPath(), "已取消切换");
+  const confirm = useAccountAction(
+    () => api.confirmAdminPath(ADMIN_BASE ?? ""),
+    tr("后台地址已切换")
+  );
+  const cancel = useAccountAction(() => api.cancelAdminPath(), tr("已取消切换"));
   const onNewAddress = pending !== null && ADMIN_BASE === pending;
   return (
     <SettingsSection
-      title="后台地址"
-      description="先试用新地址，确认能打开后才会停用旧地址。隐藏地址只能减少暴露，不能代替密码和两步验证。"
+      title={tr("后台地址")}
+      description={tr(
+        "先试用新地址，确认能打开后才会停用旧地址。隐藏地址只能减少暴露，不能代替密码和两步验证。"
+      )}
     >
       <p className="text-[13px] text-muted">
-        当前地址：<code className="font-mono text-brand-dark">{current}</code>
+        {tr("当前地址：")}
+        <code className="font-mono text-brand-dark">{current}</code>
       </p>
       {retiring ? (
         <p className="text-[12px] text-muted">
-          旧地址 <code className="font-mono">{retiring.path}</code> 在 {when(retiring.until)}{" "}
-          前只会把已登录的你转到新地址，其他人看到的是不存在的页面。
+          {tr("旧地址")} <code className="font-mono">{retiring.path}</code>{" "}
+          {tr(
+            "在 {0} 前只会把已登录的你转到新地址，其他人看到的是不存在的页面。",
+            when(retiring.until)
+          )}
         </p>
       ) : null}
       {pending ? (
         <div className="space-y-3 rounded-xl border border-line-soft p-4">
           <p className="text-[13px] text-brand-dark">
-            正在试用新地址 <code className="font-mono">{pending}</code>，旧地址仍然有效。
+            {tr("正在试用新地址")} <code className="font-mono">{pending}</code>
+            {tr("，旧地址仍然有效。")}
           </p>
           {onNewAddress ? (
             <p className="text-[12px] text-muted">
-              你正在新地址上，页面能正常打开。确认后旧地址停用；请先收藏新地址。
+              {tr("你正在新地址上，页面能正常打开。确认后旧地址停用；请先收藏新地址。")}
             </p>
           ) : (
             <a className="btn-secondary" href={`${pending}/settings/admin/security`}>
-              打开新地址
+              {tr("打开新地址")}
             </a>
           )}
           <div className="flex gap-2">
@@ -418,7 +462,7 @@ function PathSection({ status }: { status: AdminAccountStatus }) {
                 disabled={confirm.isPending}
                 onClick={() => confirm.mutate(undefined)}
               >
-                确认切换
+                {tr("确认切换")}
               </button>
             ) : null}
             <button
@@ -427,7 +471,7 @@ function PathSection({ status }: { status: AdminAccountStatus }) {
               disabled={cancel.isPending}
               onClick={() => cancel.mutate(undefined)}
             >
-              取消切换
+              {tr("取消切换")}
             </button>
           </div>
         </div>
@@ -441,10 +485,10 @@ function PathSection({ status }: { status: AdminAccountStatus }) {
           }}
         >
           <Field
-            label="新地址"
+            label={tr("新地址")}
             htmlFor="admin-new-path"
             className="max-w-sm"
-            hint="只能使用字母、数字、- 和 _，例如 /studio-7f3a。不能与网站已有的页面相同。"
+            hint={tr("只能使用字母、数字、- 和 _，例如 /studio-7f3a。不能与网站已有的页面相同。")}
           >
             <input
               id="admin-new-path"
@@ -457,7 +501,7 @@ function PathSection({ status }: { status: AdminAccountStatus }) {
           </Field>
           <PasswordField
             id="path-password"
-            label="当前密码"
+            label={tr("当前密码")}
             value={password}
             onChange={setPassword}
           />
@@ -466,7 +510,7 @@ function PathSection({ status }: { status: AdminAccountStatus }) {
             className="btn-primary"
             disabled={start.isPending || !password || !path.trim()}
           >
-            试用新地址
+            {tr("试用新地址")}
           </button>
         </form>
       )}
@@ -477,35 +521,42 @@ function PathSection({ status }: { status: AdminAccountStatus }) {
 export function AccountSecurityPage() {
   const q = useQuery({ queryKey: accountKey, queryFn: api.account });
   return (
-    <SettingsPage title="账号与安全" description="管理登录账号、两步验证、登录设备和后台地址。">
+    <SettingsPage
+      title={tr("账号与安全")}
+      description={tr("管理登录账号、两步验证、登录设备和后台地址。")}
+    >
       {q.isPending ? (
-        <LoadingSkeleton label="读取安全状态…" variant="rows" count={3} />
+        <LoadingSkeleton label={tr("读取安全状态…")} variant="rows" count={3} />
       ) : q.error ? (
         <SettingsState error={q.error.message} onRetry={() => void q.refetch()} />
       ) : q.data ? (
         <div className="space-y-5">
-          <SettingsSection title="当前状态">
+          <SettingsSection title={tr("当前状态")}>
             <dl className="grid gap-x-6 gap-y-2 text-[13px] sm:grid-cols-2">
               {(
                 [
-                  ["登录账号", q.data.username],
+                  [tr("登录账号"), q.data.username],
                   [
-                    "登录尝试限制",
-                    `每 ${q.data.protections.loginWindowMinutes} 分钟 ${q.data.protections.maxLoginAttempts} 次（按 IP）`
+                    tr("登录尝试限制"),
+                    tr(
+                      "每 {0} 分钟 {1} 次（按 IP）",
+                      q.data.protections.loginWindowMinutes,
+                      q.data.protections.maxLoginAttempts
+                    )
                   ],
-                  ["登录有效期", `${q.data.protections.sessionTtlHours} 小时`],
-                  ["可信代理", q.data.protections.trustProxy ? "已配置" : "未配置"],
+                  [tr("登录有效期"), tr("{0} 小时", q.data.protections.sessionTtlHours)],
+                  [tr("可信代理"), q.data.protections.trustProxy ? tr("已配置") : tr("未配置")],
                   [
-                    "IP 白名单",
+                    tr("IP 白名单"),
                     q.data.protections.allowedIps
-                      ? `${q.data.protections.allowedIps} 个地址`
-                      : "未启用"
+                      ? tr("{0} 个地址", q.data.protections.allowedIps)
+                      : tr("未启用")
                   ],
                   [
-                    "密码最近修改",
+                    tr("密码最近修改"),
                     q.data.passwordChangedAt
                       ? when(q.data.passwordChangedAt)
-                      : "使用服务器配置的密码"
+                      : tr("使用服务器配置的密码")
                   ]
                 ] as const
               ).map(([label, value]) => (
@@ -522,7 +573,7 @@ export function AccountSecurityPage() {
             </dl>
             {!q.data.editable ? (
               <p className="mt-3 text-[12px] text-muted">
-                当前没有数据库，账号只能在服务器配置中修改，下面的操作不可用。
+                {tr("当前没有数据库，账号只能在服务器配置中修改，下面的操作不可用。")}
               </p>
             ) : null}
           </SettingsSection>

@@ -6,25 +6,26 @@ import { CircleAlert, CircleCheck, TriangleAlert } from "lucide-react";
 import { api } from "../../lib/api";
 import { Card, number, PAGE_NAMES, useRange } from "./common";
 import { Tooltip } from "../ui/Tooltip";
+import { intlLocale, tr } from "../../lib/messages";
 
 const VITALS: Record<string, { name: string; hint: string }> = {
-  lcp: { name: "最大内容绘制 LCP", hint: "页面主要内容显示出来用的时间" },
-  inp: { name: "交互响应 INP", hint: "点击、输入后页面有反应用的时间（取最慢的一次）" },
-  cls: { name: "布局偏移 CLS", hint: "加载时内容跳动的程度" }
+  lcp: { name: tr("最大内容绘制 LCP"), hint: tr("页面主要内容显示出来用的时间") },
+  inp: { name: tr("交互响应 INP"), hint: tr("点击、输入后页面有反应用的时间（取最慢的一次）") },
+  cls: { name: tr("布局偏移 CLS"), hint: tr("加载时内容跳动的程度") }
 };
 const RATINGS: Record<
   AnalyticsVitalSummary["rating"],
   { label: string; className: string; icon: typeof CircleCheck }
 > = {
-  good: { label: "良好", className: "text-status-ok", icon: CircleCheck },
-  "needs-improvement": { label: "待改进", className: "text-status-warn", icon: TriangleAlert },
-  poor: { label: "差", className: "text-status-error", icon: CircleAlert }
+  good: { label: tr("良好"), className: "text-status-ok", icon: CircleCheck },
+  "needs-improvement": { label: tr("待改进"), className: "text-status-warn", icon: TriangleAlert },
+  poor: { label: tr("差"), className: "text-status-error", icon: CircleAlert }
 };
 export const JOBS: Record<string, string> = {
-  "steam-sync": "Steam 游戏库同步",
-  "music-playlist-link": "导入歌单链接",
-  "music-liked": "导入 Spotify 点赞歌曲",
-  "music-playlist": "导入 Spotify 歌单"
+  "steam-sync": tr("Steam 游戏库同步"),
+  "music-playlist-link": tr("导入歌单链接"),
+  "music-liked": tr("导入 Spotify 点赞歌曲"),
+  "music-playlist": tr("导入 Spotify 歌单")
 };
 const SOURCES: Record<string, string> = {
   tmdb: "TMDB",
@@ -37,7 +38,7 @@ const SOURCES: Record<string, string> = {
 
 const vitalValue = (metric: string, value: number) =>
   metric === "cls" ? (value / 1000).toFixed(2) : `${number.format(value)} ms`;
-const time = (iso: string | null) => (iso ? new Date(iso).toLocaleString("zh-CN") : "—");
+const time = (iso: string | null) => (iso ? new Date(iso).toLocaleString(intlLocale) : "—");
 
 /** Page speed seen by visitors, the public API, import and sync jobs, and external sources. */
 export function HealthView() {
@@ -48,24 +49,24 @@ export function HealthView() {
     enabled: ready
   });
   if (error) return <p className="text-[13px] text-status-error">{error.message}</p>;
-  if (!data) return <LoadingSkeleton label="加载统计…" count={3} />;
+  if (!data) return <LoadingSkeleton label={tr("加载统计…")} count={3} />;
 
   return (
     <>
       <Card
-        title="页面体验（Core Web Vitals）"
-        hint="一半的访问会测量落地页的体验，按 75% 分位数评级（Google 的标准）。"
+        title={tr("页面体验（Core Web Vitals）")}
+        hint={tr("一半的访问会测量落地页的体验，按 75% 分位数评级（Google 的标准）。")}
       >
         {data.vitals.length ? (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[520px] text-left text-[13px]">
               <thead>
                 <tr className="text-[12px] text-faint">
-                  <th className="pb-2 font-normal">页面</th>
-                  <th className="pb-2 font-normal">指标</th>
-                  <th className="pb-2 text-right font-normal">75% 分位</th>
-                  <th className="pb-2 font-normal">评级</th>
-                  <th className="pb-2 text-right font-normal">样本</th>
+                  <th className="pb-2 font-normal">{tr("页面")}</th>
+                  <th className="pb-2 font-normal">{tr("指标")}</th>
+                  <th className="pb-2 text-right font-normal">{tr("75% 分位")}</th>
+                  <th className="pb-2 font-normal">{tr("评级")}</th>
+                  <th className="pb-2 text-right font-normal">{tr("样本")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -88,7 +89,11 @@ export function HealthView() {
                       </td>
                       <td className={`py-2 pl-3 ${rating.className}`}>
                         <Tooltip
-                          content={`良好 ≤ ${vitalValue(vital.metric, limits.good)}，差 > ${vitalValue(vital.metric, limits.poor)}`}
+                          content={tr(
+                            "良好 ≤ {0}，差 > {1}",
+                            vitalValue(vital.metric, limits.good),
+                            vitalValue(vital.metric, limits.poor)
+                          )}
                         >
                           <span tabIndex={0} className="inline-flex cursor-help items-center gap-1">
                             <Icon aria-hidden="true" className="size-3.5" />
@@ -104,25 +109,25 @@ export function HealthView() {
             </table>
           </div>
         ) : (
-          <p className="text-[13px] text-muted">这段时间还没有体验数据。</p>
+          <p className="text-[13px] text-muted">{tr("这段时间还没有体验数据。")}</p>
         )}
       </Card>
 
       <Card
-        title="公开接口"
-        hint="网站请求的公开 API（不含后台）：请求数、错误和响应时间；每分钟写入一次。"
+        title={tr("公开接口")}
+        hint={tr("网站请求的公开 API（不含后台）：请求数、错误和响应时间；每分钟写入一次。")}
       >
         {data.routes.length ? (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[520px] text-left text-[13px]">
               <thead>
                 <tr className="text-[12px] text-faint">
-                  <th className="pb-2 font-normal">接口</th>
-                  <th className="pb-2 text-right font-normal">请求</th>
+                  <th className="pb-2 font-normal">{tr("接口")}</th>
+                  <th className="pb-2 text-right font-normal">{tr("请求")}</th>
                   <th className="pb-2 text-right font-normal">5xx</th>
                   <th className="pb-2 text-right font-normal">4xx</th>
-                  <th className="pb-2 text-right font-normal">平均</th>
-                  <th className="pb-2 text-right font-normal">95% 分位</th>
+                  <th className="pb-2 text-right font-normal">{tr("平均")}</th>
+                  <th className="pb-2 text-right font-normal">{tr("95% 分位")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -150,24 +155,24 @@ export function HealthView() {
             </table>
           </div>
         ) : (
-          <p className="text-[13px] text-muted">这段时间没有请求记录。</p>
+          <p className="text-[13px] text-muted">{tr("这段时间没有请求记录。")}</p>
         )}
       </Card>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <Card title="导入与同步任务" hint="最近的任务和结果（最多 50 条）。">
+        <Card title={tr("导入与同步任务")} hint={tr("最近的任务和结果（最多 50 条）。")}>
           {data.jobs.length ? (
             <ul className="space-y-2 text-[13px]">
               {data.jobs.map((job, index) => (
                 <li key={`${job.at}-${index}`} className="flex gap-2">
                   {job.ok ? (
                     <CircleCheck
-                      aria-label="成功"
+                      aria-label={tr("成功")}
                       className="mt-0.5 size-4 shrink-0 text-status-ok"
                     />
                   ) : (
                     <CircleAlert
-                      aria-label="失败"
+                      aria-label={tr("失败")}
                       className="mt-0.5 size-4 shrink-0 text-status-error"
                     />
                   )}
@@ -186,10 +191,13 @@ export function HealthView() {
               ))}
             </ul>
           ) : (
-            <p className="text-[13px] text-muted">这段时间没有导入或同步。</p>
+            <p className="text-[13px] text-muted">{tr("这段时间没有导入或同步。")}</p>
           )}
         </Card>
-        <Card title="外部数据源" hint="后台搜索、导入时调用的资料库：最近一次成功和失败。">
+        <Card
+          title={tr("外部数据源")}
+          hint={tr("后台搜索、导入时调用的资料库：最近一次成功和失败。")}
+        >
           {data.sources.length ? (
             <ul className="space-y-2 text-[13px]">
               {data.sources.map((source) => {
@@ -205,12 +213,15 @@ export function HealthView() {
                       )}
                       {SOURCES[source.name] ?? source.name}
                       <span className="text-[12px] text-faint">
-                        {failing ? "最近一次失败" : "正常"}
+                        {failing ? tr("最近一次失败") : tr("正常")}
                       </span>
                     </p>
                     <p className="pl-5.5 text-[12px] text-muted">
-                      成功 {time(source.lastOk)}
-                      {source.lastError ? ` · 失败 ${time(source.lastError)}` : ""}
+                      {tr(
+                        "成功 {0}{1}",
+                        time(source.lastOk),
+                        source.lastError ? tr(" · 失败 {0}", time(source.lastError)) : ""
+                      )}
                     </p>
                     {failing && source.lastErrorMessage ? (
                       <p className="pl-5.5 text-[12px] text-status-error">
@@ -222,7 +233,7 @@ export function HealthView() {
               })}
             </ul>
           ) : (
-            <p className="text-[13px] text-muted">还没有调用记录。</p>
+            <p className="text-[13px] text-muted">{tr("还没有调用记录。")}</p>
           )}
         </Card>
       </div>

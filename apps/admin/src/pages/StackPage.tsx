@@ -32,6 +32,7 @@ import { useToast } from "../components/ui/Toast";
 import { useReorderStack, useStack, useStackMutation } from "../hooks/useStack";
 import { api } from "../lib/api";
 import { pickText } from "../lib/i18n";
+import { tr } from "../lib/messages";
 
 type Drag = { kind: "category"; id: string } | { kind: "technology"; id: string };
 
@@ -99,19 +100,19 @@ export function StackPage() {
   const removeTechnology = useStackMutation((id: string) => api.deleteStackTechnology(id));
   const toast = useToast();
 
-  if (isPending) return <LoadingSkeleton label="加载中…" variant="rows" />;
+  if (isPending) return <LoadingSkeleton label={tr("加载中…")} variant="rows" />;
   if (error) {
     return (
       <>
-        <PageHeader title="技术栈" />
-        <DatabaseNotice error={error} subject="技术栈管理" />
+        <PageHeader title={tr("技术栈")} />
+        <DatabaseNotice error={error} subject={tr("技术栈管理")} />
       </>
     );
   }
 
   const all = categories ?? [];
   const save = (next: AdminStackCategory[]) =>
-    reorder.mutate(next, { onError: (e) => toast(`排序未保存：${e.message}`, "error") });
+    reorder.mutate(next, { onError: (e) => toast(tr("排序未保存：{0}", e.message), "error") });
   const failed = (e: Error) => toast(e.message, "error");
 
   const moveCategory = (index: number, to: number) => {
@@ -165,19 +166,21 @@ export function StackPage() {
   return (
     <>
       <PageHeader
-        title="技术栈"
-        description="首页“技术栈”的分类和技术。拖动或用箭头调整顺序，网站按这里的顺序显示；隐藏的分类和技术不会出现在网站上，没有可见技术的分类也不显示。"
+        title={tr("技术栈")}
+        description={tr(
+          "首页“技术栈”的分类和技术。拖动或用箭头调整顺序，网站按这里的顺序显示；隐藏的分类和技术不会出现在网站上，没有可见技术的分类也不显示。"
+        )}
         actions={
           <>
             <a href="/#/#skills" target="_blank" rel="noreferrer" className="btn-secondary">
-              <ExternalLink aria-hidden="true" className="size-4" /> 预览网站
+              <ExternalLink aria-hidden="true" className="size-4" /> {tr("预览网站")}
             </a>
             <button
               type="button"
               className="btn-secondary"
               onClick={() => setEditing({ kind: "category" })}
             >
-              <Layers aria-hidden="true" className="size-4" /> 添加分类
+              <Layers aria-hidden="true" className="size-4" /> {tr("添加分类")}
             </button>
             <button
               type="button"
@@ -185,7 +188,7 @@ export function StackPage() {
               disabled={!all.length}
               onClick={() => setEditing({ kind: "technology" })}
             >
-              <Plus aria-hidden="true" className="size-4" /> 添加技术
+              <Plus aria-hidden="true" className="size-4" /> {tr("添加技术")}
             </button>
           </>
         }
@@ -193,12 +196,12 @@ export function StackPage() {
 
       {all.length === 0 ? (
         <div className="card p-10 text-center text-[13.5px] text-muted">
-          还没有分类，点击“添加分类”开始
+          {tr("还没有分类，点击“添加分类”开始")}
         </div>
       ) : (
-        <ol className="space-y-3" aria-label="技术栈分类">
+        <ol className="space-y-3" aria-label={tr("技术栈分类")}>
           {all.map((category, index) => {
-            const title = pickText(category.name, "未命名分类");
+            const title = pickText(category.name, tr("未命名分类"));
             const open = !collapsed.has(category.id);
             const bodyId = `stack-category-${category.id}`;
             return (
@@ -241,10 +244,10 @@ export function StackPage() {
                         <span className="text-[15px] font-semibold break-words text-brand-dark">
                           {title}
                         </span>
-                        <span className={BADGE}>{category.technologies.length} 项</span>
+                        <span className={BADGE}>{tr("{0} 项", category.technologies.length)}</span>
                         {!category.visible ? (
                           <span className={BADGE}>
-                            <EyeOff aria-hidden="true" className="size-3" /> 隐藏
+                            <EyeOff aria-hidden="true" className="size-3" /> {tr("隐藏")}
                           </span>
                         ) : null}
                       </span>
@@ -257,35 +260,35 @@ export function StackPage() {
                   </button>
                   <div className="flex shrink-0 items-center">
                     <IconButton
-                      label={`上移分类 ${title}`}
+                      label={tr("上移分类 {0}", title)}
                       disabled={index === 0 || reorder.isPending}
                       onClick={() => moveCategory(index, index - 1)}
                     >
                       <ArrowUp aria-hidden="true" className="size-4" />
                     </IconButton>
                     <IconButton
-                      label={`下移分类 ${title}`}
+                      label={tr("下移分类 {0}", title)}
                       disabled={index === all.length - 1 || reorder.isPending}
                       onClick={() => moveCategory(index, index + 1)}
                     >
                       <ArrowDown aria-hidden="true" className="size-4" />
                     </IconButton>
                     <Menu
-                      label={`${title} 的更多操作`}
+                      label={tr("{0} 的更多操作", title)}
                       items={[
                         {
-                          label: "添加技术到此分类",
+                          label: tr("添加技术到此分类"),
                           icon: <Plus aria-hidden="true" className="size-4" />,
                           onSelect: () =>
                             setEditing({ kind: "technology", categoryId: category.id })
                         },
                         {
-                          label: "编辑分类",
+                          label: tr("编辑分类"),
                           icon: <Pencil aria-hidden="true" className="size-4" />,
                           onSelect: () => setEditing({ kind: "category", category })
                         },
                         {
-                          label: category.visible ? "在网站上隐藏" : "在网站上显示",
+                          label: category.visible ? tr("在网站上隐藏") : tr("在网站上显示"),
                           icon: category.visible ? (
                             <EyeOff aria-hidden="true" className="size-4" />
                           ) : (
@@ -298,7 +301,7 @@ export function StackPage() {
                             )
                         },
                         {
-                          label: "删除分类",
+                          label: tr("删除分类"),
                           icon: <Trash2 aria-hidden="true" className="size-4" />,
                           danger: true,
                           onSelect: () => setDeletingCategory(category)
@@ -318,7 +321,7 @@ export function StackPage() {
                     }`}
                   >
                     {category.technologies.length ? (
-                      <ol className="space-y-1" aria-label={`${title} 的技术`}>
+                      <ol className="space-y-1" aria-label={tr("{0} 的技术", title)}>
                         {category.technologies.map((technology, position) => (
                           <TechnologyRow
                             key={technology.id}
@@ -352,7 +355,7 @@ export function StackPage() {
                         onClick={() => setEditing({ kind: "technology", categoryId: category.id })}
                         className="w-full rounded-xl border border-dashed border-line px-3 py-4 text-center text-[12.5px] text-faint hover:border-brand-secondary hover:text-brand"
                       >
-                        还没有技术。点击添加，或把其它分类的技术拖到这里
+                        {tr("还没有技术。点击添加，或把其它分类的技术拖到这里")}
                       </button>
                     )}
                   </div>
@@ -384,7 +387,7 @@ export function StackPage() {
       <Dialog
         open={Boolean(deletingTechnology)}
         size="sm"
-        title="删除技术"
+        title={tr("删除技术")}
         onClose={() => setDeletingTechnology(null)}
         footer={
           <>
@@ -393,7 +396,7 @@ export function StackPage() {
               className="btn-secondary"
               onClick={() => setDeletingTechnology(null)}
             >
-              取消
+              {tr("取消")}
             </button>
             <button
               type="button"
@@ -403,22 +406,24 @@ export function StackPage() {
                 deletingTechnology &&
                 removeTechnology.mutate(deletingTechnology.id, {
                   onSuccess: () => {
-                    toast(`已删除 ${deletingTechnology.name}`);
+                    toast(tr("已删除 {0}", deletingTechnology.name));
                     setDeletingTechnology(null);
                   },
                   onError: failed
                 })
               }
             >
-              {removeTechnology.isPending ? "删除中…" : "删除"}
+              {removeTechnology.isPending ? tr("删除中…") : tr("删除")}
             </button>
           </>
         }
       >
         <p className="text-[13.5px] leading-relaxed text-muted">
-          确定删除“{deletingTechnology?.name}”吗？
-          {deletingTechnology?.iconProvider === "custom" ? "上传的图标也会一起删除，" : ""}
-          此操作无法撤销。只想暂时不在网站上显示，可以改为隐藏。
+          {tr(
+            "确定删除“{0}”吗？{1}此操作无法撤销。只想暂时不在网站上显示，可以改为隐藏。",
+            deletingTechnology?.name,
+            deletingTechnology?.iconProvider === "custom" ? tr("上传的图标也会一起删除，") : ""
+          )}
         </p>
       </Dialog>
     </>
@@ -459,7 +464,9 @@ function TechnologyRow({
   onPatch: (body: { visible?: boolean; prominence?: "primary" | "standard" }) => void;
 }) {
   const source =
-    technology.iconProvider === "none" ? "无图标" : STACK_PROVIDER_LABELS[technology.iconProvider];
+    technology.iconProvider === "none"
+      ? tr("无图标")
+      : tr(STACK_PROVIDER_LABELS[technology.iconProvider]);
   return (
     <li
       onDragOver={onDragOver}
@@ -481,7 +488,7 @@ function TechnologyRow({
       <button
         type="button"
         onClick={onEdit}
-        aria-label={`编辑 ${technology.name}`}
+        aria-label={tr("编辑 {0}", technology.name)}
         className="min-w-0 flex-1 text-left"
       >
         <span className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
@@ -497,46 +504,46 @@ function TechnologyRow({
           ) : null}
           {!technology.visible ? (
             <span className={BADGE}>
-              <EyeOff aria-hidden="true" className="size-3" /> 隐藏
+              <EyeOff aria-hidden="true" className="size-3" /> {tr("隐藏")}
             </span>
           ) : null}
         </span>
         <span className="block truncate text-[11.5px] text-faint">
           {source}
           {technology.websiteUrl ? ` · ${host(technology.websiteUrl)}` : ""}
-          {technology.projectIds.length ? ` · ${technology.projectIds.length} 个项目` : ""}
+          {technology.projectIds.length ? tr(" · {0} 个项目", technology.projectIds.length) : ""}
         </span>
       </button>
       <div className="flex shrink-0 items-center">
         <IconButton
-          label={`上移 ${technology.name}`}
+          label={tr("上移 {0}", technology.name)}
           disabled={first || busy}
           onClick={() => onMove(position - 1)}
         >
           <ArrowUp aria-hidden="true" className="size-4" />
         </IconButton>
         <IconButton
-          label={`下移 ${technology.name}`}
+          label={tr("下移 {0}", technology.name)}
           disabled={last || busy}
           onClick={() => onMove(position + 1)}
         >
           <ArrowDown aria-hidden="true" className="size-4" />
         </IconButton>
         <span className="hidden sm:inline-flex">
-          <IconButton label={`编辑 ${technology.name}`} onClick={onEdit}>
+          <IconButton label={tr("编辑 {0}", technology.name)} onClick={onEdit}>
             <Pencil aria-hidden="true" className="size-4" />
           </IconButton>
         </span>
         <Menu
-          label={`${technology.name} 的更多操作`}
+          label={tr("{0} 的更多操作", technology.name)}
           items={[
             {
-              label: "编辑（名称、图标、分类、官网）",
+              label: tr("编辑（名称、图标、分类、官网）"),
               icon: <Pencil aria-hidden="true" className="size-4" />,
               onSelect: onEdit
             },
             {
-              label: technology.visible ? "在网站上隐藏" : "在网站上显示",
+              label: technology.visible ? tr("在网站上隐藏") : tr("在网站上显示"),
               icon: technology.visible ? (
                 <EyeOff aria-hidden="true" className="size-4" />
               ) : (
@@ -545,7 +552,7 @@ function TechnologyRow({
               onSelect: () => onPatch({ visible: !technology.visible })
             },
             {
-              label: technology.prominence === "primary" ? "设为 Standard" : "设为 Primary",
+              label: technology.prominence === "primary" ? tr("设为 Standard") : tr("设为 Primary"),
               icon: <Star aria-hidden="true" className="size-4" />,
               onSelect: () =>
                 onPatch({
@@ -553,7 +560,7 @@ function TechnologyRow({
                 })
             },
             {
-              label: "删除",
+              label: tr("删除"),
               icon: <Trash2 aria-hidden="true" className="size-4" />,
               danger: true,
               onSelect: onDelete

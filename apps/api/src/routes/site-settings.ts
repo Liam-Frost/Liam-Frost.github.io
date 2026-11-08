@@ -6,10 +6,14 @@ import type { FastifyInstance } from "fastify";
 import type { AdminAuthService } from "../auth/service";
 import type { MediaRepository } from "../media/types";
 import type { SettingsRepository } from "../settings/types";
-import type { PhotoRepository } from "../photos/types";
 import type { LocalImageStore } from "../storage/local";
-import { toPublicPhoto } from "../photos/mapping";
-import { brandFileName, brandKey, type BrandAsset, type BrandingStore } from "../site/branding";
+import {
+  brandFileName,
+  brandKey,
+  brandUrl,
+  type BrandAsset,
+  type BrandingStore
+} from "../site/branding";
 import { KeyedLock } from "../lib/keyed-lock";
 import { HttpError } from "../lib/errors";
 import { parseInput } from "../lib/validation";
@@ -24,21 +28,17 @@ const text = (max: number) =>
       fr: z.string().max(max).optional()
     })
     .strict();
-const photoId = z
-  .string()
-  .min(1)
-  .max(100)
-  .regex(/^[A-Za-z0-9_-]+$/)
-  .nullable();
 const schemas = {
   identity: z
     .object({
       name: text(120),
       title: text(160),
       adminTitle: text(80).default({}),
-      avatarPhotoId: photoId
+      // Saved before the avatar was uploaded; a gallery choice no longer applies.
+      avatarPhotoId: z.unknown().optional()
     })
-    .strict(),
+    .strict()
+    .transform(({ avatarPhotoId: _avatarPhotoId, ...rest }) => rest),
   footer: z
     .object({
       owner: text(120),
@@ -109,7 +109,6 @@ export function registerSiteSettingsRoutes(
   app: FastifyInstance,
   auth: AdminAuthService,
   repo: SettingsRepository | null,
-  photos: PhotoRepository | null,
   store: LocalImageStore,
   media: MediaRepository | null,
   branding: BrandingStore
@@ -128,11 +127,6 @@ export function registerSiteSettingsRoutes(
     if (!parsed.success) throw new HttpError(503, "SETTINGS_INVALID", "设置无法读取，请联系管理员");
     return { value: parsed.data, revision: digest(parsed.data), saved: stored != null };
   };
-  const publicPhoto = async (id: string | null) => {
-    if (!id || !photos) return null;
-    const photo = await photos.get(id);
-    return photo?.visibility === "public" ? photo : null;
-  };
   const faviconVersion = (image: BrandAsset) => digest(image.id).slice(0, 24);
   app.get("/api/site-settings", async (_request, reply) => {
     reply.header("cache-control", "no-store");
@@ -147,14 +141,13 @@ export function registerSiteSettingsRoutes(
         branding.get()
       ]);
     const identity = identityDoc.value as typeof DEFAULT_SITE_SETTINGS.identity;
-    const avatar = await publicPhoto(identity.avatarPhotoId);
     return {
       identity,
       footer: footerDoc.value,
       preferences: preferencesDoc.value,
       privacy: privacyDoc.value,
       dictionary: dictionaryDoc.value,
-      avatarUrl: avatar ? toPublicPhoto(avatar, store).src : null,
+      avatarUrl: brandUrl("avatar", assets.avatar),
       faviconUrl: assets.favicon
         ? `/api/site-favicon/${faviconVersion(assets.favicon)}/32.png`
         : null
@@ -214,11 +207,6 @@ export function registerSiteSettingsRoutes(
           "SETTINGS_OUT_OF_DATE",
           "设置已被其他页面修改；请先保留草稿再重新读取"
         );
-      if (group === "identity") {
-        const id = (body.value as { avatarPhotoId?: string | null }).avatarPhotoId;
-        if (id && !(await publicPhoto(id)))
-          throw new HttpError(400, "INVALID_PHOTO", "只能选择当前公开的图库照片");
-      }
       if (group === "dictionary") {
         const normalize = (v: string) => v.normalize("NFKC").trim().toLowerCase();
         const used = new Set(

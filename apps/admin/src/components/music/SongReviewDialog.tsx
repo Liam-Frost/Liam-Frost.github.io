@@ -7,6 +7,7 @@ import { Dialog } from "../ui/Dialog";
 import { Field } from "../ui/Field";
 import { StarRating } from "../ui/StarRating";
 import { useToast } from "../ui/Toast";
+import { tr } from "../../lib/messages";
 
 export function SongReviewDialog({ item, onClose }: { item: AdminMediaItem; onClose: () => void }) {
   const [rating, setRating] = useState(item.rating);
@@ -18,7 +19,7 @@ export function SongReviewDialog({ item, onClose }: { item: AdminMediaItem; onCl
   return (
     <Dialog
       open
-      title={`评分与短评 · ${pickText(item.title, "未命名")}`}
+      title={tr("评分与短评 · {0}", pickText(item.title, tr("未命名")))}
       onClose={() => {
         if (!update.isPending) onClose();
       }}
@@ -31,7 +32,7 @@ export function SongReviewDialog({ item, onClose }: { item: AdminMediaItem; onCl
             disabled={update.isPending}
             onClick={onClose}
           >
-            取消
+            {tr("取消")}
           </button>
           <button
             className="btn-primary"
@@ -39,7 +40,7 @@ export function SongReviewDialog({ item, onClose }: { item: AdminMediaItem; onCl
             form="song-review"
             disabled={update.isPending || !dirty}
           >
-            {update.isPending ? "保存中…" : "保存"}
+            {update.isPending ? tr("保存中…") : tr("保存")}
           </button>
         </>
       }
@@ -53,7 +54,7 @@ export function SongReviewDialog({ item, onClose }: { item: AdminMediaItem; onCl
             { rating, review },
             {
               onSuccess: () => {
-                toast("评分与短评已保存");
+                toast(tr("评分与短评已保存"));
                 onClose();
               }
             }
@@ -61,10 +62,10 @@ export function SongReviewDialog({ item, onClose }: { item: AdminMediaItem; onCl
         }}
       >
         <div>
-          <p className="mb-2 text-[12.5px] font-medium text-brand-dark">我的评分</p>
+          <p className="mb-2 text-[12.5px] font-medium text-brand-dark">{tr("我的评分")}</p>
           <StarRating value={rating} onChange={setRating} />
         </div>
-        <Field label="短评语言" htmlFor="song-review-lang">
+        <Field label={tr("短评语言")} htmlFor="song-review-lang">
           <select
             id="song-review-lang"
             className="field"
@@ -80,9 +81,9 @@ export function SongReviewDialog({ item, onClose }: { item: AdminMediaItem; onCl
           </select>
         </Field>
         <Field
-          label="个人短评"
+          label={tr("个人短评")}
           htmlFor="song-review-text"
-          hint="会显示在网站上。其他语言的内容会保留。"
+          hint={tr("会显示在网站上。其他语言的内容会保留。")}
         >
           <textarea
             id="song-review-text"
@@ -91,7 +92,7 @@ export function SongReviewDialog({ item, onClose }: { item: AdminMediaItem; onCl
             maxLength={5000}
             value={review[lang] ?? ""}
             onChange={(event) => setReview({ ...review, [lang]: event.target.value })}
-            placeholder="这首歌打动你的地方…"
+            placeholder={tr("这首歌打动你的地方…")}
           />
         </Field>
         {update.error ? (

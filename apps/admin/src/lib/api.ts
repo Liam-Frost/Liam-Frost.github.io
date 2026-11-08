@@ -85,6 +85,7 @@ import {
   type SpotifyOwnPlaylist,
   type SpotifySettings
 } from "@liam-frost/shared";
+import { apiMessage, tr } from "./messages";
 
 export class ApiError extends Error {
   constructor(
@@ -121,7 +122,7 @@ export async function request<T>(
   try {
     response = await fetch(path, { ...init, headers, body, credentials: "same-origin" });
   } catch {
-    throw new ApiError(0, "NETWORK", "无法连接服务器，请检查网络");
+    throw new ApiError(0, "NETWORK", tr("无法连接服务器，请检查网络"));
   }
 
   if (response.status === 204) return undefined as T;
@@ -149,15 +150,20 @@ function toApiError(status: number, body: string) {
   return apiError(status, data);
 }
 
-const DATABASE_UNAVAILABLE_MESSAGE =
-  "数据库连接失败：请确认数据库已启动，并检查 apps/api/.env 中的 DATABASE_URL";
+const DATABASE_UNAVAILABLE_MESSAGE = tr(
+  "数据库连接失败：请确认数据库已启动，并检查 apps/api/.env 中的 DATABASE_URL"
+);
 
 function apiError(status: number, data: Partial<ApiErrorBody> | undefined) {
   const code = data?.error?.code ?? "HTTP";
   // Shown in toasts and inline errors anywhere in the admin, so it is translated here once.
   if (code === "DATABASE_UNAVAILABLE")
     return new ApiError(status, code, DATABASE_UNAVAILABLE_MESSAGE);
-  return new ApiError(status, code, data?.error?.message ?? `请求失败（HTTP ${status}）`);
+  return new ApiError(
+    status,
+    code,
+    data?.error?.message ? apiMessage(data.error.message) : tr("请求失败（HTTP {0}）", status)
+  );
 }
 
 /** Uploads one file with progress (fetch cannot report upload progress). */
@@ -181,7 +187,7 @@ function uploadFile<T>(
         reject(toApiError(xhr.status, xhr.responseText));
       }
     };
-    xhr.onerror = () => reject(new ApiError(0, "NETWORK", "无法连接服务器，请检查网络"));
+    xhr.onerror = () => reject(new ApiError(0, "NETWORK", tr("无法连接服务器，请检查网络")));
     const form = new FormData();
     form.append("file", file);
     xhr.send(form);

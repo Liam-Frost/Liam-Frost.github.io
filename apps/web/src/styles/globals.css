@@ -961,6 +961,13 @@ html[data-theme="light"] .langPanel {
   color: var(--text);
 }
 
+.heroPortrait .avatarPhoto {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 .heroPortrait .avatarMark {
   width: 100%;
   height: 100%;

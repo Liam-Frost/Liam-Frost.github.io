@@ -10,39 +10,40 @@ import { Link } from "react-router";
 
 import { api } from "../../lib/api";
 import { BarList, Card, CONTENT_TYPES, MEDIA_KINDS, number, useRange } from "./common";
+import { tr } from "../../lib/messages";
 
-const PLAYERS: Record<string, string> = { site: "网站播放器", spotify: "Spotify 播放器" };
+const PLAYERS: Record<string, string> = { site: tr("网站播放器"), spotify: tr("Spotify 播放器") };
 const PLAY_SOURCES: Record<string, string> = {
-  button: "歌曲上的播放按钮",
-  all: "播放全部",
-  dock: "播放器自己切歌 / 播放"
+  button: tr("歌曲上的播放按钮"),
+  all: tr("播放全部"),
+  dock: tr("播放器自己切歌 / 播放")
 };
 const POSITIONS: Record<string, string> = {
-  contact: "首页联系方式",
-  project_links: "项目链接",
-  project_body: "项目正文",
-  media_source: "收藏条目的资料来源",
-  listen: "收听链接",
-  person_links: "人物链接",
-  player: "播放器"
+  contact: tr("首页联系方式"),
+  project_links: tr("项目链接"),
+  project_body: tr("项目正文"),
+  media_source: tr("收藏条目的资料来源"),
+  listen: tr("收听链接"),
+  person_links: tr("人物链接"),
+  player: tr("播放器")
 };
 const FILTER_TABS: Record<string, string> = {
   ...MEDIA_KINDS,
-  people: "人物",
-  review: "回顾",
-  all: "全部"
+  people: tr("人物"),
+  review: tr("回顾"),
+  all: tr("全部")
 };
 const VIEWS: Record<string, string> = {
-  grid: "封面",
-  list: "列表",
-  albums: "专辑",
-  artists: "艺人",
-  playlists: "歌单"
+  grid: tr("封面"),
+  list: tr("列表"),
+  albums: tr("专辑"),
+  artists: tr("艺人"),
+  playlists: tr("歌单")
 };
 
 export function itemLabel(item: Pick<AnalyticsContentItem, "type" | "kind">) {
   return item.type === "media" && item.kind
-    ? (MEDIA_KINDS[item.kind] ?? "收藏")
+    ? (MEDIA_KINDS[item.kind] ?? tr("收藏"))
     : CONTENT_TYPES[item.type];
 }
 
@@ -56,24 +57,26 @@ export function ContentView() {
     enabled: ready
   });
   if (error) return <p className="text-[13px] text-status-error">{error.message}</p>;
-  if (!data) return <LoadingSkeleton label="加载统计…" count={3} />;
+  if (!data) return <LoadingSkeleton label={tr("加载统计…")} count={3} />;
   const items = data.items.filter((item) => type === "all" || item.type === type);
 
   return (
     <>
       <div className="mb-4 rounded-xl border border-line bg-surface p-4 text-[13px] leading-relaxed text-muted">
-        <strong className="text-brand-dark">测试访问为什么没有记录？</strong>
+        <strong className="text-brand-dark">{tr("测试访问为什么没有记录？")}</strong>
         <p>
-          已登录管理员的访问、开启 DNT / GPC 的浏览器、自动化浏览器及排除 IP
-          均不计入访客数据。请使用未登录的独立浏览器进行验证；不要为测试关闭隐私保护。内容排行统计打开详情，不统计仅看见卡片。播放器内置示例曲目不计入收藏内容，Spotify
-          内嵌页面内部操作也无法完整观测。请同时检查统计开关与日期范围。
+          {tr(
+            "已登录管理员的访问、开启 DNT / GPC 的浏览器、自动化浏览器及排除 IP 均不计入访客数据。请使用未登录的独立浏览器进行验证；不要为测试关闭隐私保护。内容排行统计打开详情，不统计仅看见卡片。播放器内置示例曲目不计入收藏内容，Spotify 内嵌页面内部操作也无法完整观测。请同时检查统计开关与日期范围。"
+          )}
         </p>
       </div>
       <Card
-        title="内容排行"
-        hint="点击播放：本站歌曲按钮请求，播放全部只计首个可播放曲目；不含暂停。播放/载入保留原口径，不代表Spotify实际收听。旧记录无法还原点击次数。"
+        title={tr("内容排行")}
+        hint={tr(
+          "点击播放：本站歌曲按钮请求，播放全部只计首个可播放曲目；不含暂停。播放/载入保留原口径，不代表Spotify实际收听。旧记录无法还原点击次数。"
+        )}
         actions={
-          <div role="group" aria-label="类型" className="flex flex-wrap gap-1">
+          <div role="group" aria-label={tr("类型")} className="flex flex-wrap gap-1">
             {(["all", ...ANALYTICS_CONTENT_TYPES] as const).map((value) => (
               <button
                 key={value}
@@ -86,7 +89,7 @@ export function ContentView() {
                     : "rounded-md px-2.5 py-1.5 text-[11px] text-muted hover:bg-brand-secondary/8"
                 }
               >
-                {value === "all" ? "全部" : CONTENT_TYPES[value]}
+                {value === "all" ? tr("全部") : CONTENT_TYPES[value]}
               </button>
             ))}
           </div>
@@ -97,12 +100,12 @@ export function ContentView() {
             <table className="w-full min-w-[480px] text-left text-[13px]">
               <thead>
                 <tr className="text-[12px] text-faint">
-                  <th className="pb-2 font-normal">内容</th>
-                  <th className="pb-2 font-normal">类型</th>
-                  <th className="pb-2 text-right font-normal">浏览</th>
-                  <th className="pb-2 text-right font-normal">访客</th>
-                  <th className="pb-2 text-right font-normal">点击播放</th>
-                  <th className="pb-2 text-right font-normal">播放 / 载入</th>
+                  <th className="pb-2 font-normal">{tr("内容")}</th>
+                  <th className="pb-2 font-normal">{tr("类型")}</th>
+                  <th className="pb-2 text-right font-normal">{tr("浏览")}</th>
+                  <th className="pb-2 text-right font-normal">{tr("访客")}</th>
+                  <th className="pb-2 text-right font-normal">{tr("点击播放")}</th>
+                  <th className="pb-2 text-right font-normal">{tr("播放 / 载入")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -116,7 +119,7 @@ export function ContentView() {
                         {item.name || item.id}
                       </Link>
                       {item.removed ? (
-                        <span className="text-[11px] text-faint">已隐藏或删除</span>
+                        <span className="text-[11px] text-faint">{tr("已隐藏或删除")}</span>
                       ) : null}
                     </td>
                     <td className="py-2 text-muted">{itemLabel(item)}</td>
@@ -140,39 +143,48 @@ export function ContentView() {
             </table>
           </div>
         ) : (
-          <p className="text-[13px] text-muted">这段时间没有打开过这类内容。</p>
+          <p className="text-[13px] text-muted">{tr("这段时间没有打开过这类内容。")}</p>
         )}
       </Card>
 
       <div className="grid gap-4 md:grid-cols-2">
         <Card
-          title="播放器"
-          hint="网站播放器在歌曲开始时计一次（暂停后继续不算）；Spotify 统计从本站请求载入曲目，不代表已经实际播放；内嵌页面内部播放无法完整观测。"
+          title={tr("播放器")}
+          hint={tr(
+            "网站播放器在歌曲开始时计一次（暂停后继续不算）；Spotify 统计从本站请求载入曲目，不代表已经实际播放；内嵌页面内部播放无法完整观测。"
+          )}
         >
-          <BarList rows={data.players} label={(key) => PLAYERS[key] ?? key} empty="没有播放。" />
+          <BarList
+            rows={data.players}
+            label={(key) => PLAYERS[key] ?? key}
+            empty={tr("没有播放。")}
+          />
         </Card>
-        <Card title="播放从哪里开始">
+        <Card title={tr("播放从哪里开始")}>
           <BarList
             rows={data.playSources}
             label={(key) => PLAY_SOURCES[key] ?? key}
-            empty="没有播放。"
+            empty={tr("没有播放。")}
           />
         </Card>
         <Card
-          title="外链点击"
-          hint="点开指向其他网站的链接（左键和中键）；右键菜单“在新标签页打开”看不到。"
+          title={tr("外链点击")}
+          hint={tr("点开指向其他网站的链接（左键和中键）；右键菜单“在新标签页打开”看不到。")}
         >
-          <BarList rows={data.outbound} empty="没有外链点击。" />
+          <BarList rows={data.outbound} empty={tr("没有外链点击。")} />
         </Card>
-        <Card title="外链所在位置">
+        <Card title={tr("外链所在位置")}>
           <BarList
             rows={data.outboundPositions}
             label={(key) => POSITIONS[key] ?? key}
-            otherLabel="未标注的位置"
-            empty="没有外链点击。"
+            otherLabel={tr("未标注的位置")}
+            empty={tr("没有外链点击。")}
           />
         </Card>
-        <Card title="收藏页切换" hint="访客主动切换的标签和视图；打开页面时默认的那个不算。">
+        <Card
+          title={tr("收藏页切换")}
+          hint={tr("访客主动切换的标签和视图；打开页面时默认的那个不算。")}
+        >
           <BarList
             rows={data.filters}
             label={(key) => {
@@ -181,7 +193,7 @@ export function ContentView() {
                 .filter(Boolean)
                 .join(" · ");
             }}
-            empty="没有切换。"
+            empty={tr("没有切换。")}
           />
         </Card>
       </div>

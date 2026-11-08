@@ -4,6 +4,7 @@ import { useEffect, useId, useRef, useState } from "react";
 
 import { api } from "../../lib/api";
 import { TechIcon } from "./TechIcon";
+import { tr } from "../../lib/messages";
 
 /**
  * A text field that searches the icon libraries as you type (ARIA combobox with a listbox): ↑ ↓ move,
@@ -119,7 +120,7 @@ export function IconCombobox({
         <ul
           id={listId}
           role="listbox"
-          aria-label="图标库搜索结果"
+          aria-label={tr("图标库搜索结果")}
           className="absolute top-full right-0 left-0 z-40 mt-1 max-h-72 overflow-y-auto rounded-xl border border-line bg-surface py-1 shadow-card-hover"
         >
           {icons.map((icon, index) => (
@@ -139,18 +140,18 @@ export function IconCombobox({
               <TechIcon name={icon.title} url={icon.url} size="sm" />
               <span className="min-w-0 flex-1 truncate text-ink">{icon.title}</span>
               <span className="shrink-0 text-[11.5px] text-faint">
-                {STACK_PROVIDER_LABELS[icon.provider]}
+                {tr(STACK_PROVIDER_LABELS[icon.provider])}
               </span>
             </li>
           ))}
           {status === "loading" && !icons.length ? (
-            <li className="px-3 py-2 text-[12.5px] text-faint">搜索中…</li>
+            <li className="px-3 py-2 text-[12.5px] text-faint">{tr("搜索中…")}</li>
           ) : null}
           {status === "error" ? (
-            <li className="px-3 py-2 text-[12.5px] text-status-error">图标库搜索失败</li>
+            <li className="px-3 py-2 text-[12.5px] text-status-error">{tr("图标库搜索失败")}</li>
           ) : null}
           {status === "idle" && !icons.length ? (
-            <li className="px-3 py-2 text-[12.5px] text-faint">图标库里没有匹配的图标</li>
+            <li className="px-3 py-2 text-[12.5px] text-faint">{tr("图标库里没有匹配的图标")}</li>
           ) : null}
           {creatable ? (
             <li
@@ -165,7 +166,9 @@ export function IconCombobox({
               }`}
             >
               <Plus aria-hidden="true" className="size-4 shrink-0" />
-              <span className="min-w-0 flex-1 truncate">使用“{text}”（自定义，可上传图标）</span>
+              <span className="min-w-0 flex-1 truncate">
+                {tr("使用“{0}”（自定义，可上传图标）", text)}
+              </span>
             </li>
           ) : null}
         </ul>

@@ -9,6 +9,7 @@ import {
 } from "react-router";
 import { settingsCopy as copy } from "./copy";
 import { useSettingsDraftCount } from "./drafts";
+import { tr } from "../../lib/messages";
 
 export const SETTINGS_NAV: {
   title: string;
@@ -17,31 +18,31 @@ export const SETTINGS_NAV: {
   {
     title: copy.groups.brand,
     items: [
-      ["site/identity", "基本资料", "standard"],
-      ["site/branding", "Logo 与网站图标", "standard"],
-      ["site/footer", "页脚与版权", "compact"]
+      ["site/identity", tr("基本资料"), "standard"],
+      ["site/branding", tr("Logo、图标与标题"), "standard"],
+      ["site/footer", tr("页脚与版权"), "compact"]
     ]
   },
   {
     title: copy.groups.experience,
     items: [
-      ["experience/home", "首页模块", "wide"],
-      ["experience/preferences", "默认显示与语言", "compact"],
-      ["experience/dictionary", "标签词典", "wide"]
+      ["experience/home", tr("首页模块"), "wide"],
+      ["experience/preferences", tr("默认显示与语言"), "compact"],
+      ["experience/dictionary", tr("标签词典"), "wide"]
     ]
   },
   {
     title: copy.groups.privacy,
     items: [
-      ["privacy/content", "隐私说明", "standard"],
-      ["privacy/integrations", "集成与 API", "standard"]
+      ["privacy/content", tr("隐私说明"), "standard"],
+      ["privacy/integrations", tr("集成与 API"), "standard"]
     ]
   },
   {
     title: copy.groups.admin,
     items: [
-      ["admin/login", "登录外观", "wide"],
-      ["admin/security", "账号与安全", "compact"]
+      ["admin/login", tr("登录外观"), "wide"],
+      ["admin/security", tr("账号与安全"), "compact"]
     ]
   }
 ];
@@ -72,7 +73,7 @@ export function SettingsLayout() {
   return (
     <div className="settings-layout">
       <nav className="settings-navigation" aria-label={copy.navigation}>
-        <p className="mb-4 text-sm font-semibold text-brand-dark">网站设置</p>
+        <p className="mb-4 text-sm font-semibold text-brand-dark">{tr("网站设置")}</p>
         {SETTINGS_NAV.map((group) => (
           <div className="mb-5 last:mb-0" key={group.title}>
             <h2 className="mb-1.5 px-2 text-[11px] font-medium text-muted">{group.title}</h2>
@@ -94,7 +95,7 @@ export function SettingsLayout() {
         ))}
         {draftCount ? (
           <p className="mt-4 border-t border-line pt-3 text-xs text-status-warn" role="status">
-            {draftCount} 组未保存草稿
+            {tr("{0} 组未保存草稿", draftCount)}
           </p>
         ) : null}
       </nav>
@@ -121,7 +122,7 @@ export function SettingsLayout() {
           </select>
           {draftCount ? (
             <p className="mt-2 text-xs text-status-warn">
-              {draftCount} 组草稿保留在本次登录中；刷新前请保存。
+              {tr("{0} 组草稿保留在本次登录中；刷新前请保存。", draftCount)}
             </p>
           ) : null}
         </div>

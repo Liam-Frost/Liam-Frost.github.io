@@ -24,6 +24,7 @@ import { useSelection, type Selection } from "../hooks/useSelection";
 import { api, ApiError } from "../lib/api";
 import { guessLang, pickText } from "../lib/i18n";
 import { Tooltip } from "../components/ui/Tooltip";
+import { tr } from "../lib/messages";
 
 /** People linked to collection entries: actors, directors, singers, writers, studios. */
 export function PeoplePage() {
@@ -54,8 +55,8 @@ export function PeoplePage() {
     onSuccess: ({ added, failed }) => {
       toast(
         failed
-          ? `新增 ${added} 个关联；${failed} 个人物未完成，可进入人物详情重试`
-          : `已补齐，共新增 ${added} 个关联`,
+          ? tr("新增 {0} 个关联；{1} 个人物未完成，可进入人物详情重试", added, failed)
+          : tr("已补齐，共新增 {0} 个关联", added),
         failed ? "error" : undefined
       );
       void qc.invalidateQueries({ queryKey: peopleKey });
@@ -78,8 +79,10 @@ export function PeoplePage() {
   return (
     <>
       <PageHeader
-        title="人物与团体"
-        description="TMDB 导入影视人物，MusicBrainz 导入歌手与乐队，也可手动添加。音乐作品仅按已确认的来源身份自动关联，同名与别名只作为待确认建议。"
+        title={tr("人物与团体")}
+        description={tr(
+          "TMDB 导入影视人物，MusicBrainz 导入歌手与乐队，也可手动添加。音乐作品仅按已确认的来源身份自动关联，同名与别名只作为待确认建议。"
+        )}
         actions={
           <>
             <button
@@ -89,17 +92,19 @@ export function PeoplePage() {
               onClick={() => sync.mutate()}
             >
               <RefreshCw aria-hidden="true" className="size-4" />
-              {sync.isPending ? `补齐中 ${processed}/${people?.length ?? 0}` : "补齐全部作品关联"}
+              {sync.isPending
+                ? tr("补齐中 {0}/{1}", processed, people?.length ?? 0)
+                : tr("补齐全部作品关联")}
             </button>
             <button type="button" className="btn-primary" onClick={() => setAdding(true)}>
-              <Plus aria-hidden="true" className="size-4" /> 添加人物
+              <Plus aria-hidden="true" className="size-4" /> {tr("添加人物")}
             </button>
           </>
         }
       />
 
-      {isPending ? <LoadingSkeleton label="加载中…" variant="rows" /> : null}
-      {error ? <DatabaseNotice error={error} subject="人物" /> : null}
+      {isPending ? <LoadingSkeleton label={tr("加载中…")} variant="rows" /> : null}
+      {error ? <DatabaseNotice error={error} subject={tr("人物")} /> : null}
 
       {people ? (
         <>
@@ -111,15 +116,15 @@ export function PeoplePage() {
               />
               <input
                 className="field pl-9"
-                placeholder="筛选名字"
-                aria-label="筛选名字"
+                placeholder={tr("筛选名字")}
+                aria-label={tr("筛选名字")}
                 value={filter}
                 onChange={(e) => setFilter(e.target.value)}
               />
             </div>
             {visible.length && !selection.active ? (
               <button type="button" className="btn-secondary" onClick={selection.start}>
-                选择
+                {tr("选择")}
               </button>
             ) : null}
           </div>
@@ -134,8 +139,8 @@ export function PeoplePage() {
           ) : (
             <div className="card p-10 text-center text-[13.5px] text-muted">
               {people.length
-                ? "没有符合条件的人物"
-                : "还没有人物，点击“添加人物”，或者在条目的“关联”里查找建议"}
+                ? tr("没有符合条件的人物")
+                : tr("还没有人物，点击“添加人物”，或者在条目的“关联”里查找建议")}
             </div>
           )}
           <BatchBar selection={selection} total={visible.length}>
@@ -155,7 +160,7 @@ export function PeoplePage() {
 }
 
 function PersonCard({ person, selection }: { person: AdminPerson; selection: Selection }) {
-  const name = pickText(person.name, "未命名");
+  const name = pickText(person.name, tr("未命名"));
   const selected = selection.isSelected(person.id);
   const className = `card group block w-full overflow-hidden text-left transition-shadow hover:shadow-card-hover ${selected ? "ring-2 ring-brand" : ""}`;
   const body = (
@@ -181,12 +186,12 @@ function PersonCard({ person, selection }: { person: AdminPerson; selection: Sel
         <div className="absolute top-2 left-2 flex flex-wrap gap-1">
           {person.visibility === "private" ? (
             <span className="chip inline-flex items-center gap-1 bg-surface/90">
-              <EyeOff aria-hidden="true" className="size-3" /> 隐藏
+              <EyeOff aria-hidden="true" className="size-3" /> {tr("隐藏")}
             </span>
           ) : null}
           {person.featured ? (
             <span className="chip inline-flex items-center gap-1 bg-surface/90">
-              <Star aria-hidden="true" className="size-3" /> 精选
+              <Star aria-hidden="true" className="size-3" /> {tr("精选")}
             </span>
           ) : null}
         </div>
@@ -198,8 +203,13 @@ function PersonCard({ person, selection }: { person: AdminPerson; selection: Sel
           </p>
         </Tooltip>
         <p className="text-[12px] text-subtle">
-          {{ person: "人物", group: "团体", organization: "机构" }[person.kind ?? "person"]} ·{" "}
-          {person.works} 部作品
+          {tr(
+            "{0} · {1} 部作品",
+            { person: tr("人物"), group: tr("团体"), organization: tr("机构") }[
+              person.kind ?? "person"
+            ],
+            person.works
+          )}
         </p>
       </div>
     </>
@@ -208,7 +218,7 @@ function PersonCard({ person, selection }: { person: AdminPerson; selection: Sel
     <button
       type="button"
       aria-pressed={selected}
-      aria-label={`选择 ${name}`}
+      aria-label={tr("选择 {0}", name)}
       className={className}
       onClick={(e) => selection.toggle(person.id, e.shiftKey)}
     >
@@ -246,7 +256,7 @@ function PeopleBatchActions({ selection }: { selection: Selection }) {
       }
       await qc.invalidateQueries({ queryKey: peopleKey });
     } catch (e) {
-      toast(e instanceof Error ? e.message : "操作失败", "error");
+      toast(e instanceof Error ? e.message : tr("操作失败"), "error");
     } finally {
       setBusy(false);
     }
@@ -259,35 +269,41 @@ function PeopleBatchActions({ selection }: { selection: Selection }) {
         type="button"
         className="btn-secondary"
         disabled={disabled}
-        onClick={() => void run({ action: "update", ids, patch: { visibility: "public" } }, "公开")}
+        onClick={() =>
+          void run({ action: "update", ids, patch: { visibility: "public" } }, tr("公开"))
+        }
       >
-        公开
+        {tr("公开")}
       </button>
       <button
         type="button"
         className="btn-secondary"
         disabled={disabled}
         onClick={() =>
-          void run({ action: "update", ids, patch: { visibility: "private" } }, "隐藏")
+          void run({ action: "update", ids, patch: { visibility: "private" } }, tr("隐藏"))
         }
       >
-        隐藏
+        {tr("隐藏")}
       </button>
       <button
         type="button"
         className="btn-secondary"
         disabled={disabled}
-        onClick={() => void run({ action: "update", ids, patch: { featured: true } }, "设为精选")}
+        onClick={() =>
+          void run({ action: "update", ids, patch: { featured: true } }, tr("设为精选"))
+        }
       >
-        精选
+        {tr("精选")}
       </button>
       <button
         type="button"
         className="btn-secondary"
         disabled={disabled}
-        onClick={() => void run({ action: "update", ids, patch: { featured: false } }, "取消精选")}
+        onClick={() =>
+          void run({ action: "update", ids, patch: { featured: false } }, tr("取消精选"))
+        }
       >
-        取消精选
+        {tr("取消精选")}
       </button>
       <button
         type="button"
@@ -295,17 +311,17 @@ function PeopleBatchActions({ selection }: { selection: Selection }) {
         disabled={disabled}
         onClick={() => setConfirming(true)}
       >
-        <Trash2 aria-hidden="true" className="size-4" /> 删除
+        <Trash2 aria-hidden="true" className="size-4" /> {tr("删除")}
       </button>
       <Dialog
         open={confirming}
         size="sm"
-        title="批量删除人物"
+        title={tr("批量删除人物")}
         onClose={() => setConfirming(false)}
         footer={
           <>
             <button type="button" className="btn-secondary" onClick={() => setConfirming(false)}>
-              取消
+              {tr("取消")}
             </button>
             <button
               type="button"
@@ -313,17 +329,19 @@ function PeopleBatchActions({ selection }: { selection: Selection }) {
               disabled={busy}
               onClick={() => {
                 setConfirming(false);
-                void run({ action: "delete", ids }, "删除");
+                void run({ action: "delete", ids }, tr("删除"));
               }}
             >
-              删除 {ids.length} 人
+              {tr("删除 {0} 人", ids.length)}
             </button>
           </>
         }
       >
         <p className="text-[13.5px] leading-relaxed text-muted">
-          确定删除选中的 {ids.length}{" "}
-          个人物吗？照片和他们与作品的关联都会删除，作品本身不受影响。此操作无法撤销。
+          {tr(
+            "确定删除选中的 {0} 个人物吗？照片和他们与作品的关联都会删除，作品本身不受影响。此操作无法撤销。",
+            ids.length
+          )}
         </p>
       </Dialog>
     </>
@@ -350,7 +368,7 @@ function AddPersonDialog({ tmdbReady, onClose }: { tmdbReady: boolean; onClose: 
     try {
       setResults((await api.searchPeople(query.trim(), source)).results);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "搜索失败");
+      setError(e instanceof Error ? e.message : tr("搜索失败"));
     } finally {
       setSearching(false);
     }
@@ -366,10 +384,10 @@ function AddPersonDialog({ tmdbReady, onClose }: { tmdbReady: boolean; onClose: 
     } catch (e) {
       setError(
         e instanceof ApiError && e.code === "PERSON_EXISTS"
-          ? "这个人物已在人物中"
+          ? tr("这个人物已在人物中")
           : e instanceof Error
             ? e.message
-            : "添加失败"
+            : tr("添加失败")
       );
     } finally {
       setImporting(null);
@@ -385,14 +403,14 @@ function AddPersonDialog({ tmdbReady, onClose }: { tmdbReady: boolean; onClose: 
       setPerson(person);
       navigate(`/collection/people/${person.id}`);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "创建失败");
+      setError(e instanceof Error ? e.message : tr("创建失败"));
     }
   };
 
   return (
-    <Dialog open title="添加人物" onClose={onClose}>
+    <Dialog open title={tr("添加人物")} onClose={onClose}>
       <form onSubmit={search} className="flex flex-wrap items-end gap-2">
-        <Field label="来源" htmlFor="person-source">
+        <Field label={tr("来源")} htmlFor="person-source">
           <select
             id="person-source"
             className="field"
@@ -403,17 +421,17 @@ function AddPersonDialog({ tmdbReady, onClose }: { tmdbReady: boolean; onClose: 
               setResults(null);
             }}
           >
-            <option value="musicbrainz">MusicBrainz · 音乐</option>
-            <option value="tmdb">TMDB · 影视</option>
+            <option value="musicbrainz">{tr("MusicBrainz · 音乐")}</option>
+            <option value="tmdb">{tr("TMDB · 影视")}</option>
           </select>
         </Field>
-        <Field label="搜索人物或团体" htmlFor="person-query" className="min-w-0 flex-1">
+        <Field label={tr("搜索人物或团体")} htmlFor="person-query" className="min-w-0 flex-1">
           <input
             id="person-query"
             className="field"
             value={query}
             maxLength={100}
-            placeholder="名字，英文或原名都可以"
+            placeholder={tr("名字，英文或原名都可以")}
             disabled={source === "tmdb" && !tmdbReady}
             onChange={(e) => setQuery(e.target.value)}
             data-autofocus
@@ -425,19 +443,19 @@ function AddPersonDialog({ tmdbReady, onClose }: { tmdbReady: boolean; onClose: 
           disabled={searching || !query.trim() || (source === "tmdb" && !tmdbReady)}
         >
           <Search aria-hidden="true" className="size-4" />
-          {searching ? "搜索中…" : "搜索"}
+          {searching ? tr("搜索中…") : tr("搜索")}
         </button>
       </form>
       {!tmdbReady ? (
         <p className="mt-3 text-[12.5px] text-status-warn">
-          未配置 TMDB；MusicBrainz 搜索和手动添加仍可使用。
+          {tr("未配置 TMDB；MusicBrainz 搜索和手动添加仍可使用。")}
           <Link to="/integrations" className="text-brand underline">
-            前往 API 配置
+            {tr("前往 API 配置")}
           </Link>
         </p>
       ) : null}
       <p className="mt-2 text-[11.5px] text-faint">
-        MusicBrainz 无需密钥，按限速排队查询；不自动导入完整唱片目录。
+        {tr("MusicBrainz 无需密钥，按限速排队查询；不自动导入完整唱片目录。")}
       </p>
       {error ? (
         <p role="alert" className="mt-3 text-[12.5px] text-status-error">
@@ -474,7 +492,7 @@ function AddPersonDialog({ tmdbReady, onClose }: { tmdbReady: boolean; onClose: 
                     to={`/collection/people/${result.existingId}`}
                     className="btn-secondary shrink-0"
                   >
-                    已添加，打开
+                    {tr("已添加，打开")}
                   </Link>
                 ) : (
                   <button
@@ -483,7 +501,7 @@ function AddPersonDialog({ tmdbReady, onClose }: { tmdbReady: boolean; onClose: 
                     disabled={importing !== null}
                     onClick={() => void add(result)}
                   >
-                    {importing === result.sourceId ? "添加中…" : "添加"}
+                    {importing === result.sourceId ? tr("添加中…") : tr("添加")}
                   </button>
                 )}
               </li>
@@ -491,7 +509,7 @@ function AddPersonDialog({ tmdbReady, onClose }: { tmdbReady: boolean; onClose: 
           </ul>
         ) : (
           <p className="mt-4 text-[13px] text-muted">
-            没有找到，换个写法试试，或者在下面手动添加。
+            {tr("没有找到，换个写法试试，或者在下面手动添加。")}
           </p>
         )
       ) : null}
@@ -500,22 +518,22 @@ function AddPersonDialog({ tmdbReady, onClose }: { tmdbReady: boolean; onClose: 
         onSubmit={(e) => void addManually(e)}
         className="mt-5 flex flex-wrap items-end gap-2 border-t border-line-soft pt-4"
       >
-        <Field label="类型" htmlFor="person-manual-kind">
+        <Field label={tr("类型")} htmlFor="person-manual-kind">
           <select
             className="field"
             id="person-manual-kind"
             value={kind}
             onChange={(e) => setKind(e.target.value as PersonKind)}
           >
-            <option value="person">人物</option>
-            <option value="group">团体 / 乐队</option>
-            <option value="organization">机构 / 工作室</option>
+            <option value="person">{tr("人物")}</option>
+            <option value="group">{tr("团体 / 乐队")}</option>
+            <option value="organization">{tr("机构 / 工作室")}</option>
           </select>
         </Field>
         <Field
-          label="手动添加"
+          label={tr("手动添加")}
           htmlFor="person-manual-name"
-          hint="之后在人物页补充其它语言的名字、照片和简介"
+          hint={tr("之后在人物页补充其它语言的名字、照片和简介")}
           className="min-w-0 flex-1"
         >
           <input
@@ -523,12 +541,12 @@ function AddPersonDialog({ tmdbReady, onClose }: { tmdbReady: boolean; onClose: 
             className="field"
             value={manualName}
             maxLength={120}
-            placeholder="名字"
+            placeholder={tr("名字")}
             onChange={(e) => setManualName(e.target.value)}
           />
         </Field>
         <button type="submit" className="btn-secondary" disabled={!manualName.trim()}>
-          手动添加
+          {tr("手动添加")}
         </button>
       </form>
     </Dialog>
