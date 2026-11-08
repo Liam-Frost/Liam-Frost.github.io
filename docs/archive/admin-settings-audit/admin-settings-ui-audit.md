@@ -1,7 +1,7 @@
 # 管理后台 UI/UX 全量架构审计
 
 > 审计日期：2026-11-08。审计范围：`apps/admin`，重点是「网站设置」10 个子页、全局框架和技术栈页（作为基准）。
-> 本次只做调查、测量和写报告，**没有修改任何业务代码、组件、样式、配置或依赖，也没有提交**。新增内容只有本文件和 `docs/audit-assets/`。
+> 本次只做调查、测量和写报告，**没有修改任何业务代码、组件、样式、配置或依赖，也没有提交**。新增内容只有本文件和 `docs/archive/admin-settings-audit/audit-assets/`。
 
 ## 证据等级
 
@@ -365,7 +365,7 @@ BrowserRouter
 
 1. **有几个后台语言状态来源？** 一个：`lf-admin-locale`。【代码】
 2. **侧栏和设置页是否同一存储？** 是。三个挂载点（`AdminLayout:84`、`LoginPage:122`、`SiteSettingsPage:403`）渲染同一个 `LanguageSwitch`。【代码】从设置页切到 `en` 后，侧栏同步显示 `en`。【浏览器】
-3. **存储介质？** 只有 localStorage。没有 Cookie、没有 Context、没有后端。`docs/website-settings-proposal.zh-CN.md:48` 提到的 `admin.preferences` Setting 未实现。【代码】
+3. **存储介质？** 只有 localStorage。没有 Cookie、没有 Context、没有后端。`docs/archive/plans/website-settings-proposal.zh-CN.md:48` 提到的 `admin.preferences` Setting 未实现。【代码】
 4. **如何同步？** 不需要同步：`setLocale` 写入后整页刷新。其它标签页没有 `storage` 监听，刷新前保持旧语言。【代码】
 5. **初始化路径？** 一条：模块加载时 `detectLocale()`，已保存值 → navigator 是否 zh → en。写入 `document.documentElement.lang`。【代码】
 6. **是否有竞态或刷新回退？** **有一个。** `setLocale` 先写 localStorage，再 `reload`。有未保存草稿时浏览器弹 beforeunload，用户点「取消」后：`stored="en"`、`html lang="zh-CN"`、`select="zh"`、标题仍是中文，下次刷新或开新标签页静默变英文。【浏览器】`languageDismissBeforeUnload`

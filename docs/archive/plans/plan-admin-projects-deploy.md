@@ -148,7 +148,7 @@
 
 ## 后续:收藏模块
 
-电影、剧集、动漫和音乐收藏的计划见 `docs/plan-collection.md`(Stage 11-14),可以先于 Stage 10 进行。
+电影、剧集、动漫和音乐收藏的计划见 `docs/archive/plans/plan-collection.md`(Stage 11-14),可以先于 Stage 10 进行。
 
 ## 需要用户提供的信息
 

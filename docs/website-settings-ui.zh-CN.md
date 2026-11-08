@@ -39,6 +39,7 @@
 - `SettingsGrid variant="equal"`：容器不小于 540px 时两列等分（每列至少约 260px），否则单列。
 - `SettingsGrid variant="aside"`：容器不小于 620px 时为主列加 260–320px 辅助列（预览），否则单列。
 - 列表：`.settings-list` 配 `.surface-row`，整宽。
+- 并列卡片：`SettingsGrid variant="equal"`，设置页外用 `.card-row`。同一行的卡片由父容器拉伸到同高，行高取决于内容最多的那张；退回单列时互不影响。`variant="aside"` 的预览是跟随滚动的伴随区，不参与等高。
 - `Field width`：`meta`（176px，日期、数字）、`short`（320px，姓名、搜索）、`long`（560px，一句话）、不传则占满所在列。不要在设置页里写 `max-w-*`。
 
 Surface 只有四类：表单与列表（`.settings-section`、`.settings-list`、`.card`，同圆角、边框、阴影）、媒体（`.surface-media`，放在表单内的预览）、浮层（`.surface-overlay`）。`Panel` 是密集编辑器里的 `.card`，标题用 `.surface-title-dense`。
@@ -52,9 +53,19 @@ Surface 只有四类：表单与列表（`.settings-section`、`.settings-list`�
 - `ImmediateBadge`：标记上传后立即生效的控件，与需要保存的字段区分。
 - 预览复用真实组件：Logo 用 `SiteMark`，登录外观把真实登录页按桌面尺寸缩放显示。
 
+## 卡片组合规则
+
+- 单个设置区域：一张 `SettingsSection`。
+- 紧密相关的多个区域：一张 `SettingsSurface`，内部用 `SettingsGroup` 分组并以细线分隔。宽度足够时可并列（`equal`、`primary`、`aside`），不够时自动单列。基本资料、Logo、图标与标题、登录外观的配置与预览属于此类。
+- `SettingsSurface` 目前没有页面在用，基本资料用的是并列的两张 `SettingsSection`。
+- 真正独立且信息量相近的区域：可用并列的 `SettingsSection`（放在 `SettingsGrid variant="equal"` 内），它们自动等高。不要仅因为有两个类别就并列两张卡。
+- 列表、图库和复杂选择器：独立的整宽 Surface。
+
+同一页的主体、冲突提示和保存条共用内容区宽度。冲突提示是紧凑的状态区；保存条是页面上的一条带细线的吸底栏，不是卡片。不要用固定高度、`min-height`、占位元素或加大内边距来对齐。
+
 ## 语言
 
-后台界面语言只存在浏览器（`lf-admin-locale`），入口是侧栏底部和登录页；「默认显示与语言」只管访客默认值。切换语言需要重新加载：有未保存内容时先确认，确认前不写入存储，取消后什么都不变。其它标签页切换后，本页在没有未保存内容时跟随。
+后台界面语言只存在浏览器（`lf-admin-locale`，跟随系统时不写入），入口只有侧栏底部（手机在导航抽屉里），登录页没有语言切换；「默认显示与语言」只管访客默认值。切换语言需要重新加载：有未保存内容时先确认，确认前不写入存储，取消后什么都不变。其它标签页切换后，本页在没有未保存内容时跟随。
 
 ## 草稿、保存与离开
 
@@ -72,23 +83,6 @@ Surface 只有四类：表单与列表（`.settings-section`、`.settings-list`�
 ## 回归测试
 
 `npm run test:e2e -w apps/admin` 在内存数据的真实 API 上运行 Playwright：布局规则覆盖 6 个视口的全部设置页，行为测试覆盖草稿、离开、语言、并发、上传、Select 键盘和手机导航。布局和视觉快照只跑 Chromium，行为测试跑 Chromium、Firefox、WebKit。
-
-## 修改文件
-
-- apps/admin/src/App.tsx：新路由、完整旧路径跳转及会话失效清草稿。
-- apps/admin/src/components/layout/AdminLayout.tsx：仅设置模块扩宽、全局会话草稿离开提示。
-- apps/admin/src/components/settings/SettingsLayout.tsx：任务分组、响应式导航、宽度约束、滚动与焦点。
-- apps/admin/src/components/settings/SettingsUI.tsx：共享区域、动作、资源选择、预览、状态与冲突组件。
-- apps/admin/src/components/settings/copy.ts：设置公共消息及日期格式。
-- apps/admin/src/components/settings/drafts.ts：会话内存草稿。
-- apps/admin/src/pages/AppearancePage.tsx：品牌、首页模块和登录外观的独立编辑视图。
-- apps/admin/src/pages/SiteSettingsPage.tsx：普通设置、词典、图标及只读安全视图。
-- apps/admin/src/pages/IntegrationsPage.tsx：统一布局、错误恢复，保持服务级保存能力。
-- apps/admin/src/components/integrations/IntegrationItem.tsx、drafts.ts：跨切页的保存状态与会话内存草稿，成功后同步清理。
-- apps/admin/src/hooks/useSession.ts：登录、退出时清除旧会话草稿。
-- apps/admin/src/components/ui/Toast.tsx：设置页通知定位钩子，通知移到顶部以免遮挡保存；其他页面位置不变。
-- apps/admin/src/styles.css：设置专用布局、表面与安全保存区。
-- docs/admin.md、docs/website-settings-proposal.zh-CN.md、本文件：更新信息架构、阶段及边界。
 
 ## 验收记录
 

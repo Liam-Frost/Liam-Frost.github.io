@@ -1,31 +1,35 @@
 # Project Docs
 
-This folder is the source of truth for the migration from a static portfolio to a VPS-hosted full-stack personal site.
+Documentation for the personal site: a public site, an admin app and an API, deployed on a VPS. Start with the [project README](../README.md) to run it.
 
-## Documents
+## Using and running it
 
-- `motion.md`: the public site's motion tokens, `<Reveal>` and their checks (Stage 26).
+- `local-development.md`: running the site locally and with Docker.
+- `admin.md`: admin setup and what each admin section does.
+- `database.md`: PostgreSQL/Prisma setup, migrations and seed workflow.
 - `repository-maintenance.md`: CI, formatting, branch rules, dependency updates and security follow-up.
-- `architecture.md`: current architecture and intended direction.
-- `admin.md`: admin authentication setup and current admin scope.
+
+## How it works
+
+- `architecture.md`: how the apps and the API fit together.
+- `website-settings-ui.zh-CN.md`: website settings: layout, components, drafts and saving (Chinese).
 - `admin-security-review.md`: verified authentication controls, their limits and suggested follow-up.
-- `collection-admin-ux.md`: collection sorting, genre translations, featured management and the proposed artist/group model.
+- `collection-admin-ux.md`: collection sorting, genre translations, featured management and the proposed artist/group model (Chinese).
+- `tech-stack.md`: the database-driven tech stack, its logos, admin page and site layout.
+- `featured-quilt-wall.md`: how the home page's featured wall lays out, orders and plays entries.
+- `waveform-navigator.md`: the waveform scroll navigator.
+- `motion.md`: the public site's motion tokens, `<Reveal>` and their checks.
+- `performance.md`: performance and adaptive image quality.
 - `not-found.md`: document and hash-route 404 behavior.
-- `database.md`: PostgreSQL/Prisma setup and seed workflow.
-- `plan-admin-projects-deploy.md`: execution plan for the admin app, projects module, local run, and VPS CI/CD (Chinese).
-- `plan-collection.md`: execution plan for the collection module, Stages 11-17 (Chinese).
-- `plan-analytics.md`: execution plan for visitor analytics, Stage 18 (Chinese).
-- `plan-photos.md`: execution plan for photo sources, Stage 19 (Chinese).
-- `plan-dashboard.md`: execution plan for the admin overview, Stage 20 (Chinese).
-- `plan-home-collection.md`: execution plan for the home page collection section, Stage 21 (Chinese).
-- `plan-admin-ux.md`: execution plan for the admin overview and API settings layout, Stage 22 (Chinese).
-- `featured-quilt-wall.md`: how the home page's featured wall lays out, orders and plays entries, Stage 23.
-- `tech-stack.md`: the database-driven tech stack, its logos, admin page and site layout, Stage 24.
-- `progress.md`: migration progress by stage.
-- `development-log.md`: chronological development log.
+
+## History
+
 - `decisions.md`: user decisions and model-made implementation decisions.
-- `performance.md`: performance and adaptive image quality notes from the original front-end.
-- `reviews/`: external review records and follow-up notes.
+- `progress.md`: progress by stage.
+- `development-log.md`: chronological development log.
+- `archive/`: finished plans, review records and the admin settings audit. See [its index](archive/README.md).
+
+Deployment runbooks and production records are kept privately.
 
 ## Documentation Rule
 
