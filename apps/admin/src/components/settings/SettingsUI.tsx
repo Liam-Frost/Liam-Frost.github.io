@@ -1,12 +1,7 @@
 import { useId, useState, type ReactNode } from "react";
 import { Check, Image } from "lucide-react";
-import { Link } from "react-router";
-import type { AdminPhoto } from "@liam-frost/shared";
-import { Dialog } from "../ui/Dialog";
-import { Field } from "../ui/Field";
 import { PageHeader } from "../layout/AdminLayout";
-import { LANGS, LANG_LABELS, pickText, type Lang } from "../../lib/i18n";
-import LoadingSkeleton from "../../../../web/src/components/LoadingSkeleton";
+import { LANGS, LANG_LABELS, type Lang } from "../../lib/i18n";
 import { settingsCopy as copy } from "./copy";
 import { tr } from "../../lib/messages";
 
@@ -228,126 +223,6 @@ export function SettingsBrandPreview({
     >
       {text || "LF"}
     </span>
-  );
-}
-export function SettingsAssetPicker({
-  label,
-  photos,
-  selected,
-  onChange,
-  defaultLabel = copy.defaultAsset,
-  loading,
-  error,
-  onRetry
-}: {
-  label: string;
-  photos: AdminPhoto[];
-  selected: string | null;
-  onChange: (id: string | null) => void;
-  defaultLabel?: string;
-  loading?: boolean;
-  error?: string;
-  onRetry?: () => void;
-}) {
-  const id = useId();
-  const [open, setOpen] = useState(false),
-    [search, setSearch] = useState("");
-  const current = photos.find((photo) => photo.id === selected),
-    filtered = photos.filter((photo) =>
-      pickText(photo.title, photo.id).toLocaleLowerCase().includes(search.toLocaleLowerCase())
-    );
-  return (
-    <div>
-      <div className="flex flex-wrap items-center gap-4">
-        <AssetPreview
-          src={current?.variants[0]?.url ?? current?.src}
-          label={tr("{0}预览", label)}
-        />
-        <div className="min-w-0 flex-1 basis-48 space-y-2">
-          <Field label={label} htmlFor={id} className="max-w-sm">
-            <select
-              className="field"
-              id={id}
-              disabled={loading || Boolean(error)}
-              value={selected ?? ""}
-              onChange={(event) => onChange(event.target.value || null)}
-            >
-              <option value="">{defaultLabel}</option>
-              {selected && !current ? (
-                <option value={selected}>{copy.unavailableAsset}</option>
-              ) : null}
-              {photos.map((photo) => (
-                <option key={photo.id} value={photo.id}>
-                  {pickText(photo.title, photo.id)}
-                </option>
-              ))}
-            </select>
-          </Field>
-          <button
-            type="button"
-            className="btn-secondary"
-            disabled={loading || Boolean(error)}
-            onClick={() => setOpen(true)}
-          >
-            {copy.gallery}
-          </button>
-        </div>
-      </div>
-      {loading ? (
-        <LoadingSkeleton label={tr("读取图库…")} variant="rows" count={1} />
-      ) : error ? (
-        <SettingsState error={error} onRetry={onRetry} />
-      ) : !photos.length ? (
-        <p className="mt-2 text-xs text-muted">{copy.galleryEmpty}</p>
-      ) : null}
-      <Dialog open={open} onClose={() => setOpen(false)} title={tr("选择{0}", label)}>
-        <p className="mb-3 text-xs text-muted">
-          {copy.galleryHelp}{" "}
-          <Link className="text-brand underline" to="/photos">
-            {tr("照片管理")}
-          </Link>
-        </p>
-        <Field label={copy.gallerySearch} htmlFor={`${id}-search`}>
-          <input
-            data-autofocus
-            id={`${id}-search`}
-            className="field"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </Field>
-        <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
-          {filtered.map((photo) => (
-            <button
-              type="button"
-              key={photo.id}
-              aria-pressed={photo.id === selected}
-              className={`overflow-hidden rounded-xl border p-2 text-left ${photo.id === selected ? "border-brand bg-brand/5" : "border-line"}`}
-              onClick={() => {
-                onChange(photo.id);
-                setOpen(false);
-              }}
-            >
-              <img
-                loading="lazy"
-                className="h-28 w-full object-contain"
-                alt=""
-                src={photo.variants[0]?.url ?? photo.src}
-              />
-              <span className="mt-2 flex items-center gap-1 break-all text-xs">
-                {photo.id === selected ? (
-                  <Check aria-hidden="true" className="size-3 shrink-0" />
-                ) : null}
-                {pickText(photo.title, photo.id)}
-              </span>
-            </button>
-          ))}
-        </div>
-        {!filtered.length ? (
-          <SettingsState empty={photos.length ? copy.noMatches : copy.galleryEmpty} />
-        ) : null}
-      </Dialog>
-    </div>
   );
 }
 export function SettingsConflict({

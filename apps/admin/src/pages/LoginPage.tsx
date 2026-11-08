@@ -1,7 +1,6 @@
 import { Lock } from "lucide-react";
 import { useEffect, useState, type FormEvent } from "react";
 import { usePresentation } from "../../../web/src/data/usePresentation";
-import SiteMark from "../../../web/src/components/SiteMark";
 
 import { Field } from "../components/ui/Field";
 import { useLogin } from "../hooks/useSession";
@@ -51,7 +50,6 @@ export function LoginPage() {
     <CenteredCard>
       <form onSubmit={submit} noValidate>
         <div className="mb-5 flex items-center gap-2.5">
-          <SiteMark admin />
           <span className="inline-flex size-9 items-center justify-center rounded-full bg-brand-secondary/12 text-brand">
             <Lock aria-hidden="true" className="size-4" />
           </span>

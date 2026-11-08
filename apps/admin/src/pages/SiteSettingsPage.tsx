@@ -11,7 +11,6 @@ import { Field, Switch } from "../components/ui/Field";
 import { useToast } from "../components/ui/Toast";
 import { ApiError, api, request } from "../lib/api";
 import { mediaKey } from "../hooks/useMedia";
-import { usePhotos } from "../hooks/usePhotos";
 import { LANGS, LANG_LABELS, type Lang } from "../lib/i18n";
 import { refreshSiteSettings } from "../../../web/src/data/useSiteSettings";
 import LoadingSkeleton from "../../../web/src/components/LoadingSkeleton";
@@ -19,7 +18,6 @@ import { clearSettingsDraftIfUnchanged, useSettingsDraft } from "../components/s
 import { settingsDate } from "../components/settings/copy";
 import {
   SettingsActions,
-  SettingsAssetPicker,
   SettingsConflict,
   SettingsLanguages,
   SettingsPage,
@@ -27,6 +25,7 @@ import {
   SettingsSection,
   SettingsState
 } from "../components/settings/SettingsUI";
+import { AvatarUpload } from "../components/settings/BrandUpload";
 import { LanguageSwitch } from "../components/ui/LanguageSwitch";
 import { tr } from "../lib/messages";
 
@@ -38,7 +37,7 @@ const titles: Record<SiteSettingsGroup, string> = {
   dictionary: tr("标签词典")
 };
 const descriptions: Record<SiteSettingsGroup, string> = {
-  identity: tr("设置公开姓名、前台和后台的页面标题，以及首屏头像。"),
+  identity: tr("设置公开姓名和首屏头像。"),
   footer: tr("设置版权署名及年份范围。"),
   preferences: tr("决定访客首次访问时的显示偏好。"),
   privacy: tr("编辑公开隐私说明，历史版本可载入为草稿。"),
@@ -55,10 +54,9 @@ export function SiteSettingsPage({
     qc = useQueryClient(),
     toast = useToast();
   const q = useQuery({
-      queryKey: key,
-      queryFn: () => request<SiteSettingsDocument>(`/api/admin/site-settings/${group}`)
-    }),
-    photoQuery = usePhotos();
+    queryKey: key,
+    queryFn: () => request<SiteSettingsDocument>(`/api/admin/site-settings/${group}`)
+  });
   const [draft, setDraft] = useSettingsDraft<SiteSettingsDocument>(`site:${group}`),
     [conflict, setConflict] = useState<SiteSettingsDocument | null>(null),
     [lang, setLang] = useState<Lang>("zh"),
@@ -174,15 +172,7 @@ export function SiteSettingsPage({
         <input
           id={`settings-${group}-${label}-${suffix}`}
           className="field"
-          maxLength={
-            group === "identity" && label === tr("后台页面标题")
-              ? 80
-              : group === "identity" && label === tr("前台页面标题")
-                ? 160
-                : group === "privacy"
-                  ? 160
-                  : 120
-          }
+          maxLength={group === "privacy" ? 160 : 120}
           value={data[lang] ?? ""}
           onChange={(event) => onChange({ ...data, [lang]: event.target.value })}
         />
@@ -202,7 +192,6 @@ export function SiteSettingsPage({
     preferences = value as SiteSettingsGroups["preferences"],
     privacy = value as SiteSettingsGroups["privacy"],
     dictionary = value as SiteSettingsGroups["dictionary"];
-  const available = (photoQuery.data ?? []).filter((photo) => photo.visibility === "public");
   const filtered =
     group === "dictionary"
       ? dictionary.entries
@@ -235,44 +224,17 @@ export function SiteSettingsPage({
       <fieldset disabled={busy} className="min-w-0 space-y-5">
         {group === "identity" ? (
           <>
-            <SettingsSection
-              title={tr("身份信息")}
-              description={tr("当前语言未填写时，沿用站点现有语言回退。")}
-            >
-              <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid items-start gap-5 sm:grid-cols-2">
+              <SettingsSection
+                title={tr("身份信息")}
+                description={tr("当前语言未填写时，沿用站点现有语言回退。")}
+              >
                 {localized(tr("显示姓名"), identity.name, (name) => change({ ...identity, name }))}
-              </div>
-            </SettingsSection>
-            <SettingsSection
-              title={tr("页面标题")}
-              description={tr(
-                "显示在浏览器标签页上。后台标题也用作侧栏顶部的名称。留空使用默认标题。"
-              )}
-            >
-              <div className="grid gap-4 sm:grid-cols-2">
-                {localized(tr("前台页面标题"), identity.title, (title) =>
-                  change({ ...identity, title })
-                )}
-                {localized(tr("后台页面标题"), identity.adminTitle ?? {}, (adminTitle) =>
-                  change({ ...identity, adminTitle })
-                )}
-              </div>
-            </SettingsSection>
-            <SettingsSection
-              title={tr("首屏头像")}
-              description={tr("选择公开图库照片；留空沿用现有头像。")}
-            >
-              <SettingsAssetPicker
-                label={tr("首屏头像")}
-                photos={available}
-                selected={identity.avatarPhotoId}
-                onChange={(avatarPhotoId) => change({ ...identity, avatarPhotoId })}
-                defaultLabel={tr("现有默认头像")}
-                loading={photoQuery.isPending}
-                error={photoQuery.error?.message}
-                onRetry={() => void photoQuery.refetch()}
-              />
-            </SettingsSection>
+              </SettingsSection>
+              <SettingsSection title={tr("首屏头像")}>
+                <AvatarUpload />
+              </SettingsSection>
+            </div>
           </>
         ) : null}
         {group === "footer" ? (

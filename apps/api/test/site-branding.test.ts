@@ -84,6 +84,23 @@ describe("uploaded logos and site icon", () => {
     expect((await app.inject(pub.faviconUrl)).statusCode).toBe(404);
   });
 
+  it("publishes an uploaded avatar and ignores a gallery choice saved earlier", async () => {
+    const { app, settings, upload } = await setup();
+    await settings!.set("site.identity", {
+      name: {},
+      title: {},
+      avatarPhotoId: "old-photo"
+    });
+    expect((await app.inject("/api/site-settings")).json().avatarUrl).toBeNull();
+    const url = (await upload("avatar", await png(1600, 1600))).json().avatar;
+    expect(url).toMatch(/^\/uploads\/branding\/avatar\/[a-z0-9]+\/1024\.webp$/);
+    expect((await app.inject("/api/site-settings")).json().avatarUrl).toBe(url);
+    expect(await sharp((await app.inject(url)).rawPayload).metadata()).toMatchObject({
+      width: 1024,
+      height: 1024
+    });
+  });
+
   it("applies a JPEG's EXIF orientation", async () => {
     const { app, upload } = await setup();
     const sideways = await sharp({

@@ -1,7 +1,6 @@
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import sharp from "sharp";
 import { describe, expect, it } from "vitest";
 import { DEFAULT_SITE_SETTINGS } from "@liam-frost/shared";
 import { MemorySettingsRepository } from "../src/settings/types";
@@ -134,57 +133,6 @@ describe("grouped website settings", () => {
         (await save("dictionary", { entries: [{ ...entry, labels: { zh: "更新译名" } }] }))
           .statusCode
       ).toBe(200);
-    } finally {
-      await app.close();
-    }
-  });
-  it("resolves only public avatars", async () => {
-    const { app, photos, store, save } = await setup();
-    try {
-      const now = new Date();
-      photos.rows.set("icon-photo", {
-        id: "icon-photo",
-        slug: "icon-photo",
-        title: { en: "Icon" },
-        date: "2026-11-08",
-        category: {},
-        location: null,
-        camera: null,
-        lens: null,
-        settings: null,
-        description: null,
-        tags: [],
-        alt: {},
-        width: 640,
-        height: 480,
-        src: "",
-        storage: "local",
-        storageKey: "photos/icon-photo",
-        variants: [{ width: 640, height: 480 }],
-        source: null,
-        visibility: "public",
-        featured: false,
-        sortOrder: 0,
-        createdAt: now,
-        updatedAt: now
-      });
-      await store.write(
-        "photos/icon-photo",
-        "640.webp",
-        await sharp({ create: { width: 640, height: 480, channels: 3, background: "#345" } })
-          .webp()
-          .toBuffer()
-      );
-      expect(
-        (await save("identity", { ...DEFAULT_SITE_SETTINGS.identity, avatarPhotoId: "icon-photo" }))
-          .statusCode
-      ).toBe(200);
-      const pub = (await app.inject({ url: "/api/site-settings" })).json();
-      expect(pub.avatarUrl).toMatch(/^\/uploads\//);
-      expect(pub.faviconUrl).toBeNull();
-      await photos.update("icon-photo", { visibility: "private" });
-      expect((await app.inject({ url: "/api/site-settings" })).json().avatarUrl).toBeNull();
-      expect((await save("favicon", { photoId: "icon-photo" })).statusCode).toBe(400);
     } finally {
       await app.close();
     }

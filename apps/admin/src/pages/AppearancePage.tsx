@@ -28,6 +28,7 @@ import {
   SettingsState
 } from "../components/settings/SettingsUI";
 import { BrandUpload, useBranding } from "../components/settings/BrandUpload";
+import { PageTitles } from "../components/settings/PageTitles";
 import { tr } from "../lib/messages";
 
 const labels = {
@@ -161,7 +162,7 @@ export function AppearancePage({ mode }: { mode: Mode }) {
       <SettingsSection
         title={title}
         description={
-          name === "publicLogo" ? tr("用于个人主页的品牌标记。") : tr("用于管理后台导航和登录页。")
+          name === "publicLogo" ? tr("用于个人主页的品牌标记。") : tr("用于管理后台导航。")
         }
       >
         <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_160px]">
@@ -232,14 +233,14 @@ export function AppearancePage({ mode }: { mode: Mode }) {
     <SettingsPage
       title={
         mode === "branding"
-          ? tr("Logo 与网站图标")
+          ? tr("Logo、图标与标题")
           : mode === "home"
             ? tr("首页模块")
             : tr("登录外观")
       }
       description={
         mode === "branding"
-          ? tr("统一管理主页、后台品牌和浏览器图标。")
+          ? tr("统一管理主页、后台品牌、浏览器图标和页面标题。")
           : mode === "home"
             ? tr("控制首页显示哪些内容，关闭后仍保留原有资料。")
             : tr("选择登录背景，并预览固定或轮换效果。")
@@ -371,12 +372,7 @@ export function AppearancePage({ mode }: { mode: Mode }) {
                     />
                   </Field>
                 </div>
-                <p className="text-xs text-muted">
-                  {tr("减少动态效果时保持第一张照片。")}
-                  <Link className="ml-1 text-brand underline" to="/settings/site/branding">
-                    {tr("修改后台 Logo")}
-                  </Link>
-                </p>
+                <p className="text-xs text-muted">{tr("减少动态效果时保持第一张照片。")}</p>
               </SettingsSection>
               <SettingsPreview title={tr("登录页效果预览")}>
                 <div className="relative flex min-h-64 items-center justify-center overflow-hidden rounded-xl bg-canvas p-5">
@@ -392,7 +388,6 @@ export function AppearancePage({ mode }: { mode: Mode }) {
                   ) : null}
                   <div className="relative w-full max-w-56 rounded-xl border border-line bg-white p-4">
                     <div className="mb-3 flex items-center gap-2 text-brand">
-                      {logoPreview(value.adminLogo)}
                       <span className="text-sm font-semibold">{tr("管理员登录")}</span>
                     </div>
                     <div className="space-y-3" aria-hidden="true">
@@ -622,33 +617,36 @@ export function AppearancePage({ mode }: { mode: Mode }) {
         onSave={() => draft && save.mutate(draft)}
       />
       {mode === "branding" ? (
-        <SettingsSection
-          title={tr("网站图标")}
-          description={tr("同时用于前台和后台的浏览器标签页。")}
-        >
-          <div className="grid items-start gap-5 lg:grid-cols-2">
-            <BrandUpload
-              slot="favicon"
-              label={tr("图标图片")}
-              hint={tr(
-                "建议使用正方形图片；非正方形会完整缩放并留出透明边。SVG、PNG、WebP 或 JPEG，不超过 2 MB。上传后自动生成 32 / 180 / 192 / 512 PNG 和 ICO，立即生效。"
-              )}
-            />
-            <SettingsPreview title={tr("浏览器标签页预览")}>
-              <div className="flex min-w-0 items-center gap-2 rounded-t-lg border border-line bg-white px-3 py-2">
-                <img
-                  className="size-4 shrink-0 object-contain"
-                  src={branding.data?.favicon ?? new URL("favicon.svg", document.baseURI).href}
-                  alt=""
-                />
-                <span className="truncate text-xs text-brand">{tr("网站标题")}</span>
-                <span className="ml-auto text-xs text-muted" aria-hidden="true">
-                  ×
-                </span>
-              </div>
-            </SettingsPreview>
-          </div>
-        </SettingsSection>
+        <div className="grid items-start gap-5 lg:grid-cols-2">
+          <SettingsSection
+            title={tr("网站图标")}
+            description={tr("同时用于前台和后台的浏览器标签页。")}
+          >
+            <div className="space-y-4">
+              <BrandUpload
+                slot="favicon"
+                label={tr("图标图片")}
+                hint={tr(
+                  "建议使用正方形图片；非正方形会完整缩放并留出透明边。SVG、PNG、WebP 或 JPEG，不超过 2 MB。上传后自动生成 32 / 180 / 192 / 512 PNG 和 ICO，立即生效。"
+                )}
+              />
+              <SettingsPreview title={tr("浏览器标签页预览")}>
+                <div className="flex min-w-0 items-center gap-2 rounded-t-lg border border-line bg-white px-3 py-2">
+                  <img
+                    className="size-4 shrink-0 object-contain"
+                    src={branding.data?.favicon ?? new URL("favicon.svg", document.baseURI).href}
+                    alt=""
+                  />
+                  <span className="truncate text-xs text-brand">{tr("网站标题")}</span>
+                  <span className="ml-auto text-xs text-muted" aria-hidden="true">
+                    ×
+                  </span>
+                </div>
+              </SettingsPreview>
+            </div>
+          </SettingsSection>
+          <PageTitles />
+        </div>
       ) : null}
     </SettingsPage>
   );

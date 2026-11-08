@@ -157,11 +157,10 @@ export default function HomePage() {
               <Reveal after className="heroPortrait">
                 {settings?.avatarUrl ? (
                   <img
-                    className="avatarMark"
+                    className="avatarPhoto"
                     src={settings.avatarUrl}
                     alt=""
                     fetchPriority="high"
-                    style={{ objectFit: "cover" }}
                   />
                 ) : (
                   <div className="avatarMark" aria-hidden="true" />

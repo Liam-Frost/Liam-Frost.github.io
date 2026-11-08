@@ -498,7 +498,7 @@ export async function buildServer({
   const branding = new BrandingStore(settings);
   registerBrandingRoutes(app, auth, branding, store);
   registerPresentationRoutes(app, auth, settings, photos, store, branding);
-  registerSiteSettingsRoutes(app, auth, settings, photos, store, media, branding);
+  registerSiteSettingsRoutes(app, auth, settings, store, media, branding);
   registerAdminMediaRoutes(app, auth, {
     media,
     collection,

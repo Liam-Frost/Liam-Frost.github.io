@@ -21,6 +21,8 @@ import type { LocalImageStore } from "../storage/local";
 /** Logos can be wide and are shown on high-density screens; the icon needs its largest size, 512. */
 const LOGO_SIZE = 512;
 const FAVICON_SIZE = 512;
+/** The home avatar shows at up to 300 CSS px, on high-density screens. */
+const AVATAR_SIZE = 1024;
 
 const toAdmin = (assets: BrandAssets): AdminBranding =>
   Object.fromEntries(
@@ -71,7 +73,7 @@ export function registerBrandingRoutes(
     assertWritable();
     const slot = slotOf(request);
     const { icon } = await readUploadedIcon(request, {
-      size: slot === "favicon" ? FAVICON_SIZE : LOGO_SIZE,
+      size: slot === "favicon" ? FAVICON_SIZE : slot === "avatar" ? AVATAR_SIZE : LOGO_SIZE,
       square: slot === "favicon",
       allowJpeg: true
     });

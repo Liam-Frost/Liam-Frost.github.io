@@ -19,7 +19,7 @@ export const SETTINGS_NAV: {
     title: copy.groups.brand,
     items: [
       ["site/identity", tr("基本资料"), "standard"],
-      ["site/branding", tr("Logo 与网站图标"), "standard"],
+      ["site/branding", tr("Logo、图标与标题"), "standard"],
       ["site/footer", tr("页脚与版权"), "compact"]
     ]
   },

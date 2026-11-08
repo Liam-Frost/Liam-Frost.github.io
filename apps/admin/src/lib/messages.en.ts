@@ -1964,5 +1964,15 @@ export const en: Record<string, string> = {
   "Steam 拒绝了请求，请检查 STEAM_WEB_API_KEY":
     "Steam refused the request; check STEAM_WEB_API_KEY",
   已在收藏中: "Already in the collection",
-  同步失败: "Sync failed"
+  同步失败: "Sync failed",
+  "设置公开姓名和首屏头像。": "Set the public name and the first-screen avatar.",
+  "Logo、图标与标题": "Logo, icon and titles",
+  "统一管理主页、后台品牌、浏览器图标和页面标题。":
+    "Manage the site's and admin's branding, the browser icon and the page titles.",
+  "用于管理后台导航。": "Used in the admin navigation.",
+  保存页面标题: "Save page titles",
+  页面标题已保存: "Page titles saved",
+  头像图片: "Avatar image",
+  "建议使用正方形图片。SVG、PNG、WebP 或 JPEG，不超过 2 MB。上传后立即生效。":
+    "A square image works best. SVG, PNG, WebP or JPEG, up to 2 MB. Takes effect on upload."
 };

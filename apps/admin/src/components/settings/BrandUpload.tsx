@@ -93,3 +93,26 @@ export function BrandUpload({
     </div>
   );
 }
+
+/** The home page avatar: a small preview beside its upload controls. */
+export function AvatarUpload() {
+  const { data } = useBranding();
+  return (
+    <div className="flex items-start gap-4">
+      <span className="flex size-20 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-canvas text-[11px] text-faint">
+        {data?.avatar ? (
+          <img src={data.avatar} alt="" className="size-full object-cover" />
+        ) : (
+          tr("现有默认头像")
+        )}
+      </span>
+      <div className="min-w-0">
+        <BrandUpload
+          slot="avatar"
+          label={tr("头像图片")}
+          hint={tr("建议使用正方形图片。SVG、PNG、WebP 或 JPEG，不超过 2 MB。上传后立即生效。")}
+        />
+      </div>
+    </div>
+  );
+}
