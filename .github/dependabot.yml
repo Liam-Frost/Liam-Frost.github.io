@@ -1,9 +1,10 @@
 version: 2
 updates:
-  # Keep the default target (main): security updates need this configuration there.
-  # npm workspaces share the root lockfile; do not create duplicate directory entries.
+  # Version updates target dev, so they reach main through a preview release.
+  # npm workspaces share the root lockfile; do not create further directory entries.
   - package-ecosystem: npm
     directory: /
+    target-branch: dev
     schedule:
       interval: weekly
       day: monday
@@ -18,11 +19,23 @@ updates:
       npm-minor-patch:
         patterns: ["*"]
         update-types: [minor, patch]
+  # Security updates always use main and ignore entries with a target-branch.
+  # This entry only keeps them grouped; a limit of 0 turns off its version updates.
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: Asia/Shanghai
+    open-pull-requests-limit: 0
+    groups:
       npm-security:
         applies-to: security-updates
         patterns: ["*"]
   - package-ecosystem: github-actions
     directory: /
+    target-branch: dev
     schedule:
       interval: weekly
       day: monday
