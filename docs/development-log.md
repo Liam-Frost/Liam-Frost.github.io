@@ -1,5 +1,10 @@
 # Development Log
 
+## 2026-11-09: Home page polish and per-page copyright
+
+- Compact tech stack, shorter entrance, home collection reduced to featured and recently finished, contact links as text or icons, a matching about heading.
+- Each of the four tab bar pages has its own footer copyright notice. See `decisions.md`.
+
 ## 2026-11-09: Login background rotation modes
 
 - The login background now offers fixed, daily, each visit and each browsing session, using the same rotation code as the home page. See `decisions.md`.

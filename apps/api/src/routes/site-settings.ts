@@ -33,6 +33,8 @@ const text = (max: number) =>
       fr: z.string().max(max).optional()
     })
     .strict();
+const startYear = z.number().int().min(1900).max(3000).nullable();
+const pageCopyright = z.object({ owner: text(120), startYear, showRole: z.boolean() }).strict();
 const schemas = {
   identity: z
     .object({
@@ -46,9 +48,19 @@ const schemas = {
     .transform(({ avatarPhotoId: _avatarPhotoId, ...rest }) => rest),
   footer: z
     .object({
-      owner: text(120),
-      startYear: z.number().int().min(1900).max(3000).nullable(),
-      showRole: z.boolean(),
+      copyright: z
+        .object({
+          home: pageCopyright,
+          projects: pageCopyright,
+          collection: pageCopyright,
+          portfolio: pageCopyright
+        })
+        .strict()
+        .optional(),
+      // One statement for the whole site, from older saves: it becomes each page's.
+      owner: text(120).optional(),
+      startYear: startYear.optional(),
+      showRole: z.boolean().optional(),
       links: z
         .array(
           z
@@ -68,7 +80,23 @@ const schemas = {
         .max(8)
         .default([])
     })
-    .strict(),
+    .strict()
+    .transform(({ copyright, owner, startYear, showRole, links }) => {
+      const shared = {
+        owner: owner ?? {},
+        startYear: startYear ?? null,
+        showRole: showRole ?? true
+      };
+      return {
+        copyright: copyright ?? {
+          home: shared,
+          projects: shared,
+          collection: shared,
+          portfolio: shared
+        },
+        links
+      };
+    }),
   preferences: z
     .object({
       theme: z.enum(["system", "light", "dark"]),

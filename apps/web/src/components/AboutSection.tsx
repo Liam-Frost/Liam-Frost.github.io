@@ -40,7 +40,7 @@ export default function AboutSection() {
       <div className="container">
         <Reveal intensity="subtle">
           <div className="aboutTop">
-            <h2 className="aboutLabel">{t("about.title")}</h2>
+            <h2 className="sectionTitle">{t("about.title")}</h2>
             {items.length > 1 && (
               <span className="aboutCount">
                 {pad(index)} — {pad(items.length)}

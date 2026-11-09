@@ -1,3 +1,4 @@
+import type { FooterPage } from "@liam-frost/shared";
 import {
   intlLocale,
   tr
@@ -19,6 +20,13 @@ export const settingsCopy = {
     admin: tr("后台管理")
   }
 } as const;
+
+export const copyrightPageLabels: Record<FooterPage, string> = {
+  home: tr("主页"),
+  projects: tr("项目"),
+  collection: tr("收藏"),
+  portfolio: tr("照片")
+};
 
 export const settingsDate = (value: string) =>
   new Intl.DateTimeFormat(intlLocale, { dateStyle: "medium", timeStyle: "short" }).format(

@@ -125,8 +125,12 @@ export const en: Record<string, string> = {
     "Views by weekday and hour ({0}). Cells with fewer than {1} visitors hide the number.",
   "把图片拖到这里，或": "Drag images here, or ",
   版权署名: "Copyright holder",
-  版权署名预览: "Copyright preview",
-  版权信息: "Copyright",
+  版权声明: "Copyright notice",
+  版权声明预览: "Copyright preview",
+  主页: "Home",
+  "四个页面共用。": "Shared by all four pages.",
+  "四个页面各用各的；隐私说明等其他页面沿用主页的设置。":
+    "Each of the four pages has its own; other pages, such as the privacy notice, use the home page's.",
   "包住要强调的词，网站上会用强调色显示。最多 {0} 字。":
     " to mark words to emphasise; the site shows them in the accent colour. Up to {0} characters.",
   保存: "Save",
@@ -1026,7 +1030,8 @@ export const en: Record<string, string> = {
   "设为 Standard": "Set to Standard",
   设为精选: "Feature",
   设置: "Settings",
-  "设置版权署名及年份范围。": "Set the copyright holder and year range.",
+  "为四个页面分别设置版权声明，并管理页脚链接。":
+    "Set a copyright notice for each of the four pages and manage the footer links.",
   "设置公开姓名、前台和后台的页面标题，以及首屏头像。":
     "Set the public name, the page titles of the site and the admin, and the first-screen avatar.",
   设置页面: "Settings pages",
@@ -1294,6 +1299,9 @@ export const en: Record<string, string> = {
   文档: "Docs",
   文字: "Text",
   文字标记: "Text mark",
+  显示为: "Show as",
+  "选择图标后，网站上只显示图标，显示名称在鼠标悬停和读屏时使用。":
+    "With an icon, the site shows only the icon; the display name is used on hover and by screen readers.",
   我的歌单: "My playlists",
   我的记录: "My record",
   我的评分: "My rating",

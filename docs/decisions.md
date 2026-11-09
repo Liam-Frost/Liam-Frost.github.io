@@ -156,6 +156,18 @@ React and related dependencies should be upgraded to the latest versions. This u
 
 The model chose: a new folder per hosted image (`photos/<photo folder>/<imageId>`) found by its storage key, because public image URLs are cached as immutable and a replaced image must get new URLs; older photos keep their flat folder until replaced. Server folder imports are always hosted (the folders are not served). Links are checked for https and public addresses before every request and redirect, with Node's fetch so a configured HTTPS_PROXY still applies; a name could resolve differently between check and request (DNS rebinding), which is accepted for an admin-only feature. 198.18.0.0/15 is allowed because proxies in fake-IP mode use it. Flickr pages use oEmbed (no key). No storage interface yet: it comes with the R2 backend in 19c.
 
+### 2026-11-09: One Copyright Notice per Page
+
+The user asked for a separate footer copyright notice on each of the four pages. The model took those to be the tab bar's pages (home, projects, collection, photos) and gave each the existing fields: holder, start year and the role switch. A project's page counts as projects and other pages use the home page's notice. Footer links stay shared. Older saves apply their single notice to all four pages when read, so no migration is needed.
+
+### 2026-11-09: Home Page Polish
+
+At the user's direction: the tech stack has four smaller items per row on desktop and its entrance ends when the section's bottom reaches the viewport's bottom; the home collection shows only featured and recently finished entries; the about heading uses the same format as the other sections. The model kept tablets at three columns and phones unchanged, because four columns would break names there. A collection with only in-progress entries or songs now hides the section.
+
+### 2026-11-09: Contact Links Can Be Icons
+
+The user asked for the row of secondary contact links to support either text or icons, with icons of one style. The model chose a fixed set of monochrome marks drawn by the site (Simple Icons, plus Devicon's LinkedIn, which Simple Icons does not carry) in the text colour, rather than free uploads, so the row cannot mix styles. A link without an icon shows its name, so existing data stays text until edited.
+
 ### 2026-11-09: Login Background Uses the Shared Rotation Modes
 
 The user asked for the login background to offer the same four modes as the other modules: fixed, daily, each visit and each browsing session. The model chose to:

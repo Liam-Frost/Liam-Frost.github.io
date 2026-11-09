@@ -1,11 +1,14 @@
 import { useId, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowDown, ArrowUp, ChevronDown, Plus, Trash2 } from "lucide-react";
-import type {
-  LocalizedText,
-  SiteSettingsGroup,
-  SiteSettingsGroups,
-  SiteSettingsDocument
+import {
+  FOOTER_PAGES,
+  type FooterCopyright,
+  type FooterPage,
+  type LocalizedText,
+  type SiteSettingsGroup,
+  type SiteSettingsGroups,
+  type SiteSettingsDocument
 } from "@liam-frost/shared";
 import { Field, Switch } from "../components/ui/Field";
 import { IconButton } from "../components/ui/IconButton";
@@ -17,7 +20,7 @@ import { mediaKey } from "../hooks/useMedia";
 import { LANGS, LANG_LABELS, type Lang } from "../lib/i18n";
 import { refreshSiteSettings } from "../../../web/src/data/useSiteSettings";
 import LoadingSkeleton from "../../../web/src/components/LoadingSkeleton";
-import { settingsDate } from "../components/settings/copy";
+import { copyrightPageLabels, settingsDate } from "../components/settings/copy";
 import {
   SettingsActions,
   SettingsConflict,
@@ -41,7 +44,7 @@ const titles: Record<SiteSettingsGroup, string> = {
 };
 const descriptions: Record<SiteSettingsGroup, string> = {
   identity: tr("设置公开姓名和首屏头像。"),
-  footer: tr("设置版权署名及年份范围。"),
+  footer: tr("为四个页面分别设置版权声明，并管理页脚链接。"),
   preferences: tr("决定访客首次访问时的显示偏好。"),
   navigation: tr("调整前台底部导航和页面按钮的玻璃效果。"),
   privacy: tr("编辑公开隐私说明，历史版本可载入为草稿。"),
@@ -51,9 +54,7 @@ const fieldLabels: Record<string, string> = {
   name: tr("显示姓名"),
   title: tr("标题"),
   adminTitle: tr("后台页面标题"),
-  owner: tr("版权署名"),
-  startYear: tr("起始年份"),
-  showRole: tr("显示身份说明"),
+  copyright: tr("版权声明"),
   links: tr("页脚链接"),
   theme: tr("默认主题"),
   language: tr("默认语言"),
@@ -85,7 +86,8 @@ export function SiteSettingsPage({ group }: { group: SiteSettingsGroup }) {
   const [lang, setLang] = useState<Lang>("zh"),
     [filter, setFilter] = useState(""),
     [missingOnly, setMissingOnly] = useState(false),
-    [expanded, setExpanded] = useState<string | null>(null);
+    [expanded, setExpanded] = useState<string | null>(null),
+    [copyrightPage, setCopyrightPage] = useState<FooterPage>("home");
   const usage = useQuery({
     queryKey: mediaKey,
     queryFn: api.media,
@@ -193,6 +195,10 @@ export function SiteSettingsPage({ group }: { group: SiteSettingsGroup }) {
   const languageTabs = (isFilled?: (lang: Lang) => boolean) => (
     <LanguageTabs id={tabs} size="sm" value={lang} onChange={setLang} isFilled={isFilled} />
   );
+  const copyright = group === "footer" ? footer.copyright[copyrightPage] : null;
+  const setCopyright = (next: FooterCopyright) =>
+    change({ ...footer, copyright: { ...footer.copyright, [copyrightPage]: next } });
+  const thisYear = new Date().getFullYear();
   const moveLink = (index: number, direction: number) => {
     const links = [...footer.links];
     [links[index], links[index + direction]] = [links[index + direction]!, links[index]!];
@@ -224,16 +230,30 @@ export function SiteSettingsPage({ group }: { group: SiteSettingsGroup }) {
             </SettingsSection>
           </SettingsGrid>
         ) : null}
-        {group === "footer" ? (
+        {group === "footer" && copyright ? (
           <>
-            <SettingsSection title={tr("版权信息")}>
+            <SettingsSection
+              title={tr("版权声明")}
+              description={tr("四个页面各用各的；隐私说明等其他页面沿用主页的设置。")}
+            >
               <div className="space-y-4">
+                <Field label={tr("页面")} htmlFor="settings-copyright-page" width="short">
+                  <Select
+                    id="settings-copyright-page"
+                    value={copyrightPage}
+                    onChange={setCopyrightPage}
+                    options={FOOTER_PAGES.map((page) => ({
+                      value: page,
+                      label: copyrightPageLabels[page]
+                    }))}
+                  />
+                </Field>
                 {languageTabs()}
                 <LanguageTabPanel id={tabs} lang={lang} className="space-y-4">
                   {localized(
                     tr("版权署名"),
-                    footer.owner,
-                    (owner) => change({ ...footer, owner }),
+                    copyright.owner,
+                    (owner) => setCopyright({ ...copyright, owner }),
                     false,
                     "",
                     "short"
@@ -250,111 +270,127 @@ export function SiteSettingsPage({ group }: { group: SiteSettingsGroup }) {
                     id="settings-year"
                     type="number"
                     min={1900}
-                    max={new Date().getFullYear()}
-                    value={footer.startYear ?? ""}
+                    max={thisYear}
+                    value={copyright.startYear ?? ""}
                     onChange={(event) =>
-                      change({
-                        ...footer,
+                      setCopyright({
+                        ...copyright,
                         startYear: event.target.value ? Number(event.target.value) : null
                       })
                     }
                   />
                 </Field>
-                <div className="space-y-2 border-t border-line-soft pt-4">
-                  <p className="text-sm text-brand-dark">{tr("页脚链接")}</p>
-                  {(footer.links ?? []).map((link, index) => {
-                    const setLink = (next: typeof link) =>
-                      change({
-                        ...footer,
-                        links: footer.links.map((item, i) => (i === index ? next : item))
-                      });
-                    return (
-                      <div key={index} className="settings-link-row">
-                        <input
-                          className="field"
-                          aria-label={tr("链接 {0} 的文字", index + 1)}
-                          placeholder={tr("文字")}
-                          maxLength={40}
-                          value={link.label[lang] ?? ""}
-                          onChange={(event) =>
-                            setLink({
-                              ...link,
-                              label: { ...link.label, [lang]: event.target.value }
-                            })
-                          }
-                        />
-                        <input
-                          className="field"
-                          aria-label={tr("链接 {0} 的地址", index + 1)}
-                          placeholder={tr("https://… 或 /privacy")}
-                          maxLength={300}
-                          value={link.url}
-                          onChange={(event) => setLink({ ...link, url: event.target.value })}
-                        />
-                        <div className="flex items-center justify-end">
-                          <IconButton
-                            label={tr("上移链接 {0}", index + 1)}
-                            disabled={index === 0}
-                            onClick={() => moveLink(index, -1)}
-                          >
-                            <ArrowUp aria-hidden="true" className="size-4" />
-                          </IconButton>
-                          <IconButton
-                            label={tr("下移链接 {0}", index + 1)}
-                            disabled={index === footer.links.length - 1}
-                            onClick={() => moveLink(index, 1)}
-                          >
-                            <ArrowDown aria-hidden="true" className="size-4" />
-                          </IconButton>
-                          <IconButton
-                            danger
-                            label={tr("移除链接 {0}", index + 1)}
-                            onClick={() =>
-                              change({
-                                ...footer,
-                                links: footer.links.filter((_, i) => i !== index)
-                              })
-                            }
-                          >
-                            <Trash2 aria-hidden="true" className="size-4" />
-                          </IconButton>
-                        </div>
-                      </div>
-                    );
-                  })}
-                  <button
-                    type="button"
-                    className="btn-secondary"
-                    disabled={(footer.links ?? []).length >= 8}
-                    onClick={() =>
-                      change({
-                        ...footer,
-                        links: [...(footer.links ?? []), { label: {}, url: "" }]
-                      })
-                    }
-                  >
-                    {tr("添加链接")}
-                  </button>
-                </div>
                 <div className="flex items-center justify-between gap-3 border-t border-line-soft pt-4">
                   <span className="text-sm text-brand-dark">{tr("显示身份说明")}</span>
                   <Switch
                     id="settings-show-role"
                     label={<span className="sr-only">{tr("显示身份说明")}</span>}
-                    checked={footer.showRole}
-                    onChange={(showRole) => change({ ...footer, showRole })}
+                    checked={copyright.showRole}
+                    onChange={(showRole) => setCopyright({ ...copyright, showRole })}
                   />
                 </div>
-                <SettingsPreview title={tr("版权署名预览")}>
-                  <p className="break-words text-sm text-muted">
-                    ©{" "}
-                    {footer.startYear && footer.startYear !== new Date().getFullYear()
-                      ? `${footer.startYear}–`
-                      : ""}
-                    {new Date().getFullYear()}{" "}
-                    {footer.owner[lang] || footer.owner.en || footer.owner.zh || tr("沿用站点署名")}
-                  </p>
+                <SettingsPreview title={tr("版权声明预览")}>
+                  <ul className="space-y-1 text-sm text-muted">
+                    {FOOTER_PAGES.map((page) => {
+                      const item = footer.copyright[page];
+                      return (
+                        <li key={page} className="flex gap-3">
+                          <span className="w-10 shrink-0 text-faint">
+                            {copyrightPageLabels[page]}
+                          </span>
+                          <span className="min-w-0 break-words">
+                            ©{" "}
+                            {item.startYear && item.startYear < thisYear
+                              ? `${item.startYear}–`
+                              : ""}
+                            {thisYear}{" "}
+                            {item.owner[lang] ||
+                              item.owner.en ||
+                              item.owner.zh ||
+                              tr("沿用站点署名")}
+                          </span>
+                        </li>
+                      );
+                    })}
+                  </ul>
                 </SettingsPreview>
+              </div>
+            </SettingsSection>
+            <SettingsSection title={tr("页脚链接")} description={tr("四个页面共用。")}>
+              <div className="space-y-2">
+                {(footer.links ?? []).map((link, index) => {
+                  const setLink = (next: typeof link) =>
+                    change({
+                      ...footer,
+                      links: footer.links.map((item, i) => (i === index ? next : item))
+                    });
+                  return (
+                    <div key={index} className="settings-link-row">
+                      <input
+                        className="field"
+                        aria-label={tr("链接 {0} 的文字", index + 1)}
+                        placeholder={tr("文字")}
+                        maxLength={40}
+                        value={link.label[lang] ?? ""}
+                        onChange={(event) =>
+                          setLink({
+                            ...link,
+                            label: { ...link.label, [lang]: event.target.value }
+                          })
+                        }
+                      />
+                      <input
+                        className="field"
+                        aria-label={tr("链接 {0} 的地址", index + 1)}
+                        placeholder={tr("https://… 或 /privacy")}
+                        maxLength={300}
+                        value={link.url}
+                        onChange={(event) => setLink({ ...link, url: event.target.value })}
+                      />
+                      <div className="flex items-center justify-end">
+                        <IconButton
+                          label={tr("上移链接 {0}", index + 1)}
+                          disabled={index === 0}
+                          onClick={() => moveLink(index, -1)}
+                        >
+                          <ArrowUp aria-hidden="true" className="size-4" />
+                        </IconButton>
+                        <IconButton
+                          label={tr("下移链接 {0}", index + 1)}
+                          disabled={index === footer.links.length - 1}
+                          onClick={() => moveLink(index, 1)}
+                        >
+                          <ArrowDown aria-hidden="true" className="size-4" />
+                        </IconButton>
+                        <IconButton
+                          danger
+                          label={tr("移除链接 {0}", index + 1)}
+                          onClick={() =>
+                            change({
+                              ...footer,
+                              links: footer.links.filter((_, i) => i !== index)
+                            })
+                          }
+                        >
+                          <Trash2 aria-hidden="true" className="size-4" />
+                        </IconButton>
+                      </div>
+                    </div>
+                  );
+                })}
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  disabled={(footer.links ?? []).length >= 8}
+                  onClick={() =>
+                    change({
+                      ...footer,
+                      links: [...(footer.links ?? []), { label: {}, url: "" }]
+                    })
+                  }
+                >
+                  {tr("添加链接")}
+                </button>
               </div>
             </SettingsSection>
           </>
