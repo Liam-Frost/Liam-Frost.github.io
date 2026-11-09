@@ -66,9 +66,11 @@ React packages together, other minor/patch updates together, and Actions togethe
 Other major npm updates remain separate. Security updates have a separate group.
 No automatic merge is configured; review release notes and passing checks.
 
-The configuration deliberately targets the default branch. Dependabot security
-updates need the configuration on `main`; it takes effect after the PR is merged.
-Bring dependency changes from `main` back into `dev` before continuing development.
+Version updates target `dev`, because the production release only accepts a `main`
+tree that matches a successful `dev` preview. GitHub always opens security updates
+against `main` and ignores entries with a `target-branch`, so a second npm entry
+with a pull request limit of 0 keeps them grouped. Retarget a security update to
+`dev` before merging it. The configuration takes effect once it is on `main`.
 
 ## Security review: 2026-11-01
 
