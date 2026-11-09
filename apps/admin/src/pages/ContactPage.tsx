@@ -1,5 +1,11 @@
+import ContactIcon from "../../../web/src/components/ContactIcon";
 import LoadingSkeleton from "../../../web/src/components/LoadingSkeleton";
-import { type AdminContactResponse, type ContactContent } from "@liam-frost/shared";
+import {
+  CONTACT_ICONS,
+  type AdminContactResponse,
+  type ContactContent,
+  type ContactIconName
+} from "@liam-frost/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowDown, ArrowUp, ExternalLink, GripVertical, Pencil, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
@@ -9,6 +15,7 @@ import { Dialog } from "../components/ui/Dialog";
 import { Field } from "../components/ui/Field";
 import { IconButton } from "../components/ui/IconButton";
 import { Menu } from "../components/ui/Menu";
+import { Select } from "../components/ui/Select";
 import { DatabaseNotice } from "../components/ui/DatabaseNotice";
 import { useToast } from "../components/ui/Toast";
 import { request } from "../lib/api";
@@ -18,6 +25,19 @@ import { useUnsaved } from "../lib/unsaved";
 const key = ["admin", "contact"];
 type ContactLink = ContactContent["links"][number];
 const icon = "size-4";
+const ICON_NAMES: Record<ContactIconName, string> = {
+  github: "GitHub",
+  instagram: "Instagram",
+  linkedin: "LinkedIn",
+  x: "X",
+  youtube: "YouTube",
+  telegram: "Telegram",
+  bluesky: "Bluesky",
+  discord: "Discord",
+  bilibili: "Bilibili",
+  weibo: "Weibo",
+  xiaohongshu: "Xiaohongshu"
+};
 function platformIcon(href: string) {
   try {
     const host = new URL(href).hostname.replace(/^www\./, "");
@@ -171,7 +191,13 @@ export function ContactPage() {
                       >
                         <GripVertical className={icon} />
                       </span>
-                      <TechIcon name={link.label} url={platformIcon(link.href)} />
+                      {link.icon ? (
+                        <span className="grid size-8 shrink-0 place-items-center text-brand-dark">
+                          <ContactIcon icon={link.icon} />
+                        </span>
+                      ) : (
+                        <TechIcon name={link.label} url={platformIcon(link.href)} />
+                      )}
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-[13.5px] font-semibold text-brand-dark">
                           {link.label}
@@ -327,7 +353,11 @@ function ContactLinkEditor({
             setError(tr("请填写显示名称。"));
             return;
           }
-          onApply({ label: link.label.trim(), href: link.href.trim() });
+          onApply({
+            label: link.label.trim(),
+            href: link.href.trim(),
+            ...(link.icon ? { icon: link.icon } : {})
+          });
         }}
       >
         <Field label={tr("显示名称")} htmlFor="contact-link-label">
@@ -354,6 +384,24 @@ function ContactLinkEditor({
             maxLength={2048}
             value={link.href}
             onChange={(e) => setLink({ ...link, href: e.target.value })}
+          />
+        </Field>
+        <Field
+          label={tr("显示为")}
+          htmlFor="contact-link-display"
+          hint={tr("选择图标后，网站上只显示图标，显示名称在鼠标悬停和读屏时使用。")}
+        >
+          <Select
+            id="contact-link-display"
+            value={link.icon ?? ""}
+            onChange={(value) => {
+              const { icon: _icon, ...rest } = link;
+              setLink(value ? { ...rest, icon: value } : rest);
+            }}
+            options={[
+              { value: "" as const, label: tr("文字") },
+              ...CONTACT_ICONS.map((name) => ({ value: name, label: ICON_NAMES[name] }))
+            ]}
           />
         </Field>
         {error && (

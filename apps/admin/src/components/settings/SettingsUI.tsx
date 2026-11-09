@@ -1,10 +1,14 @@
 import { useId, type ReactNode } from "react";
-import type { PresentationSettings } from "@liam-frost/shared";
+import {
+  FOOTER_PAGES,
+  type PresentationSettings,
+  type SiteSettingsGroups
+} from "@liam-frost/shared";
 import { Check } from "lucide-react";
 import { PageHeader } from "../layout/AdminLayout";
 import { LANG_LABELS, type Lang } from "../../lib/i18n";
 import type { SettingsConflict as Conflict } from "./useSettingsDocument";
-import { settingsCopy as copy } from "./copy";
+import { copyrightPageLabels, settingsCopy as copy } from "./copy";
 import { tr } from "../../lib/messages";
 
 export function SettingsPage({
@@ -234,6 +238,12 @@ function describeValue(value: unknown): string {
     }[background.mode];
     return tr("{0} · {1} 张", mode, background.photoIds.length);
   }
+  if ("portfolio" in record)
+    return FOOTER_PAGES.map((page) => {
+      const owner = (record as SiteSettingsGroups["footer"]["copyright"])[page].owner;
+      const name = Object.values(owner).find((text) => text?.trim());
+      return `${copyrightPageLabels[page]}：${name ?? tr("沿用站点署名")}`;
+    }).join("\n");
   if ("text" in record) return String(record.text || tr("默认 Logo"));
   const values = Object.values(record);
   if (values.length && values.every((item) => typeof item === "boolean"))

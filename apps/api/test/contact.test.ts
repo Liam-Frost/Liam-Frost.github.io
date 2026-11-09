@@ -4,6 +4,29 @@ import { MemorySettingsRepository } from "../src/settings/types";
 import { buildTestServer, csrf, login } from "./helpers";
 
 describe("contact management", () => {
+  it("keeps a link's icon, shows old links as text and refuses unknown icons", async () => {
+    const app = await buildTestServer({}, { settings: new MemorySettingsRepository() });
+    const headers = { ...csrf, cookie: await login(app) };
+    const put = async (links: unknown[]) => {
+      const { revision } = (await app.inject({ url: "/api/admin/contact", headers })).json();
+      return app.inject({
+        method: "PUT",
+        url: "/api/admin/contact",
+        headers,
+        payload: { revision, contact: { email: "", links } }
+      });
+    };
+    const href = "https://github.com/someone";
+    const links = [
+      { label: "GitHub", href, icon: "github" },
+      { label: "Blog", href }
+    ];
+    expect((await put(links)).statusCode).toBe(200);
+    expect((await app.inject("/api/contact")).json().links).toEqual(links);
+    expect((await put([{ label: "GitHub", href, icon: "<svg>" }])).statusCode).toBe(400);
+    await app.close();
+  });
+
   it("requires authentication and CSRF, persists edits, rejects stale saves and unsafe links", async () => {
     const settings = new MemorySettingsRepository();
     const app = await buildTestServer({}, { settings });

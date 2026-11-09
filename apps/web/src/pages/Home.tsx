@@ -5,6 +5,7 @@ import LoadingSkeleton from "../components/LoadingSkeleton";
 import PageLoading from "../components/PageLoading";
 import { apiFetchEnabled } from "../lib/api";
 import { useContactState } from "../data/useContact";
+import ContactIcon from "../components/ContactIcon";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { Link, useNavigate } from "react-router";
@@ -302,12 +303,24 @@ export default function HomePage() {
                         {contact.links.map((s, index) => (
                           <a
                             key={index}
-                            className="contactElsewhereLink"
+                            className={
+                              s.icon
+                                ? "contactElsewhereLink contactElsewhereIcon"
+                                : "contactElsewhereLink"
+                            }
                             href={s.href}
                             target="_blank"
                             rel="noreferrer"
+                            title={s.icon ? s.label : undefined}
                           >
-                            {s.label}
+                            {s.icon ? (
+                              <>
+                                <ContactIcon icon={s.icon} />
+                                <span className="srOnly">{s.label}</span>
+                              </>
+                            ) : (
+                              s.label
+                            )}
                           </a>
                         ))}
                       </div>

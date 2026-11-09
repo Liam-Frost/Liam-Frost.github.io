@@ -425,6 +425,52 @@ test.describe("login appearance", () => {
   });
 });
 
+test.describe("footer copyright", () => {
+  test.use({ viewport: { width: 1280, height: 800 } });
+
+  test("each page keeps its own notice", async ({ page }) => {
+    await open(page, "/settings/site/footer");
+    const preview = page.getByRole("region", { name: "版权声明预览" });
+    await expect(preview.getByRole("listitem")).toHaveCount(4);
+    await page.locator("#settings-copyright-page").click();
+    await page.getByRole("option", { name: "照片", exact: true }).click();
+    await page.getByLabel("版权署名").fill("摄影：霜");
+    await expect(preview.getByRole("listitem").nth(3)).toContainText("摄影：霜");
+    await expect(preview.getByRole("listitem").nth(0)).not.toContainText("摄影：霜");
+    await page.getByRole("button", { name: "保存更改" }).click();
+    await expect(page.getByText("更改已保存")).toBeVisible();
+    const { footer } = await (await page.request.get("/api/site-settings")).json();
+    expect(footer.copyright.portfolio.owner.zh).toBe("摄影：霜");
+    expect(footer.copyright.home.owner.zh).toBe("霜");
+    expect(footer.copyright.home.startYear).toBe(2024);
+  });
+});
+
+test.describe("contact links", () => {
+  test.use({ viewport: { width: 1280, height: 800 } });
+
+  test("a link can show an icon and go back to text", async ({ page }) => {
+    const saved = async () =>
+      (await (await page.request.get("/api/contact")).json()).links.find(
+        (link: { label: string }) => link.label === "GitHub"
+      );
+    const choose = async (option: string) => {
+      await page.getByRole("button", { name: "编辑 GitHub" }).click();
+      await page.getByRole("combobox", { name: "显示为" }).click();
+      await page.getByRole("option", { name: option, exact: true }).click();
+      await page.getByRole("button", { name: "应用到草稿" }).click();
+      await page.getByRole("button", { name: "保存更改" }).click();
+      await expect(page.getByText("联系方式已保存，网站上马上生效").first()).toBeVisible();
+    };
+    await open(page, "/contact");
+    await choose("GitHub");
+    expect((await saved()).icon).toBe("github");
+    await page.reload();
+    await choose("文字");
+    expect((await saved()).icon).toBeUndefined();
+  });
+});
+
 test.describe("single select", () => {
   test.use({ viewport: { width: 1280, height: 800 } });
   const theme = (page: import("@playwright/test").Page) => page.locator("#settings-theme");
