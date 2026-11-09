@@ -31,6 +31,39 @@ async function setup() {
   return { app, settings, media, photos, store, headers, read, save };
 }
 describe("grouped website settings", () => {
+  it("keeps a copyright notice per page and applies an older single notice to all four", async () => {
+    const { app, settings, read, save } = await setup();
+    try {
+      await settings.set("site.footer", {
+        owner: { zh: "霜" },
+        startYear: 2024,
+        showRole: false,
+        links: []
+      });
+      const notice = { owner: { zh: "霜" }, startYear: 2024, showRole: false };
+      const legacy = await read("footer");
+      expect(legacy.value).toEqual({
+        copyright: {
+          home: notice,
+          projects: notice,
+          collection: notice,
+          portfolio: notice
+        },
+        links: []
+      });
+      const photos = { owner: { zh: "摄影：霜" }, startYear: null, showRole: true };
+      const copyright = { ...legacy.value.copyright, portfolio: photos };
+      expect((await save("footer", { copyright })).statusCode).toBe(200);
+      const published = (await app.inject({ url: "/api/site-settings" })).json();
+      expect(published.footer.copyright.portfolio).toEqual(photos);
+      expect(published.footer.copyright.home).toEqual(notice);
+      expect(published.footer.owner).toBeUndefined();
+      const { portfolio: _portfolio, ...missing } = copyright;
+      expect((await save("footer", { copyright: missing })).statusCode).toBe(400);
+    } finally {
+      await app.close();
+    }
+  });
   it("requires admin and CSRF, isolates groups and rejects concurrent stale writes", async () => {
     const { app, headers, read, save } = await setup();
     try {

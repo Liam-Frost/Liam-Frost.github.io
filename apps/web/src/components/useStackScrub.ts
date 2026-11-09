@@ -6,7 +6,8 @@ import { type RefObject, useEffect } from "react";
  * (github.com/Tajmirul/portfolio-2.0, app/_components/Skills.tsx, MIT) with GSAP ScrollTrigger:
  *
  * - Entrance: one ScrollTrigger timeline for the whole section, from its top at 80% of the viewport
- *   to its bottom at 80%, scrubbed with a 0.5s catch-up. Category headings and technologies come in
+ *   to its bottom at the viewport's bottom edge (100%, so everything is in as the last row arrives),
+ *   scrubbed with a 0.5s catch-up. Category headings and technologies come in
  *   in document order (`stagger: 0.4`, each rising 40px with `ease: "none"`), so they appear one by
  *   one as the page scrolls down and disappear one by one when scrolling up.
  * - Exit: while the section's bottom goes from 50% to 10% of the viewport, the section rises 150px
@@ -68,7 +69,7 @@ export function useStackScrub(
               scrollTrigger: {
                 trigger: section,
                 start: "top 80%",
-                end: "bottom 80%",
+                end: "bottom bottom",
                 scrub: 0.5,
                 onRefresh: () => sweep()
               },

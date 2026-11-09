@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { DEFAULT_CONTACT, type ContactContent } from "@liam-frost/shared";
+import { CONTACT_ICONS, DEFAULT_CONTACT, type ContactContent } from "@liam-frost/shared";
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import type { AdminAuthService } from "../auth/service";
@@ -28,7 +28,8 @@ export const contactSchema = z
                 } catch {
                   return false;
                 }
-              }, "联系方式请使用不含登录凭据的 HTTPS 链接")
+              }, "联系方式请使用不含登录凭据的 HTTPS 链接"),
+            icon: z.enum(CONTACT_ICONS).optional()
           })
           .strict()
       )

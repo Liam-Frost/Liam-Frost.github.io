@@ -2,6 +2,10 @@ import type { LocalizedText, PublicCollection } from "./api";
 
 /** A link in the footer: an https address, a mail address, or a page of the site ("/privacy"). */
 export type FooterLink = { label: LocalizedText; url: string };
+/** The pages with their own copyright line: the four in the site's tab bar. */
+export const FOOTER_PAGES = ["home", "projects", "collection", "portfolio"] as const;
+export type FooterPage = (typeof FOOTER_PAGES)[number];
+export type FooterCopyright = { owner: LocalizedText; startYear: number | null; showRole: boolean };
 export type DictionaryEntry = { id: string; aliases: string[]; labels: LocalizedText };
 export type SiteSettingsGroups = {
   identity: {
@@ -12,9 +16,7 @@ export type SiteSettingsGroups = {
     adminTitle: LocalizedText;
   };
   footer: {
-    owner: LocalizedText;
-    startYear: number | null;
-    showRole: boolean;
+    copyright: Record<FooterPage, FooterCopyright>;
     links: FooterLink[];
   };
   preferences: {
@@ -35,9 +37,18 @@ export type SiteSettingsGroups = {
   privacy: { title: LocalizedText; body: LocalizedText; effectiveDate: string | null };
   dictionary: { entries: DictionaryEntry[] };
 };
+const DEFAULT_COPYRIGHT: FooterCopyright = { owner: {}, startYear: null, showRole: true };
 export const DEFAULT_SITE_SETTINGS: SiteSettingsGroups = {
   identity: { name: {}, title: {}, adminTitle: {} },
-  footer: { owner: {}, startYear: null, showRole: true, links: [] },
+  footer: {
+    copyright: {
+      home: DEFAULT_COPYRIGHT,
+      projects: DEFAULT_COPYRIGHT,
+      collection: DEFAULT_COPYRIGHT,
+      portfolio: DEFAULT_COPYRIGHT
+    },
+    links: []
+  },
   preferences: { theme: "system", language: "auto" },
   navigation: {
     tabBarMode: "hover",
@@ -67,17 +78,10 @@ export function homeCollectionContentIds(collection: PublicCollection): string[]
   const picked = (collection.home.wall?.items ?? collection.home.featured)
     .map((p) => p.id)
     .filter((id) => byId.has(id));
-  const activity = collection.items
-    .filter(
-      (item) =>
-        (item.status === "watching" && item.kind !== "track" && item.kind !== "album") ||
-        (item.status === "done" && item.kind !== "track")
-    )
+  const recent = collection.items
+    .filter((item) => item.status === "done" && item.kind !== "track")
     .map((item) => item.id);
-  const songs = collection.playlists[0]
-    ? collection.playlists[0].trackIds.filter((id) => byId.has(id))
-    : collection.items.filter((item) => item.kind === "track").map((item) => item.id);
-  return [...new Set([...picked, ...activity, ...songs])];
+  return [...new Set([...picked, ...recent])];
 }
 
 /**
