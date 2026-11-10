@@ -159,6 +159,32 @@ export type AdminServerFolder = {
   entries: AdminServerFile[];
 };
 
+/** Something in the trash: a whole photo with its versions, or one version deleted on its own. */
+export type AdminTrashItem = {
+  kind: "photo" | "version";
+  id: string;
+  photoId: string;
+  /** The photo's title. */
+  title: LocalizedText;
+  /** A version's own name; empty for photos. */
+  label: string;
+  thumbnail: string | null;
+  width: number;
+  height: number;
+  /** How many versions go with a photo; 1 for a version. */
+  versions: number;
+  /** Size of the files on the server; 0 for referenced images, null when it is not known. */
+  bytes: number | null;
+  deletedAt: string;
+  /** When it will be removed for good. */
+  expiresAt: string;
+};
+export type AdminTrashResponse = {
+  items: AdminTrashItem[];
+  retentionDays: number;
+  totalBytes: number;
+};
+
 /** Files about to be uploaded, checked against the photos already there. */
 export type AdminUploadCheck = { files: { name: string; sha256: string }[] };
 /**

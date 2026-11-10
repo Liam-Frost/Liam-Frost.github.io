@@ -8,9 +8,9 @@ export class MemoryPhotoVersionRepository implements PhotoVersionRepository {
   private order = 0;
   private sequence = new Map<string, number>();
 
-  async list(photoId: string) {
+  async list(photoId: string, { includeTrashed = false } = {}) {
     return [...this.rows.values()]
-      .filter((row) => row.photoId === photoId)
+      .filter((row) => row.photoId === photoId && (includeTrashed || !row.deletedAt))
       .sort(
         (a, b) =>
           a.createdAt.getTime() - b.createdAt.getTime() ||
@@ -23,7 +23,29 @@ export class MemoryPhotoVersionRepository implements PhotoVersionRepository {
   }
 
   async findByStorageKey(key: string) {
-    return [...this.rows.values()].find((row) => row.storageKey === key) ?? null;
+    return [...this.rows.values()].find((row) => row.storageKey === key && !row.deletedAt) ?? null;
+  }
+
+  async trash(id: string, at: Date) {
+    return this.mark(id, at);
+  }
+
+  async restore(id: string) {
+    return this.mark(id, null);
+  }
+
+  private mark(id: string, deletedAt: Date | null) {
+    const row = this.rows.get(id);
+    if (!row) return null;
+    const next = { ...row, deletedAt };
+    this.rows.set(id, next);
+    return next;
+  }
+
+  async listTrashed() {
+    return [...this.rows.values()]
+      .filter((row) => row.deletedAt)
+      .sort((a, b) => b.deletedAt!.getTime() - a.deletedAt!.getTime());
   }
 
   async create(version: NewVersion) {
@@ -31,7 +53,8 @@ export class MemoryPhotoVersionRepository implements PhotoVersionRepository {
       ...version,
       id: randomUUID(),
       label: version.label ?? "",
-      createdAt: version.createdAt ?? new Date()
+      createdAt: version.createdAt ?? new Date(),
+      deletedAt: null
     };
     this.rows.set(row.id, row);
     this.sequence.set(row.id, (this.order += 1));

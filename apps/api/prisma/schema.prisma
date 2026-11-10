@@ -52,10 +52,13 @@ model Photo {
   /// The version whose image the fields above (src, storage, storageKey, variants, source, width,
   /// height) are a copy of; null until the photo has versions.
   currentVersionId String?
+  /// When the photo was moved to the trash; null while it is in use.
+  deletedAt   DateTime?
   versions    PhotoVersion[]
 
   @@index([visibility, sortOrder])
   @@index([date])
+  @@index([deletedAt])
 }
 
 /// One image of a photo: a different quality, format or source of the same picture. The photo shows its
@@ -74,9 +77,12 @@ model PhotoVersion {
   width      Int
   height     Int
   createdAt  DateTime     @default(now())
+  /// When this version alone was moved to the trash; null while it is in use.
+  deletedAt  DateTime?
   photo      Photo        @relation(fields: [photoId], references: [id], onDelete: Cascade)
 
   @@index([photoId])
+  @@index([deletedAt])
 }
 
 enum ProjectStatus {

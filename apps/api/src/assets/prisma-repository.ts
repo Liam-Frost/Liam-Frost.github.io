@@ -36,6 +36,13 @@ export class PrismaAssetRepository implements AssetRepository {
     await this.prisma.imageAsset.deleteMany({ where: { storageKey } });
   }
 
+  async setStatus(storageKey: string, status: AssetRow["status"], at: Date | null) {
+    await this.prisma.imageAsset.updateMany({
+      where: { storageKey },
+      data: { status, trashedAt: at }
+    });
+  }
+
   async findBySha256(hashes: string[], ownerType?: AssetOwnerType) {
     if (!hashes.length) return [];
     const records = await this.prisma.imageAsset.findMany({

@@ -241,9 +241,21 @@ describe("admin photo management", () => {
 
     const removed = await app.inject({ method: "DELETE", url, headers: { ...csrf, cookie } });
     expect(removed.statusCode).toBe(204);
-    expect(existsSync(join(uploadDir, "photos", photo.id))).toBe(false);
+    // In the trash: gone for visitors and the admin list, files kept until it is removed for good.
+    expect(existsSync(join(uploadDir, "photos", photo.id))).toBe(true);
     expect((await app.inject(`/api/photos/${photo.id}`)).statusCode).toBe(404);
     expect((await app.inject(photo.src)).statusCode).toBe(404);
+    expect((await app.inject({ url: photo.src, headers: { cookie } })).statusCode).toBe(404);
+    expect(
+      (
+        await app.inject({
+          method: "DELETE",
+          url: `/api/admin/trash/photo/${photo.id}`,
+          headers: { ...csrf, cookie }
+        })
+      ).statusCode
+    ).toBe(200);
+    expect(existsSync(join(uploadDir, "photos", photo.id))).toBe(false);
     expect(
       (await app.inject({ method: "DELETE", url, headers: { ...csrf, cookie } })).statusCode
     ).toBe(404);

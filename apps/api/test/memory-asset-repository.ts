@@ -29,6 +29,11 @@ export class MemoryAssetRepository implements AssetRepository {
     this.rows.delete(storageKey);
   }
 
+  async setStatus(storageKey: string, status: AssetRow["status"], at: Date | null) {
+    const row = this.rows.get(storageKey);
+    if (row) this.rows.set(storageKey, { ...row, status, trashedAt: at });
+  }
+
   async findBySha256(hashes: string[], ownerType?: AssetOwnerType) {
     return [...this.rows.values()].filter(
       (row) =>

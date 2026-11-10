@@ -125,7 +125,7 @@ describe("photo versions", () => {
     expect(back.photo).toMatchObject({ width: 900, thumbnail: photo.thumbnail });
   });
 
-  it("labels a version, and deletes one that is not being shown with its files", async () => {
+  it("labels a version, and moves one that is not being shown to the trash", async () => {
     const { upload, call, dir } = await setup();
     const { photo } = (await upload("/api/admin/photos", "a.jpg", jpeg)).json();
     await upload(`/api/admin/photos/${photo.id}/image`, "a.png", png, "image/png");
@@ -148,6 +148,8 @@ describe("photo versions", () => {
     expect(existsSync(folder)).toBe(true);
     const removed = await call("DELETE", `/api/admin/photos/${photo.id}/versions/${old.id}`);
     expect(removed.json().versions).toHaveLength(1);
+    expect(existsSync(folder)).toBe(true);
+    await call("DELETE", `/api/admin/trash/version/${old.id}`);
     expect(existsSync(folder)).toBe(false);
     expect(
       (await call("DELETE", `/api/admin/photos/${photo.id}/versions/${old.id}`)).statusCode
@@ -188,13 +190,15 @@ describe("photo versions", () => {
     expect(photoVersions.rows.size).toBe(1);
   });
 
-  it("removes every version's files when the photo is deleted", async () => {
+  it("removes every version's files when a deleted photo leaves the trash", async () => {
     const { upload, call, dir, photoVersions } = await setup();
     const { photo } = (await upload("/api/admin/photos", "a.jpg", jpeg)).json();
     await upload(`/api/admin/photos/${photo.id}/image`, "a.png", png, "image/png");
     const photoFolder = join(dir, ...photo.thumbnail.split("/").slice(2, 4));
     expect(existsSync(photoFolder)).toBe(true);
     expect((await call("DELETE", `/api/admin/photos/${photo.id}`)).statusCode).toBe(204);
+    expect(existsSync(photoFolder)).toBe(true);
+    await call("DELETE", `/api/admin/trash/photo/${photo.id}`);
     expect(existsSync(photoFolder)).toBe(false);
     expect(photoVersions.rows.size).toBe(0);
   });

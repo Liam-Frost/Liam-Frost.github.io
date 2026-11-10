@@ -32,6 +32,8 @@ export type PhotoRow = {
   sortOrder: number;
   /** The version the image fields are a copy of; unset for a photo that has no versions yet. */
   currentVersionId?: string | null;
+  /** When the photo was moved to the trash; unset or null while it is in use. */
+  deletedAt?: Date | null;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -67,6 +69,7 @@ export type PhotoPatch = Partial<
   >
 >;
 
+/** Every method but the trash ones leaves photos in the trash out, as if they were deleted. */
 export interface PhotoRepository {
   /** Ordered by sortOrder, then newest date. */
   list(options?: { includePrivate?: boolean }): Promise<PhotoRow[]>;
@@ -76,7 +79,15 @@ export interface PhotoRepository {
   /** Without an explicit sortOrder the photo goes first. */
   create(photo: NewPhoto): Promise<PhotoRow>;
   update(id: string, patch: PhotoPatch): Promise<PhotoRow | null>;
+  /** Removes the photo for good, whether or not it is in the trash. */
   delete(id: string): Promise<PhotoRow | null>;
+  /** Moves the photo to the trash. */
+  trash(id: string, at: Date): Promise<PhotoRow | null>;
+  /** Takes the photo back out of the trash. */
+  restore(id: string): Promise<PhotoRow | null>;
+  /** Photos in the trash, most recently deleted first. */
+  listTrashed(): Promise<PhotoRow[]>;
+  getTrashed(id: string): Promise<PhotoRow | null>;
   /** Sets sortOrder to each id's position. */
   reorder(ids: string[]): Promise<void>;
 }

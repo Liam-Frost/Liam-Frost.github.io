@@ -106,6 +106,9 @@ export function tr(key: string, ...args: Arg[]): string {
 
 /** English sign-in and account errors from the API, for the Chinese interface. */
 const API_ZH: Record<string, string> = {
+  "This version's photo is in the trash; restore the photo first":
+    "这个版本所属的照片也在回收站里，请先恢复照片",
+  "Not in the trash": "回收站里没有这一项",
   "This photo has reached its version limit; delete a version first":
     "这张照片的版本数已达上限，请先删除一个版本",
   "This version is the one being shown; switch to another first":
