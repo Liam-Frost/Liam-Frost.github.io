@@ -2028,5 +2028,23 @@ export const en: Record<string, string> = {
   取消未开始的: "Cancel pending",
   整体进度: "Overall progress",
   "重试 {0}": "Retry {0}",
-  "取消 {0}": "Cancel {0}"
+  "取消 {0}": "Cancel {0}",
+  已跳过: "Skipped",
+  "，{0} 个已跳过": ", {0} skipped",
+  中断的上传: "Interrupted upload",
+  "上次上传在完成前被中断：{0} 张已完成，{1} 张没有完成。":
+    "The last upload was interrupted: {0} finished, {1} did not.",
+  "重新选择这些文件就能继续；已经上传的会被认出来，不会重复。":
+    "Choose these files again to continue; ones already uploaded are recognised and not duplicated.",
+  知道了: "Got it",
+  "正在检查是否已经上传过…": "Checking for files already uploaded…",
+  照片已存在: "Photo already exists",
+  跳过: "Skip",
+  都保留: "Keep both",
+  "这个文件已经上传过，对应照片“{0}”。": 'This file was already uploaded as the photo "{0}".',
+  "照片“{0}”来自一个同名文件。": 'The photo "{0}" came from a file with the same name.',
+  "跳过不上传，或者作为另一张照片保留。": "Skip it, or keep it as another photo.",
+  "替换会把新图片换到这张照片上，照片信息保持不变；都保留会新增一张照片。":
+    "Replace puts the new image on that photo and keeps its details; Keep both adds a new photo.",
+  "对剩下的 {0} 个冲突执行相同操作": "Do this for the remaining {0} conflicts"
 };

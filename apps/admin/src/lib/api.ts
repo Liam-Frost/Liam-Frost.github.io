@@ -1,5 +1,9 @@
 import {
   ADMIN_REQUEST_HEADER,
+  UPLOAD_ID_HEADER,
+  type AdminUploadCheck,
+  type AdminUploadCheckResponse,
+  type AdminUploadStatusResponse,
   type AdminAccountStatus,
   type AdminLoginSecondFactor,
   type AdminRecoveryCodes,
@@ -173,7 +177,8 @@ function uploadFile<T>(
   url: string,
   file: File,
   onProgress?: (fraction: number) => void,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  uploadId?: string
 ): Promise<T> {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
@@ -184,6 +189,7 @@ function uploadFile<T>(
     xhr.open("POST", url);
     xhr.setRequestHeader(ADMIN_REQUEST_HEADER, "1");
     xhr.setRequestHeader("accept", "application/json");
+    if (uploadId) xhr.setRequestHeader(UPLOAD_ID_HEADER, uploadId);
     xhr.upload.onprogress = (event) => {
       if (event.lengthComputable) onProgress?.(event.loaded / event.total);
     };
@@ -204,9 +210,10 @@ function uploadFile<T>(
 export function uploadPhoto(
   file: File,
   onProgress: (fraction: number) => void,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  uploadId?: string
 ) {
-  return uploadFile<AdminPhotoResponse>("/api/admin/photos", file, onProgress, signal);
+  return uploadFile<AdminPhotoResponse>("/api/admin/photos", file, onProgress, signal, uploadId);
 }
 
 const photoPath = (id: string) => `/api/admin/photos/${encodeURIComponent(id)}`;
@@ -216,12 +223,14 @@ export function uploadPhotoImage(
   id: string,
   file: File,
   useExif: boolean,
-  onProgress?: (fraction: number) => void
+  onProgress?: (fraction: number) => void,
+  signal?: AbortSignal
 ) {
   return uploadFile<AdminPhotoResponse>(
     `${photoPath(id)}/image${useExif ? "?exif=1" : ""}`,
     file,
-    onProgress
+    onProgress,
+    signal
   );
 }
 
@@ -297,6 +306,16 @@ export const api = {
   updatePhoto: (id: string, update: AdminPhotoUpdate) =>
     request<AdminPhotoResponse>(photoPath(id), { method: "PATCH", json: update }),
   deletePhoto: (id: string) => request<void>(photoPath(id), { method: "DELETE" }),
+  checkUploads: (files: AdminUploadCheck["files"]) =>
+    request<AdminUploadCheckResponse>("/api/admin/photos/check", {
+      method: "POST",
+      json: { files }
+    }),
+  uploadStatus: (ids: string[]) =>
+    request<AdminUploadStatusResponse>("/api/admin/photos/uploads/status", {
+      method: "POST",
+      json: { ids }
+    }),
   importPhoto: (body: AdminPhotoImport) =>
     request<AdminPhotoResponse>("/api/admin/photos/import", { method: "POST", json: body }),
   replacePhotoImage: (id: string, body: AdminPhotoImageReplace) =>

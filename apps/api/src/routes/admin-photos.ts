@@ -1,13 +1,17 @@
-import type {
-  AdminPhotoResponse,
-  AdminPhotosResponse,
-  AdminServerFolder,
-  PhotoSource
+import {
+  UPLOAD_ID_HEADER,
+  type AdminPhotoResponse,
+  type AdminPhotosResponse,
+  type AdminServerFolder,
+  type AdminUploadCheckResponse,
+  type AdminUploadStatusResponse,
+  type PhotoSource
 } from "@liam-frost/shared";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { randomBytes } from "node:crypto";
 import sharp from "sharp";
 
+import type { AssetRepository } from "../assets/types";
 import type { AdminAuthService } from "../auth/service";
 import { badRequest, HttpError, notFound } from "../lib/errors";
 import {
@@ -17,7 +21,10 @@ import {
   photoImportSchema,
   photoOrderSchema,
   photoUpdateSchema,
-  serverFileQuerySchema
+  serverFileQuerySchema,
+  uploadCheckSchema,
+  uploadIdSchema,
+  uploadStatusSchema
 } from "../lib/validation";
 import { InvalidImageError } from "../photos/images";
 import { toAdminPhoto } from "../photos/mapping";
@@ -74,7 +81,8 @@ export function registerAdminPhotoRoutes(
   photos: PhotoRepository | null,
   store: LocalImageStore,
   maxUploadBytes: number,
-  sources: PhotoSources
+  sources: PhotoSources,
+  assets: AssetRepository | null = null
 ) {
   const repo = () => {
     if (!photos) {
@@ -87,6 +95,39 @@ export function registerAdminPhotoRoutes(
     return photos;
   };
   const admin = { preHandler: auth.requireAdmin };
+
+  /**
+   * Records a photo's site-hosted image in the register. The photo is already saved, so a failure here
+   * only costs duplicate detection until the next scan; it must not fail the request.
+   */
+  const registerAsset = async (
+    request: FastifyRequest,
+    photoId: string,
+    image: PhotoImage,
+    extra: { originalName?: string | null; uploadId?: string | null } = {}
+  ) => {
+    if (!assets || !image.details || !image.fields.storageKey) return;
+    await assets
+      .register({
+        ...image.details,
+        storageKey: image.fields.storageKey,
+        ownerType: "photo",
+        ownerId: photoId,
+        role: "image",
+        originalName: extra.originalName ?? null,
+        uploadId: extra.uploadId ?? null
+      })
+      .catch((error) => request.log.warn({ error, photoId }, "Failed to register the image"));
+  };
+  /** Removes a photo's site-hosted files and their register entry. */
+  const discardImage = async (row: Pick<PhotoRow, "storage" | "storageKey">) => {
+    await removeImage(store, row);
+    if (assets && row.storage === "local" && row.storageKey)
+      await assets.removeByKey(row.storageKey);
+  };
+  /** Uploads being handled right now, by the client's upload id. */
+  const inFlight = new Set<string>();
+
   const idParam = (request: FastifyRequest) => parseInput(photoIdSchema, request.params).id;
 
   app.get("/api/admin/photos", admin, async (): Promise<AdminPhotosResponse> => {
@@ -112,7 +153,8 @@ export function registerAdminPhotoRoutes(
     request: FastifyRequest,
     reply: FastifyReply,
     id: string,
-    image: PhotoImage
+    image: PhotoImage,
+    upload: { originalName?: string | null; uploadId?: string | null } = {}
   ): Promise<AdminPhotoResponse> => {
     try {
       const row = await repo().create({
@@ -136,6 +178,7 @@ export function registerAdminPhotoRoutes(
         { photoId: id, source: image.fields.source?.type, by: request.adminUser?.username },
         "Photo added"
       );
+      await registerAsset(request, id, image, upload);
       reply.code(201);
       return { photo: toAdminPhoto(row, store) };
     } catch (error) {
@@ -158,7 +201,34 @@ export function registerAdminPhotoRoutes(
 
   /** Uploads one image from the device. */
   app.post("/api/admin/photos", admin, async (request, reply): Promise<AdminPhotoResponse> => {
-    repo();
+    const photos = repo();
+    const header = request.headers[UPLOAD_ID_HEADER];
+    const uploadId = header === undefined ? null : parseInput(uploadIdSchema, header);
+    if (uploadId) {
+      // A retry of an upload that already succeeded (its answer was lost): return that photo.
+      const [known] = assets ? await assets.findByUploadIds([uploadId]) : [];
+      const existing = known ? await photos.get(known.ownerId) : null;
+      if (existing) {
+        const file = request.isMultipart() ? await request.file() : null;
+        file?.file.resume();
+        return { photo: toAdminPhoto(existing, store) };
+      }
+      if (inFlight.has(uploadId))
+        throw new HttpError(409, "UPLOAD_IN_PROGRESS", "This upload is still being processed");
+      inFlight.add(uploadId);
+    }
+    try {
+      return await receivePhoto(request, reply, uploadId);
+    } finally {
+      if (uploadId) inFlight.delete(uploadId);
+    }
+  });
+
+  const receivePhoto = async (
+    request: FastifyRequest,
+    reply: FastifyReply,
+    uploadId: string | null
+  ): Promise<AdminPhotoResponse> => {
     const { fileName, image, bytes, receiveMs } = await readUploadedImage(
       request,
       maxUploadBytes,
@@ -181,8 +251,55 @@ export function registerAdminPhotoRoutes(
       },
       "Photo upload timings"
     );
-    return createPhoto(request, reply, id, hosted);
+    return createPhoto(request, reply, id, hosted, { originalName: fileName, uploadId });
+  };
+
+  /**
+   * Which of the files about to be uploaded match a photo already there: the very same file (by
+   * hash), or an upload with the same file name. The admin then skips, replaces or keeps both.
+   */
+  app.post("/api/admin/photos/check", admin, async (request): Promise<AdminUploadCheckResponse> => {
+    const { files } = parseInput(uploadCheckSchema, request.body);
+    const rows = await repo().list({ includePrivate: true });
+    const byId = new Map(rows.map((row) => [row.id, row]));
+    const byName = new Map<string, PhotoRow>();
+    for (const row of rows)
+      if (row.source?.type === "upload" && row.source.ref && !byName.has(row.source.ref))
+        byName.set(row.source.ref, row);
+    const hashed = assets
+      ? await assets.findBySha256([...new Set(files.map((file) => file.sha256))], "photo")
+      : [];
+    return {
+      conflicts: files.flatMap((file, index) => {
+        const same = hashed.find(
+          (asset) => asset.sha256 === file.sha256 && byId.has(asset.ownerId)
+        );
+        const row = same ? byId.get(same.ownerId) : byName.get(file.name.slice(0, 200));
+        if (!row) return [];
+        const { id, title, thumbnail } = toAdminPhoto(row, store);
+        return [{ index, reason: same ? "content" : "name", photo: { id, title, thumbnail } }];
+      })
+    };
   });
+
+  /** Which uploads of an interrupted batch reached the server and became photos. */
+  app.post(
+    "/api/admin/photos/uploads/status",
+    admin,
+    async (request): Promise<AdminUploadStatusResponse> => {
+      const { ids } = parseInput(uploadStatusSchema, request.body);
+      const photos = repo();
+      const found = assets ? await assets.findByUploadIds(ids) : [];
+      const entries = await Promise.all(
+        found.map(async (asset) =>
+          (await photos.get(asset.ownerId)) ? [asset.uploadId!, asset.ownerId] : null
+        )
+      );
+      return {
+        photos: Object.fromEntries(entries.filter((entry): entry is string[] => entry !== null))
+      };
+    }
+  );
 
   /** Adds a photo from an image link, a Flickr photo or a file in a server import folder. */
   app.post(
@@ -223,7 +340,8 @@ export function registerAdminPhotoRoutes(
     request: FastifyRequest,
     row: PhotoRow,
     image: PhotoImage,
-    useExif: boolean
+    useExif: boolean,
+    originalName: string | null = null
   ): Promise<AdminPhotoResponse> => {
     const patch: PhotoPatch = { ...image.fields };
     if (useExif) {
@@ -243,7 +361,8 @@ export function registerAdminPhotoRoutes(
       await removeImage(store, image.fields).catch(() => undefined);
       throw notFound("Photo not found");
     }
-    await removeImage(store, row).catch((error) =>
+    await registerAsset(request, row.id, image, { originalName });
+    await discardImage(row).catch((error) =>
       request.log.warn({ error, photoId: row.id }, "Failed to remove the replaced image")
     );
     request.log.info(
@@ -265,7 +384,7 @@ export function registerAdminPhotoRoutes(
     const { fileName, image } = await readUploadedImage(request, maxUploadBytes, store);
     const hosted = await hostImage(store, row.id, image, uploadSource(fileName), null);
     const useExif = (request.query as { exif?: string }).exif === "1";
-    return replaceImage(request, row, hosted, useExif);
+    return replaceImage(request, row, hosted, useExif, fileName);
   });
 
   /** Replaces a photo's image from a link, a Flickr photo or a server file. */
@@ -327,7 +446,7 @@ export function registerAdminPhotoRoutes(
   app.delete("/api/admin/photos/:id", admin, async (request, reply) => {
     const row = await repo().delete(idParam(request));
     if (!row) throw notFound("Photo not found");
-    await removeImage(store, row).catch((error) =>
+    await discardImage(row).catch((error) =>
       request.log.warn({ error, photoId: row.id }, "Failed to remove photo files")
     );
     request.log.info({ photoId: row.id, by: request.adminUser?.username }, "Photo deleted");

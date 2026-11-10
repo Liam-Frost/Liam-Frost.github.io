@@ -512,3 +512,41 @@ model PersonMembership {
   @@id([groupId, personId])
   @@index([personId])
 }
+
+/// One site-hosted image as it is on disk: a folder of generated sizes plus the private original.
+/// The register behind duplicate detection, the trash, storage totals and the consistency scan.
+model ImageAsset {
+  id           String    @id
+  /// The folder under UPLOAD_DIR, e.g. "photos/<id>/<imageId>".
+  storageKey   String    @unique
+  /// photo, project, media, person, branding or stack.
+  ownerType    String
+  ownerId      String
+  /// What the image is to its owner: image, cover, gallery, poster, photo or icon.
+  role         String
+  /// The uploaded file's name, when there was one.
+  originalName String?
+  /// The original's extension: jpg, png, webp, avif or tif.
+  format       String
+  /// Size of the original in bytes.
+  bytes        Int
+  /// Size of every file in the folder in bytes.
+  totalBytes   Int
+  width        Int
+  height       Int
+  /// Generated sizes: [{ "width": 640, "height": 427 }, ...], smallest first.
+  variants     Json
+  /// SHA-256 of the original, hex; null when the original is missing.
+  sha256       String?
+  /// The client's id for the upload that created it, so a retried upload is not stored twice.
+  uploadId     String?   @unique
+  /// ready or trashed.
+  status       String    @default("ready")
+  trashedAt    DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([sha256])
+  @@index([ownerType, ownerId])
+  @@index([status])
+}

@@ -1,4 +1,5 @@
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
+import { createReadStream } from "node:fs";
 import { mkdir, readdir, readFile, rename, rm, rmdir, stat, writeFile } from "node:fs/promises";
 import { dirname, join, resolve, sep } from "node:path";
 
@@ -104,6 +105,25 @@ export class LocalImageStore {
     const entries = await readdir(this.path(key), { withFileTypes: true }).catch(() => []);
     for (const entry of entries)
       if (entry.isFile()) await rm(this.path(key, entry.name), { force: true });
+  }
+
+  /** The files directly in a key's folder with their sizes; empty when the folder is missing. */
+  async files(key: string): Promise<{ name: string; bytes: number }[]> {
+    const entries = await readdir(this.path(key), { withFileTypes: true }).catch(() => []);
+    const files = [];
+    for (const entry of entries) {
+      if (!entry.isFile()) continue;
+      const info = await stat(this.path(key, entry.name)).catch(() => null);
+      if (info) files.push({ name: entry.name, bytes: info.size });
+    }
+    return files;
+  }
+
+  /** SHA-256 of one stored file, hex. */
+  async hash(key: string, name: string) {
+    const hash = createHash("sha256");
+    for await (const chunk of createReadStream(this.path(key, name))) hash.update(chunk as Buffer);
+    return hash.digest("hex");
   }
 
   /** Reads a public file, or returns null for anything that is not a generated size. */

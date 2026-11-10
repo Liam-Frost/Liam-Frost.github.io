@@ -148,6 +148,26 @@ export const photoImageReplaceSchema = z
     message: "Server files are always hosted by the site"
   });
 
+const uploadId = z.string().regex(/^[A-Za-z0-9-]{8,64}$/, "Invalid upload id");
+export const uploadIdSchema = uploadId;
+
+export const uploadCheckSchema = z
+  .object({
+    files: z
+      .array(
+        z
+          .object({
+            name: z.string().min(1).max(300),
+            sha256: z.string().regex(/^[a-f0-9]{64}$/, "Invalid hash")
+          })
+          .strict()
+      )
+      .max(500)
+  })
+  .strict();
+
+export const uploadStatusSchema = z.object({ ids: z.array(uploadId).max(500) }).strict();
+
 export const serverFileQuerySchema = z
   .object({
     root: z.coerce.number().int().min(0).max(50).default(0),

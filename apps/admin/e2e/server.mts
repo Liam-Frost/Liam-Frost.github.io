@@ -11,6 +11,7 @@ import type { PhotoRow } from "../../api/src/photos/types";
 import { buildServer } from "../../api/src/server";
 import type { SettingsRepository } from "../../api/src/settings/types";
 import { MemoryAnalyticsStore } from "../../api/test/memory-analytics-store";
+import { MemoryAssetRepository } from "../../api/test/memory-asset-repository";
 import { MemoryMediaRepository } from "../../api/test/memory-media-repository";
 import { MemoryPhotoRepository } from "../../api/test/memory-photo-repository";
 import { MemoryPlaylistRepository } from "../../api/test/memory-playlist-repository";
@@ -168,6 +169,7 @@ const app = await buildServer({
   adminDistDir: join(here, "dist"),
   webDistDir: join(here, "../../web/public"),
   photos,
+  assets: new MemoryAssetRepository(),
   projects,
   stack,
   media,

@@ -17,7 +17,8 @@ const STATUS_TEXT: Record<QueueStatus, string> = {
   processing: tr("处理中"),
   done: tr("已完成"),
   error: tr("失败"),
-  cancelled: tr("已取消")
+  cancelled: tr("已取消"),
+  skipped: tr("已跳过")
 };
 
 const ACTION =
@@ -29,11 +30,43 @@ function StatusIcon({ status }: { status: QueueStatus }) {
     return <CircleCheck aria-hidden="true" className={`${size} text-status-ok`} />;
   if (status === "error")
     return <CircleAlert aria-hidden="true" className={`${size} text-status-error`} />;
-  if (status === "cancelled")
+  if (status === "cancelled" || status === "skipped")
     return <CircleSlash aria-hidden="true" className={`${size} text-faint`} />;
   if (status === "queued") return <Clock aria-hidden="true" className={`${size} text-faint`} />;
   return (
     <LoaderCircle aria-hidden="true" className={`${size} animate-spin text-brand-secondary`} />
+  );
+}
+
+/** After a reload cut a batch short: which files still need to be chosen again. */
+export function InterruptedUploadsNotice({
+  batch,
+  onDismiss
+}: {
+  batch: { done: number; unfinished: string[] };
+  onDismiss: () => void;
+}) {
+  return (
+    <section aria-label={tr("中断的上传")} className="card mb-5 p-4 text-[13px]">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 space-y-1">
+          <p className="font-semibold text-brand-dark">
+            {tr(
+              "上次上传在完成前被中断：{0} 张已完成，{1} 张没有完成。",
+              batch.done,
+              batch.unfinished.length
+            )}
+          </p>
+          <p className="text-subtle">
+            {tr("重新选择这些文件就能继续；已经上传的会被认出来，不会重复。")}
+          </p>
+          <p className="break-all text-muted">{batch.unfinished.join("、")}</p>
+        </div>
+        <button type="button" className={ACTION} onClick={onDismiss}>
+          {tr("知道了")}
+        </button>
+      </div>
+    </section>
   );
 }
 
@@ -68,6 +101,7 @@ export function UploadQueue({
           <span className="ml-2 font-normal text-subtle" aria-live="polite">
             {tr("{0} / {1} 已完成", summary.done, summary.total)}
             {summary.failed ? tr("，{0} 个失败", summary.failed) : ""}
+            {summary.skipped ? tr("，{0} 个已跳过", summary.skipped) : ""}
           </span>
         </h2>
         <div className="flex items-center gap-1">

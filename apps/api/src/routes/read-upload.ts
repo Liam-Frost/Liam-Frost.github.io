@@ -1,4 +1,5 @@
 import type { FastifyInstance, FastifyRequest } from "fastify";
+import { createHash } from "node:crypto";
 import { createWriteStream } from "node:fs";
 import { rm, stat } from "node:fs/promises";
 import { pipeline } from "node:stream/promises";
@@ -39,8 +40,18 @@ export async function readUploadedImage(
 
   const path = await store.tempFile();
   received.set(request, [...(received.get(request) ?? []), path]);
+  const hash = createHash("sha256");
   try {
-    await pipeline(file.file, createWriteStream(path));
+    await pipeline(
+      file.file,
+      async function* (chunks: AsyncIterable<Buffer>) {
+        for await (const chunk of chunks) {
+          hash.update(chunk);
+          yield chunk;
+        }
+      },
+      createWriteStream(path)
+    );
   } catch {
     throw badRequest("The upload was interrupted; try again", "UPLOAD_INTERRUPTED");
   }
@@ -55,7 +66,8 @@ export async function readUploadedImage(
   const receiveMs = Math.round(performance.now() - started);
 
   try {
-    return { fileName: file.filename, image: await processImage(path), bytes: size, receiveMs };
+    const image = await processImage({ path, bytes: size, sha256: hash.digest("hex") });
+    return { fileName: file.filename, image, bytes: size, receiveMs };
   } catch (error) {
     if (error instanceof InvalidImageError) throw badRequest(error.message, "INVALID_IMAGE");
     throw error;

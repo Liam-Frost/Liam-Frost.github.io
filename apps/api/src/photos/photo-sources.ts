@@ -8,6 +8,7 @@ import { randomBytes } from "node:crypto";
 import { readdir, readFile, realpath, stat } from "node:fs/promises";
 import { basename, extname, isAbsolute, join, relative, resolve, sep } from "node:path";
 
+import { describeImage, type ImageDetails } from "../assets/describe";
 import { fetchPublic, UnsafeUrlError } from "../lib/safe-fetch";
 import type { LocalImageStore } from "../storage/local";
 import type { ExifSuggestions } from "./exif";
@@ -31,6 +32,8 @@ export type PhotoImage = {
   exif: ExifSuggestions;
   /** A title suggestion (file name, Flickr title). */
   title: string | null;
+  /** The stored files, for the image register; null for an image that is only referenced. */
+  details: ImageDetails | null;
 };
 
 /** "photos/<id-ish>/<imageId>": a fresh folder per image, so a replaced image gets new URLs. */
@@ -79,7 +82,8 @@ export async function hostImage(
       height: image.height
     },
     exif: image.exif,
-    title
+    title,
+    details: describeImage(image)
   };
 }
 
@@ -139,7 +143,8 @@ export class PhotoSources {
         height
       },
       exif,
-      title
+      title,
+      details: null
     };
   }
 
