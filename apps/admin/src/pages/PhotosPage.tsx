@@ -20,13 +20,14 @@ import {
   sourceLabel
 } from "../components/photos/ImageSourcePicker";
 import { PhotoEditor } from "../components/photos/PhotoEditor";
-import { UploadQueue, type UploadItem } from "../components/photos/UploadQueue";
+import { UploadQueue } from "../components/photos/UploadQueue";
 import { DatabaseNotice } from "../components/ui/DatabaseNotice";
 import { Dialog } from "../components/ui/Dialog";
 import { IconButton } from "../components/ui/IconButton";
 import { useToast } from "../components/ui/Toast";
 import { useArrivalParams } from "../hooks/useArrivalParams";
 import { useDeletePhoto, usePhotos, useReorderPhotos, useSetPhoto } from "../hooks/usePhotos";
+import { useUploadQueue } from "../hooks/useUploadQueue";
 import { api, uploadPhoto } from "../lib/api";
 import { pickText } from "../lib/i18n";
 import { tr } from "../lib/messages";
@@ -71,7 +72,7 @@ export function PhotosPage() {
   const [filter, setFilter] = useState<Filter>("all");
   const [editing, setEditing] = useState<AdminPhoto | null>(null);
   const [deleting, setDeleting] = useState<AdminPhoto | null>(null);
-  const [uploads, setUploads] = useState<UploadItem[]>([]);
+  const { items: uploads, queue } = useUploadQueue();
   const [dragId, setDragId] = useState<string | null>(null);
   const [dropActive, setDropActive] = useState(false);
   // 概览 links here to add a photo (?open=add) or to a task's photos (?show=referenced | missing-en).
@@ -87,69 +88,38 @@ export function PhotosPage() {
   const remove = useDeletePhoto();
   const toast = useToast();
 
-  const patchUpload = (key: string, patch: Partial<UploadItem>) =>
-    setUploads((list) => list.map((item) => (item.key === key ? { ...item, ...patch } : item)));
-
-  /** One at a time: image processing is CPU-heavy on the server. */
-  const uploadFiles = async (files: File[]) => {
-    const items = files.map((file, i) => ({
-      file,
-      item: {
-        key: `${Date.now()}-${i}-${file.name}`,
+  /** A few at a time; each can be retried or, until the server has it, cancelled. */
+  const uploadFiles = (files: File[]) =>
+    queue.add(
+      files.map((file) => ({
         name: file.name,
-        progress: 0,
-        status: "uploading" as const
-      }
-    }));
-    setUploads((list) => [...items.map((x) => x.item), ...list]);
-    for (const { file, item } of items) {
-      try {
-        const { photo } = await uploadPhoto(file, (progress) =>
-          patchUpload(item.key, progress >= 1 ? { progress, status: "processing" } : { progress })
-        );
-        setPhoto(photo, { prepend: true });
-        patchUpload(item.key, { status: "done", progress: 1 });
-      } catch (e) {
-        patchUpload(item.key, {
-          status: "error",
-          error: e instanceof Error ? e.message : tr("上传失败")
-        });
-      }
-    }
-  };
+        kind: "upload" as const,
+        run: async ({ onProgress, signal }) => {
+          const { photo } = await uploadPhoto(file, onProgress, signal);
+          setPhoto(photo, { prepend: true });
+        }
+      }))
+    );
 
-  /** Links, gallery photos and server files, one at a time like uploads. */
-  const importItems = async (imports: AdminPhotoImport[]) => {
-    const items = imports.map((body, i) => ({
-      body,
-      item: {
-        key: `${Date.now()}-import-${i}`,
+  /** Links, gallery photos and server files, through the same queue as uploads. */
+  const importItems = (imports: AdminPhotoImport[]) =>
+    queue.add(
+      imports.map((body) => ({
         name: body.from.type === "server" ? body.from.path : body.from.url,
-        progress: 1,
-        status: "processing" as const
-      }
-    }));
-    setUploads((list) => [...items.map((x) => x.item), ...list]);
-    for (const { body, item } of items) {
-      try {
-        const { photo } = await api.importPhoto(body);
-        setPhoto(photo, { prepend: true });
-        patchUpload(item.key, { status: "done" });
-      } catch (e) {
-        patchUpload(item.key, {
-          status: "error",
-          error: e instanceof Error ? e.message : tr("添加失败")
-        });
-      }
-    }
-  };
+        kind: "import" as const,
+        run: async () => {
+          const { photo } = await api.importPhoto(body);
+          setPhoto(photo, { prepend: true });
+        }
+      }))
+    );
 
   const onDropFiles = (event: DragEvent) => {
     if (!event.dataTransfer.types.includes("Files")) return;
     event.preventDefault();
     setDropActive(false);
     const files = [...event.dataTransfer.files].filter((file) => file.type.startsWith("image/"));
-    if (files.length) void uploadFiles(files);
+    if (files.length) uploadFiles(files);
   };
 
   const move = (ids: string[], from: number, to: number) => {
@@ -218,16 +188,23 @@ export function PhotosPage() {
           action={tr("添加")}
           onFiles={(files) => {
             setAdding(false);
-            void uploadFiles(files);
+            uploadFiles(files);
           }}
           onImports={(items) => {
             setAdding(false);
-            void importItems(items);
+            importItems(items);
           }}
         />
       </Dialog>
 
-      <UploadQueue items={uploads} onClear={() => setUploads([])} />
+      <UploadQueue
+        items={uploads}
+        onRetry={(key) => queue.retry(key)}
+        onRetryFailed={() => queue.retryFailed()}
+        onCancel={(key) => queue.cancel(key)}
+        onCancelAll={() => queue.cancelAll()}
+        onClear={() => queue.clear()}
+      />
 
       <div
         role="tablist"

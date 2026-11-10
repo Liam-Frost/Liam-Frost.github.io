@@ -159,9 +159,28 @@ export function registerAdminPhotoRoutes(
   /** Uploads one image from the device. */
   app.post("/api/admin/photos", admin, async (request, reply): Promise<AdminPhotoResponse> => {
     repo();
-    const { fileName, image } = await readUploadedImage(request, maxUploadBytes);
+    const { fileName, image, bytes, receiveMs } = await readUploadedImage(
+      request,
+      maxUploadBytes,
+      store
+    );
     const id = photoIdFromFileName(fileName);
+    const saving = performance.now();
     const hosted = await hostImage(store, id, image, uploadSource(fileName), fileTitle(fileName));
+    const saveMs = Math.round(performance.now() - saving);
+    // Where an upload's time goes; decides whether sizes should be generated in the background.
+    request.log.info(
+      {
+        photoId: id,
+        bytes,
+        width: image.width,
+        height: image.height,
+        receiveMs,
+        ...image.timings,
+        saveMs
+      },
+      "Photo upload timings"
+    );
     return createPhoto(request, reply, id, hosted);
   });
 
@@ -243,7 +262,7 @@ export function registerAdminPhotoRoutes(
   /** Replaces a photo's image with an upload (`?exif=1` also takes its date and camera details). */
   app.post("/api/admin/photos/:id/image", admin, async (request): Promise<AdminPhotoResponse> => {
     const row = await getRow(request);
-    const { fileName, image } = await readUploadedImage(request, maxUploadBytes);
+    const { fileName, image } = await readUploadedImage(request, maxUploadBytes, store);
     const hosted = await hostImage(store, row.id, image, uploadSource(fileName), null);
     const useExif = (request.query as { exif?: string }).exif === "1";
     return replaceImage(request, row, hosted, useExif);

@@ -172,10 +172,15 @@ function apiError(status: number, data: Partial<ApiErrorBody> | undefined) {
 function uploadFile<T>(
   url: string,
   file: File,
-  onProgress?: (fraction: number) => void
+  onProgress?: (fraction: number) => void,
+  signal?: AbortSignal
 ): Promise<T> {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
+    const aborted = () => reject(new ApiError(0, "ABORTED", tr("已取消")));
+    if (signal?.aborted) return aborted();
+    signal?.addEventListener("abort", () => xhr.abort(), { once: true });
+    xhr.onabort = aborted;
     xhr.open("POST", url);
     xhr.setRequestHeader(ADMIN_REQUEST_HEADER, "1");
     xhr.setRequestHeader("accept", "application/json");
@@ -196,8 +201,12 @@ function uploadFile<T>(
   });
 }
 
-export function uploadPhoto(file: File, onProgress: (fraction: number) => void) {
-  return uploadFile<AdminPhotoResponse>("/api/admin/photos", file, onProgress);
+export function uploadPhoto(
+  file: File,
+  onProgress: (fraction: number) => void,
+  signal?: AbortSignal
+) {
+  return uploadFile<AdminPhotoResponse>("/api/admin/photos", file, onProgress, signal);
 }
 
 const photoPath = (id: string) => `/api/admin/photos/${encodeURIComponent(id)}`;

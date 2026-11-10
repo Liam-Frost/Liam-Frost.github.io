@@ -200,7 +200,7 @@ export function registerAdminProjectRoutes(
         throw badRequest(`At most ${MAX_GALLERY} screenshots`);
 
       // Receiving and processing the image happens outside the lock; only the project update is serialized.
-      const { image, bytes } = await readUploadedImage(request, maxUploadBytes);
+      const { image, bytes } = await readUploadedImage(request, maxUploadBytes, store);
       const imageId = randomBytes(6).toString("hex");
       const key = `projects/${preflight.id}/${imageId}`;
       const stored: StoredImage = {
