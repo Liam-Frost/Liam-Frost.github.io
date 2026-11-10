@@ -1,5 +1,5 @@
 // The real API and built admin with in-memory repositories and a throwaway account, for Playwright.
-import { mkdtempSync, readFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -190,6 +190,16 @@ const app = await buildServer({
 // Test-only controls, absent from the real server.
 app.post("/__e2e/seed", async (request) => {
   await seed((request.body as { scenario?: "default" | "empty" | "large" }).scenario ?? "default");
+  return { ok: true };
+});
+// An image folder no photo knows, old enough for the storage scan to report it.
+app.post("/__e2e/orphan", async (request) => {
+  const { name, original } = request.body as { name: string; original: string };
+  const folder = join(config.uploads.dir!, "photos", name, "aaaaaaaaaaaa");
+  mkdirSync(folder, { recursive: true });
+  writeFileSync(join(folder, "original.jpg"), Buffer.from(original, "base64"));
+  const old = new Date(Date.now() - 2 * 60 * 60 * 1000);
+  utimesSync(folder, old, old);
   return { ok: true };
 });
 app.post("/__e2e/photo-visibility", async (request) => {

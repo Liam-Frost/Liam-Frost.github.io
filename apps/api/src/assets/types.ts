@@ -36,6 +36,8 @@ export interface AssetRepository {
   /** Ready assets whose original has one of these hashes. */
   findBySha256(hashes: string[], ownerType?: AssetOwnerType): Promise<AssetRow[]>;
   findByUploadIds(uploadIds: string[]): Promise<AssetRow[]>;
+  /** Every registered image, in use or in the trash. */
+  all(): Promise<AssetRow[]>;
   /** Every registered key of an owner type. */
   keys(ownerType: AssetOwnerType): Promise<string[]>;
 }

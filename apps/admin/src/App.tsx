@@ -35,6 +35,7 @@ import { PeoplePage } from "./pages/PeoplePage";
 import { PersonEditPage } from "./pages/PersonEditPage";
 import { PhotosPage } from "./pages/PhotosPage";
 import { TrashPage } from "./pages/TrashPage";
+import { StoragePage } from "./pages/StoragePage";
 import { ProjectEditPage } from "./pages/ProjectEditPage";
 import { ProjectsPage } from "./pages/ProjectsPage";
 import { AboutPage } from "./pages/AboutPage";
@@ -119,6 +120,7 @@ function SessionGate() {
         <Route index element={<OverviewPage />} />
         <Route path="photos" element={<PhotosPage />} />
         <Route path="photos/trash" element={<TrashPage />} />
+        <Route path="photos/storage" element={<StoragePage />} />
         <Route path="projects" element={<ProjectsPage />} />
         <Route path="projects/:id" element={<ProjectEditPage />} />
         <Route path="stack" element={<StackPage />} />

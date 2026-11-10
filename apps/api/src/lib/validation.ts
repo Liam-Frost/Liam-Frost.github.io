@@ -153,6 +153,13 @@ export const photoVersionParamsSchema = z.object({
   id: photoIdSchema.shape.id,
   versionId: z.string().regex(/^[a-f0-9-]{36}$/, "Invalid version id")
 });
+export const storageKeySchema = z
+  .object({
+    key: z
+      .string()
+      .regex(/^photos\/[a-z0-9][a-z0-9-]{0,80}(\/[a-z0-9][a-z0-9-]{0,40})?$/, "Invalid folder")
+  })
+  .strict();
 export const trashItemParamsSchema = z.object({
   kind: z.enum(["photo", "version"]),
   id: z.string().regex(/^[a-z0-9][a-z0-9-]{0,80}$/, "Invalid id")

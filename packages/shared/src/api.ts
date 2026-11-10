@@ -159,6 +159,53 @@ export type AdminServerFolder = {
   entries: AdminServerFile[];
 };
 
+/** An image folder on disk that the database does not know. */
+export type AdminStorageOrphan = {
+  key: string;
+  files: number;
+  bytes: number;
+  modifiedAt: string;
+  /** Whether it holds an original a photo can be made from. */
+  adoptable: boolean;
+};
+/** A known image with files missing: nothing on disk at all, or the listed files. */
+export type AdminStorageIssue = {
+  key: string;
+  photoId: string;
+  title: LocalizedText;
+  missing: string[];
+  /** Whether the original is there, so the generated sizes can be made again. */
+  repairable: boolean;
+};
+export type AdminStorageScan = {
+  scannedAt: string;
+  orphans: AdminStorageOrphan[];
+  missing: AdminStorageIssue[];
+  incomplete: AdminStorageIssue[];
+};
+export type AdminStorageOverview = {
+  /** False without the image register: totals are then unknown. */
+  registered: boolean;
+  /** Images in use, with the size of all their files and of the originals alone. */
+  images: number;
+  totalBytes: number;
+  originalBytes: number;
+  byOwner: { ownerType: string; images: number; bytes: number }[];
+  trash: { images: number; bytes: number };
+  /** The disk the uploads are on; null where it cannot be read. */
+  disk: { freeBytes: number; totalBytes: number } | null;
+  largest: {
+    key: string;
+    ownerType: string;
+    ownerId: string;
+    title: LocalizedText | null;
+    format: string;
+    bytes: number;
+  }[];
+  /** The last scan since the server started, if any. */
+  scan: AdminStorageScan | null;
+};
+
 /** Something in the trash: a whole photo with its versions, or one version deleted on its own. */
 export type AdminTrashItem = {
   kind: "photo" | "version";

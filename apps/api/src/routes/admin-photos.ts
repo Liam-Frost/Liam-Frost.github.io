@@ -12,6 +12,7 @@ import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { randomBytes } from "node:crypto";
 import sharp from "sharp";
 
+import type { StorageManager } from "../assets/storage";
 import type { AssetRepository } from "../assets/types";
 import type { AdminAuthService } from "../auth/service";
 import { badRequest, HttpError, notFound } from "../lib/errors";
@@ -25,11 +26,12 @@ import {
   photoVersionLabelSchema,
   photoVersionParamsSchema,
   serverFileQuerySchema,
+  storageKeySchema,
   uploadCheckSchema,
   uploadIdSchema,
   uploadStatusSchema
 } from "../lib/validation";
-import { InvalidImageError } from "../photos/images";
+import { InvalidImageError, processImage } from "../photos/images";
 import { toAdminPhoto, toAdminVersion } from "../photos/mapping";
 import { removeImageFiles, type PhotoTrash } from "../photos/trash";
 import {
@@ -80,7 +82,8 @@ export function registerAdminPhotoRoutes(
   assets: AssetRepository | null,
   versions: PhotoVersionRepository | null,
   imageSettings: () => Promise<ImageSettings>,
-  trash: PhotoTrash | null
+  trash: PhotoTrash | null,
+  storage: StorageManager | null
 ) {
   const repo = () => {
     if (!photos) {
@@ -482,6 +485,59 @@ export function registerAdminPhotoRoutes(
       throw notFound("Version not found");
     return { row, version };
   };
+
+  /** The private original of a version, as a download. */
+  app.get("/api/admin/photos/:id/versions/:versionId/original", admin, async (request, reply) => {
+    const { version } = await getVersion(request);
+    const original =
+      storage && version.storage === "local" && version.storageKey
+        ? await storage.original(version.storageKey)
+        : null;
+    if (!original) throw notFound("This version has no original on the server");
+    const extension = original.name.split(".").pop()!;
+    reply.header("content-type", "application/octet-stream");
+    reply.header("cache-control", "private, no-store");
+    reply.header(
+      "content-disposition",
+      `attachment; filename="${version.photoId}-${version.id.slice(0, 8)}.${extension}"`
+    );
+    return reply.send(original.data);
+  });
+
+  /**
+   * Makes a hidden photo from an orphan folder's original (found by the storage scan), then removes
+   * the folder: the photo's files are written fresh, under a key of its own.
+   */
+  app.post(
+    "/api/admin/photos/adopt",
+    admin,
+    async (request, reply): Promise<AdminPhotoResponse> => {
+      repo();
+      if (!storage) throw notFound("Not an orphan folder");
+      const { key } = parseInput(storageKeySchema, request.body);
+      const { name, data } = await storage.orphanOriginal(key);
+      const id = photoIdFromFileName(key.split("/")[1]!);
+      let processed;
+      try {
+        processed = await processImage(data);
+      } catch (error) {
+        if (error instanceof InvalidImageError) throw badRequest(error.message, "INVALID_IMAGE");
+        throw error;
+      }
+      const hosted = await hostImage(
+        store,
+        id,
+        processed,
+        { type: "server", ref: `${key}/${name}`, importedAt: new Date().toISOString() },
+        key.split("/")[1]!
+      );
+      const created = await createPhoto(request, reply, id, hosted, { originalName: name });
+      await storage
+        .deleteOrphan(key)
+        .catch((error) => request.log.warn({ error, key }, "Failed to remove the adopted folder"));
+      return created;
+    }
+  );
 
   /** A photo's versions, oldest first, with which one it shows. */
   app.get(

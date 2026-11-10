@@ -1,6 +1,6 @@
 import type { AdminPhoto, AdminPhotoVersion, AdminPhotoVersionsResponse } from "@liam-frost/shared";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, Trash2 } from "lucide-react";
+import { Check, Download, Trash2 } from "lucide-react";
 import { useState } from "react";
 
 import { api } from "../../lib/api";
@@ -124,6 +124,16 @@ export function PhotoVersions({
                 </p>
               </div>
             </div>
+            {version.storage === "local" && version.format ? (
+              <a
+                href={api.versionOriginalUrl(photoId, version.id)}
+                download
+                className="mt-1 inline-flex items-center gap-1 px-1 text-[11.5px] text-brand hover:underline"
+              >
+                <Download aria-hidden="true" className="size-3.5" />
+                {tr("下载原图")}
+              </a>
+            ) : null}
             <div className="mt-1.5 flex items-center justify-between gap-2">
               {version.current ? (
                 <span className="inline-flex items-center gap-1 px-1 text-[11.5px] font-medium text-brand">

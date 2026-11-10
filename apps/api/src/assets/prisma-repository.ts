@@ -60,6 +60,10 @@ export class PrismaAssetRepository implements AssetRepository {
     return records.map(toRow);
   }
 
+  async all() {
+    return (await this.prisma.imageAsset.findMany()).map(toRow);
+  }
+
   async keys(ownerType: AssetOwnerType) {
     const records = await this.prisma.imageAsset.findMany({
       where: { ownerType },
