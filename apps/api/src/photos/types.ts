@@ -30,6 +30,8 @@ export type PhotoRow = {
   visibility: PhotoVisibility;
   featured: boolean;
   sortOrder: number;
+  /** The version the image fields are a copy of; unset for a photo that has no versions yet. */
+  currentVersionId?: string | null;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -61,6 +63,7 @@ export type PhotoPatch = Partial<
     | "alt"
     | "visibility"
     | "featured"
+    | "currentVersionId"
   >
 >;
 

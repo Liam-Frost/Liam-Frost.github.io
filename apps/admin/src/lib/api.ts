@@ -1,6 +1,7 @@
 import {
   ADMIN_REQUEST_HEADER,
   UPLOAD_ID_HEADER,
+  type AdminPhotoVersionsResponse,
   type AdminUploadCheck,
   type AdminUploadCheckResponse,
   type AdminUploadStatusResponse,
@@ -224,10 +225,15 @@ export function uploadPhotoImage(
   file: File,
   useExif: boolean,
   onProgress?: (fraction: number) => void,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  current = true
 ) {
+  const query = new URLSearchParams({
+    ...(useExif ? { exif: "1" } : {}),
+    current: current ? "1" : "0"
+  });
   return uploadFile<AdminPhotoResponse>(
-    `${photoPath(id)}/image${useExif ? "?exif=1" : ""}`,
+    `${photoPath(id)}/image?${query}`,
     file,
     onProgress,
     signal
@@ -320,6 +326,20 @@ export const api = {
     request<AdminPhotoResponse>("/api/admin/photos/import", { method: "POST", json: body }),
   replacePhotoImage: (id: string, body: AdminPhotoImageReplace) =>
     request<AdminPhotoResponse>(`${photoPath(id)}/image`, { method: "PUT", json: body }),
+  photoVersions: (id: string) => request<AdminPhotoVersionsResponse>(`${photoPath(id)}/versions`),
+  showPhotoVersion: (id: string, versionId: string) =>
+    request<AdminPhotoVersionsResponse>(`${photoPath(id)}/versions/${versionId}/current`, {
+      method: "POST"
+    }),
+  labelPhotoVersion: (id: string, versionId: string, label: string) =>
+    request<AdminPhotoVersionsResponse>(`${photoPath(id)}/versions/${versionId}`, {
+      method: "PATCH",
+      json: { label }
+    }),
+  deletePhotoVersion: (id: string, versionId: string) =>
+    request<AdminPhotoVersionsResponse>(`${photoPath(id)}/versions/${versionId}`, {
+      method: "DELETE"
+    }),
   hostPhoto: (id: string) =>
     request<AdminPhotoResponse>(`${photoPath(id)}/host`, { method: "POST" }),
   serverFolder: (root: number, path: string) =>

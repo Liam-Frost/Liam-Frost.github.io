@@ -2046,5 +2046,41 @@ export const en: Record<string, string> = {
   "跳过不上传，或者作为另一张照片保留。": "Skip it, or keep it as another photo.",
   "替换会把新图片换到这张照片上，照片信息保持不变；都保留会新增一张照片。":
     "Replace puts the new image on that photo and keeps its details; Keep both adds a new photo.",
-  "对剩下的 {0} 个冲突执行相同操作": "Do this for the remaining {0} conflicts"
+  "对剩下的 {0} 个冲突执行相同操作": "Do this for the remaining {0} conflicts",
+  图片管理: "Image management",
+  "设置回收站保留时间和每张照片的版本上限。":
+    "Set how long the trash keeps images and how many versions a photo may have.",
+  回收站保留天数: "Days kept in trash",
+  每张照片的版本上限: "Versions per photo",
+  保留与上限: "Retention and limits",
+  "修改后对之后的操作生效，已有的版本不会被删除。":
+    "Changes apply from now on; existing versions are not deleted.",
+  "删除的图片在回收站里保留这么多天，之后彻底删除。1 到 365 天。":
+    "Deleted images stay in the trash this many days, then are removed for good. 1 to 365 days.",
+  "一张照片最多保留这么多个版本，达到后需要先删除一个。1 到 50 个。":
+    "A photo keeps at most this many versions; at the limit, delete one first. 1 to 50.",
+  删除版本: "Delete version",
+  "这个版本的图片文件会从服务器删除，无法撤销。":
+    "This version's image files will be deleted from the server. This cannot be undone.",
+  "这个版本只引用外部链接，删除后不再保留这个链接。":
+    "This version only references an external link; deleting it drops the link.",
+  已删除版本: "Version deleted",
+  版本: "Versions",
+  "版本 {0} 的名称": "Name of version {0}",
+  "版本 {0}": "Version {0}",
+  当前显示: "Shown now",
+  已切换版本: "Version switched",
+  设为当前: "Show this one",
+  "删除版本 {0}": "Delete version {0}",
+  已添加版本并设为当前: "Version added and shown",
+  已添加版本: "Version added",
+  添加版本: "Add version",
+  "同一张照片的另一份图片，例如更清晰的文件或另一个来源。标题、说明、排序和公开状态都保留，原来的图片也保留为一个版本，可以随时切换回去。":
+    "Another image of the same photo, such as a sharper file or another source. Title, description, order and visibility are kept, and the earlier image stays as a version you can switch back to.",
+  设为当前显示的版本: "Show this version",
+  "This photo has reached its version limit; delete a version first":
+    "This photo has reached its version limit; delete a version first",
+  "This version is the one being shown; switch to another first":
+    "This version is the one being shown; switch to another first",
+  "This upload is still being processed": "This upload is still being processed"
 };

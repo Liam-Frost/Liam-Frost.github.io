@@ -7,6 +7,7 @@ import type { CollectionSettingsStore } from "../media/collection-settings";
 import { isMediaPublic, type MediaRepository } from "../media/types";
 import type { PersonRepository } from "../people/types";
 import type { PhotoRepository } from "../photos/types";
+import type { PhotoVersionRepository } from "../photos/versions";
 import type { ProjectRepository } from "../projects/types";
 import { isStorageKey, type LocalImageStore } from "../storage/local";
 
@@ -21,6 +22,7 @@ export function registerUploadRoutes(
   store: LocalImageStore,
   repos: {
     photos: PhotoRepository | null;
+    photoVersions: PhotoVersionRepository | null;
     projects: ProjectRepository | null;
     media: MediaRepository | null;
     people: PersonRepository | null;
@@ -45,24 +47,34 @@ export function registerUploadRoutes(
     return reply.send(data);
   };
 
+  /**
+   * A photo image folder: the image a photo shows follows the photo's visibility; a version that is not
+   * being shown is only for the signed-in admin (the editor's version list).
+   */
+  const sendPhotoImage = async (request: FastifyRequest, reply: FastifyReply, key: string) => {
+    if (!repos.photos) throw notFound();
+    const shown = await repos.photos.findByStorageKey(key).catch(() => null);
+    if (shown) {
+      if (shown.storage !== "local") throw notFound();
+      return send(request, reply, key, shown.visibility === "public");
+    }
+    const version = await repos.photoVersions?.findByStorageKey(key).catch(() => null);
+    if (!version || version.storage !== "local") throw notFound();
+    return send(request, reply, key, false);
+  };
+
   app.get("/uploads/photos/:id/:file", async (request, reply) => {
     const parsed = photoIdSchema.safeParse(request.params);
-    if (!parsed.success || !repos.photos) throw notFound();
-    const { id } = parsed.data;
-
-    const row = await repos.photos.get(id).catch(() => null);
-    if (!row || row.storage !== "local" || row.storageKey !== `photos/${id}`) throw notFound();
-    return send(request, reply, row.storageKey, row.visibility === "public");
+    if (!parsed.success) throw notFound();
+    return sendPhotoImage(request, reply, `photos/${parsed.data.id}`);
   });
 
   // Images added or replaced since Stage 19: "photos/<folder>/<imageId>", found by their storage key.
   app.get("/uploads/photos/:folder/:imageId/:file", async (request, reply) => {
     const { folder, imageId } = request.params as { folder: string; imageId: string };
     const key = `photos/${folder}/${imageId}`;
-    if (!isStorageKey(key) || !repos.photos) throw notFound();
-    const row = await repos.photos.findByStorageKey(key).catch(() => null);
-    if (!row || row.storage !== "local") throw notFound();
-    return send(request, reply, key, row.visibility === "public");
+    if (!isStorageKey(key)) throw notFound();
+    return sendPhotoImage(request, reply, key);
   });
 
   app.get("/uploads/projects/:id/:imageId/:file", async (request, reply) => {

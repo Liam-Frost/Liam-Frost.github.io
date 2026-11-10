@@ -20,6 +20,7 @@ import {
   type BrandingStore
 } from "../site/branding";
 import { KeyedLock } from "../lib/keyed-lock";
+import { imageSettingsSchema } from "../settings/images";
 import { HttpError } from "../lib/errors";
 import { parseInput } from "../lib/validation";
 
@@ -144,7 +145,8 @@ const schemas = {
           aliases.add(key);
         }
       }
-    })
+    }),
+  images: imageSettingsSchema
 };
 export const settingsFieldPatch = z
   .object({

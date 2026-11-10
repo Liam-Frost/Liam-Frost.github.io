@@ -72,6 +72,8 @@ import { PrismaPlaylistRepository } from "./playlists/prisma-repository";
 import type { PlaylistRepository } from "./playlists/types";
 import { PhotoSources } from "./photos/photo-sources";
 import { PrismaPhotoRepository } from "./photos/prisma-repository";
+import { PrismaPhotoVersionRepository, type PhotoVersionRepository } from "./photos/versions";
+import { readImageSettings } from "./settings/images";
 import { backfillPhotoAssets } from "./assets/backfill";
 import { PrismaAssetRepository } from "./assets/prisma-repository";
 import type { AssetRepository } from "./assets/types";
@@ -107,6 +109,12 @@ function defaultAdminAccountRepository(): AdminAccountRepository | null {
 function defaultPhotoRepository(): PhotoRepository | null {
   const client = getPrismaClient();
   return client ? new PrismaPhotoRepository(client) : null;
+}
+
+/** The Prisma-backed photo versions when DATABASE_URL is set, otherwise none. */
+function defaultPhotoVersionRepository(): PhotoVersionRepository | null {
+  const client = getPrismaClient();
+  return client ? new PrismaPhotoVersionRepository(client) : null;
 }
 
 /** The Prisma-backed image register when DATABASE_URL is set, otherwise none. */
@@ -174,6 +182,8 @@ export type BuildServerOptions = {
   webDistDir?: string;
   /** Photo storage; defaults to Prisma when DATABASE_URL is set. Pass null for none. */
   photos?: PhotoRepository | null;
+  /** Photo versions; defaults to Prisma when DATABASE_URL is set. Needed wherever photos are. */
+  photoVersions?: PhotoVersionRepository | null;
   /** The image register; defaults to Prisma when DATABASE_URL is set. Pass null for none. */
   assets?: AssetRepository | null;
   /** Project storage; defaults to Prisma when DATABASE_URL is set. Pass null for none. */
@@ -224,6 +234,7 @@ export async function buildServer({
   webDistDir = DEFAULT_WEB_DIST_DIR,
   photos = defaultPhotoRepository(),
   assets = defaultAssetRepository(),
+  photoVersions = defaultPhotoVersionRepository(),
   projects = defaultProjectRepository(),
   stack = defaultStackRepository(),
   adminAccount = defaultAdminAccountRepository(),
@@ -506,7 +517,9 @@ export async function buildServer({
       fetchImpl: photoFetch,
       lookup: photoLookup
     }),
-    assets
+    assets,
+    photoVersions,
+    () => readImageSettings(settings)
   );
   // Photos added before the register existed; runs beside start-up, never blocking it.
   if (photos && assets)
@@ -559,7 +572,12 @@ export async function buildServer({
     store,
     today: () => siteClock.local(now ? now() : new Date()).day
   });
-  registerUploadRoutes(app, store, { photos, projects, media, people, collection }, auth);
+  registerUploadRoutes(
+    app,
+    store,
+    { photos, photoVersions, projects, media, people, collection },
+    auth
+  );
   registerSpotifyRoutes(app, auth, spotify, account, settings !== null);
   registerSteamRoutes(app, auth, steam, steamSync);
   registerAnalyticsRoutes(

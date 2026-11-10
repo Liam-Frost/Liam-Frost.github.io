@@ -114,7 +114,35 @@ export type AdminPhotoImport = {
 };
 
 /** Replacing an existing photo's image; `useExif` overwrites date and camera details from the new image. */
-export type AdminPhotoImageReplace = AdminPhotoImport & { useExif?: boolean };
+export type AdminPhotoImageReplace = AdminPhotoImport & {
+  useExif?: boolean;
+  /** Whether the new image becomes the one the photo shows; true unless given. */
+  current?: boolean;
+};
+
+/** One image of a photo. The photo shows its current version; the others are kept to switch back to. */
+export type AdminPhotoVersion = {
+  id: string;
+  label: string;
+  current: boolean;
+  storage: "remote-url" | "local";
+  /** Largest available image. */
+  src: string;
+  thumbnail: string;
+  width: number;
+  height: number;
+  source: PhotoSource | null;
+  createdAt: string;
+  /** The stored original's format (jpg, png, …) and size; null for referenced images. */
+  format: string | null;
+  bytes: number | null;
+};
+/** A photo's versions, oldest first, with the photo as it now is and the most it may have. */
+export type AdminPhotoVersionsResponse = {
+  photo: AdminPhoto;
+  versions: AdminPhotoVersion[];
+  limit: number;
+};
 
 /** One entry of a server import folder. */
 export type AdminServerFile = {
