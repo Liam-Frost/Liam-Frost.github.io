@@ -1,6 +1,7 @@
 import {
   ADMIN_REQUEST_HEADER,
   UPLOAD_ID_HEADER,
+  type AdminStorageOverview,
   type AdminTrashItem,
   type AdminTrashResponse,
   type AdminPhotoVersionsResponse,
@@ -328,6 +329,26 @@ export const api = {
     request<AdminPhotoResponse>("/api/admin/photos/import", { method: "POST", json: body }),
   replacePhotoImage: (id: string, body: AdminPhotoImageReplace) =>
     request<AdminPhotoResponse>(`${photoPath(id)}/image`, { method: "PUT", json: body }),
+  storage: () => request<AdminStorageOverview>("/api/admin/storage"),
+  scanStorage: () => request<AdminStorageOverview>("/api/admin/storage/scan", { method: "POST" }),
+  deleteOrphan: (key: string) =>
+    request<AdminStorageOverview>("/api/admin/storage/orphans/delete", {
+      method: "POST",
+      json: { key }
+    }),
+  regenerateImage: (key: string) =>
+    request<AdminStorageOverview>("/api/admin/storage/regenerate", {
+      method: "POST",
+      json: { key }
+    }),
+  adoptOrphan: (key: string) =>
+    request<AdminPhotoResponse>("/api/admin/photos/adopt", { method: "POST", json: { key } }),
+  /** A small preview of an orphan folder's image, for <img src>. */
+  orphanPreviewUrl: (key: string) =>
+    `/api/admin/storage/orphans/preview?${new URLSearchParams({ key })}`,
+  /** A version's private original, as a download link. */
+  versionOriginalUrl: (id: string, versionId: string) =>
+    `${photoPath(id)}/versions/${versionId}/original`,
   trash: () => request<AdminTrashResponse>("/api/admin/trash"),
   restoreTrashItem: (kind: AdminTrashItem["kind"], id: string) =>
     request<AdminTrashResponse>(`/api/admin/trash/${kind}/${encodeURIComponent(id)}/restore`, {

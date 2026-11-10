@@ -2117,5 +2117,56 @@ export const en: Record<string, string> = {
   版本已移到回收站: "Version moved to the trash",
   "This version's photo is in the trash; restore the photo first":
     "This version's photo is in the trash; restore the photo first",
-  "Not in the trash": "Not in the trash"
+  "Not in the trash": "Not in the trash",
+  品牌图: "Branding",
+  删除文件夹: "Delete folder",
+  "“{0}”里的 {1} 个文件会从服务器彻底删除，无法恢复。":
+    'The {1} files in "{0}" will be deleted from the server for good. This cannot be undone.',
+  已删除文件夹: "Folder deleted",
+  已作为隐藏照片添加: "Added as a hidden photo",
+  文件管理: "File management",
+  "缺少：{0}": "Missing: {0}",
+  原图: "original",
+  "查看图片占用的空间，并检查服务器上的文件和数据库记录是否一致。":
+    "See how much space the images take, and check that the files on the server match the database.",
+  使用中的图片: "Images in use",
+  "{0} 份图片 · 原图 {1} · 生成尺寸 {2}": "{0} images · originals {1} · generated sizes {2}",
+  "{0} 份图片，查看回收站": "{0} images, open the trash",
+  磁盘剩余空间: "Free disk space",
+  "空间不足，上传可能失败。共 {0}": "Low on space; uploads may fail. {0} in total",
+  "共 {0}": "{0} in total",
+  按模块: "By section",
+  还没有登记的图片: "No registered images yet",
+  占用最多的图片: "Largest images",
+  一致性检查: "Consistency check",
+  "上次扫描：": "Last scan: ",
+  "服务器启动后还没有扫描过。扫描只报告问题，不会改动任何文件。":
+    "Not scanned since the server started. A scan only reports; it changes no files.",
+  扫描完成: "Scan finished",
+  扫描文件: "Scan files",
+  "没有发现问题：服务器上的文件和数据库记录一致。":
+    "Nothing wrong: the files on the server match the database.",
+  孤儿文件夹: "Orphan folders",
+  "服务器上有这些文件夹，但没有任何照片在使用。可以删除，或把里面的原图作为一张新的隐藏照片。":
+    "These folders are on the server but no photo uses them. Delete them, or add the original inside as a new hidden photo.",
+  "{0} 个文件 · {1}": "{0} files · {1}",
+  "把 {0} 作为照片添加": "Add {0} as a photo",
+  作为照片添加: "Add as photo",
+  "删除文件夹 {0}": "Delete folder {0}",
+  文件不完整: "Incomplete images",
+  "这些图片缺少部分文件。原图还在的可以重新生成各个尺寸。":
+    "These images are missing some files. Where the original is still there, the sizes can be made again.",
+  "重新生成 {0}": "Regenerate {0}",
+  已重新生成: "Regenerated",
+  重新生成: "Regenerate",
+  "原图丢失，无法修复": "Original missing; cannot be repaired",
+  文件丢失: "Missing files",
+  "数据库里有这些图片，但服务器上找不到文件。需要从备份恢复，或给照片添加一个新版本。":
+    "The database has these images but the server has no files for them. Restore them from a backup, or add a new version to the photo.",
+  下载原图: "Download original",
+  "This folder has no original image to make a photo from":
+    "This folder has no original image to make a photo from",
+  "The original is missing, so the sizes cannot be made again":
+    "The original is missing, so the sizes cannot be made again",
+  "Not an orphan folder": "Not an orphan folder"
 };

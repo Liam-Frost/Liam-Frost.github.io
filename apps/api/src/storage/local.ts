@@ -1,6 +1,16 @@
 import { createHash, randomUUID } from "node:crypto";
 import { createReadStream } from "node:fs";
-import { mkdir, readdir, readFile, rename, rm, rmdir, stat, writeFile } from "node:fs/promises";
+import {
+  mkdir,
+  readdir,
+  readFile,
+  rename,
+  rm,
+  rmdir,
+  stat,
+  statfs,
+  writeFile
+} from "node:fs/promises";
 import { dirname, join, resolve, sep } from "node:path";
 
 /** Files being received or assembled; never served, and outside every storage key. */
@@ -17,6 +27,12 @@ const KEY =
   /^(photos|projects|media|people|stack|branding)\/[a-z0-9][a-z0-9-]{0,80}(\/[a-z0-9][a-z0-9-]{0,40})?$/;
 /** Served file names: generated sizes only ("1280.webp"). Originals are stored but never served. */
 const PUBLIC_FILE = /^\d{1,5}\.webp$/;
+
+export type StoredFolder = {
+  key: string;
+  files: { name: string; bytes: number }[];
+  modifiedAt: Date;
+};
 
 export function isStorageKey(value: string) {
   return KEY.test(value);
@@ -124,6 +140,54 @@ export class LocalImageStore {
     const hash = createHash("sha256");
     for await (const chunk of createReadStream(this.path(key, name))) hash.update(chunk as Buffer);
     return hash.digest("hex");
+  }
+
+  /**
+   * Every image folder under an area ("photos"): "<area>/<name>" where files lie directly in it (older
+   * uploads), and each "<area>/<name>/<image>" sub-folder. Names that are not storage keys are skipped.
+   */
+  async tree(area: "photos"): Promise<StoredFolder[]> {
+    const base = join(this.root, area);
+    const folders: StoredFolder[] = [];
+    const add = async (key: string) => {
+      if (!isStorageKey(key)) return;
+      const files = await this.files(key);
+      const info = await stat(this.path(key)).catch(() => null);
+      if (info && files.length) folders.push({ key, files, modifiedAt: info.mtime });
+    };
+    for (const entry of await readdir(base, { withFileTypes: true }).catch(() => [])) {
+      if (!entry.isDirectory()) continue;
+      const outer = `${area}/${entry.name}`;
+      await add(outer);
+      const inner = await readdir(join(base, entry.name), { withFileTypes: true }).catch(() => []);
+      for (const child of inner) if (child.isDirectory()) await add(`${outer}/${child.name}`);
+    }
+    return folders;
+  }
+
+  /** Removes the named files of a folder, then the folder (and its parent) if nothing is left. */
+  async removeFolder(key: string, names: string[]) {
+    for (const name of names) await rm(this.path(key, name), { force: true });
+    await this.removeIfEmpty(key);
+    const parts = key.split("/");
+    if (parts.length === 3) await this.removeIfEmpty(parts.slice(0, 2).join("/"));
+  }
+
+  /** Reads any stored file, including private originals. Admin-only callers. */
+  async readStored(key: string, name: string): Promise<Buffer | null> {
+    if (!isStorageKey(key) || !/^[A-Za-z0-9][A-Za-z0-9._-]{0,80}$/.test(name)) return null;
+    return readFile(this.path(key, name)).catch(() => null);
+  }
+
+  /** Free and total space of the disk the uploads are on; null where the system cannot say. */
+  async diskSpace() {
+    try {
+      await mkdir(this.root, { recursive: true });
+      const info = await statfs(this.root);
+      return { freeBytes: info.bavail * info.bsize, totalBytes: info.blocks * info.bsize };
+    } catch {
+      return null;
+    }
   }
 
   /** Reads a public file, or returns null for anything that is not a generated size. */

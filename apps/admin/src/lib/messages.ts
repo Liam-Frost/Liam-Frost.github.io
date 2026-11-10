@@ -106,6 +106,10 @@ export function tr(key: string, ...args: Arg[]): string {
 
 /** English sign-in and account errors from the API, for the Chinese interface. */
 const API_ZH: Record<string, string> = {
+  "This folder has no original image to make a photo from":
+    "这个文件夹里没有原图，无法作为照片添加",
+  "The original is missing, so the sizes cannot be made again": "原图丢失，无法重新生成",
+  "Not an orphan folder": "这个文件夹已经不是孤儿文件夹",
   "This version's photo is in the trash; restore the photo first":
     "这个版本所属的照片也在回收站里，请先恢复照片",
   "Not in the trash": "回收站里没有这一项",

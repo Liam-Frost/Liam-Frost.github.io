@@ -5,6 +5,7 @@ import {
   ArrowUp,
   EyeOff,
   GripVertical,
+  HardDrive,
   Link2,
   Pencil,
   Plus,
@@ -238,6 +239,9 @@ export function PhotosPage() {
           )}
         />
         <div className="flex flex-wrap gap-2">
+          <Link to="/photos/storage" className="btn-secondary">
+            <HardDrive aria-hidden="true" className="size-4" /> {tr("文件管理")}
+          </Link>
           <Link to="/photos/trash" className="btn-secondary">
             <Trash aria-hidden="true" className="size-4" /> {tr("回收站")}
             {trashed?.items.length ? (

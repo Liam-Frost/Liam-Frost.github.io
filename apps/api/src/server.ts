@@ -76,6 +76,8 @@ import { PrismaPhotoVersionRepository, type PhotoVersionRepository } from "./pho
 import { readImageSettings } from "./settings/images";
 import { PhotoTrash } from "./photos/trash";
 import { registerAdminTrashRoutes } from "./routes/admin-trash";
+import { StorageManager } from "./assets/storage";
+import { registerAdminStorageRoutes } from "./routes/admin-storage";
 import { backfillPhotoAssets } from "./assets/backfill";
 import { PrismaAssetRepository } from "./assets/prisma-repository";
 import type { AssetRepository } from "./assets/types";
@@ -537,6 +539,41 @@ export async function buildServer({
     });
   }
   registerAdminTrashRoutes(app, auth, trash);
+  const storage =
+    photos && photoVersions
+      ? new StorageManager({
+          photos,
+          versions: photoVersions,
+          assets,
+          store,
+          now: now ?? (() => new Date())
+        })
+      : null;
+  registerAdminStorageRoutes(app, auth, storage);
+  if (storage) {
+    // A daily look for files and database rows that have drifted apart; it only reports.
+    const check = () =>
+      storage
+        .scan()
+        .then((scan) => {
+          const found = {
+            orphans: scan.orphans.length,
+            missing: scan.missing.length,
+            incomplete: scan.incomplete.length
+          };
+          if (found.orphans || found.missing || found.incomplete)
+            app.log.warn(found, "Storage scan found inconsistencies");
+        })
+        .catch((error: unknown) => app.log.warn({ err: error }, "Storage scan failed"));
+    const firstScan = setTimeout(check, 120_000);
+    const daily = setInterval(check, 24 * 60 * 60 * 1000);
+    firstScan.unref();
+    daily.unref();
+    app.addHook("onClose", async () => {
+      clearTimeout(firstScan);
+      clearInterval(daily);
+    });
+  }
   registerAdminPhotoRoutes(
     app,
     auth,
@@ -553,7 +590,8 @@ export async function buildServer({
     assets,
     photoVersions,
     imageSettings,
-    trash
+    trash,
+    storage
   );
   // Photos added before the register existed; runs beside start-up, never blocking it.
   if (photos && assets)

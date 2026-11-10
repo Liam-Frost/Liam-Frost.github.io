@@ -50,6 +50,10 @@ export class MemoryAssetRepository implements AssetRepository {
     );
   }
 
+  async all() {
+    return [...this.rows.values()];
+  }
+
   async keys(ownerType: AssetOwnerType) {
     return [...this.rows.values()]
       .filter((row) => row.ownerType === ownerType)
