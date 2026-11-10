@@ -320,12 +320,14 @@ describe("photo sources", () => {
       source: { type: "upload", ref: "second.jpg" }
     });
 
-    // Deleting removes the photo's folder entirely.
+    // Deleting and emptying the trash removes the photo's folder entirely.
     await app.inject({
       method: "DELETE",
       url: `/api/admin/photos/${photo.id}`,
       headers: { ...csrf, cookie }
     });
+    expect(existsSync(join(uploadDir, "photos", oldFolder[1]!))).toBe(true);
+    await app.inject({ method: "DELETE", url: "/api/admin/trash", headers: { ...csrf, cookie } });
     expect(existsSync(join(uploadDir, "photos", oldFolder[1]!))).toBe(false);
   });
 

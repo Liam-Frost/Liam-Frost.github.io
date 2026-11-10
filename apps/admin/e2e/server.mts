@@ -34,6 +34,8 @@ class Settings implements SettingsRepository {
 
 const settings = new Settings();
 const photos = new MemoryPhotoRepository();
+const photoVersions = new MemoryPhotoVersionRepository();
+const assets = new MemoryAssetRepository();
 const stack = new MemoryStackRepository();
 const media = new MemoryMediaRepository();
 const projects = new MemoryProjectRepository(stack);
@@ -80,6 +82,8 @@ function photo(index: number): PhotoRow {
 async function seed(scenario: "default" | "empty" | "large") {
   settings.values.clear();
   photos.rows.clear();
+  photoVersions.rows.clear();
+  assets.rows.clear();
   stack.categories.clear();
   stack.technologies.clear();
   projects.rows.clear();
@@ -170,8 +174,8 @@ const app = await buildServer({
   adminDistDir: join(here, "dist"),
   webDistDir: join(here, "../../web/public"),
   photos,
-  assets: new MemoryAssetRepository(),
-  photoVersions: new MemoryPhotoVersionRepository(),
+  assets,
+  photoVersions,
   projects,
   stack,
   media,

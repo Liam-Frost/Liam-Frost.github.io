@@ -13,7 +13,7 @@ export class MemoryPhotoRepository implements PhotoRepository {
   async list({ includePrivate = false } = {}) {
     this.check();
     return [...this.rows.values()]
-      .filter((row) => includePrivate || row.visibility === "public")
+      .filter((row) => !row.deletedAt && (includePrivate || row.visibility === "public"))
       .sort(
         (a, b) =>
           a.sortOrder - b.sortOrder || b.date.localeCompare(a.date) || a.id.localeCompare(b.id)
@@ -22,12 +22,44 @@ export class MemoryPhotoRepository implements PhotoRepository {
 
   async get(id: string) {
     this.check();
-    return this.rows.get(id) ?? null;
+    const row = this.rows.get(id);
+    return row && !row.deletedAt ? row : null;
   }
 
   async findByStorageKey(key: string) {
     this.check();
-    return [...this.rows.values()].find((row) => row.storageKey === key) ?? null;
+    return [...this.rows.values()].find((row) => row.storageKey === key && !row.deletedAt) ?? null;
+  }
+
+  async trash(id: string, at: Date) {
+    this.check();
+    const row = await this.get(id);
+    if (!row) return null;
+    const next = { ...row, deletedAt: at };
+    this.rows.set(id, next);
+    return next;
+  }
+
+  async restore(id: string) {
+    this.check();
+    const row = await this.getTrashed(id);
+    if (!row) return null;
+    const next = { ...row, deletedAt: null };
+    this.rows.set(id, next);
+    return next;
+  }
+
+  async listTrashed() {
+    this.check();
+    return [...this.rows.values()]
+      .filter((row) => row.deletedAt)
+      .sort((a, b) => b.deletedAt!.getTime() - a.deletedAt!.getTime());
+  }
+
+  async getTrashed(id: string) {
+    this.check();
+    const row = this.rows.get(id);
+    return row?.deletedAt ? row : null;
   }
 
   async create(photo: NewPhoto) {
@@ -46,7 +78,7 @@ export class MemoryPhotoRepository implements PhotoRepository {
 
   async update(id: string, patch: PhotoPatch) {
     this.check();
-    const row = this.rows.get(id);
+    const row = await this.get(id);
     if (!row) return null;
     const next = { ...row, ...patch, updatedAt: new Date() };
     this.rows.set(id, next);

@@ -86,6 +86,8 @@ describe("image register", () => {
     ]);
 
     await app.inject({ method: "DELETE", url: `/api/admin/photos/${photo.id}`, headers });
+    expect([...assets.rows.values()].map((asset) => asset.status)).toEqual(["trashed", "trashed"]);
+    await app.inject({ method: "DELETE", url: "/api/admin/trash", headers });
     expect(assets.rows.size).toBe(0);
   });
 

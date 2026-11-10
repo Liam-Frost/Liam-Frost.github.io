@@ -31,6 +31,8 @@ export interface AssetRepository {
   register(asset: NewAsset): Promise<AssetRow>;
   getByKey(storageKey: string): Promise<AssetRow | null>;
   removeByKey(storageKey: string): Promise<void>;
+  /** Marks a folder as in the trash (with when) or back in use. */
+  setStatus(storageKey: string, status: AssetRow["status"], at: Date | null): Promise<void>;
   /** Ready assets whose original has one of these hashes. */
   findBySha256(hashes: string[], ownerType?: AssetOwnerType): Promise<AssetRow[]>;
   findByUploadIds(uploadIds: string[]): Promise<AssetRow[]>;

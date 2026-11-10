@@ -1,6 +1,8 @@
 import {
   ADMIN_REQUEST_HEADER,
   UPLOAD_ID_HEADER,
+  type AdminTrashItem,
+  type AdminTrashResponse,
   type AdminPhotoVersionsResponse,
   type AdminUploadCheck,
   type AdminUploadCheckResponse,
@@ -326,6 +328,21 @@ export const api = {
     request<AdminPhotoResponse>("/api/admin/photos/import", { method: "POST", json: body }),
   replacePhotoImage: (id: string, body: AdminPhotoImageReplace) =>
     request<AdminPhotoResponse>(`${photoPath(id)}/image`, { method: "PUT", json: body }),
+  trash: () => request<AdminTrashResponse>("/api/admin/trash"),
+  restoreTrashItem: (kind: AdminTrashItem["kind"], id: string) =>
+    request<AdminTrashResponse>(`/api/admin/trash/${kind}/${encodeURIComponent(id)}/restore`, {
+      method: "POST"
+    }),
+  purgeTrashItem: (kind: AdminTrashItem["kind"], id: string) =>
+    request<AdminTrashResponse>(`/api/admin/trash/${kind}/${encodeURIComponent(id)}`, {
+      method: "DELETE"
+    }),
+  emptyTrash: () => request<AdminTrashResponse>("/api/admin/trash", { method: "DELETE" }),
+  /** The photos chosen as login backgrounds, to warn before deleting one. */
+  loginBackgroundPhotoIds: () =>
+    request<{ settings: { loginBackground?: { photoIds?: string[] } } }>(
+      "/api/admin/presentation"
+    ).then((doc) => doc.settings.loginBackground?.photoIds ?? []),
   photoVersions: (id: string) => request<AdminPhotoVersionsResponse>(`${photoPath(id)}/versions`),
   showPhotoVersion: (id: string, versionId: string) =>
     request<AdminPhotoVersionsResponse>(`${photoPath(id)}/versions/${versionId}/current`, {

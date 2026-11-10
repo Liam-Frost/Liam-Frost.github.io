@@ -111,6 +111,7 @@ The home page's tech stack (migration `20261110090000_stack`, which also inserts
 
 People linked to collection entries (migration `20261102090000_people_relations`):
 
+- Trash: `Photo.deletedAt` and `PhotoVersion.deletedAt` mark rows in the trash; every repository method except the trash ones leaves them out. `ImageAsset.status` follows (`trashed` with `trashedAt`).
 - `PhotoVersion`: one image of a photo (`photoId`, deleted with it): `label`, and the same image fields as `Photo` (`src`, `storage`, `storageKey` (unique), `variants`, `source`, `width`, `height`). `Photo.currentVersionId` names the version the photo's own image fields are a copy of. The migration gives every existing photo one version.
 - `ImageAsset`: one row per site-hosted image folder (`storageKey`, unique): owner (`ownerType`, `ownerId`, `role`), the original's file name, format, size and SHA-256, total size, dimensions and generated sizes, the upload id that created it, and `status` (`ready` or `trashed`). Photos only for now; registered on upload, import and replace, removed with the files, and backfilled at start-up.
 - `Person`: `source` (`tmdb` or `manual`) and `sourceId` (unique together), localized `name` and `bio` as JSON, `originalName`, local `photo` (same shape as posters, stored under `UPLOAD_DIR/people/<id>/`), `links` (https URLs), `featured`, `visibility`.

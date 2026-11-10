@@ -62,14 +62,13 @@ export function PhotoVersions({
   const remove = async (version: AdminPhotoVersion) => {
     const sure = await confirm({
       title: tr("删除版本"),
-      message:
-        version.storage === "local"
-          ? tr("这个版本的图片文件会从服务器删除，无法撤销。")
-          : tr("这个版本只引用外部链接，删除后不再保留这个链接。"),
+      message: tr("这个版本会移到回收站，保留期内可以恢复。"),
       confirmLabel: tr("删除"),
       danger: true
     });
-    if (sure) await run(() => api.deletePhotoVersion(photoId, version.id), tr("已删除版本"));
+    if (!sure) return;
+    await run(() => api.deletePhotoVersion(photoId, version.id), tr("版本已移到回收站"));
+    void qc.invalidateQueries({ queryKey: ["admin", "trash"] });
   };
 
   if (error) return <p className="text-status-error">{error.message}</p>;

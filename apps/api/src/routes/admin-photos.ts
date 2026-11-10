@@ -31,6 +31,7 @@ import {
 } from "../lib/validation";
 import { InvalidImageError } from "../photos/images";
 import { toAdminPhoto, toAdminVersion } from "../photos/mapping";
+import { removeImageFiles, type PhotoTrash } from "../photos/trash";
 import {
   hostImage,
   PhotoSourceError,
@@ -60,18 +61,7 @@ function today() {
   return new Date().toISOString().slice(0, 10);
 }
 
-/** Removes a photo's site-hosted files: its image folder, or an older photo's flat folder (files only). */
-async function removeImage(store: LocalImageStore, row: Pick<PhotoRow, "storage" | "storageKey">) {
-  if (row.storage !== "local" || !row.storageKey) return;
-  const parts = row.storageKey.split("/");
-  if (parts.length === 2) {
-    await store.removeFiles(row.storageKey);
-    await store.removeIfEmpty(row.storageKey);
-  } else {
-    await store.remove(row.storageKey);
-    await store.removeIfEmpty(parts.slice(0, 2).join("/"));
-  }
-}
+const removeImage = removeImageFiles;
 
 /** Source failures (bad link, missing file) and unreadable images are the request's fault. */
 function sourceFailure(error: unknown): never {
@@ -89,7 +79,8 @@ export function registerAdminPhotoRoutes(
   sources: PhotoSources,
   assets: AssetRepository | null,
   versions: PhotoVersionRepository | null,
-  imageSettings: () => Promise<ImageSettings>
+  imageSettings: () => Promise<ImageSettings>,
+  trash: PhotoTrash | null
 ) {
   const repo = () => {
     if (!photos) {
@@ -125,12 +116,6 @@ export function registerAdminPhotoRoutes(
         uploadId: extra.uploadId ?? null
       })
       .catch((error) => request.log.warn({ error, photoId }, "Failed to register the image"));
-  };
-  /** Removes a photo's site-hosted files and their register entry. */
-  const discardImage = async (row: Pick<PhotoRow, "storage" | "storageKey">) => {
-    await removeImage(store, row);
-    if (assets && row.storage === "local" && row.storageKey)
-      await assets.removeByKey(row.storageKey);
   };
   const vers = () => {
     if (!versions) {
@@ -493,7 +478,8 @@ export function registerAdminPhotoRoutes(
     const { id, versionId } = parseInput(photoVersionParamsSchema, request.params);
     const row = await repo().get(id);
     const version = row ? await vers().get(versionId) : null;
-    if (!row || !version || version.photoId !== row.id) throw notFound("Version not found");
+    if (!row || !version || version.photoId !== row.id || version.deletedAt)
+      throw notFound("Version not found");
     return { row, version };
   };
 
@@ -534,7 +520,7 @@ export function registerAdminPhotoRoutes(
     }
   );
 
-  /** Deletes a version and its files. The version being shown cannot be deleted. */
+  /** Moves a version to the trash. The version being shown cannot be deleted. */
   app.delete(
     "/api/admin/photos/:id/versions/:versionId",
     admin,
@@ -546,13 +532,11 @@ export function registerAdminPhotoRoutes(
           "VERSION_IN_USE",
           "This version is the one being shown; switch to another first"
         );
-      await vers().delete(version.id);
-      await discardImage(version).catch((error) =>
-        request.log.warn({ error, photoId: row.id }, "Failed to remove the version's files")
-      );
+      if (!trash) throw notFound("Version not found");
+      await trash.trashVersion(version);
       request.log.info(
         { photoId: row.id, versionId: version.id, by: request.adminUser?.username },
-        "Photo version deleted"
+        "Photo version moved to the trash"
       );
       return versionsOf(row);
     }
@@ -596,23 +580,14 @@ export function registerAdminPhotoRoutes(
   });
 
   app.delete("/api/admin/photos/:id", admin, async (request, reply) => {
-    const id = idParam(request);
-    // Read before deleting: the database removes a photo's versions with it.
-    const owned = versions ? await versions.list(id) : [];
-    const row = await repo().delete(id);
+    // To the trash: the files stay until it is emptied or the retention period runs out.
+    repo();
+    const row = trash ? await trash.trashPhoto(idParam(request)) : null;
     if (!row) throw notFound("Photo not found");
-    await versions?.removeAll(id);
-    // Every version's files, and the photo's own in case it never had versions.
-    const images = new Map(
-      [row, ...owned]
-        .filter((image) => image.storage === "local" && image.storageKey)
-        .map((image) => [image.storageKey!, image])
+    request.log.info(
+      { photoId: row.id, by: request.adminUser?.username },
+      "Photo moved to the trash"
     );
-    for (const image of images.values())
-      await discardImage(image).catch((error) =>
-        request.log.warn({ error, photoId: row.id }, "Failed to remove photo files")
-      );
-    request.log.info({ photoId: row.id, by: request.adminUser?.username }, "Photo deleted");
     return reply.code(204).send();
   });
 

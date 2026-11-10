@@ -17,16 +17,24 @@ export type VersionRow = ImageFields & {
   photoId: string;
   label: string;
   createdAt: Date;
+  /** When this version alone was moved to the trash; null while it is in use. */
+  deletedAt: Date | null;
 };
 
 export type NewVersion = ImageFields & { photoId: string; label?: string; createdAt?: Date };
 
 export interface PhotoVersionRepository {
-  /** Oldest first. */
-  list(photoId: string): Promise<VersionRow[]>;
+  /** Oldest first; versions in the trash only on request. */
+  list(photoId: string, options?: { includeTrashed?: boolean }): Promise<VersionRow[]>;
+  /** In use or in the trash: `deletedAt` tells which. */
   get(id: string): Promise<VersionRow | null>;
-  /** The version whose site-hosted files are under this key. */
+  /** The version in use whose site-hosted files are under this key. */
   findByStorageKey(key: string): Promise<VersionRow | null>;
+  /** Moves a version to the trash. */
+  trash(id: string, at: Date): Promise<VersionRow | null>;
+  restore(id: string): Promise<VersionRow | null>;
+  /** Versions put in the trash on their own, most recently deleted first. */
+  listTrashed(): Promise<VersionRow[]>;
   create(version: NewVersion): Promise<VersionRow>;
   setLabel(id: string, label: string): Promise<VersionRow | null>;
   delete(id: string): Promise<VersionRow | null>;
@@ -61,9 +69,9 @@ const missing = (error: unknown) =>
 export class PrismaPhotoVersionRepository implements PhotoVersionRepository {
   constructor(private readonly prisma: PrismaClient) {}
 
-  async list(photoId: string) {
+  async list(photoId: string, { includeTrashed = false } = {}) {
     const records = await this.prisma.photoVersion.findMany({
-      where: { photoId },
+      where: { photoId, ...(includeTrashed ? {} : { deletedAt: null }) },
       orderBy: [{ createdAt: "asc" }, { id: "asc" }]
     });
     return records.map(toRow);
@@ -75,8 +83,35 @@ export class PrismaPhotoVersionRepository implements PhotoVersionRepository {
   }
 
   async findByStorageKey(key: string) {
-    const record = await this.prisma.photoVersion.findUnique({ where: { storageKey: key } });
+    const record = await this.prisma.photoVersion.findFirst({
+      where: { storageKey: key, deletedAt: null }
+    });
     return record ? toRow(record) : null;
+  }
+
+  async trash(id: string, at: Date) {
+    return this.mark(id, at);
+  }
+
+  async restore(id: string) {
+    return this.mark(id, null);
+  }
+
+  private async mark(id: string, deletedAt: Date | null) {
+    try {
+      return toRow(await this.prisma.photoVersion.update({ where: { id }, data: { deletedAt } }));
+    } catch (error) {
+      if (missing(error)) return null;
+      throw error;
+    }
+  }
+
+  async listTrashed() {
+    const records = await this.prisma.photoVersion.findMany({
+      where: { deletedAt: { not: null } },
+      orderBy: { deletedAt: "desc" }
+    });
+    return records.map(toRow);
   }
 
   async create(version: NewVersion) {

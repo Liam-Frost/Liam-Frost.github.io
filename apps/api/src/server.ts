@@ -74,6 +74,8 @@ import { PhotoSources } from "./photos/photo-sources";
 import { PrismaPhotoRepository } from "./photos/prisma-repository";
 import { PrismaPhotoVersionRepository, type PhotoVersionRepository } from "./photos/versions";
 import { readImageSettings } from "./settings/images";
+import { PhotoTrash } from "./photos/trash";
+import { registerAdminTrashRoutes } from "./routes/admin-trash";
 import { backfillPhotoAssets } from "./assets/backfill";
 import { PrismaAssetRepository } from "./assets/prisma-repository";
 import type { AssetRepository } from "./assets/types";
@@ -504,6 +506,37 @@ export async function buildServer({
   registerAdminApp(app, auth, adminDistDir);
   registerAdminAccountRoutes(app, auth);
   app.addHook("onClose", async () => auth.stop());
+  const imageSettings = () => readImageSettings(settings);
+  const trash =
+    photos && photoVersions
+      ? new PhotoTrash({
+          photos,
+          versions: photoVersions,
+          assets,
+          store,
+          settings: imageSettings,
+          now: now ?? (() => new Date())
+        })
+      : null;
+  if (trash) {
+    // Removes what has been in the trash longer than the retention period; failures are retried.
+    const sweep = () =>
+      trash
+        .purgeExpired()
+        .then((result) => {
+          if (result.removed || result.failed) app.log.info(result, "Trash retention sweep");
+        })
+        .catch((error: unknown) => app.log.warn({ err: error }, "Trash retention sweep failed"));
+    const first = setTimeout(sweep, 30_000);
+    const repeating = setInterval(sweep, 6 * 60 * 60 * 1000);
+    first.unref();
+    repeating.unref();
+    app.addHook("onClose", async () => {
+      clearTimeout(first);
+      clearInterval(repeating);
+    });
+  }
+  registerAdminTrashRoutes(app, auth, trash);
   registerAdminPhotoRoutes(
     app,
     auth,
@@ -519,7 +552,8 @@ export async function buildServer({
     }),
     assets,
     photoVersions,
-    () => readImageSettings(settings)
+    imageSettings,
+    trash
   );
   // Photos added before the register existed; runs beside start-up, never blocking it.
   if (photos && assets)

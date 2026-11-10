@@ -60,6 +60,8 @@ export function registerUploadRoutes(
     }
     const version = await repos.photoVersions?.findByStorageKey(key).catch(() => null);
     if (!version || version.storage !== "local") throw notFound();
+    // Nothing of a photo in the trash is served, not even to the admin: the trash page has its own.
+    if (!(await repos.photos.get(version.photoId).catch(() => null))) throw notFound();
     return send(request, reply, key, false);
   };
 

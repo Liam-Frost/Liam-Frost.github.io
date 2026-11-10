@@ -2082,5 +2082,40 @@ export const en: Record<string, string> = {
     "This photo has reached its version limit; delete a version first",
   "This version is the one being shown; switch to another first":
     "This version is the one being shown; switch to another first",
-  "This upload is still being processed": "This upload is still being processed"
+  "This upload is still being processed": "This upload is still being processed",
+  "{0} 的版本{1}": "Version {1} of {0}",
+  彻底删除: "Delete for good",
+  "“{0}”和它在服务器上的图片文件会被彻底删除，无法恢复。":
+    '"{0}" and its image files on the server will be deleted for good. This cannot be undone.',
+  已彻底删除: "Deleted for good",
+  清空回收站: "Empty trash",
+  "回收站里的 {0} 项和它们的图片文件会被彻底删除，无法恢复。":
+    "The {0} items in the trash and their image files will be deleted for good. This cannot be undone.",
+  "有 {0} 项的文件没能删除，仍在回收站里，稍后会自动重试。":
+    "The files of {0} items could not be deleted; they stay in the trash and will be retried automatically.",
+  回收站已清空: "Trash emptied",
+  返回照片: "Back to photos",
+  回收站: "Trash",
+  "删除的照片和版本在这里保留 {0} 天，之后连同图片文件一起彻底删除。保留天数可以在网站设置的“图片管理”里调整。":
+    "Deleted photos and versions are kept here for {0} days, then removed for good with their image files. The number of days is set under Site settings → Image management.",
+  "共 {0} 项，占用 {1}": "{0} items, {1}",
+  "照片 · {0} 个版本": "Photo · {0} versions",
+  单个版本: "Single version",
+  删除于: "Deleted",
+  "{0} 天后彻底删除": "removed for good in {0} days",
+  "恢复 {0}": "Restore {0}",
+  已恢复: "Restored",
+  "彻底删除 {0}": "Delete {0} for good",
+  "回收站是空的。": "The trash is empty.",
+  已移到回收站: "Moved to the trash",
+  "“{0}”和它的所有版本会移到回收站，{1} 天内可以恢复，之后彻底删除。":
+    '"{0}" and all its versions will move to the trash. They can be restored within {1} days, then are removed for good.',
+  "这张照片正用作登录页背景，删除后登录页不再显示它。":
+    "This photo is used as a login background; once deleted, the login page no longer shows it.",
+  "这个版本会移到回收站，保留期内可以恢复。":
+    "This version will move to the trash and can be restored while it is kept.",
+  版本已移到回收站: "Version moved to the trash",
+  "This version's photo is in the trash; restore the photo first":
+    "This version's photo is in the trash; restore the photo first",
+  "Not in the trash": "Not in the trash"
 };

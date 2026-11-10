@@ -9,9 +9,12 @@ import {
   Pencil,
   Plus,
   Star,
+  Trash,
   Trash2
 } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, type DragEvent } from "react";
+import { Link } from "react-router";
 
 import { PageHeader } from "../components/layout/AdminLayout";
 import {
@@ -20,6 +23,7 @@ import {
   sourceLabel
 } from "../components/photos/ImageSourcePicker";
 import { PhotoEditor } from "../components/photos/PhotoEditor";
+import { trashKey } from "./TrashPage";
 import {
   UploadConflictDialog,
   type ConflictQuestion
@@ -93,6 +97,12 @@ export function PhotosPage() {
   const setPhoto = useSetPhoto();
   const reorder = useReorderPhotos();
   const remove = useDeletePhoto();
+  const qc = useQueryClient();
+  const { data: trashed } = useQuery({ queryKey: trashKey, queryFn: api.trash });
+  const { data: loginPhotos } = useQuery({
+    queryKey: ["admin", "login-background-photos"],
+    queryFn: api.loginBackgroundPhotoIds
+  });
   const toast = useToast();
 
   /**
@@ -227,9 +237,17 @@ export function PhotosPage() {
             "从本机、服务器文件夹、图库或图片链接添加；新照片默认隐藏，编辑好信息再设为公开。也可以把图片直接拖到页面上上传。"
           )}
         />
-        <button type="button" className="btn-primary" onClick={() => setAdding(true)}>
-          <Plus aria-hidden="true" className="size-4" /> {tr("添加照片")}
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <Link to="/photos/trash" className="btn-secondary">
+            <Trash aria-hidden="true" className="size-4" /> {tr("回收站")}
+            {trashed?.items.length ? (
+              <span className="text-subtle">{trashed.items.length}</span>
+            ) : null}
+          </Link>
+          <button type="button" className="btn-primary" onClick={() => setAdding(true)}>
+            <Plus aria-hidden="true" className="size-4" /> {tr("添加照片")}
+          </button>
+        </div>
       </div>
 
       <Dialog open={adding} title={tr("添加照片")} onClose={() => setAdding(false)}>
@@ -478,7 +496,8 @@ export function PhotosPage() {
                 deleting &&
                 remove.mutate(deleting.id, {
                   onSuccess: () => {
-                    toast(tr("已删除"));
+                    void qc.invalidateQueries({ queryKey: trashKey });
+                    toast(tr("已移到回收站"));
                     setDeleting(null);
                   },
                   onError: (e) => toast(e.message, "error")
@@ -492,11 +511,16 @@ export function PhotosPage() {
       >
         <p className="text-[13.5px] leading-relaxed text-muted">
           {tr(
-            "确定删除“{0}”吗？{1}此操作无法撤销。",
+            "“{0}”和它的所有版本会移到回收站，{1} 天内可以恢复，之后彻底删除。",
             deleting ? pickText(deleting.title, deleting.id) : "",
-            deleting?.storage === "local" ? tr("服务器上的图片文件也会一起删除，") : ""
+            trashed?.retentionDays ?? 30
           )}
         </p>
+        {deleting && loginPhotos?.includes(deleting.id) ? (
+          <p role="alert" className="mt-2 text-[13px] leading-relaxed text-status-error">
+            {tr("这张照片正用作登录页背景，删除后登录页不再显示它。")}
+          </p>
+        ) : null}
       </Dialog>
     </div>
   );
