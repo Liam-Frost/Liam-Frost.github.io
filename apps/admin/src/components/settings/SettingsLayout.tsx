@@ -44,6 +44,7 @@ export const SETTINGS_NAV: {
     title: copy.groups.admin,
     items: [
       ["admin/login", tr("登录外观"), "wide"],
+      ["admin/images", tr("图片管理"), "compact"],
       ["admin/security", tr("账号与安全"), "compact"]
     ]
   }

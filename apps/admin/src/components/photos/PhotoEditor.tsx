@@ -4,7 +4,8 @@ import type {
   AdminPhotoUpdate,
   LocalizedText
 } from "@liam-frost/shared";
-import { CloudDownload, ExternalLink, Plus, Replace, X } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { CloudDownload, ExternalLink, Plus, X } from "lucide-react";
 import { useState, type FormEvent, useId } from "react";
 
 import { useSetPhoto, useUpdatePhoto } from "../../hooks/usePhotos";
@@ -16,6 +17,7 @@ import { useToast } from "../ui/Toast";
 import { RecentStats } from "../analytics/RecentStats";
 import { Tooltip } from "../ui/Tooltip";
 import { ImageSourcePicker, sourceLabel } from "./ImageSourcePicker";
+import { PhotoVersions, versionsKey } from "./PhotoVersions";
 import { tr } from "../../lib/messages";
 import { LanguageTabPanel, LanguageTabs } from "../ui/LanguageTabs";
 
@@ -70,6 +72,8 @@ export function PhotoEditor({
   const [draft, setDraft] = useState(() => toDraft(initial));
   const [replacing, setReplacing] = useState(false);
   const [useExif, setUseExif] = useState(false);
+  const [makeCurrent, setMakeCurrent] = useState(true);
+  const qc = useQueryClient();
   const [imageBusy, setImageBusy] = useState(false);
   const [imageError, setImageError] = useState("");
   const setPhoto = useSetPhoto();
@@ -119,7 +123,8 @@ export function PhotoEditor({
   const applyImage = (next: AdminPhoto, message: string) => {
     setCurrent(next);
     setPhoto(next);
-    if (useExif)
+    void qc.invalidateQueries({ queryKey: versionsKey(next.id) });
+    if (useExif && makeCurrent)
       setDraft((d) => ({
         ...d,
         date: next.date,
@@ -143,10 +148,30 @@ export function PhotoEditor({
     }
   };
 
+  const added = () => (makeCurrent ? tr("已添加版本并设为当前") : tr("已添加版本"));
   const replaceWithFile = (files: File[]) =>
-    runImage(() => uploadPhotoImage(photo.id, files[0]!, useExif), tr("已替换图片"));
+    runImage(
+      () =>
+        uploadPhotoImage(
+          photo.id,
+          files[0]!,
+          useExif && makeCurrent,
+          undefined,
+          undefined,
+          makeCurrent
+        ),
+      added()
+    );
   const replaceWithImport = (items: AdminPhotoImport[]) =>
-    runImage(() => api.replacePhotoImage(photo.id, { ...items[0]!, useExif }), tr("已替换图片"));
+    runImage(
+      () =>
+        api.replacePhotoImage(photo.id, {
+          ...items[0]!,
+          useExif: useExif && makeCurrent,
+          current: makeCurrent
+        }),
+      added()
+    );
   const host = () => runImage(() => api.hostPhoto(photo.id), tr("已转为本站托管"));
 
   const formId = `photo-editor-${photo.id}`;
@@ -228,8 +253,8 @@ export function PhotoEditor({
                   setReplacing(true);
                 }}
               >
-                <Replace aria-hidden="true" className="size-3.5" />
-                {tr("替换图片")}
+                <Plus aria-hidden="true" className="size-3.5" />
+                {tr("添加版本")}
               </button>
               {photo.storage === "remote-url" ? (
                 <button
@@ -248,6 +273,13 @@ export function PhotoEditor({
                 {imageError}
               </p>
             ) : null}
+            <PhotoVersions
+              photoId={photo.id}
+              onPhoto={(next) => {
+                setCurrent(next);
+                setPhoto(next);
+              }}
+            />
           </section>
           <div className="flex flex-col items-start gap-2.5">
             <Switch
@@ -436,17 +468,30 @@ export function PhotoEditor({
       </form>
       <Dialog
         open={replacing}
-        title={tr("替换图片")}
+        title={tr("添加版本")}
         onClose={() => !imageBusy && setReplacing(false)}
       >
         <div className="space-y-4">
           <p className="text-[13px] text-muted">
-            {tr("标题、说明、排序和公开状态都保留；原来由本站托管的图片文件会删除。")}
+            {tr(
+              "同一张照片的另一份图片，例如更清晰的文件或另一个来源。标题、说明、排序和公开状态都保留，原来的图片也保留为一个版本，可以随时切换回去。"
+            )}
           </p>
           <label className="flex items-center gap-2 text-[13px]">
             <input
               type="checkbox"
-              checked={useExif}
+              checked={makeCurrent}
+              onChange={(e) => setMakeCurrent(e.target.checked)}
+            />
+            {tr("设为当前显示的版本")}
+          </label>
+          <label
+            className={`flex items-center gap-2 text-[13px] ${makeCurrent ? "" : "text-faint"}`}
+          >
+            <input
+              type="checkbox"
+              checked={useExif && makeCurrent}
+              disabled={!makeCurrent}
               onChange={(e) => setUseExif(e.target.checked)}
             />
             {tr("用新图片的 EXIF 覆盖拍摄日期和相机信息")}
@@ -454,7 +499,7 @@ export function PhotoEditor({
           <ImageSourcePicker
             multiple={false}
             busy={imageBusy}
-            action={imageBusy ? tr("处理中…") : tr("替换")}
+            action={imageBusy ? tr("处理中…") : tr("添加")}
             onFiles={(files) => void replaceWithFile(files)}
             onImports={(items) => void replaceWithImport(items)}
           />

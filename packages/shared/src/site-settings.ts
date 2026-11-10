@@ -36,6 +36,13 @@ export type SiteSettingsGroups = {
   };
   privacy: { title: LocalizedText; body: LocalizedText; effectiveDate: string | null };
   dictionary: { entries: DictionaryEntry[] };
+  /** Image file management; read by the admin and the API only. */
+  images: {
+    /** Days a deleted image stays in the trash before it is removed for good. */
+    trashRetentionDays: number;
+    /** The most versions one photo may have. */
+    maxPhotoVersions: number;
+  };
 };
 const DEFAULT_COPYRIGHT: FooterCopyright = { owner: {}, startYear: null, showRole: true };
 export const DEFAULT_SITE_SETTINGS: SiteSettingsGroups = {
@@ -59,7 +66,8 @@ export const DEFAULT_SITE_SETTINGS: SiteSettingsGroups = {
     bottomOffset: 16
   },
   privacy: { title: {}, body: {}, effectiveDate: null },
-  dictionary: { entries: [] }
+  dictionary: { entries: [] },
+  images: { trashRetentionDays: 30, maxPhotoVersions: 10 }
 };
 export type SiteSettingsGroup = keyof SiteSettingsGroups;
 export type SiteSettingsDocument<K extends SiteSettingsGroup = SiteSettingsGroup> = {
@@ -67,7 +75,7 @@ export type SiteSettingsDocument<K extends SiteSettingsGroup = SiteSettingsGroup
   revision: string;
   saved: boolean;
 };
-export type PublicSiteSettings = SiteSettingsGroups & {
+export type PublicSiteSettings = Omit<SiteSettingsGroups, "images"> & {
   avatarUrl: string | null;
   faviconUrl: string | null;
 };

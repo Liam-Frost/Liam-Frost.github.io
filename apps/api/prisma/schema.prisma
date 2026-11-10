@@ -49,9 +49,34 @@ model Photo {
   sortOrder   Int          @default(0)
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
+  /// The version whose image the fields above (src, storage, storageKey, variants, source, width,
+  /// height) are a copy of; null until the photo has versions.
+  currentVersionId String?
+  versions    PhotoVersion[]
 
   @@index([visibility, sortOrder])
   @@index([date])
+}
+
+/// One image of a photo: a different quality, format or source of the same picture. The photo shows its
+/// current version; the others are kept for switching back and are only served to the admin.
+model PhotoVersion {
+  id         String       @id
+  photoId    String
+  /// The admin's name for it, e.g. "JPEG preview"; may be empty.
+  label      String       @default("")
+  /// External URL for REMOTE_URL versions; empty for site-hosted ones.
+  src        String
+  storage    ImageStorage
+  storageKey String?      @unique
+  variants   Json?
+  source     Json?
+  width      Int
+  height     Int
+  createdAt  DateTime     @default(now())
+  photo      Photo        @relation(fields: [photoId], references: [id], onDelete: Cascade)
+
+  @@index([photoId])
 }
 
 enum ProjectStatus {

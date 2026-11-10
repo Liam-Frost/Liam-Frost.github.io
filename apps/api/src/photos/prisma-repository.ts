@@ -53,6 +53,7 @@ function toData(patch: PhotoPatch): Prisma.PhotoUpdateInput {
   if (patch.source !== undefined) data.source = json(patch.source);
   if (patch.width !== undefined) data.width = patch.width;
   if (patch.height !== undefined) data.height = patch.height;
+  if (patch.currentVersionId !== undefined) data.currentVersionId = patch.currentVersionId;
   return data;
 }
 

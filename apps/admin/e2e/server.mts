@@ -14,6 +14,7 @@ import { MemoryAnalyticsStore } from "../../api/test/memory-analytics-store";
 import { MemoryAssetRepository } from "../../api/test/memory-asset-repository";
 import { MemoryMediaRepository } from "../../api/test/memory-media-repository";
 import { MemoryPhotoRepository } from "../../api/test/memory-photo-repository";
+import { MemoryPhotoVersionRepository } from "../../api/test/memory-photo-version-repository";
 import { MemoryPlaylistRepository } from "../../api/test/memory-playlist-repository";
 import { MemoryProjectRepository } from "../../api/test/memory-project-repository";
 import { MemoryStackRepository } from "../../api/test/memory-stack-repository";
@@ -170,6 +171,7 @@ const app = await buildServer({
   webDistDir: join(here, "../../web/public"),
   photos,
   assets: new MemoryAssetRepository(),
+  photoVersions: new MemoryPhotoVersionRepository(),
   projects,
   stack,
   media,

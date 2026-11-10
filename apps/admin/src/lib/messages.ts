@@ -106,6 +106,11 @@ export function tr(key: string, ...args: Arg[]): string {
 
 /** English sign-in and account errors from the API, for the Chinese interface. */
 const API_ZH: Record<string, string> = {
+  "This photo has reached its version limit; delete a version first":
+    "这张照片的版本数已达上限，请先删除一个版本",
+  "This version is the one being shown; switch to another first":
+    "这是当前显示的版本，请先切换到其他版本",
+  "This upload is still being processed": "这个文件还在处理中",
   "Invalid username or password": "用户名或密码错误",
   "Enter the code from your authenticator": "请输入验证器 App 中的验证码",
   "That code is not valid": "验证码不正确",

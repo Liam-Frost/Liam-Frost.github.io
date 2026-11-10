@@ -141,12 +141,19 @@ export const photoImageReplaceSchema = z
   .object({
     from: photoImportFrom,
     mode: z.enum(["import", "reference"]).default("import"),
-    useExif: z.boolean().optional()
+    useExif: z.boolean().optional(),
+    current: z.boolean().optional()
   })
   .strict()
   .refine((value) => value.from.type !== "server" || value.mode === "import", {
     message: "Server files are always hosted by the site"
   });
+
+export const photoVersionParamsSchema = z.object({
+  id: photoIdSchema.shape.id,
+  versionId: z.string().regex(/^[a-f0-9-]{36}$/, "Invalid version id")
+});
+export const photoVersionLabelSchema = z.object({ label: z.string().trim().max(60) }).strict();
 
 const uploadId = z.string().regex(/^[A-Za-z0-9-]{8,64}$/, "Invalid upload id");
 export const uploadIdSchema = uploadId;

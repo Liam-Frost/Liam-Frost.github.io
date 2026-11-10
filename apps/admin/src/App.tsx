@@ -165,6 +165,7 @@ function SessionGate() {
           />
           <Route path="privacy/integrations" element={<IntegrationsPage />} />
           <Route path="admin/login" element={<AppearancePage key="login" mode="login" />} />
+          <Route path="admin/images" element={<SiteSettingsPage key="images" group="images" />} />
           <Route path="admin/security" element={<AccountSecurityPage />} />
           <Route
             path="frontend/identity"

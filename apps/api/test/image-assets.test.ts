@@ -71,16 +71,19 @@ describe("image register", () => {
     expect(asset!.totalBytes).toBeGreaterThan(first.length);
   });
 
-  it("drops the entry when the photo is deleted and re-registers a replaced image", async () => {
+  it("registers a replacing image beside the old one and drops both with the photo", async () => {
     const { app, upload, assets, headers } = await setup();
     const { photo } = (await upload("a.jpg", first)).json();
     const oldKey = [...assets.rows.keys()][0]!;
 
     const replaced = await upload("b.jpg", second, {}, `/api/admin/photos/${photo.id}/image`);
     expect(replaced.statusCode).toBe(200);
-    expect([...assets.rows.keys()]).toHaveLength(1);
-    expect(assets.rows.has(oldKey)).toBe(false);
-    expect([...assets.rows.values()][0]).toMatchObject({ sha256: sha(second), ownerId: photo.id });
+    expect([...assets.rows.keys()]).toHaveLength(2);
+    expect(assets.rows.has(oldKey)).toBe(true);
+    expect([...assets.rows.values()].map((asset) => [asset.sha256, asset.ownerId])).toEqual([
+      [sha(first), photo.id],
+      [sha(second), photo.id]
+    ]);
 
     await app.inject({ method: "DELETE", url: `/api/admin/photos/${photo.id}`, headers });
     expect(assets.rows.size).toBe(0);
