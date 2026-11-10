@@ -20,7 +20,11 @@ import {
   sourceLabel
 } from "../components/photos/ImageSourcePicker";
 import { PhotoEditor } from "../components/photos/PhotoEditor";
-import { UploadQueue } from "../components/photos/UploadQueue";
+import {
+  UploadConflictDialog,
+  type ConflictQuestion
+} from "../components/photos/UploadConflictDialog";
+import { InterruptedUploadsNotice, UploadQueue } from "../components/photos/UploadQueue";
 import { DatabaseNotice } from "../components/ui/DatabaseNotice";
 import { Dialog } from "../components/ui/Dialog";
 import { IconButton } from "../components/ui/IconButton";
@@ -28,9 +32,10 @@ import { useToast } from "../components/ui/Toast";
 import { useArrivalParams } from "../hooks/useArrivalParams";
 import { useDeletePhoto, usePhotos, useReorderPhotos, useSetPhoto } from "../hooks/usePhotos";
 import { useUploadQueue } from "../hooks/useUploadQueue";
-import { api, uploadPhoto } from "../lib/api";
+import { api, uploadPhoto, uploadPhotoImage } from "../lib/api";
 import { pickText } from "../lib/i18n";
 import { tr } from "../lib/messages";
+import { planUploads, sha256Hex } from "../lib/upload-plan";
 import { Select } from "../components/ui/Select";
 
 type Filter = "all" | "public" | "private";
@@ -72,7 +77,9 @@ export function PhotosPage() {
   const [filter, setFilter] = useState<Filter>("all");
   const [editing, setEditing] = useState<AdminPhoto | null>(null);
   const [deleting, setDeleting] = useState<AdminPhoto | null>(null);
-  const { items: uploads, queue } = useUploadQueue();
+  const { items: uploads, queue, interrupted, dismissInterrupted } = useUploadQueue();
+  const [checking, setChecking] = useState(false);
+  const [question, setQuestion] = useState<ConflictQuestion | null>(null);
   const [dragId, setDragId] = useState<string | null>(null);
   const [dropActive, setDropActive] = useState(false);
   // 概览 links here to add a photo (?open=add) or to a task's photos (?show=referenced | missing-en).
@@ -88,18 +95,61 @@ export function PhotosPage() {
   const remove = useDeletePhoto();
   const toast = useToast();
 
-  /** A few at a time; each can be retried or, until the server has it, cancelled. */
-  const uploadFiles = (files: File[]) =>
-    queue.add(
-      files.map((file) => ({
-        name: file.name,
-        kind: "upload" as const,
-        run: async ({ onProgress, signal }) => {
-          const { photo } = await uploadPhoto(file, onProgress, signal);
-          setPhoto(photo, { prepend: true });
-        }
-      }))
+  /**
+   * Checks the files against the photos already there, asks about each match, then queues the rest:
+   * a few at a time, each retryable and, until the server has it, cancellable.
+   */
+  const uploadFiles = async (files: File[]) => {
+    setChecking(true);
+    let hashes: (string | null)[] = files.map(() => null);
+    let conflicts: Awaited<ReturnType<typeof api.checkUploads>>["conflicts"] = [];
+    try {
+      hashes = await Promise.all(files.map((file) => sha256Hex(file)));
+      if (hashes.every((hash) => hash !== null))
+        ({ conflicts } = await api.checkUploads(
+          files.map((file, i) => ({ name: file.name, sha256: hashes[i]! }))
+        ));
+    } catch {
+      // The check is a convenience: without it every file is uploaded as a new photo.
+    }
+    setChecking(false);
+    const { uploads: planned, skipped } = await planUploads(
+      files,
+      hashes,
+      conflicts,
+      (file, conflict, remaining) =>
+        new Promise((resolve) =>
+          setQuestion({
+            fileName: file.name,
+            conflict,
+            remaining,
+            answer: (result) => {
+              setQuestion(null);
+              resolve(result);
+            }
+          })
+        )
     );
+    queue.add(
+      planned.map((upload) => {
+        const uploadId =
+          crypto.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2, 12)}`;
+        return {
+          name: upload.file.name,
+          kind: "upload" as const,
+          uploadId: upload.action === "new" ? uploadId : undefined,
+          run: async ({ onProgress, signal }) => {
+            const { photo } =
+              upload.action === "new"
+                ? await uploadPhoto(upload.file, onProgress, signal, uploadId)
+                : await uploadPhotoImage(upload.photoId, upload.file, false, onProgress, signal);
+            setPhoto(photo, { prepend: upload.action === "new" });
+          }
+        };
+      }),
+      skipped
+    );
+  };
 
   /** Links, gallery photos and server files, through the same queue as uploads. */
   const importItems = (imports: AdminPhotoImport[]) =>
@@ -119,7 +169,7 @@ export function PhotosPage() {
     event.preventDefault();
     setDropActive(false);
     const files = [...event.dataTransfer.files].filter((file) => file.type.startsWith("image/"));
-    if (files.length) uploadFiles(files);
+    if (files.length) void uploadFiles(files);
   };
 
   const move = (ids: string[], from: number, to: number) => {
@@ -188,7 +238,7 @@ export function PhotosPage() {
           action={tr("添加")}
           onFiles={(files) => {
             setAdding(false);
-            uploadFiles(files);
+            void uploadFiles(files);
           }}
           onImports={(items) => {
             setAdding(false);
@@ -197,6 +247,15 @@ export function PhotosPage() {
         />
       </Dialog>
 
+      <UploadConflictDialog question={question} />
+      {checking ? (
+        <p role="status" className="card mb-5 p-4 text-[13px] text-subtle">
+          {tr("正在检查是否已经上传过…")}
+        </p>
+      ) : null}
+      {interrupted ? (
+        <InterruptedUploadsNotice batch={interrupted} onDismiss={dismissInterrupted} />
+      ) : null}
       <UploadQueue
         items={uploads}
         onRetry={(key) => queue.retry(key)}

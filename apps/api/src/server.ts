@@ -72,6 +72,9 @@ import { PrismaPlaylistRepository } from "./playlists/prisma-repository";
 import type { PlaylistRepository } from "./playlists/types";
 import { PhotoSources } from "./photos/photo-sources";
 import { PrismaPhotoRepository } from "./photos/prisma-repository";
+import { backfillPhotoAssets } from "./assets/backfill";
+import { PrismaAssetRepository } from "./assets/prisma-repository";
+import type { AssetRepository } from "./assets/types";
 import type { PhotoRepository } from "./photos/types";
 import { PrismaProjectRepository } from "./projects/prisma-repository";
 import type { ProjectRepository } from "./projects/types";
@@ -104,6 +107,12 @@ function defaultAdminAccountRepository(): AdminAccountRepository | null {
 function defaultPhotoRepository(): PhotoRepository | null {
   const client = getPrismaClient();
   return client ? new PrismaPhotoRepository(client) : null;
+}
+
+/** The Prisma-backed image register when DATABASE_URL is set, otherwise none. */
+function defaultAssetRepository(): AssetRepository | null {
+  const client = getPrismaClient();
+  return client ? new PrismaAssetRepository(client) : null;
 }
 
 /** The Prisma-backed project store when DATABASE_URL is set, otherwise none (no projects are shown). */
@@ -165,6 +174,8 @@ export type BuildServerOptions = {
   webDistDir?: string;
   /** Photo storage; defaults to Prisma when DATABASE_URL is set. Pass null for none. */
   photos?: PhotoRepository | null;
+  /** The image register; defaults to Prisma when DATABASE_URL is set. Pass null for none. */
+  assets?: AssetRepository | null;
   /** Project storage; defaults to Prisma when DATABASE_URL is set. Pass null for none. */
   projects?: ProjectRepository | null;
   /** Tech stack; defaults to Prisma when DATABASE_URL is set. Pass null for none. */
@@ -212,6 +223,7 @@ export async function buildServer({
   adminDistDir = DEFAULT_ADMIN_DIST_DIR,
   webDistDir = DEFAULT_WEB_DIST_DIR,
   photos = defaultPhotoRepository(),
+  assets = defaultAssetRepository(),
   projects = defaultProjectRepository(),
   stack = defaultStackRepository(),
   adminAccount = defaultAdminAccountRepository(),
@@ -493,8 +505,16 @@ export async function buildServer({
       importRoots: config.uploads.importDirs,
       fetchImpl: photoFetch,
       lookup: photoLookup
-    })
+    }),
+    assets
   );
+  // Photos added before the register existed; runs beside start-up, never blocking it.
+  if (photos && assets)
+    void backfillPhotoAssets(photos, assets, store)
+      .then((added) => {
+        if (added) app.log.info({ added }, "Registered existing photo images");
+      })
+      .catch((error) => app.log.warn({ err: error }, "Cannot register existing photo images"));
   registerAdminProjectRoutes(app, auth, projects, store, config.uploads.maxBytes, stack);
   registerPhotoRoutes(app, photos, store);
   registerProjectRoutes(app, projects, store);

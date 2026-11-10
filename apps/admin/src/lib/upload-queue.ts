@@ -2,7 +2,8 @@
  * A queue of uploads and imports that runs a few at a time. It knows nothing about React or the API, so
  * it can be tested on its own; the page passes each item's work in as a function.
  */
-export type QueueStatus = "queued" | "uploading" | "processing" | "done" | "error" | "cancelled";
+export type QueueStatus =
+  "queued" | "uploading" | "processing" | "done" | "error" | "cancelled" | "skipped";
 
 export type QueueItem = {
   key: string;
@@ -13,16 +14,19 @@ export type QueueItem = {
   error?: string;
   /** Sending the file can be stopped; once the server has it (or for an import), it cannot. */
   cancellable: boolean;
+  /** The id the server knows this upload by, when it has one. */
+  uploadId?: string;
 };
 
 export type QueueWork = {
   name: string;
   /** "upload" sends a file and reports progress; "import" only waits for the server. */
   kind: "upload" | "import";
+  uploadId?: string;
   run: (context: { onProgress: (fraction: number) => void; signal: AbortSignal }) => Promise<void>;
 };
 
-type Entry = { item: QueueItem; work: QueueWork; abort: AbortController | null };
+type Entry = { item: QueueItem; work: QueueWork | null; abort: AbortController | null };
 
 const RUNNING: QueueStatus[] = ["uploading", "processing"];
 export const isActive = (status: QueueStatus) => status === "queued" || RUNNING.includes(status);
@@ -42,29 +46,38 @@ export class UploadQueue {
     return this.snapshot;
   }
 
-  /** Newest batch first, in the order given. */
-  add(works: QueueWork[]) {
-    const added = works.map((work): Entry => {
-      this.counter += 1;
-      return {
-        work,
-        abort: null,
-        item: {
-          key: `${this.counter}-${work.name}`,
-          name: work.name,
-          progress: 0,
-          status: "queued",
-          cancellable: true
-        }
-      };
-    });
-    this.entries = [...added, ...this.entries];
+  private key(name: string) {
+    this.counter += 1;
+    return `${this.counter}-${name}`;
+  }
+
+  /** Newest batch first, in the order given. `skipped` are files left out on purpose (duplicates). */
+  add(works: QueueWork[], skipped: string[] = []) {
+    const added = works.map((work): Entry => ({
+      work,
+      abort: null,
+      item: {
+        key: this.key(work.name),
+        name: work.name,
+        progress: 0,
+        status: "queued",
+        cancellable: true,
+        uploadId: work.uploadId
+      }
+    }));
+    const left = skipped.map((name): Entry => ({
+      work: null,
+      abort: null,
+      item: { key: this.key(name), name, progress: 0, status: "skipped", cancellable: false }
+    }));
+    this.entries = [...added, ...left, ...this.entries];
     this.pump();
   }
 
   retry(key: string) {
     const entry = this.entries.find((e) => e.item.key === key);
-    if (!entry || (entry.item.status !== "error" && entry.item.status !== "cancelled")) return;
+    if (!entry?.work || (entry.item.status !== "error" && entry.item.status !== "cancelled"))
+      return;
     this.patch(entry, { status: "queued", progress: 0, error: undefined, cancellable: true });
     this.pump();
   }
@@ -123,15 +136,14 @@ export class UploadQueue {
     // Oldest first within a batch: entries are stored newest batch first, each batch in order.
     for (const entry of this.entries) {
       if (running >= this.concurrency) break;
-      if (entry.item.status !== "queued") continue;
+      if (entry.item.status !== "queued" || !entry.work) continue;
       running += 1;
-      void this.run(entry);
+      void this.run(entry, entry.work);
     }
     this.publish();
   }
 
-  private async run(entry: Entry) {
-    const { work } = entry;
+  private async run(entry: Entry, work: QueueWork) {
     const abort = new AbortController();
     entry.abort = abort;
     const upload = work.kind === "upload";
@@ -181,8 +193,32 @@ export function queueSummary(items: QueueItem[]) {
     done: count("done"),
     failed: count("error"),
     cancelled: count("cancelled"),
+    skipped: count("skipped"),
     active,
     /** Whether anything could still be stopped. */
     cancellable: items.some((item) => item.cancellable && isActive(item.status))
+  };
+}
+
+/**
+ * Lost by a reload: work still going, and failures (a reload itself fails the uploads in flight in
+ * some browsers). Cancelled and skipped files were left out on purpose.
+ */
+export const isUnfinished = (status: QueueStatus) => isActive(status) || status === "error";
+
+/** What is kept across a reload: enough to say what an interrupted batch had and had not finished. */
+export type SavedUpload = Pick<QueueItem, "name" | "status" | "uploadId">;
+
+/**
+ * An interrupted batch after the server said which uploads it did complete: the files that still need
+ * to be chosen again, and how many made it.
+ */
+export function interruptedBatch(saved: SavedUpload[], completed: Record<string, string>) {
+  const finished = (item: SavedUpload) =>
+    item.status === "done" || (item.uploadId !== undefined && item.uploadId in completed);
+  const relevant = saved.filter((item) => item.status === "done" || isUnfinished(item.status));
+  return {
+    done: relevant.filter(finished).length,
+    unfinished: relevant.filter((item) => !finished(item)).map((item) => item.name)
   };
 }

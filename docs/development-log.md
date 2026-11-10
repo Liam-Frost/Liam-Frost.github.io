@@ -4,6 +4,7 @@
 
 - The user reported slow batch uploads with no retry, and asked for a full image file management system. The confirmed plan is `plan-image-management.md` (six steps).
 - Step 1: the photo upload queue sends three files at a time, shows waiting items as waiting, and supports retry, cancel and a leave warning. The server receives uploads into a temporary file, writes each image folder in one move through a staging folder, limits concurrent processing and logs per-stage timings.
+- Step 2: an `ImageAsset` table registers every photo image folder with the original's SHA-256 and sizes; existing photos are registered in the background at start-up. Before uploading, the admin hashes the files and asks the API which match an existing photo (same content or same file name), then asks to skip, replace or keep both, with an option to apply the answer to all. Uploads carry an id so a retry is not stored twice, and after a reload the page lists the files that still need choosing.
 - Still to decide from production timings: generating sizes in the background. The plan file tracks it.
 
 ## 2026-11-09: Home page polish and per-page copyright

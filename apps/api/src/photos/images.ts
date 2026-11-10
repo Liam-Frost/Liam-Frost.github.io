@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { availableParallelism } from "node:os";
 import sharp from "sharp";
 
@@ -34,7 +35,13 @@ export type ProcessedImage = {
   height: number;
   variants: { width: number; height: number; data: Buffer }[];
   /** The untouched input: its bytes, or the path of the temporary file it was received into. */
-  original: { source: Buffer | string; extension: string };
+  original: {
+    source: Buffer | string;
+    extension: string;
+    bytes: number;
+    /** SHA-256 of the original, hex. */
+    sha256: string;
+  };
   exif: ExifSuggestions;
   /** Where the processing time went, for the upload log. */
   timings: { waitMs: number; decodeMs: number; encodeMs: number };
@@ -92,14 +99,21 @@ export async function inspectImage(input: Buffer) {
   return { width, height, exif };
 }
 
-/** `input` is the image's bytes or the path of a file holding them. */
-export async function processImage(input: Buffer | string): Promise<ProcessedImage> {
+/** An image received into a file, with what was measured while receiving it. */
+export type ReceivedFile = { path: string; bytes: number; sha256: string };
+
+/** `source` is the image's bytes, or the file an upload was received into. */
+export async function processImage(source: Buffer | ReceivedFile): Promise<ProcessedImage> {
   const queued = performance.now();
-  return withSlot(() => renderImage(input, performance.now() - queued));
+  return withSlot(() => renderImage(source, performance.now() - queued));
 }
 
-async function renderImage(input: Buffer | string, waitMs: number): Promise<ProcessedImage> {
+async function renderImage(source: Buffer | ReceivedFile, waitMs: number): Promise<ProcessedImage> {
   const started = performance.now();
+  const input = Buffer.isBuffer(source) ? source : source.path;
+  const measured = Buffer.isBuffer(source)
+    ? { bytes: source.length, sha256: createHash("sha256").update(source).digest("hex") }
+    : { bytes: source.bytes, sha256: source.sha256 };
   const { meta, width, height, exif } = await readImage(input);
   const longest = Math.max(width, height);
 
@@ -132,7 +146,7 @@ async function renderImage(input: Buffer | string, waitMs: number): Promise<Proc
     width,
     height,
     variants,
-    original: { source: input, extension: ORIGINAL_EXTENSIONS[meta.format!]! },
+    original: { source: input, extension: ORIGINAL_EXTENSIONS[meta.format!]!, ...measured },
     exif,
     timings: {
       waitMs: Math.round(waitMs),

@@ -131,6 +131,25 @@ export type AdminServerFolder = {
   entries: AdminServerFile[];
 };
 
+/** Files about to be uploaded, checked against the photos already there. */
+export type AdminUploadCheck = { files: { name: string; sha256: string }[] };
+/**
+ * A file that matches an existing photo: "content" is the very same file, "name" an upload with the
+ * same file name. `index` is the file's position in the request.
+ */
+export type AdminUploadConflict = {
+  index: number;
+  reason: "content" | "name";
+  photo: Pick<AdminPhoto, "id" | "title" | "thumbnail">;
+};
+export type AdminUploadCheckResponse = { conflicts: AdminUploadConflict[] };
+
+/** Which of these upload ids reached the server and became a photo: upload id to photo id. */
+export type AdminUploadStatusResponse = { photos: Record<string, string> };
+
+/** The request header carrying the client's id of one upload, so a retry is not stored twice. */
+export const UPLOAD_ID_HEADER = "x-upload-id";
+
 export type AdminPhotosResponse = { photos: AdminPhoto[] };
 export type AdminPhotoResponse = { photo: AdminPhoto };
 

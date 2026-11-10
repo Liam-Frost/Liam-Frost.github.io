@@ -11,6 +11,7 @@ import { SourceError, type MediaSources } from "../src/media/sources";
 import type { MediaRepository } from "../src/media/types";
 import type { PersonRepository, RelationRepository } from "../src/people/types";
 import type { PlaylistRepository } from "../src/playlists/types";
+import type { AssetRepository } from "../src/assets/types";
 import type { PhotoRepository } from "../src/photos/types";
 import type { ProjectRepository } from "../src/projects/types";
 import { buildServer } from "../src/server";
@@ -58,6 +59,8 @@ export type TestServerOptions = {
   webDistDir?: string;
   /** Defaults to none (seed mode). */
   photos?: PhotoRepository | null;
+  /** Defaults to none. */
+  assets?: AssetRepository | null;
   /** Defaults to none. */
   projects?: ProjectRepository | null;
   /** Defaults to none. */
@@ -116,6 +119,7 @@ export async function buildTestServer(
     adminDistDir: options.adminDistDir ?? "/nonexistent-admin-dist",
     webDistDir: options.webDistDir ?? "/nonexistent-web-dist",
     photos: options.photos ?? null,
+    assets: options.assets ?? null,
     projects: options.projects ?? null,
     stack: options.stack ?? null,
     media: options.media ?? null,
