@@ -250,7 +250,7 @@ export function registerAdminMediaRoutes(
     admin,
     async (request, reply): Promise<AdminMediaResponse> => {
       const preflight = await get(mediaId(request));
-      const { image } = await readUploadedImage(request, deps.maxUploadBytes);
+      const { image } = await readUploadedImage(request, deps.maxUploadBytes, deps.store);
       const poster = await storePoster(store, preflight.id, image);
 
       let result: { updated: MediaRow; old: StoredImage | null };

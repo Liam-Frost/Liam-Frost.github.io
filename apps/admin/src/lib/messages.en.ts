@@ -2019,5 +2019,14 @@ export const en: Record<string, string> = {
   描边: "Outline",
   "边缘折射：{0}×": "Edge refraction: {0}×",
   "1.0 是默认强度。Safari 和 Firefox 只显示毛玻璃，看不到边缘折射。":
-    "1.0 is the default strength. Safari and Firefox show frosted glass without the edge refraction."
+    "1.0 is the default strength. Safari and Firefox show frosted glass without the edge refraction.",
+  等待中: "Waiting",
+  已取消: "Cancelled",
+  "{0} / {1} 已完成": "{0} / {1} done",
+  "，{0} 个失败": ", {0} failed",
+  全部重试: "Retry all",
+  取消未开始的: "Cancel pending",
+  整体进度: "Overall progress",
+  "重试 {0}": "Retry {0}",
+  "取消 {0}": "Cancel {0}"
 };

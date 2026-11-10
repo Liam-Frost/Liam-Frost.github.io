@@ -1,5 +1,11 @@
 # Development Log
 
+## 2026-11-10: Image file management, step 1 (upload queue)
+
+- The user reported slow batch uploads with no retry, and asked for a full image file management system. The confirmed plan is `plan-image-management.md` (six steps).
+- Step 1: the photo upload queue sends three files at a time, shows waiting items as waiting, and supports retry, cancel and a leave warning. The server receives uploads into a temporary file, writes each image folder in one move through a staging folder, limits concurrent processing and logs per-stage timings.
+- Still to decide from production timings: generating sizes in the background. The plan file tracks it.
+
 ## 2026-11-09: Home page polish and per-page copyright
 
 - Compact tech stack, shorter entrance, home collection reduced to featured and recently finished, contact links as text or icons, a matching about heading.

@@ -373,7 +373,7 @@ export function registerAdminPeopleRoutes(
     admin,
     async (request, reply): Promise<AdminPersonResponse> => {
       const preflight = await getPerson(personId(request));
-      const { image } = await readUploadedImage(request, deps.maxUploadBytes);
+      const { image } = await readUploadedImage(request, deps.maxUploadBytes, deps.store);
       const photo = await storePoster(store, preflight.id, image, "people");
 
       let result: { updated: PersonRow; old: StoredImage | null };
