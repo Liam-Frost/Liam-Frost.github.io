@@ -24,10 +24,23 @@ type Deps = {
   assets: AssetRepository | null;
   store: LocalImageStore;
   now: () => Date;
+  /** Registers other sections' existing images; run before each scan. */
+  backfill?: () => Promise<unknown>;
+  /** The title of another section's entry, if it still exists. */
+  ownerTitle?: (ownerType: string, ownerId: string) => Promise<LocalizedText | null>;
 };
 
 /** An image folder the database knows, with the photo it belongs to. */
-type Known = { image: ImageFields; photoId: string; title: LocalizedText };
+type Known = {
+  image: Pick<ImageFields, "storage" | "storageKey" | "variants">;
+  ownerType: string;
+  photoId: string;
+  title: LocalizedText;
+  singleFile?: boolean;
+};
+
+/** The folders under UPLOAD_DIR that hold images. */
+const AREAS = ["photos", "projects", "media", "people", "stack", "branding"];
 
 /**
  * Compares the image folders on disk with what the database knows, and repairs what it can. A scan only
@@ -39,9 +52,12 @@ export class StorageManager {
 
   constructor(private readonly deps: Deps) {}
 
-  /** Every site-hosted photo image the database knows: in use, in the trash, every version. */
+  /**
+   * Every site-hosted image the database knows. Photos: in use, in the trash, every version. Other
+   * sections: what the register holds (kept complete by the backfill that runs before each scan).
+   */
   private async known() {
-    const { photos, versions } = this.deps;
+    const { photos, versions, assets } = this.deps;
     const rows = [
       ...(await photos.list({ includePrivate: true })),
       ...(await photos.listTrashed())
@@ -51,7 +67,23 @@ export class StorageManager {
       const images = [row, ...(await versions.list(row.id, { includeTrashed: true }))];
       for (const image of images)
         if (image.storage === "local" && image.storageKey)
-          known.set(image.storageKey, { image, photoId: row.id, title: row.title });
+          known.set(image.storageKey, {
+            image,
+            ownerType: "photo",
+            photoId: row.id,
+            title: row.title
+          });
+    }
+    for (const asset of assets ? await assets.all() : []) {
+      if (asset.ownerType === "photo") continue;
+      known.set(asset.storageKey, {
+        image: { storage: "local", storageKey: asset.storageKey, variants: asset.variants },
+        ownerType: asset.ownerType,
+        photoId: asset.ownerId,
+        title: (await this.deps.ownerTitle?.(asset.ownerType, asset.ownerId)) ?? {},
+        // Logos and icons are a single file with no separate original.
+        singleFile: asset.variants.length === 0
+      });
     }
     return known;
   }
@@ -66,14 +98,32 @@ export class StorageManager {
       .map((variant) => variantFileName(variant.width))
       .filter((name) => !names.has(name));
     const original = [...names].some(isOriginal);
-    if (!original) missing.push("original");
+    if (!original && !owner.singleFile) missing.push("original");
     if (!missing.length) return null;
-    return { key, photoId: owner.photoId, title: owner.title, missing, repairable: original };
+    return {
+      key,
+      ownerType: owner.ownerType,
+      photoId: owner.photoId,
+      title: owner.title,
+      missing,
+      repairable: original
+    };
+  }
+
+  private async folders() {
+    const all: StoredFolder[] = [];
+    // Without the register the other sections' images cannot be told from orphans: photos only.
+    for (const area of this.deps.assets ? AREAS : ["photos"])
+      all.push(...(await this.deps.store.tree(area)));
+    return all;
   }
 
   async scan(): Promise<AdminStorageScan> {
     const now = this.deps.now();
-    const [known, folders] = [await this.known(), await this.deps.store.tree("photos")];
+    // Other sections are known through the register: make sure it is complete first, or their
+    // existing images would be reported as orphans.
+    await this.deps.backfill?.();
+    const [known, folders] = [await this.known(), await this.folders()];
     const onDisk = new Map(folders.map((folder) => [folder.key, folder]));
     const scan: AdminStorageScan = {
       scannedAt: now.toISOString(),
@@ -87,7 +137,9 @@ export class StorageManager {
           files: folder.files.length,
           bytes: folder.files.reduce((sum, file) => sum + file.bytes, 0),
           modifiedAt: folder.modifiedAt.toISOString(),
-          adoptable: folder.files.some((file) => isOriginal(file.name))
+          // Only photos can take in a stray original.
+          adoptable:
+            folder.key.startsWith("photos/") && folder.files.some((file) => isOriginal(file.name))
         })),
       missing: [],
       incomplete: []
@@ -97,6 +149,7 @@ export class StorageManager {
       if (!folder?.files.length)
         scan.missing.push({
           key,
+          ownerType: owner.ownerType,
           photoId: owner.photoId,
           title: owner.title,
           missing: [],
@@ -155,8 +208,7 @@ export class StorageManager {
 
   /** The folder if it is still an orphan: checked again at the moment of acting on it. */
   private async orphan(key: string) {
-    if (!key.startsWith("photos/")) throw notFound("Not an orphan folder");
-    const folder = (await this.deps.store.tree("photos")).find((entry) => entry.key === key);
+    const folder = (await this.folders()).find((entry) => entry.key === key);
     if (!folder || (await this.known()).has(key)) throw notFound("Not an orphan folder");
     return folder;
   }

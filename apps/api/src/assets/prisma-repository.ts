@@ -32,6 +32,11 @@ export class PrismaAssetRepository implements AssetRepository {
     return record ? toRow(record) : null;
   }
 
+  async get(id: string) {
+    const record = await this.prisma.imageAsset.findUnique({ where: { id } });
+    return record ? toRow(record) : null;
+  }
+
   async removeByKey(storageKey: string) {
     await this.prisma.imageAsset.deleteMany({ where: { storageKey } });
   }

@@ -171,6 +171,9 @@ export type AdminStorageOrphan = {
 /** A known image with files missing: nothing on disk at all, or the listed files. */
 export type AdminStorageIssue = {
   key: string;
+  /** The section the image belongs to: photo, project, media, person, branding or stack. */
+  ownerType: string;
+  /** The photo, or the entry of another section. */
   photoId: string;
   title: LocalizedText;
   missing: string[];
@@ -206,12 +209,20 @@ export type AdminStorageOverview = {
   scan: AdminStorageScan | null;
 };
 
-/** Something in the trash: a whole photo with its versions, or one version deleted on its own. */
+/**
+ * Something in the trash: a whole photo with its versions, one version deleted on its own, or an image
+ * another section replaced or deleted ("image": a cover, a poster, a logo).
+ */
 export type AdminTrashItem = {
-  kind: "photo" | "version";
+  kind: "photo" | "version" | "image";
   id: string;
+  /** The photo, or for an image the entry it belonged to. */
   photoId: string;
-  /** The photo's title. */
+  /** The section an image belonged to (project, media, person, branding, stack); "photo" otherwise. */
+  ownerType: string;
+  /** Photos and versions can be put back; other sections' images can only be downloaded. */
+  restorable: boolean;
+  /** The photo's title, or the title of the entry an image belonged to (empty when it is gone). */
   title: LocalizedText;
   /** A version's own name; empty for photos. */
   label: string;

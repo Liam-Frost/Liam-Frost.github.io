@@ -30,6 +30,7 @@ export interface AssetRepository {
   /** Registers a folder; registering the same key again replaces the entry. */
   register(asset: NewAsset): Promise<AssetRow>;
   getByKey(storageKey: string): Promise<AssetRow | null>;
+  get(id: string): Promise<AssetRow | null>;
   removeByKey(storageKey: string): Promise<void>;
   /** Marks a folder as in the trash (with when) or back in use. */
   setStatus(storageKey: string, status: AssetRow["status"], at: Date | null): Promise<void>;

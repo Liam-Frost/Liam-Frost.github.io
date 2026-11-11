@@ -25,6 +25,10 @@ export class MemoryAssetRepository implements AssetRepository {
     return this.rows.get(storageKey) ?? null;
   }
 
+  async get(id: string) {
+    return [...this.rows.values()].find((row) => row.id === id) ?? null;
+  }
+
   async removeByKey(storageKey: string) {
     this.rows.delete(storageKey);
   }

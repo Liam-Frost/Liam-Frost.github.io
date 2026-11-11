@@ -2168,5 +2168,12 @@ export const en: Record<string, string> = {
     "This folder has no original image to make a photo from",
   "The original is missing, so the sizes cannot be made again":
     "The original is missing, so the sizes cannot be made again",
-  "Not an orphan folder": "Not an orphan folder"
+  "Not an orphan folder": "Not an orphan folder",
+  "{0}图片：{1}": "{0} image: {1}",
+  "被替换或删除的图片，只能下载": "Replaced or deleted image; download only",
+  "下载 {0}": "Download {0}",
+  "删除的照片和版本，以及项目、收藏等模块里被替换或删除的图片，在这里保留 {0} 天，之后连同图片文件一起彻底删除。保留天数可以在网站设置的“图片管理”里调整。":
+    "Deleted photos and versions, and images replaced or deleted in projects, the collection and other sections, are kept here for {0} days, then removed for good with their files. The number of days is set under Site settings → Image management.",
+  "This image cannot be put back; download it and add it again":
+    "This image cannot be put back; download it and add it again"
 };

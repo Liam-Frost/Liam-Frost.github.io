@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { availableParallelism } from "node:os";
 import sharp from "sharp";
 
+import { describeImage } from "../assets/describe";
 import type { LocalImageStore } from "../storage/local";
 import { readExif, type ExifSuggestions } from "./exif";
 import { variantFileName } from "./mapping";
@@ -168,4 +169,6 @@ export async function saveImage(store: LocalImageStore, key: string, image: Proc
     })),
     { name: `original.${image.original.extension}`, data: image.original.source }
   ]);
+  // Photos are registered by their routes, with the upload's details; the ledger skips them.
+  await store.ledger?.saved(key, describeImage(image));
 }

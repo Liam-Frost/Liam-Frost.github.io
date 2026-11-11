@@ -157,11 +157,14 @@ export const storageKeySchema = z
   .object({
     key: z
       .string()
-      .regex(/^photos\/[a-z0-9][a-z0-9-]{0,80}(\/[a-z0-9][a-z0-9-]{0,40})?$/, "Invalid folder")
+      .regex(
+        /^(photos|projects|media|people|stack|branding)\/[a-z0-9][a-z0-9-]{0,80}(\/[a-z0-9][a-z0-9-]{0,40})?$/,
+        "Invalid folder"
+      )
   })
   .strict();
 export const trashItemParamsSchema = z.object({
-  kind: z.enum(["photo", "version"]),
+  kind: z.enum(["photo", "version", "image"]),
   id: z.string().regex(/^[a-z0-9][a-z0-9-]{0,80}$/, "Invalid id")
 });
 export const photoVersionLabelSchema = z.object({ label: z.string().trim().max(60) }).strict();
