@@ -207,7 +207,7 @@ export function registerAdminMediaRoutes(
       return current;
     });
     await store
-      .remove(`media/${row.id}`)
+      .discard(`media/${row.id}`)
       .catch((error) =>
         request.log.warn({ error, mediaId: row.id }, "Failed to remove entry files")
       );
@@ -265,7 +265,7 @@ export function registerAdminMediaRoutes(
       }
       if (result.old)
         await store
-          .remove(result.old.key)
+          .discard(result.old.key)
           .catch((error) =>
             request.log.warn({ error, mediaId: preflight.id }, "Failed to remove old poster")
           );

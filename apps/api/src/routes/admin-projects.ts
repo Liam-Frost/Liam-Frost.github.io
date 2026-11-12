@@ -181,7 +181,7 @@ export function registerAdminProjectRoutes(
       return current;
     });
     await store
-      .remove(`projects/${row.id}`)
+      .discard(`projects/${row.id}`)
       .catch((error) =>
         request.log.warn({ error, projectId: row.id }, "Failed to remove project files")
       );
@@ -232,7 +232,7 @@ export function registerAdminProjectRoutes(
       const { updated, oldCover } = result;
       if (oldCover) {
         await store
-          .remove(oldCover.key)
+          .discard(oldCover.key)
           .catch((error) =>
             request.log.warn({ error, projectId: preflight.id }, "Failed to remove old cover")
           );
@@ -268,7 +268,7 @@ export function registerAdminProjectRoutes(
       });
 
       await store
-        .remove(removed.key)
+        .discard(removed.key)
         .catch((error) =>
           request.log.warn({ error, projectId: id }, "Failed to remove image files")
         );

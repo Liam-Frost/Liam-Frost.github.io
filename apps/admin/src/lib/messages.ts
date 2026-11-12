@@ -106,6 +106,8 @@ export function tr(key: string, ...args: Arg[]): string {
 
 /** English sign-in and account errors from the API, for the Chinese interface. */
 const API_ZH: Record<string, string> = {
+  "This image cannot be put back; download it and add it again":
+    "这张图片不能恢复到原位，请下载后重新添加",
   "This folder has no original image to make a photo from":
     "这个文件夹里没有原图，无法作为照片添加",
   "The original is missing, so the sizes cannot be made again": "原图丢失，无法重新生成",

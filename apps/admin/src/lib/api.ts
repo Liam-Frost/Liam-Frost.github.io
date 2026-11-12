@@ -346,6 +346,8 @@ export const api = {
   /** A small preview of an orphan folder's image, for <img src>. */
   orphanPreviewUrl: (key: string) =>
     `/api/admin/storage/orphans/preview?${new URLSearchParams({ key })}`,
+  /** The original of another section's trashed image, as a download link. */
+  trashImageOriginalUrl: (id: string) => `/api/admin/trash/image/${id}/original`,
   /** A version's private original, as a download link. */
   versionOriginalUrl: (id: string, versionId: string) =>
     `${photoPath(id)}/versions/${versionId}/original`,

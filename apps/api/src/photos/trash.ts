@@ -1,6 +1,6 @@
 import type { AdminTrashItem, AdminTrashResponse } from "@liam-frost/shared";
 
-import type { AssetRepository } from "../assets/types";
+import type { AssetRepository, AssetRow } from "../assets/types";
 import { HttpError, notFound } from "../lib/errors";
 import type { ImageSettings } from "../settings/images";
 import type { LocalImageStore } from "../storage/local";
@@ -35,6 +35,8 @@ type Deps = {
   store: LocalImageStore;
   settings: () => Promise<ImageSettings>;
   now: () => Date;
+  /** The title of another section's entry (a project, a collection entry, a person), if it still exists. */
+  ownerTitle?: (ownerType: string, ownerId: string) => Promise<AdminTrashItem["title"] | null>;
 };
 
 /**
@@ -100,6 +102,8 @@ export class PhotoTrash {
         kind: "photo",
         id: row.id,
         photoId: row.id,
+        ownerType: "photo",
+        restorable: true,
         title: row.title,
         label: "",
         thumbnail: this.thumbnail("photo", row.id, row),
@@ -118,6 +122,8 @@ export class PhotoTrash {
         kind: "version",
         id: version.id,
         photoId: version.photoId,
+        ownerType: "photo",
+        restorable: true,
         title: owner?.title ?? {},
         label: version.label,
         thumbnail: this.thumbnail("version", version.id, version),
@@ -129,6 +135,25 @@ export class PhotoTrash {
         expiresAt: expires(version.deletedAt!)
       });
     }
+    for (const asset of await this.trashedImages()) {
+      const files = await this.deps.store.files(asset.storageKey);
+      items.push({
+        kind: "image",
+        id: asset.id,
+        photoId: asset.ownerId,
+        ownerType: asset.ownerType,
+        restorable: false,
+        title: (await this.deps.ownerTitle?.(asset.ownerType, asset.ownerId)) ?? {},
+        label: asset.storageKey,
+        thumbnail: this.previewFile(files) ? `/api/admin/trash/image/${asset.id}/thumbnail` : null,
+        width: asset.width,
+        height: asset.height,
+        versions: 1,
+        bytes: asset.totalBytes,
+        deletedAt: asset.trashedAt!.toISOString(),
+        expiresAt: expires(asset.trashedAt!)
+      });
+    }
     items.sort((a, b) => b.deletedAt.localeCompare(a.deletedAt));
     return {
       items,
@@ -137,8 +162,51 @@ export class PhotoTrash {
     };
   }
 
+  /** Images of other sections in the trash: replaced or deleted covers, posters, logos, icons. */
+  private async trashedImages() {
+    const all = this.deps.assets ? await this.deps.assets.all() : [];
+    return all.filter(
+      (asset) => asset.status === "trashed" && asset.ownerType !== "photo" && asset.trashedAt
+    );
+  }
+
+  private async trashedImage(id: string) {
+    const asset = await this.deps.assets?.get(id);
+    return asset && asset.status === "trashed" && asset.ownerType !== "photo" ? asset : null;
+  }
+
+  /** The smallest WebP of a folder, which the trash page can show. */
+  private previewFile(files: { name: string }[]) {
+    return files
+      .map((file) => file.name)
+      .filter((name) => /^\d+\.webp$/.test(name))
+      .sort((a, b) => parseInt(a, 10) - parseInt(b, 10))[0];
+  }
+
+  /** The original of a trashed image of another section (or its only file), as a download. */
+  async imageOriginal(id: string) {
+    const asset = await this.trashedImage(id);
+    if (!asset) return null;
+    const names = (await this.deps.store.files(asset.storageKey)).map((file) => file.name);
+    const name = names.find((file) => file.startsWith("original.")) ?? names[0];
+    const data = name ? await this.deps.store.readStored(asset.storageKey, name) : null;
+    return name && data ? { name, data, asset } : null;
+  }
+
+  private async purgeImage(asset: AssetRow) {
+    // Removing the files also drops the register entry.
+    await this.deps.store.remove(asset.storageKey);
+    await this.deps.store.removeIfEmpty(asset.storageKey.split("/").slice(0, 2).join("/"));
+    await this.deps.assets?.removeByKey(asset.storageKey);
+  }
+
   /** The smallest generated size of a trashed image, for the trash page. */
   async thumbnailFile(kind: TrashKind, id: string) {
+    if (kind === "image") {
+      const asset = await this.trashedImage(id);
+      const name = asset ? this.previewFile(await this.deps.store.files(asset.storageKey)) : null;
+      return asset && name ? this.deps.store.readPublic(asset.storageKey, name) : null;
+    }
     const image =
       kind === "photo" ? await this.deps.photos.getTrashed(id) : await this.trashedVersion(id);
     const smallest = image?.variants?.[0];
@@ -152,6 +220,12 @@ export class PhotoTrash {
   }
 
   async restore(kind: TrashKind, id: string) {
+    if (kind === "image")
+      throw new HttpError(
+        409,
+        "NOT_RESTORABLE",
+        "This image cannot be put back; download it and add it again"
+      );
     if (kind === "photo") {
       const row = await this.deps.photos.restore(id);
       if (!row) throw notFound("Not in the trash");
@@ -207,6 +281,11 @@ export class PhotoTrash {
 
   /** Removes one item for good. */
   async purge(kind: TrashKind, id: string) {
+    if (kind === "image") {
+      const asset = await this.trashedImage(id);
+      if (!asset) throw notFound("Not in the trash");
+      return this.purgeImage(asset);
+    }
     if (kind === "photo") {
       const row = await this.deps.photos.getTrashed(id);
       if (!row) throw notFound("Not in the trash");
@@ -239,6 +318,8 @@ export class PhotoTrash {
     // After the photos: their versions went with them.
     for (const version of await this.deps.versions.listTrashed())
       if (due(version.deletedAt)) await attempt(() => this.purgeVersion(version));
+    for (const asset of await this.trashedImages())
+      if (due(asset.trashedAt)) await attempt(() => this.purgeImage(asset));
     return { removed, failed };
   }
 

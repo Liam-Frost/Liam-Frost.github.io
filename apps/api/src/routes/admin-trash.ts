@@ -35,6 +35,23 @@ export function registerAdminTrashRoutes(
     return reply.send(data);
   });
 
+  /** The original of another section's trashed image, as a download. */
+  app.get("/api/admin/trash/image/:id/original", admin, async (request, reply) => {
+    const { id } = parseInput(trashItemParamsSchema, {
+      ...(request.params as object),
+      kind: "image"
+    });
+    const original = await bin().imageOriginal(id);
+    if (!original) throw notFound();
+    reply.header("content-type", "application/octet-stream");
+    reply.header("cache-control", "private, no-store");
+    reply.header(
+      "content-disposition",
+      `attachment; filename="${original.asset.ownerType}-${id.slice(0, 8)}.${original.name.split(".").pop()}"`
+    );
+    return reply.send(original.data);
+  });
+
   app.post(
     "/api/admin/trash/:kind/:id/restore",
     admin,

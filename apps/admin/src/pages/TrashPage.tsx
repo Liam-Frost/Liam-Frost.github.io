@@ -1,7 +1,7 @@
 import LoadingSkeleton from "../../../web/src/components/LoadingSkeleton";
 import type { AdminTrashItem, AdminTrashResponse } from "@liam-frost/shared";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, ImageOff, RotateCcw, Trash2 } from "lucide-react";
+import { ArrowLeft, Download, ImageOff, RotateCcw, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router";
 
@@ -27,14 +27,30 @@ export const fileSize = (bytes: number) =>
 const daysLeft = (iso: string) =>
   Math.max(0, Math.ceil((Date.parse(iso) - Date.now()) / 86_400_000));
 
+const SECTIONS: Record<string, string> = {
+  project: tr("项目"),
+  media: tr("收藏"),
+  person: tr("人物"),
+  branding: tr("品牌图"),
+  stack: tr("技术栈")
+};
+
 function itemName(item: AdminTrashItem) {
+  if (item.kind === "image") {
+    // The entry's title while it exists; where the files are once it is gone.
+    const owner = pickText(item.title, "");
+    return tr("{0}图片：{1}", SECTIONS[item.ownerType] ?? "", owner || item.label);
+  }
   const title = pickText(item.title, item.photoId);
   return item.kind === "photo"
     ? title
     : tr("{0} 的版本{1}", title, item.label ? `“${item.label}”` : "");
 }
 
-/** Deleted photos and versions: restore them, or remove them for good before their time is up. */
+/**
+ * Deleted photos and versions (restore them, or remove them for good before their time is up), and
+ * images other sections replaced or deleted (download them, or remove them for good).
+ */
 export function TrashPage() {
   const qc = useQueryClient();
   const toast = useToast();
@@ -106,7 +122,7 @@ export function TrashPage() {
       <PageHeader
         title={tr("回收站")}
         description={tr(
-          "删除的照片和版本在这里保留 {0} 天，之后连同图片文件一起彻底删除。保留天数可以在网站设置的“图片管理”里调整。",
+          "删除的照片和版本，以及项目、收藏等模块里被替换或删除的图片，在这里保留 {0} 天，之后连同图片文件一起彻底删除。保留天数可以在网站设置的“图片管理”里调整。",
           data.retentionDays
         )}
         actions={
@@ -150,7 +166,9 @@ export function TrashPage() {
                   <p className="text-subtle">
                     {item.kind === "photo"
                       ? tr("照片 · {0} 个版本", item.versions)
-                      : tr("单个版本")}
+                      : item.kind === "version"
+                        ? tr("单个版本")
+                        : tr("被替换或删除的图片，只能下载")}
                     {" · "}
                     {item.width} × {item.height}
                     {item.bytes ? ` · ${fileSize(item.bytes)}` : ""}
@@ -162,17 +180,28 @@ export function TrashPage() {
                   </p>
                 </div>
                 <div className="flex shrink-0 flex-wrap justify-end gap-1.5">
-                  <button
-                    type="button"
-                    className="btn-secondary btn-sm"
-                    disabled={busy}
-                    aria-label={tr("恢复 {0}", itemName(item))}
-                    onClick={() =>
-                      void run(() => api.restoreTrashItem(item.kind, item.id), tr("已恢复"))
-                    }
-                  >
-                    <RotateCcw aria-hidden="true" className="size-3.5" /> {tr("恢复")}
-                  </button>
+                  {item.restorable ? (
+                    <button
+                      type="button"
+                      className="btn-secondary btn-sm"
+                      disabled={busy}
+                      aria-label={tr("恢复 {0}", itemName(item))}
+                      onClick={() =>
+                        void run(() => api.restoreTrashItem(item.kind, item.id), tr("已恢复"))
+                      }
+                    >
+                      <RotateCcw aria-hidden="true" className="size-3.5" /> {tr("恢复")}
+                    </button>
+                  ) : (
+                    <a
+                      className="btn-secondary btn-sm"
+                      href={api.trashImageOriginalUrl(item.id)}
+                      download
+                      aria-label={tr("下载 {0}", itemName(item))}
+                    >
+                      <Download aria-hidden="true" className="size-3.5" /> {tr("下载原图")}
+                    </a>
+                  )}
                   <button
                     type="button"
                     className="btn-secondary btn-sm"

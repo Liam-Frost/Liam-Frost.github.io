@@ -189,7 +189,7 @@ export function registerStackRoutes(
   const removeIcon = async (request: FastifyRequest, icon: StoredImage | null) => {
     if (!icon) return;
     await store
-      .remove(icon.key)
+      .discard(icon.key)
       .catch((error) => request.log.warn({ error, key: icon.key }, "Failed to remove stack icon"));
     // The technology's folder goes too once its last logo is gone (removeIfEmpty keeps a new one).
     await store.removeIfEmpty(icon.key.split("/").slice(0, 2).join("/"));
@@ -360,6 +360,7 @@ export function registerStackRoutes(
     let result: AdminStackResponse;
     try {
       await store.write(key, variantFileName(icon.width), icon.data);
+      await store.ledger?.savedFile(key, variantFileName(icon.width), icon.data, icon);
       result = await serialized(async () => {
         const current = findTechnology(await repo().list(), id);
         previous = current.customIcon;

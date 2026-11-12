@@ -63,7 +63,7 @@ export function registerBrandingRoutes(
   const discard = async (request: FastifyRequest, slot: BrandSlot, old: BrandAsset | null) => {
     if (!old) return;
     await store
-      .remove(brandKey(slot, old.id))
+      .discard(brandKey(slot, old.id))
       .catch((error) => request.log.warn({ error, slot }, "Failed to remove an old brand file"));
   };
 
@@ -86,6 +86,7 @@ export function registerBrandingRoutes(
     let previous: BrandAsset | null;
     try {
       await store.write(key, brandFileName(image), icon.data);
+      await store.ledger?.savedFile(key, brandFileName(image), icon.data, image);
       previous = await branding.replace(slot, image);
     } catch (error) {
       await store.remove(key).catch(() => undefined);

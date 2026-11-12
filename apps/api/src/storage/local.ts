@@ -13,6 +13,8 @@ import {
 } from "node:fs/promises";
 import { dirname, join, resolve, sep } from "node:path";
 
+import type { ImageLedger } from "../assets/ledger";
+
 /** Files being received or assembled; never served, and outside every storage key. */
 const STAGING = ".staging";
 
@@ -41,6 +43,8 @@ export function isStorageKey(value: string) {
 /** Stores uploaded images on the local disk under UPLOAD_DIR. */
 export class LocalImageStore {
   readonly root: string;
+  /** Set by the server when there is an image register: keeps it in step with what is stored. */
+  ledger: ImageLedger | null = null;
 
   constructor(root: string) {
     this.root = resolve(root);
@@ -106,9 +110,20 @@ export class LocalImageStore {
     return removed;
   }
 
-  /** Removes every file of a photo. Missing folders are fine. */
+  /** Removes every file under a key for good. Missing folders are fine. */
   async remove(key: string) {
     await rm(this.path(key), { recursive: true, force: true });
+    await this.ledger?.forget(key);
+  }
+
+  /**
+   * Gives up the images under a key because their owner replaced or deleted them: they go to the trash
+   * (files kept until it is emptied) when they are registered, and are removed at once otherwise.
+   */
+  async discard(key: string) {
+    this.path(key);
+    if (this.ledger && (await this.ledger.trash(key))) return;
+    await this.remove(key);
   }
 
   /** Removes a key's folder if nothing is left in it (e.g. a photo's folder after its last image). */
@@ -146,7 +161,7 @@ export class LocalImageStore {
    * Every image folder under an area ("photos"): "<area>/<name>" where files lie directly in it (older
    * uploads), and each "<area>/<name>/<image>" sub-folder. Names that are not storage keys are skipped.
    */
-  async tree(area: "photos"): Promise<StoredFolder[]> {
+  async tree(area: string): Promise<StoredFolder[]> {
     const base = join(this.root, area);
     const folders: StoredFolder[] = [];
     const add = async (key: string) => {

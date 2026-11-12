@@ -336,7 +336,7 @@ export function registerAdminPeopleRoutes(
       })
     );
     await store
-      .remove(`people/${id}`)
+      .discard(`people/${id}`)
       .catch((error) => request.log.warn({ error, personId: id }, "Failed to remove person files"));
   };
 
@@ -390,7 +390,7 @@ export function registerAdminPeopleRoutes(
       }
       if (result.old)
         await store
-          .remove(result.old.key)
+          .discard(result.old.key)
           .catch((error) =>
             request.log.warn({ error, personId: preflight.id }, "Failed to remove old photo")
           );

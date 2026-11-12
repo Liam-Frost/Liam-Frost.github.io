@@ -77,8 +77,9 @@ import { readImageSettings } from "./settings/images";
 import { PhotoTrash } from "./photos/trash";
 import { registerAdminTrashRoutes } from "./routes/admin-trash";
 import { StorageManager } from "./assets/storage";
+import { ImageLedger } from "./assets/ledger";
 import { registerAdminStorageRoutes } from "./routes/admin-storage";
-import { backfillPhotoAssets } from "./assets/backfill";
+import { backfillPhotoAssets, backfillSectionAssets } from "./assets/backfill";
 import { PrismaAssetRepository } from "./assets/prisma-repository";
 import type { AssetRepository } from "./assets/types";
 import type { PhotoRepository } from "./photos/types";
@@ -288,6 +289,7 @@ export async function buildServer({
   });
   const activeSources = mediaSources ?? liveService(() => integrations.media(), createMediaSources);
   const store = new LocalImageStore(config.uploads.dir ?? DEFAULT_UPLOAD_DIR);
+  if (assets) store.ledger = new ImageLedger(assets, now ?? (() => new Date()));
   const collection = settings ? new CollectionSettingsStore(settings) : null;
   const account =
     spotifyAccount ??
@@ -509,6 +511,26 @@ export async function buildServer({
   registerAdminAccountRoutes(app, auth);
   app.addHook("onClose", async () => auth.stop());
   const imageSettings = () => readImageSettings(settings);
+  const branding = new BrandingStore(settings);
+  /** What an image of another section belonged to, for the trash and the scan. */
+  const ownerTitle = async (ownerType: string, ownerId: string) =>
+    ownerType === "project"
+      ? ((await projects?.get(ownerId))?.title ?? null)
+      : ownerType === "media"
+        ? ((await media?.get(ownerId))?.title ?? null)
+        : ownerType === "person"
+          ? ((await people?.get(ownerId))?.name ?? null)
+          : null;
+  // Covers, posters, people's photos, icons and brand files from before the register existed.
+  const backfillSections = assets
+    ? () => backfillSectionAssets({ projects, media, people, stack, branding }, assets, store)
+    : undefined;
+  if (backfillSections)
+    void backfillSections()
+      .then((added) => {
+        if (added) app.log.info({ added }, "Registered existing images of other sections");
+      })
+      .catch((error) => app.log.warn({ err: error }, "Cannot register other sections' images"));
   const trash =
     photos && photoVersions
       ? new PhotoTrash({
@@ -517,7 +539,8 @@ export async function buildServer({
           assets,
           store,
           settings: imageSettings,
-          now: now ?? (() => new Date())
+          now: now ?? (() => new Date()),
+          ownerTitle
         })
       : null;
   if (trash) {
@@ -546,7 +569,9 @@ export async function buildServer({
           versions: photoVersions,
           assets,
           store,
-          now: now ?? (() => new Date())
+          now: now ?? (() => new Date()),
+          backfill: backfillSections,
+          ownerTitle
         })
       : null;
   registerAdminStorageRoutes(app, auth, storage);
@@ -606,7 +631,6 @@ export async function buildServer({
   registerStackRoutes(app, auth, stack, store, projects);
   registerAboutRoutes(app, auth, settings ? new AboutStore(settings) : null);
   registerContactRoutes(app, auth, settings);
-  const branding = new BrandingStore(settings);
   registerBrandingRoutes(app, auth, branding, store);
   registerPresentationRoutes(app, auth, settings, photos, store, branding);
   registerSiteSettingsRoutes(app, auth, settings, store, media, branding);
