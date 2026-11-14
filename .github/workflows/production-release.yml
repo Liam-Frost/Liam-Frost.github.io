@@ -265,6 +265,7 @@ jobs:
           SSH_PORT: ${{ secrets.SECONDARY_SSH_PORT }}
           SSH_USER: ${{ secrets.SECONDARY_SSH_USER }}
           SSH_KEY: ${{ secrets.SECONDARY_SSH_KEY }}
+          SSH_KEY_PASSPHRASE: ${{ secrets.SECONDARY_SSH_KEY_PASSPHRASE }}
           SSH_KNOWN_HOSTS: ${{ secrets.SECONDARY_SSH_KNOWN_HOSTS }}
           ARTIFACT_READY: ${{ steps.secondary-download.outcome == 'success' }}
           GH_TOKEN: ${{ github.token }}
