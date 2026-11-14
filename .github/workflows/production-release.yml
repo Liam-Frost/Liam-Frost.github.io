@@ -66,7 +66,7 @@ jobs:
           with open(os.environ['GITHUB_OUTPUT'], 'a') as out:
               out.write('revision=' + candidate['head_sha'] + '\npreview_run=' + str(candidate['id']) + '\n')
           with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as out:
-              out.write('## Production approval\n\nCandidate: `' + candidate['head_sha'] + '`\n\n[Preview site](https://preview.twilightfrosty.com) · [Successful preview build](' + candidate['html_url'] + ')\n\nReview the preview, then choose **Review deployments → production → Approve and deploy**. This promotes the same immutable bundle; no rebuild.\n\nIf preview advances to another version before approval, deployment will stop safely.\n')
+              out.write('## Production approval\n\nCandidate: `' + candidate['head_sha'] + '`\n\n[Preview site](https://preview.twilightfrost.com) · [Successful preview build](' + candidate['html_url'] + ')\n\nReview the preview, then choose **Review deployments → production → Approve and deploy**. This promotes the same immutable bundle; no rebuild.\n\nIf preview advances to another version before approval, deployment will stop safely.\n')
           PY
 
   migration-plan:
@@ -155,7 +155,7 @@ jobs:
     timeout-minutes: 40
     environment:
       name: production
-      url: https://www.twilightfrosty.com
+      url: https://www.twilightfrost.com
     steps:
       - name: Download reviewed migration plan
         uses: actions/download-artifact@v8
@@ -237,8 +237,8 @@ jobs:
       - name: Verify production HTTPS
         run: |
           set -euo pipefail
-          curl --fail --silent --show-error --retry 3 https://www.twilightfrosty.com/api/health | jq -e '.ok == true'
-          printf 'Production published: https://www.twilightfrosty.com\n' >> "$GITHUB_STEP_SUMMARY"
+          curl --fail --silent --show-error --retry 3 https://www.twilightfrost.com/api/health | jq -e '.ok == true'
+          printf 'Production published: https://www.twilightfrost.com\n' >> "$GITHUB_STEP_SUMMARY"
       - name: Check out the reviewed release tooling
         id: secondary-tooling
         continue-on-error: true
@@ -285,7 +285,7 @@ jobs:
           RESULT: ${{ job.status }}
           REVISION: ${{ needs.validate.outputs.revision }}
         run: |
-          printf '### Production deployment\n\nRevision: `%s`\n\nResult: **%s**\n\n[Open production](https://www.twilightfrosty.com)\n' "$REVISION" "$RESULT" >> "$GITHUB_STEP_SUMMARY"
+          printf '### Production deployment\n\nRevision: `%s`\n\nResult: **%s**\n\n[Open production](https://www.twilightfrost.com)\n' "$REVISION" "$RESULT" >> "$GITHUB_STEP_SUMMARY"
 
   regional-probe:
     name: Check release results
