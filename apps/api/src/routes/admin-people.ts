@@ -50,7 +50,7 @@ import {
 import { InvalidImageError, processImage } from "../photos/images";
 import type { StoredImage } from "../projects/types";
 import type { LocalImageStore } from "../storage/local";
-import { readUploadedImage } from "./read-upload";
+import { readUploadedImage, withUploadCleanup } from "./read-upload";
 
 const MUSIC = new Set(["track", "album"]);
 
@@ -336,7 +336,7 @@ export function registerAdminPeopleRoutes(
       })
     );
     await store
-      .remove(`people/${id}`)
+      .discard(`people/${id}`)
       .catch((error) => request.log.warn({ error, personId: id }, "Failed to remove person files"));
   };
 
@@ -370,10 +370,10 @@ export function registerAdminPeopleRoutes(
   /** Replaces the photo with an uploaded image. */
   app.post(
     "/api/admin/people/:id/photo",
-    admin,
-    async (request, reply): Promise<AdminPersonResponse> => {
+    { ...admin, config: { rateLimit: { max: 120, timeWindow: "1 minute" } } },
+    withUploadCleanup(async (request, reply): Promise<AdminPersonResponse> => {
       const preflight = await getPerson(personId(request));
-      const { image } = await readUploadedImage(request, deps.maxUploadBytes);
+      const { image } = await readUploadedImage(request, deps.maxUploadBytes, deps.store);
       const photo = await storePoster(store, preflight.id, image, "people");
 
       let result: { updated: PersonRow; old: StoredImage | null };
@@ -390,13 +390,13 @@ export function registerAdminPeopleRoutes(
       }
       if (result.old)
         await store
-          .remove(result.old.key)
+          .discard(result.old.key)
           .catch((error) =>
             request.log.warn({ error, personId: preflight.id }, "Failed to remove old photo")
           );
       reply.code(201);
       return respond(result.updated);
-    }
+    })
   );
 
   app.get(

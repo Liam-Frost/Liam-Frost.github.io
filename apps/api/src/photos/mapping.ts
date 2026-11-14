@@ -1,14 +1,16 @@
 import type { Photo } from "@liam-frost/content";
-import type { AdminPhoto, PhotoVariantInfo } from "@liam-frost/shared";
+import type { AdminPhoto, AdminPhotoVersion, PhotoVariantInfo } from "@liam-frost/shared";
 
+import type { AssetRow } from "../assets/types";
 import type { LocalImageStore } from "../storage/local";
 import type { PhotoRow } from "./types";
+import type { ImageFields, VersionRow } from "./versions";
 
 export function variantFileName(width: number) {
   return `${width}.webp`;
 }
 
-function variantUrls(row: PhotoRow, store: LocalImageStore): PhotoVariantInfo[] {
+function variantUrls(row: ImageFields, store: LocalImageStore): PhotoVariantInfo[] {
   if (row.storage !== "local" || !row.storageKey || !row.variants) return [];
   const key = row.storageKey;
   return row.variants.map((v) => ({ ...v, url: store.publicUrl(key, variantFileName(v.width)) }));
@@ -46,6 +48,30 @@ export function toPublicPhoto(row: PhotoRow, store: LocalImageStore): Photo {
     height: row.height,
     featured: row.featured,
     ...(variants.length ? { variants } : {})
+  };
+}
+
+/** A version for the editor; `asset` is its register entry, when it is site-hosted and registered. */
+export function toAdminVersion(
+  version: VersionRow,
+  current: boolean,
+  store: LocalImageStore,
+  asset: AssetRow | null
+): AdminPhotoVersion {
+  const variants = variantUrls(version, store);
+  return {
+    id: version.id,
+    label: version.label,
+    current,
+    storage: version.storage,
+    src: variants.at(-1)?.url ?? version.src,
+    thumbnail: variants[0]?.url ?? remoteThumbnail(version.src),
+    width: version.width,
+    height: version.height,
+    source: version.source,
+    createdAt: version.createdAt.toISOString(),
+    format: asset?.format || null,
+    bytes: asset?.bytes ?? null
   };
 }
 

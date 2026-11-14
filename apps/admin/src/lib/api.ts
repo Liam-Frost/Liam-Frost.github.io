@@ -1,5 +1,13 @@
 import {
   ADMIN_REQUEST_HEADER,
+  UPLOAD_ID_HEADER,
+  type AdminStorageOverview,
+  type AdminTrashItem,
+  type AdminTrashResponse,
+  type AdminPhotoVersionsResponse,
+  type AdminUploadCheck,
+  type AdminUploadCheckResponse,
+  type AdminUploadStatusResponse,
   type AdminAccountStatus,
   type AdminLoginSecondFactor,
   type AdminRecoveryCodes,
@@ -172,13 +180,20 @@ function apiError(status: number, data: Partial<ApiErrorBody> | undefined) {
 function uploadFile<T>(
   url: string,
   file: File,
-  onProgress?: (fraction: number) => void
+  onProgress?: (fraction: number) => void,
+  signal?: AbortSignal,
+  uploadId?: string
 ): Promise<T> {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
+    const aborted = () => reject(new ApiError(0, "ABORTED", tr("已取消")));
+    if (signal?.aborted) return aborted();
+    signal?.addEventListener("abort", () => xhr.abort(), { once: true });
+    xhr.onabort = aborted;
     xhr.open("POST", url);
     xhr.setRequestHeader(ADMIN_REQUEST_HEADER, "1");
     xhr.setRequestHeader("accept", "application/json");
+    if (uploadId) xhr.setRequestHeader(UPLOAD_ID_HEADER, uploadId);
     xhr.upload.onprogress = (event) => {
       if (event.lengthComputable) onProgress?.(event.loaded / event.total);
     };
@@ -196,8 +211,13 @@ function uploadFile<T>(
   });
 }
 
-export function uploadPhoto(file: File, onProgress: (fraction: number) => void) {
-  return uploadFile<AdminPhotoResponse>("/api/admin/photos", file, onProgress);
+export function uploadPhoto(
+  file: File,
+  onProgress: (fraction: number) => void,
+  signal?: AbortSignal,
+  uploadId?: string
+) {
+  return uploadFile<AdminPhotoResponse>("/api/admin/photos", file, onProgress, signal, uploadId);
 }
 
 const photoPath = (id: string) => `/api/admin/photos/${encodeURIComponent(id)}`;
@@ -207,12 +227,19 @@ export function uploadPhotoImage(
   id: string,
   file: File,
   useExif: boolean,
-  onProgress?: (fraction: number) => void
+  onProgress?: (fraction: number) => void,
+  signal?: AbortSignal,
+  current = true
 ) {
+  const query = new URLSearchParams({
+    ...(useExif ? { exif: "1" } : {}),
+    current: current ? "1" : "0"
+  });
   return uploadFile<AdminPhotoResponse>(
-    `${photoPath(id)}/image${useExif ? "?exif=1" : ""}`,
+    `${photoPath(id)}/image?${query}`,
     file,
-    onProgress
+    onProgress,
+    signal
   );
 }
 
@@ -288,10 +315,71 @@ export const api = {
   updatePhoto: (id: string, update: AdminPhotoUpdate) =>
     request<AdminPhotoResponse>(photoPath(id), { method: "PATCH", json: update }),
   deletePhoto: (id: string) => request<void>(photoPath(id), { method: "DELETE" }),
+  checkUploads: (files: AdminUploadCheck["files"]) =>
+    request<AdminUploadCheckResponse>("/api/admin/photos/check", {
+      method: "POST",
+      json: { files }
+    }),
+  uploadStatus: (ids: string[]) =>
+    request<AdminUploadStatusResponse>("/api/admin/photos/uploads/status", {
+      method: "POST",
+      json: { ids }
+    }),
   importPhoto: (body: AdminPhotoImport) =>
     request<AdminPhotoResponse>("/api/admin/photos/import", { method: "POST", json: body }),
   replacePhotoImage: (id: string, body: AdminPhotoImageReplace) =>
     request<AdminPhotoResponse>(`${photoPath(id)}/image`, { method: "PUT", json: body }),
+  storage: () => request<AdminStorageOverview>("/api/admin/storage"),
+  scanStorage: () => request<AdminStorageOverview>("/api/admin/storage/scan", { method: "POST" }),
+  deleteOrphan: (key: string) =>
+    request<AdminStorageOverview>("/api/admin/storage/orphans/delete", {
+      method: "POST",
+      json: { key }
+    }),
+  regenerateImage: (key: string) =>
+    request<AdminStorageOverview>("/api/admin/storage/regenerate", {
+      method: "POST",
+      json: { key }
+    }),
+  adoptOrphan: (key: string) =>
+    request<AdminPhotoResponse>("/api/admin/photos/adopt", { method: "POST", json: { key } }),
+  /** A small preview of an orphan folder's image, for <img src>. */
+  orphanPreviewUrl: (key: string) =>
+    `/api/admin/storage/orphans/preview?${new URLSearchParams({ key })}`,
+  /** The original of another section's trashed image, as a download link. */
+  trashImageOriginalUrl: (id: string) => `/api/admin/trash/image/${id}/original`,
+  /** A version's private original, as a download link. */
+  versionOriginalUrl: (id: string, versionId: string) =>
+    `${photoPath(id)}/versions/${versionId}/original`,
+  trash: () => request<AdminTrashResponse>("/api/admin/trash"),
+  restoreTrashItem: (kind: AdminTrashItem["kind"], id: string) =>
+    request<AdminTrashResponse>(`/api/admin/trash/${kind}/${encodeURIComponent(id)}/restore`, {
+      method: "POST"
+    }),
+  purgeTrashItem: (kind: AdminTrashItem["kind"], id: string) =>
+    request<AdminTrashResponse>(`/api/admin/trash/${kind}/${encodeURIComponent(id)}`, {
+      method: "DELETE"
+    }),
+  emptyTrash: () => request<AdminTrashResponse>("/api/admin/trash", { method: "DELETE" }),
+  /** The photos chosen as login backgrounds, to warn before deleting one. */
+  loginBackgroundPhotoIds: () =>
+    request<{ settings: { loginBackground?: { photoIds?: string[] } } }>(
+      "/api/admin/presentation"
+    ).then((doc) => doc.settings.loginBackground?.photoIds ?? []),
+  photoVersions: (id: string) => request<AdminPhotoVersionsResponse>(`${photoPath(id)}/versions`),
+  showPhotoVersion: (id: string, versionId: string) =>
+    request<AdminPhotoVersionsResponse>(`${photoPath(id)}/versions/${versionId}/current`, {
+      method: "POST"
+    }),
+  labelPhotoVersion: (id: string, versionId: string, label: string) =>
+    request<AdminPhotoVersionsResponse>(`${photoPath(id)}/versions/${versionId}`, {
+      method: "PATCH",
+      json: { label }
+    }),
+  deletePhotoVersion: (id: string, versionId: string) =>
+    request<AdminPhotoVersionsResponse>(`${photoPath(id)}/versions/${versionId}`, {
+      method: "DELETE"
+    }),
   hostPhoto: (id: string) =>
     request<AdminPhotoResponse>(`${photoPath(id)}/host`, { method: "POST" }),
   serverFolder: (root: number, path: string) =>

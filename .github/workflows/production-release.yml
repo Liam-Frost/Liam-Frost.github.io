@@ -57,7 +57,8 @@ jobs:
               if git('rev-parse', sha + '^{tree}') != tree:
                   continue
               artifacts = api('/actions/runs/' + str(run['id']) + '/artifacts')['artifacts']
-              if not any(a['name'] == 'personal-home-release-' + sha and not a['expired'] for a in artifacts):
+              available = {a['name'] for a in artifacts if not a['expired']}
+              if not {'personal-home-release-' + sha, 'personal-home-secondary-' + sha} <= available:
                   continue
               candidate = run
               break
@@ -238,6 +239,46 @@ jobs:
           set -euo pipefail
           curl --fail --silent --show-error --retry 3 https://www.twilightfrosty.com/api/health | jq -e '.ok == true'
           printf 'Production published: https://www.twilightfrosty.com\n' >> "$GITHUB_STEP_SUMMARY"
+      - name: Check out the reviewed release tooling
+        id: secondary-tooling
+        continue-on-error: true
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.validate.outputs.revision }}
+          path: release-tooling
+      - name: Download the tested secondary image
+        id: secondary-download
+        continue-on-error: true
+        uses: actions/download-artifact@v8
+        with:
+          name: personal-home-secondary-${{ needs.validate.outputs.revision }}
+          path: secondary
+          run-id: ${{ needs.validate.outputs.preview_run }}
+          github-token: ${{ github.token }}
+      - name: Publish secondary application and report its status
+        if: steps.secondary-tooling.outcome == 'success'
+        continue-on-error: true
+        env:
+          REVISION: ${{ needs.validate.outputs.revision }}
+          PREVIEW_RUN: ${{ needs.validate.outputs.preview_run }}
+          SSH_HOST: ${{ secrets.SECONDARY_SSH_HOST }}
+          SSH_PORT: ${{ secrets.SECONDARY_SSH_PORT }}
+          SSH_USER: ${{ secrets.SECONDARY_SSH_USER }}
+          SSH_KEY: ${{ secrets.SECONDARY_SSH_KEY }}
+          SSH_KEY_PASSPHRASE: ${{ secrets.SECONDARY_SSH_KEY_PASSPHRASE }}
+          SSH_KNOWN_HOSTS: ${{ secrets.SECONDARY_SSH_KNOWN_HOSTS }}
+          ARTIFACT_READY: ${{ steps.secondary-download.outcome == 'success' }}
+          GH_TOKEN: ${{ github.token }}
+        run: bash release-tooling/.github/scripts/publish-secondary.sh
+      - name: Retain the secondary application report
+        if: always()
+        continue-on-error: true
+        uses: actions/upload-artifact@v7
+        with:
+          name: secondary-result-${{ github.run_id }}-${{ github.run_attempt }}
+          path: secondary-result.json
+          retention-days: 90
+          if-no-files-found: ignore
       - name: Record deployment result
         if: always()
         env:
@@ -261,11 +302,18 @@ jobs:
         with:
           name: production-result-${{ github.run_id }}-${{ github.run_attempt }}
           path: production-report
+      - name: Download secondary application status
+        continue-on-error: true
+        uses: actions/download-artifact@v8
+        with:
+          name: secondary-result-${{ github.run_id }}-${{ github.run_attempt }}
+          path: secondary-report
       - name: Read public release results
         id: regions
         env:
           REVISION: ${{ needs.validate.outputs.revision }}
           PRODUCTION_REPORT: production-report/production-result.json
+          SECONDARY_REPORT: secondary-report/secondary-result.json
         run: python3 .github/scripts/check-regional-release.py
 
   regional-status:

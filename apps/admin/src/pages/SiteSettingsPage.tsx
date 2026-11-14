@@ -40,7 +40,8 @@ const titles: Record<SiteSettingsGroup, string> = {
   preferences: tr("默认显示与语言"),
   navigation: tr("导航外观"),
   privacy: tr("隐私说明"),
-  dictionary: tr("标签词典")
+  dictionary: tr("标签词典"),
+  images: tr("图片管理")
 };
 const descriptions: Record<SiteSettingsGroup, string> = {
   identity: tr("设置公开姓名和首屏头像。"),
@@ -48,7 +49,8 @@ const descriptions: Record<SiteSettingsGroup, string> = {
   preferences: tr("决定访客首次访问时的显示偏好。"),
   navigation: tr("调整前台底部导航和页面按钮的玻璃效果。"),
   privacy: tr("编辑公开隐私说明，历史版本可载入为草稿。"),
-  dictionary: tr("为收藏标签补齐多语言翻译，保留原有内容标识。")
+  dictionary: tr("为收藏标签补齐多语言翻译，保留原有内容标识。"),
+  images: tr("设置回收站保留时间和每张照片的版本上限。")
 };
 const fieldLabels: Record<string, string> = {
   name: tr("显示姓名"),
@@ -66,7 +68,9 @@ const fieldLabels: Record<string, string> = {
   bottomOffset: tr("底部距离"),
   body: tr("隐私正文"),
   effectiveDate: tr("生效日期"),
-  entries: tr("词条")
+  entries: tr("词条"),
+  trashRetentionDays: tr("回收站保留天数"),
+  maxPhotoVersions: tr("每张照片的版本上限")
 };
 export function SiteSettingsPage({ group }: { group: SiteSettingsGroup }) {
   const key = ["admin", "site-settings", group];
@@ -168,7 +172,11 @@ export function SiteSettingsPage({ group }: { group: SiteSettingsGroup }) {
     preferences = value as SiteSettingsGroups["preferences"],
     navigation = value as SiteSettingsGroups["navigation"],
     privacy = value as SiteSettingsGroups["privacy"],
-    dictionary = value as SiteSettingsGroups["dictionary"];
+    dictionary = value as SiteSettingsGroups["dictionary"],
+    images = value as SiteSettingsGroups["images"];
+  /** A whole number within the field's range, or the lower bound while the field is empty. */
+  const whole = (text: string, min: number, max: number) =>
+    Math.min(max, Math.max(min, Math.round(Number(text)) || min));
   const filtered =
     group === "dictionary"
       ? dictionary.entries
@@ -394,6 +402,49 @@ export function SiteSettingsPage({ group }: { group: SiteSettingsGroup }) {
               </div>
             </SettingsSection>
           </>
+        ) : null}
+        {group === "images" ? (
+          <SettingsSection
+            title={tr("保留与上限")}
+            description={tr("修改后对之后的操作生效，已有的版本不会被删除。")}
+          >
+            <SettingsGrid variant="equal">
+              <Field
+                label={tr("回收站保留天数")}
+                htmlFor="settings-trash-days"
+                hint={tr("删除的图片在回收站里保留这么多天，之后彻底删除。1 到 365 天。")}
+              >
+                <input
+                  className="field"
+                  id="settings-trash-days"
+                  type="number"
+                  min={1}
+                  max={365}
+                  value={images.trashRetentionDays}
+                  onChange={(event) =>
+                    change({ ...images, trashRetentionDays: whole(event.target.value, 1, 365) })
+                  }
+                />
+              </Field>
+              <Field
+                label={tr("每张照片的版本上限")}
+                htmlFor="settings-max-versions"
+                hint={tr("一张照片最多保留这么多个版本，达到后需要先删除一个。1 到 50 个。")}
+              >
+                <input
+                  className="field"
+                  id="settings-max-versions"
+                  type="number"
+                  min={1}
+                  max={50}
+                  value={images.maxPhotoVersions}
+                  onChange={(event) =>
+                    change({ ...images, maxPhotoVersions: whole(event.target.value, 1, 50) })
+                  }
+                />
+              </Field>
+            </SettingsGrid>
+          </SettingsSection>
         ) : null}
         {group === "preferences" ? (
           <SettingsSection

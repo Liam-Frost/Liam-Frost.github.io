@@ -27,7 +27,7 @@ import {
 } from "../projects/types";
 import type { StackRepository } from "../stack/types";
 import type { LocalImageStore } from "../storage/local";
-import { readUploadedImage } from "./read-upload";
+import { readUploadedImage, withUploadCleanup } from "./read-upload";
 
 const MAX_GALLERY = 30;
 
@@ -181,7 +181,7 @@ export function registerAdminProjectRoutes(
       return current;
     });
     await store
-      .remove(`projects/${row.id}`)
+      .discard(`projects/${row.id}`)
       .catch((error) =>
         request.log.warn({ error, projectId: row.id }, "Failed to remove project files")
       );
@@ -192,15 +192,15 @@ export function registerAdminProjectRoutes(
   /** Upload the cover (replacing the previous one) or add a screenshot: POST ...?slot=cover|gallery */
   app.post(
     "/api/admin/projects/:id/images",
-    admin,
-    async (request, reply): Promise<AdminProjectResponse> => {
+    { ...admin, config: { rateLimit: { max: 120, timeWindow: "1 minute" } } },
+    withUploadCleanup(async (request, reply): Promise<AdminProjectResponse> => {
       const { slot } = parseInput(projectImageSlotSchema, request.query);
       const preflight = await load(request);
       if (slot === "gallery" && preflight.gallery.length >= MAX_GALLERY)
         throw badRequest(`At most ${MAX_GALLERY} screenshots`);
 
       // Receiving and processing the image happens outside the lock; only the project update is serialized.
-      const { image, bytes } = await readUploadedImage(request, maxUploadBytes);
+      const { image, bytes } = await readUploadedImage(request, maxUploadBytes, store);
       const imageId = randomBytes(6).toString("hex");
       const key = `projects/${preflight.id}/${imageId}`;
       const stored: StoredImage = {
@@ -232,7 +232,7 @@ export function registerAdminProjectRoutes(
       const { updated, oldCover } = result;
       if (oldCover) {
         await store
-          .remove(oldCover.key)
+          .discard(oldCover.key)
           .catch((error) =>
             request.log.warn({ error, projectId: preflight.id }, "Failed to remove old cover")
           );
@@ -243,7 +243,7 @@ export function registerAdminProjectRoutes(
       );
       reply.code(201);
       return respond(updated);
-    }
+    })
   );
 
   app.delete(
@@ -268,7 +268,7 @@ export function registerAdminProjectRoutes(
       });
 
       await store
-        .remove(removed.key)
+        .discard(removed.key)
         .catch((error) =>
           request.log.warn({ error, projectId: id }, "Failed to remove image files")
         );

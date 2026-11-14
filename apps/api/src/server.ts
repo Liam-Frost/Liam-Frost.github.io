@@ -71,6 +71,16 @@ import { PrismaPlaylistRepository } from "./playlists/prisma-repository";
 import type { PlaylistRepository } from "./playlists/types";
 import { PhotoSources } from "./photos/photo-sources";
 import { PrismaPhotoRepository } from "./photos/prisma-repository";
+import { PrismaPhotoVersionRepository, type PhotoVersionRepository } from "./photos/versions";
+import { readImageSettings } from "./settings/images";
+import { PhotoTrash } from "./photos/trash";
+import { registerAdminTrashRoutes } from "./routes/admin-trash";
+import { StorageManager } from "./assets/storage";
+import { ImageLedger } from "./assets/ledger";
+import { registerAdminStorageRoutes } from "./routes/admin-storage";
+import { backfillPhotoAssets, backfillSectionAssets } from "./assets/backfill";
+import { PrismaAssetRepository } from "./assets/prisma-repository";
+import type { AssetRepository } from "./assets/types";
 import type { PhotoRepository } from "./photos/types";
 import { PrismaProjectRepository } from "./projects/prisma-repository";
 import type { ProjectRepository } from "./projects/types";
@@ -103,6 +113,18 @@ function defaultAdminAccountRepository(): AdminAccountRepository | null {
 function defaultPhotoRepository(): PhotoRepository | null {
   const client = getPrismaClient();
   return client ? new PrismaPhotoRepository(client) : null;
+}
+
+/** The Prisma-backed photo versions when DATABASE_URL is set, otherwise none. */
+function defaultPhotoVersionRepository(): PhotoVersionRepository | null {
+  const client = getPrismaClient();
+  return client ? new PrismaPhotoVersionRepository(client) : null;
+}
+
+/** The Prisma-backed image register when DATABASE_URL is set, otherwise none. */
+function defaultAssetRepository(): AssetRepository | null {
+  const client = getPrismaClient();
+  return client ? new PrismaAssetRepository(client) : null;
 }
 
 /** The Prisma-backed project store when DATABASE_URL is set, otherwise none (no projects are shown). */
@@ -164,6 +186,10 @@ export type BuildServerOptions = {
   webDistDir?: string;
   /** Photo storage; defaults to Prisma when DATABASE_URL is set. Pass null for none. */
   photos?: PhotoRepository | null;
+  /** Photo versions; defaults to Prisma when DATABASE_URL is set. Needed wherever photos are. */
+  photoVersions?: PhotoVersionRepository | null;
+  /** The image register; defaults to Prisma when DATABASE_URL is set. Pass null for none. */
+  assets?: AssetRepository | null;
   /** Project storage; defaults to Prisma when DATABASE_URL is set. Pass null for none. */
   projects?: ProjectRepository | null;
   /** Tech stack; defaults to Prisma when DATABASE_URL is set. Pass null for none. */
@@ -211,6 +237,8 @@ export async function buildServer({
   adminDistDir = DEFAULT_ADMIN_DIST_DIR,
   webDistDir = DEFAULT_WEB_DIST_DIR,
   photos = defaultPhotoRepository(),
+  assets = defaultAssetRepository(),
+  photoVersions = defaultPhotoVersionRepository(),
   projects = defaultProjectRepository(),
   stack = defaultStackRepository(),
   adminAccount = defaultAdminAccountRepository(),
@@ -260,6 +288,7 @@ export async function buildServer({
   });
   const activeSources = mediaSources ?? liveService(() => integrations.media(), createMediaSources);
   const store = new LocalImageStore(config.uploads.dir ?? DEFAULT_UPLOAD_DIR);
+  if (assets) store.ledger = new ImageLedger(assets, now ?? (() => new Date()));
   const collection = settings ? new CollectionSettingsStore(settings) : null;
   const account =
     spotifyAccount ??
@@ -408,6 +437,10 @@ export async function buildServer({
   app.register(multipart, {
     limits: { fileSize: config.uploads.maxBytes, files: 1, fields: 0, parts: 1 }
   });
+  // Whatever an earlier run left half-received or half-written.
+  await store
+    .clearStaging()
+    .catch((error) => app.log.warn({ err: error }, "Cannot clear the upload staging folder"));
 
   // Register before defining routes so every route receives the onRequest limiter.
   // Health probes do not consume a visitor's budget. The stricter login limiter remains.
@@ -475,6 +508,95 @@ export async function buildServer({
   registerAdminApp(app, auth, adminDistDir);
   registerAdminAccountRoutes(app, auth);
   app.addHook("onClose", async () => auth.stop());
+  const imageSettings = () => readImageSettings(settings);
+  const branding = new BrandingStore(settings);
+  /** What an image of another section belonged to, for the trash and the scan. */
+  const ownerTitle = async (ownerType: string, ownerId: string) =>
+    ownerType === "project"
+      ? ((await projects?.get(ownerId))?.title ?? null)
+      : ownerType === "media"
+        ? ((await media?.get(ownerId))?.title ?? null)
+        : ownerType === "person"
+          ? ((await people?.get(ownerId))?.name ?? null)
+          : null;
+  // Covers, posters, people's photos, icons and brand files from before the register existed.
+  const backfillSections = assets
+    ? () => backfillSectionAssets({ projects, media, people, stack, branding }, assets, store)
+    : undefined;
+  if (backfillSections)
+    void backfillSections()
+      .then((added) => {
+        if (added) app.log.info({ added }, "Registered existing images of other sections");
+      })
+      .catch((error) => app.log.warn({ err: error }, "Cannot register other sections' images"));
+  const trash =
+    photos && photoVersions
+      ? new PhotoTrash({
+          photos,
+          versions: photoVersions,
+          assets,
+          store,
+          settings: imageSettings,
+          now: now ?? (() => new Date()),
+          ownerTitle
+        })
+      : null;
+  if (trash) {
+    // Removes what has been in the trash longer than the retention period; failures are retried.
+    const sweep = () =>
+      trash
+        .purgeExpired()
+        .then((result) => {
+          if (result.removed || result.failed) app.log.info(result, "Trash retention sweep");
+        })
+        .catch((error: unknown) => app.log.warn({ err: error }, "Trash retention sweep failed"));
+    const first = setTimeout(sweep, 30_000);
+    const repeating = setInterval(sweep, 6 * 60 * 60 * 1000);
+    first.unref();
+    repeating.unref();
+    app.addHook("onClose", async () => {
+      clearTimeout(first);
+      clearInterval(repeating);
+    });
+  }
+  registerAdminTrashRoutes(app, auth, trash);
+  const storage =
+    photos && photoVersions
+      ? new StorageManager({
+          photos,
+          versions: photoVersions,
+          assets,
+          store,
+          now: now ?? (() => new Date()),
+          backfill: backfillSections,
+          ownerTitle
+        })
+      : null;
+  registerAdminStorageRoutes(app, auth, storage);
+  if (storage) {
+    // A daily look for files and database rows that have drifted apart; it only reports.
+    const check = () =>
+      storage
+        .scan()
+        .then((scan) => {
+          const found = {
+            orphans: scan.orphans.length,
+            missing: scan.missing.length,
+            incomplete: scan.incomplete.length
+          };
+          if (found.orphans || found.missing || found.incomplete)
+            app.log.warn(found, "Storage scan found inconsistencies");
+        })
+        .catch((error: unknown) => app.log.warn({ err: error }, "Storage scan failed"));
+    const firstScan = setTimeout(check, 120_000);
+    const daily = setInterval(check, 24 * 60 * 60 * 1000);
+    firstScan.unref();
+    daily.unref();
+    app.addHook("onClose", async () => {
+      clearTimeout(firstScan);
+      clearInterval(daily);
+    });
+  }
   registerAdminPhotoRoutes(
     app,
     auth,
@@ -487,15 +609,26 @@ export async function buildServer({
       importRoots: config.uploads.importDirs,
       fetchImpl: photoFetch,
       lookup: photoLookup
-    })
+    }),
+    assets,
+    photoVersions,
+    imageSettings,
+    trash,
+    storage
   );
+  // Photos added before the register existed; runs beside start-up, never blocking it.
+  if (photos && assets)
+    void backfillPhotoAssets(photos, assets, store)
+      .then((added) => {
+        if (added) app.log.info({ added }, "Registered existing photo images");
+      })
+      .catch((error) => app.log.warn({ err: error }, "Cannot register existing photo images"));
   registerAdminProjectRoutes(app, auth, projects, store, config.uploads.maxBytes, stack);
   registerPhotoRoutes(app, photos, store);
   registerProjectRoutes(app, projects, store);
   registerStackRoutes(app, auth, stack, store, projects);
   registerAboutRoutes(app, auth, settings ? new AboutStore(settings) : null);
   registerContactRoutes(app, auth, settings);
-  const branding = new BrandingStore(settings);
   registerBrandingRoutes(app, auth, branding, store);
   registerPresentationRoutes(app, auth, settings, photos, store, branding);
   registerSiteSettingsRoutes(app, auth, settings, store, media, branding);
@@ -533,7 +666,12 @@ export async function buildServer({
     store,
     today: () => siteClock.local(now ? now() : new Date()).day
   });
-  registerUploadRoutes(app, store, { photos, projects, media, people, collection }, auth);
+  registerUploadRoutes(
+    app,
+    store,
+    { photos, photoVersions, projects, media, people, collection },
+    auth
+  );
   registerSpotifyRoutes(app, auth, spotify, account, settings !== null);
   registerSteamRoutes(app, auth, steam, steamSync);
   registerAnalyticsRoutes(

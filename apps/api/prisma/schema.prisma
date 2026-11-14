@@ -49,9 +49,40 @@ model Photo {
   sortOrder   Int          @default(0)
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
+  /// The version whose image the fields above (src, storage, storageKey, variants, source, width,
+  /// height) are a copy of; null until the photo has versions.
+  currentVersionId String?
+  /// When the photo was moved to the trash; null while it is in use.
+  deletedAt   DateTime?
+  versions    PhotoVersion[]
 
   @@index([visibility, sortOrder])
   @@index([date])
+  @@index([deletedAt])
+}
+
+/// One image of a photo: a different quality, format or source of the same picture. The photo shows its
+/// current version; the others are kept for switching back and are only served to the admin.
+model PhotoVersion {
+  id         String       @id
+  photoId    String
+  /// The admin's name for it, e.g. "JPEG preview"; may be empty.
+  label      String       @default("")
+  /// External URL for REMOTE_URL versions; empty for site-hosted ones.
+  src        String
+  storage    ImageStorage
+  storageKey String?      @unique
+  variants   Json?
+  source     Json?
+  width      Int
+  height     Int
+  createdAt  DateTime     @default(now())
+  /// When this version alone was moved to the trash; null while it is in use.
+  deletedAt  DateTime?
+  photo      Photo        @relation(fields: [photoId], references: [id], onDelete: Cascade)
+
+  @@index([photoId])
+  @@index([deletedAt])
 }
 
 enum ProjectStatus {
@@ -511,4 +542,42 @@ model PersonMembership {
   person Person @relation("MemberGroups", fields: [personId], references: [id], onDelete: Cascade)
   @@id([groupId, personId])
   @@index([personId])
+}
+
+/// One site-hosted image as it is on disk: a folder of generated sizes plus the private original.
+/// The register behind duplicate detection, the trash, storage totals and the consistency scan.
+model ImageAsset {
+  id           String    @id
+  /// The folder under UPLOAD_DIR, e.g. "photos/<id>/<imageId>".
+  storageKey   String    @unique
+  /// photo, project, media, person, branding or stack.
+  ownerType    String
+  ownerId      String
+  /// What the image is to its owner: image, cover, gallery, poster, photo or icon.
+  role         String
+  /// The uploaded file's name, when there was one.
+  originalName String?
+  /// The original's extension: jpg, png, webp, avif or tif.
+  format       String
+  /// Size of the original in bytes.
+  bytes        Int
+  /// Size of every file in the folder in bytes.
+  totalBytes   Int
+  width        Int
+  height       Int
+  /// Generated sizes: [{ "width": 640, "height": 427 }, ...], smallest first.
+  variants     Json
+  /// SHA-256 of the original, hex; null when the original is missing.
+  sha256       String?
+  /// The client's id for the upload that created it, so a retried upload is not stored twice.
+  uploadId     String?   @unique
+  /// ready or trashed.
+  status       String    @default("ready")
+  trashedAt    DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([sha256])
+  @@index([ownerType, ownerId])
+  @@index([status])
 }

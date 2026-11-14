@@ -53,6 +53,7 @@ function toData(patch: PhotoPatch): Prisma.PhotoUpdateInput {
   if (patch.source !== undefined) data.source = json(patch.source);
   if (patch.width !== undefined) data.width = patch.width;
   if (patch.height !== undefined) data.height = patch.height;
+  if (patch.currentVersionId !== undefined) data.currentVersionId = patch.currentVersionId;
   return data;
 }
 
@@ -61,19 +62,50 @@ export class PrismaPhotoRepository implements PhotoRepository {
 
   async list({ includePrivate = false } = {}) {
     const records = await this.prisma.photo.findMany({
-      where: includePrivate ? undefined : { visibility: "PUBLIC" },
+      where: { deletedAt: null, ...(includePrivate ? {} : { visibility: "PUBLIC" as const }) },
       orderBy: ORDER
     });
     return records.map(toRow);
   }
 
   async get(id: string) {
-    const record = await this.prisma.photo.findUnique({ where: { id } });
+    const record = await this.prisma.photo.findFirst({ where: { id, deletedAt: null } });
+    return record ? toRow(record) : null;
+  }
+
+  async trash(id: string, at: Date) {
+    const { count } = await this.prisma.photo.updateMany({
+      where: { id, deletedAt: null },
+      data: { deletedAt: at }
+    });
+    return count ? this.getTrashed(id) : null;
+  }
+
+  async restore(id: string) {
+    const { count } = await this.prisma.photo.updateMany({
+      where: { id, deletedAt: { not: null } },
+      data: { deletedAt: null }
+    });
+    return count ? this.get(id) : null;
+  }
+
+  async listTrashed() {
+    const records = await this.prisma.photo.findMany({
+      where: { deletedAt: { not: null } },
+      orderBy: { deletedAt: "desc" }
+    });
+    return records.map(toRow);
+  }
+
+  async getTrashed(id: string) {
+    const record = await this.prisma.photo.findFirst({ where: { id, deletedAt: { not: null } } });
     return record ? toRow(record) : null;
   }
 
   async findByStorageKey(key: string) {
-    const record = await this.prisma.photo.findFirst({ where: { storageKey: key } });
+    const record = await this.prisma.photo.findFirst({
+      where: { storageKey: key, deletedAt: null }
+    });
     return record ? toRow(record) : null;
   }
 

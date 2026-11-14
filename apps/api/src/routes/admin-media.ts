@@ -36,7 +36,7 @@ import {
 } from "../media/types";
 import type { StoredImage } from "../projects/types";
 import type { LocalImageStore } from "../storage/local";
-import { readUploadedImage } from "./read-upload";
+import { readUploadedImage, withUploadCleanup } from "./read-upload";
 
 function sourceFailure(error: unknown): never {
   if (error instanceof SourceError) throw new HttpError(502, "SOURCE_ERROR", error.message);
@@ -207,7 +207,7 @@ export function registerAdminMediaRoutes(
       return current;
     });
     await store
-      .remove(`media/${row.id}`)
+      .discard(`media/${row.id}`)
       .catch((error) =>
         request.log.warn({ error, mediaId: row.id }, "Failed to remove entry files")
       );
@@ -247,10 +247,10 @@ export function registerAdminMediaRoutes(
   /** Replaces the poster with an uploaded image. */
   app.post(
     "/api/admin/media/:id/poster",
-    admin,
-    async (request, reply): Promise<AdminMediaResponse> => {
+    { ...admin, config: { rateLimit: { max: 120, timeWindow: "1 minute" } } },
+    withUploadCleanup(async (request, reply): Promise<AdminMediaResponse> => {
       const preflight = await get(mediaId(request));
-      const { image } = await readUploadedImage(request, deps.maxUploadBytes);
+      const { image } = await readUploadedImage(request, deps.maxUploadBytes, deps.store);
       const poster = await storePoster(store, preflight.id, image);
 
       let result: { updated: MediaRow; old: StoredImage | null };
@@ -265,13 +265,13 @@ export function registerAdminMediaRoutes(
       }
       if (result.old)
         await store
-          .remove(result.old.key)
+          .discard(result.old.key)
           .catch((error) =>
             request.log.warn({ error, mediaId: preflight.id }, "Failed to remove old poster")
           );
       reply.code(201);
       return respond(result.updated);
-    }
+    })
   );
 
   /** The fixed home page order: every featured entry, in order. */

@@ -1,13 +1,19 @@
-import type {
-  AdminPhotoResponse,
-  AdminPhotosResponse,
-  AdminServerFolder,
-  PhotoSource
+import {
+  UPLOAD_ID_HEADER,
+  type AdminPhotoResponse,
+  type AdminPhotoVersionsResponse,
+  type AdminPhotosResponse,
+  type AdminServerFolder,
+  type AdminUploadCheckResponse,
+  type AdminUploadStatusResponse,
+  type PhotoSource
 } from "@liam-frost/shared";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { randomBytes } from "node:crypto";
 import sharp from "sharp";
 
+import type { StorageManager } from "../assets/storage";
+import type { AssetRepository } from "../assets/types";
 import type { AdminAuthService } from "../auth/service";
 import { badRequest, HttpError, notFound } from "../lib/errors";
 import {
@@ -17,10 +23,17 @@ import {
   photoImportSchema,
   photoOrderSchema,
   photoUpdateSchema,
-  serverFileQuerySchema
+  photoVersionLabelSchema,
+  photoVersionParamsSchema,
+  serverFileQuerySchema,
+  storageKeySchema,
+  uploadCheckSchema,
+  uploadIdSchema,
+  uploadStatusSchema
 } from "../lib/validation";
-import { InvalidImageError } from "../photos/images";
-import { toAdminPhoto } from "../photos/mapping";
+import { InvalidImageError, processImage } from "../photos/images";
+import { toAdminPhoto, toAdminVersion } from "../photos/mapping";
+import { removeImageFiles, type PhotoTrash } from "../photos/trash";
 import {
   hostImage,
   PhotoSourceError,
@@ -28,8 +41,10 @@ import {
   type PhotoSources
 } from "../photos/photo-sources";
 import type { PhotoPatch, PhotoRepository, PhotoRow } from "../photos/types";
+import { imageFields, type PhotoVersionRepository, type VersionRow } from "../photos/versions";
+import type { ImageSettings } from "../settings/images";
 import type { LocalImageStore } from "../storage/local";
-import { readUploadedImage } from "./read-upload";
+import { readUploadedImage, withUploadCleanup } from "./read-upload";
 
 /** "IMG_1234 (2).JPG" -> "img-1234-2-k3f9a1": readable, URL-safe and unique. */
 export function photoIdFromFileName(fileName: string) {
@@ -48,18 +63,7 @@ function today() {
   return new Date().toISOString().slice(0, 10);
 }
 
-/** Removes a photo's site-hosted files: its image folder, or an older photo's flat folder (files only). */
-async function removeImage(store: LocalImageStore, row: Pick<PhotoRow, "storage" | "storageKey">) {
-  if (row.storage !== "local" || !row.storageKey) return;
-  const parts = row.storageKey.split("/");
-  if (parts.length === 2) {
-    await store.removeFiles(row.storageKey);
-    await store.removeIfEmpty(row.storageKey);
-  } else {
-    await store.remove(row.storageKey);
-    await store.removeIfEmpty(parts.slice(0, 2).join("/"));
-  }
-}
+const removeImage = removeImageFiles;
 
 /** Source failures (bad link, missing file) and unreadable images are the request's fault. */
 function sourceFailure(error: unknown): never {
@@ -74,7 +78,12 @@ export function registerAdminPhotoRoutes(
   photos: PhotoRepository | null,
   store: LocalImageStore,
   maxUploadBytes: number,
-  sources: PhotoSources
+  sources: PhotoSources,
+  assets: AssetRepository | null,
+  versions: PhotoVersionRepository | null,
+  imageSettings: () => Promise<ImageSettings>,
+  trash: PhotoTrash | null,
+  storage: StorageManager | null
 ) {
   const repo = () => {
     if (!photos) {
@@ -87,6 +96,53 @@ export function registerAdminPhotoRoutes(
     return photos;
   };
   const admin = { preHandler: auth.requireAdmin };
+
+  /**
+   * Records a photo's site-hosted image in the register. The photo is already saved, so a failure here
+   * only costs duplicate detection until the next scan; it must not fail the request.
+   */
+  const registerAsset = async (
+    request: FastifyRequest,
+    photoId: string,
+    image: PhotoImage,
+    extra: { originalName?: string | null; uploadId?: string | null } = {}
+  ) => {
+    if (!assets || !image.details || !image.fields.storageKey) return;
+    await assets
+      .register({
+        ...image.details,
+        storageKey: image.fields.storageKey,
+        ownerType: "photo",
+        ownerId: photoId,
+        role: "image",
+        originalName: extra.originalName ?? null,
+        uploadId: extra.uploadId ?? null
+      })
+      .catch((error) => request.log.warn({ error, photoId }, "Failed to register the image"));
+  };
+  const vers = () => {
+    if (!versions) {
+      throw new HttpError(
+        503,
+        "DATABASE_NOT_CONFIGURED",
+        "Photo management needs a database (set DATABASE_URL)"
+      );
+    }
+    return versions;
+  };
+  /** A photo from before versions existed gets its image as its first, current version. */
+  const ensureVersions = async (row: PhotoRow): Promise<PhotoRow> => {
+    if (row.currentVersionId) return row;
+    const version = await vers().create({
+      photoId: row.id,
+      ...imageFields(row),
+      createdAt: row.createdAt
+    });
+    return (await repo().update(row.id, { currentVersionId: version.id })) ?? row;
+  };
+  /** Uploads being handled right now, by the client's upload id. */
+  const inFlight = new Set<string>();
+
   const idParam = (request: FastifyRequest) => parseInput(photoIdSchema, request.params).id;
 
   app.get("/api/admin/photos", admin, async (): Promise<AdminPhotosResponse> => {
@@ -112,10 +168,11 @@ export function registerAdminPhotoRoutes(
     request: FastifyRequest,
     reply: FastifyReply,
     id: string,
-    image: PhotoImage
+    image: PhotoImage,
+    upload: { originalName?: string | null; uploadId?: string | null } = {}
   ): Promise<AdminPhotoResponse> => {
     try {
-      const row = await repo().create({
+      const created = await repo().create({
         id,
         slug: id,
         title: { zh: image.title || id },
@@ -132,10 +189,12 @@ export function registerAdminPhotoRoutes(
         visibility: "private",
         featured: false
       });
+      const row = await ensureVersions(created);
       request.log.info(
         { photoId: id, source: image.fields.source?.type, by: request.adminUser?.username },
         "Photo added"
       );
+      await registerAsset(request, id, image, upload);
       reply.code(201);
       return { photo: toAdminPhoto(row, store) };
     } catch (error) {
@@ -157,13 +216,110 @@ export function registerAdminPhotoRoutes(
       .slice(0, 120) || null;
 
   /** Uploads one image from the device. */
-  app.post("/api/admin/photos", admin, async (request, reply): Promise<AdminPhotoResponse> => {
-    repo();
-    const { fileName, image } = await readUploadedImage(request, maxUploadBytes);
+  app.post(
+    "/api/admin/photos",
+    { ...admin, config: { rateLimit: { max: 120, timeWindow: "1 minute" } } },
+    withUploadCleanup(async (request, reply): Promise<AdminPhotoResponse> => {
+      const photos = repo();
+      const header = request.headers[UPLOAD_ID_HEADER];
+      const uploadId = header === undefined ? null : parseInput(uploadIdSchema, header);
+      if (uploadId) {
+        // A retry of an upload that already succeeded (its answer was lost): return that photo.
+        const [known] = assets ? await assets.findByUploadIds([uploadId]) : [];
+        const existing = known ? await photos.get(known.ownerId) : null;
+        if (existing) {
+          const file = request.isMultipart() ? await request.file() : null;
+          file?.file.resume();
+          return { photo: toAdminPhoto(existing, store) };
+        }
+        if (inFlight.has(uploadId))
+          throw new HttpError(409, "UPLOAD_IN_PROGRESS", "This upload is still being processed");
+        inFlight.add(uploadId);
+      }
+      try {
+        return await receivePhoto(request, reply, uploadId);
+      } finally {
+        if (uploadId) inFlight.delete(uploadId);
+      }
+    })
+  );
+
+  const receivePhoto = async (
+    request: FastifyRequest,
+    reply: FastifyReply,
+    uploadId: string | null
+  ): Promise<AdminPhotoResponse> => {
+    const { fileName, image, bytes, receiveMs } = await readUploadedImage(
+      request,
+      maxUploadBytes,
+      store
+    );
     const id = photoIdFromFileName(fileName);
+    const saving = performance.now();
     const hosted = await hostImage(store, id, image, uploadSource(fileName), fileTitle(fileName));
-    return createPhoto(request, reply, id, hosted);
+    const saveMs = Math.round(performance.now() - saving);
+    // Where an upload's time goes; decides whether sizes should be generated in the background.
+    request.log.info(
+      {
+        photoId: id,
+        bytes,
+        width: image.width,
+        height: image.height,
+        receiveMs,
+        ...image.timings,
+        saveMs
+      },
+      "Photo upload timings"
+    );
+    return createPhoto(request, reply, id, hosted, { originalName: fileName, uploadId });
+  };
+
+  /**
+   * Which of the files about to be uploaded match a photo already there: the very same file (by
+   * hash), or an upload with the same file name. The admin then skips, replaces or keeps both.
+   */
+  app.post("/api/admin/photos/check", admin, async (request): Promise<AdminUploadCheckResponse> => {
+    const { files } = parseInput(uploadCheckSchema, request.body);
+    const rows = await repo().list({ includePrivate: true });
+    const byId = new Map(rows.map((row) => [row.id, row]));
+    const byName = new Map<string, PhotoRow>();
+    for (const row of rows)
+      if (row.source?.type === "upload" && row.source.ref && !byName.has(row.source.ref))
+        byName.set(row.source.ref, row);
+    const hashed = assets
+      ? await assets.findBySha256([...new Set(files.map((file) => file.sha256))], "photo")
+      : [];
+    return {
+      conflicts: files.flatMap((file, index) => {
+        const same = hashed.find(
+          (asset) => asset.sha256 === file.sha256 && byId.has(asset.ownerId)
+        );
+        const row = same ? byId.get(same.ownerId) : byName.get(file.name.slice(0, 200));
+        if (!row) return [];
+        const { id, title, thumbnail } = toAdminPhoto(row, store);
+        return [{ index, reason: same ? "content" : "name", photo: { id, title, thumbnail } }];
+      })
+    };
   });
+
+  /** Which uploads of an interrupted batch reached the server and became photos. */
+  app.post(
+    "/api/admin/photos/uploads/status",
+    admin,
+    async (request): Promise<AdminUploadStatusResponse> => {
+      const { ids } = parseInput(uploadStatusSchema, request.body);
+      const photos = repo();
+      const found = assets ? await assets.findByUploadIds(ids) : [];
+      const entries = await Promise.all(
+        found.map(async (asset) =>
+          (await photos.get(asset.ownerId)) ? [asset.uploadId!, asset.ownerId] : null
+        )
+      );
+      return {
+        photos: Object.fromEntries(entries.filter((entry): entry is string[] => entry !== null))
+      };
+    }
+  );
 
   /** Adds a photo from an image link, a Flickr photo or a file in a server import folder. */
   app.post(
@@ -196,40 +352,66 @@ export function registerAdminPhotoRoutes(
         ? sources.fromGallery(id, from.url, mode)
         : sources.fromUrl(id, from.url, mode);
 
+  const versionLimit = () =>
+    new HttpError(
+      409,
+      "VERSION_LIMIT",
+      "This photo has reached its version limit; delete a version first"
+    );
+  /** Refuses early, before an image is received or fetched for a photo that is already full. */
+  const checkVersionRoom = async (row: PhotoRow) => {
+    const [existing, settings] = await Promise.all([vers().list(row.id), imageSettings()]);
+    if (Math.max(existing.length, 1) >= settings.maxPhotoVersions) throw versionLimit();
+  };
+
   /**
-   * Puts a new image on a photo, keeping its details, order and visibility; `useExif` also takes the
-   * date and camera details from the new image. The old site-hosted files are removed afterwards.
+   * Adds an image to a photo as a new version. As the current one it replaces what the photo shows,
+   * keeping the photo's details, order and visibility (`useExif` also takes the date and camera details
+   * from the new image). The earlier versions stay, for switching back.
    */
-  const replaceImage = async (
+  const addVersion = async (
     request: FastifyRequest,
     row: PhotoRow,
     image: PhotoImage,
-    useExif: boolean
+    options: { makeCurrent: boolean; useExif: boolean; originalName?: string | null }
   ): Promise<AdminPhotoResponse> => {
-    const patch: PhotoPatch = { ...image.fields };
-    if (useExif) {
-      if (image.exif.date) patch.date = image.exif.date;
-      if (image.exif.camera) patch.camera = image.exif.camera;
-      if (image.exif.lens) patch.lens = image.exif.lens;
-      if (image.exif.settings) patch.settings = image.exif.settings;
-    }
+    let created: VersionRow | null = null;
     let updated: PhotoRow | null;
     try {
-      updated = await repo().update(row.id, patch);
+      updated = await ensureVersions(row);
+      const [existing, settings] = await Promise.all([vers().list(row.id), imageSettings()]);
+      if (existing.length >= settings.maxPhotoVersions) throw versionLimit();
+      created = await vers().create({ photoId: row.id, ...image.fields });
+      if (options.makeCurrent) {
+        const patch: PhotoPatch = { ...image.fields, currentVersionId: created.id };
+        if (options.useExif) {
+          if (image.exif.date) patch.date = image.exif.date;
+          if (image.exif.camera) patch.camera = image.exif.camera;
+          if (image.exif.lens) patch.lens = image.exif.lens;
+          if (image.exif.settings) patch.settings = image.exif.settings;
+        }
+        updated = await repo().update(row.id, patch);
+        if (!updated) throw notFound("Photo not found");
+      }
     } catch (error) {
+      // Leave neither files nor a version behind when the photo could not take the image.
+      if (created)
+        await vers()
+          .delete(created.id)
+          .catch(() => undefined);
       await removeImage(store, image.fields).catch(() => undefined);
       throw error;
     }
-    if (!updated) {
-      await removeImage(store, image.fields).catch(() => undefined);
-      throw notFound("Photo not found");
-    }
-    await removeImage(store, row).catch((error) =>
-      request.log.warn({ error, photoId: row.id }, "Failed to remove the replaced image")
-    );
+    await registerAsset(request, row.id, image, { originalName: options.originalName });
     request.log.info(
-      { photoId: row.id, source: image.fields.source?.type, by: request.adminUser?.username },
-      "Photo image replaced"
+      {
+        photoId: row.id,
+        versionId: created.id,
+        current: options.makeCurrent,
+        source: image.fields.source?.type,
+        by: request.adminUser?.username
+      },
+      "Photo version added"
     );
     return { photo: toAdminPhoto(updated, store) };
   };
@@ -240,33 +422,189 @@ export function registerAdminPhotoRoutes(
     return row;
   };
 
-  /** Replaces a photo's image with an upload (`?exif=1` also takes its date and camera details). */
-  app.post("/api/admin/photos/:id/image", admin, async (request): Promise<AdminPhotoResponse> => {
-    const row = await getRow(request);
-    const { fileName, image } = await readUploadedImage(request, maxUploadBytes);
-    const hosted = await hostImage(store, row.id, image, uploadSource(fileName), null);
-    const useExif = (request.query as { exif?: string }).exif === "1";
-    return replaceImage(request, row, hosted, useExif);
-  });
+  /**
+   * Adds an uploaded image to a photo as a version, the current one unless `?current=0` (`?exif=1`
+   * also takes its date and camera details).
+   */
+  app.post(
+    "/api/admin/photos/:id/image",
+    { ...admin, config: { rateLimit: { max: 120, timeWindow: "1 minute" } } },
+    withUploadCleanup(async (request): Promise<AdminPhotoResponse> => {
+      const row = await getRow(request);
+      await checkVersionRoom(row);
+      const { fileName, image } = await readUploadedImage(request, maxUploadBytes, store);
+      const hosted = await hostImage(store, row.id, image, uploadSource(fileName), null);
+      const query = request.query as { exif?: string; current?: string };
+      return addVersion(request, row, hosted, {
+        makeCurrent: query.current !== "0",
+        useExif: query.exif === "1",
+        originalName: fileName
+      });
+    })
+  );
 
-  /** Replaces a photo's image from a link, a Flickr photo or a server file. */
+  /** Adds an image from a link, a Flickr photo or a server file as a version (current by default). */
   app.put("/api/admin/photos/:id/image", admin, async (request): Promise<AdminPhotoResponse> => {
     const row = await getRow(request);
-    const { from, mode, useExif } = parseInput(photoImageReplaceSchema, request.body);
+    const { from, mode, useExif, current } = parseInput(photoImageReplaceSchema, request.body);
+    await checkVersionRoom(row);
     const image = await fetchImage(row.id, from, mode).catch(sourceFailure);
-    return replaceImage(request, row, image, useExif ?? false);
+    return addVersion(request, row, image, {
+      makeCurrent: current ?? true,
+      useExif: useExif ?? false
+    });
   });
 
-  /** Downloads a referenced image and hosts it on the site, keeping where it came from. */
+  /**
+   * Downloads a referenced image and hosts it on the site as a new current version, keeping where it
+   * came from. The referenced version stays.
+   */
   app.post("/api/admin/photos/:id/host", admin, async (request): Promise<AdminPhotoResponse> => {
     const row = await getRow(request);
     if (row.storage !== "remote-url" || !row.src)
       throw new HttpError(409, "ALREADY_HOSTED", "This photo is already hosted by the site");
+    await checkVersionRoom(row);
     const image = await sources.fromUrl(row.id, row.src, "import").catch(sourceFailure);
     // It is the same image: keep the recorded source (a gallery page, the original link).
     image.fields.source = row.source ?? image.fields.source;
-    return replaceImage(request, row, image, false);
+    return addVersion(request, row, image, { makeCurrent: true, useExif: false });
   });
+
+  const versionsOf = async (row: PhotoRow): Promise<AdminPhotoVersionsResponse> => {
+    const current = await ensureVersions(row);
+    const [list, settings] = await Promise.all([vers().list(row.id), imageSettings()]);
+    const versions = await Promise.all(
+      list.map(async (version) =>
+        toAdminVersion(
+          version,
+          current.currentVersionId === version.id,
+          store,
+          assets && version.storageKey ? await assets.getByKey(version.storageKey) : null
+        )
+      )
+    );
+    return { photo: toAdminPhoto(current, store), versions, limit: settings.maxPhotoVersions };
+  };
+  const getVersion = async (request: FastifyRequest) => {
+    const { id, versionId } = parseInput(photoVersionParamsSchema, request.params);
+    const row = await repo().get(id);
+    const version = row ? await vers().get(versionId) : null;
+    if (!row || !version || version.photoId !== row.id || version.deletedAt)
+      throw notFound("Version not found");
+    return { row, version };
+  };
+
+  /** The private original of a version, as a download. */
+  app.get("/api/admin/photos/:id/versions/:versionId/original", admin, async (request, reply) => {
+    const { version } = await getVersion(request);
+    const original =
+      storage && version.storage === "local" && version.storageKey
+        ? await storage.original(version.storageKey)
+        : null;
+    if (!original) throw notFound("This version has no original on the server");
+    const extension = original.name.split(".").pop()!;
+    reply.header("content-type", "application/octet-stream");
+    reply.header("cache-control", "private, no-store");
+    reply.header(
+      "content-disposition",
+      `attachment; filename="${version.photoId}-${version.id.slice(0, 8)}.${extension}"`
+    );
+    return reply.send(original.data);
+  });
+
+  /**
+   * Makes a hidden photo from an orphan folder's original (found by the storage scan), then removes
+   * the folder: the photo's files are written fresh, under a key of its own.
+   */
+  app.post(
+    "/api/admin/photos/adopt",
+    admin,
+    async (request, reply): Promise<AdminPhotoResponse> => {
+      repo();
+      if (!storage) throw notFound("Not an orphan folder");
+      const { key } = parseInput(storageKeySchema, request.body);
+      const { name, data } = await storage.orphanOriginal(key);
+      const id = photoIdFromFileName(key.split("/")[1]!);
+      let processed;
+      try {
+        processed = await processImage(data);
+      } catch (error) {
+        if (error instanceof InvalidImageError) throw badRequest(error.message, "INVALID_IMAGE");
+        throw error;
+      }
+      const hosted = await hostImage(
+        store,
+        id,
+        processed,
+        { type: "server", ref: `${key}/${name}`, importedAt: new Date().toISOString() },
+        key.split("/")[1]!
+      );
+      const created = await createPhoto(request, reply, id, hosted, { originalName: name });
+      await storage
+        .deleteOrphan(key)
+        .catch((error) => request.log.warn({ error, key }, "Failed to remove the adopted folder"));
+      return created;
+    }
+  );
+
+  /** A photo's versions, oldest first, with which one it shows. */
+  app.get(
+    "/api/admin/photos/:id/versions",
+    admin,
+    async (request): Promise<AdminPhotoVersionsResponse> => versionsOf(await getRow(request))
+  );
+
+  /** Shows another version: the photo's image changes, its details, order and visibility do not. */
+  app.post(
+    "/api/admin/photos/:id/versions/:versionId/current",
+    admin,
+    async (request): Promise<AdminPhotoVersionsResponse> => {
+      const { row, version } = await getVersion(request);
+      const updated = await repo().update(row.id, {
+        ...imageFields(version),
+        currentVersionId: version.id
+      });
+      if (!updated) throw notFound("Photo not found");
+      request.log.info(
+        { photoId: row.id, versionId: version.id, by: request.adminUser?.username },
+        "Photo version switched"
+      );
+      return versionsOf(updated);
+    }
+  );
+
+  app.patch(
+    "/api/admin/photos/:id/versions/:versionId",
+    admin,
+    async (request): Promise<AdminPhotoVersionsResponse> => {
+      const { row, version } = await getVersion(request);
+      const { label } = parseInput(photoVersionLabelSchema, request.body);
+      await vers().setLabel(version.id, label);
+      return versionsOf(row);
+    }
+  );
+
+  /** Moves a version to the trash. The version being shown cannot be deleted. */
+  app.delete(
+    "/api/admin/photos/:id/versions/:versionId",
+    admin,
+    async (request): Promise<AdminPhotoVersionsResponse> => {
+      const { row, version } = await getVersion(request);
+      if (row.currentVersionId === version.id)
+        throw new HttpError(
+          409,
+          "VERSION_IN_USE",
+          "This version is the one being shown; switch to another first"
+        );
+      if (!trash) throw notFound("Version not found");
+      await trash.trashVersion(version);
+      request.log.info(
+        { photoId: row.id, versionId: version.id, by: request.adminUser?.username },
+        "Photo version moved to the trash"
+      );
+      return versionsOf(row);
+    }
+  );
 
   /** Folders and images in a server import folder (PHOTO_IMPORT_DIRS). */
   app.get("/api/admin/photos/server", admin, async (request): Promise<AdminServerFolder> => {
@@ -306,12 +644,14 @@ export function registerAdminPhotoRoutes(
   });
 
   app.delete("/api/admin/photos/:id", admin, async (request, reply) => {
-    const row = await repo().delete(idParam(request));
+    // To the trash: the files stay until it is emptied or the retention period runs out.
+    repo();
+    const row = trash ? await trash.trashPhoto(idParam(request)) : null;
     if (!row) throw notFound("Photo not found");
-    await removeImage(store, row).catch((error) =>
-      request.log.warn({ error, photoId: row.id }, "Failed to remove photo files")
+    request.log.info(
+      { photoId: row.id, by: request.adminUser?.username },
+      "Photo moved to the trash"
     );
-    request.log.info({ photoId: row.id, by: request.adminUser?.username }, "Photo deleted");
     return reply.code(204).send();
   });
 

@@ -114,7 +114,35 @@ export type AdminPhotoImport = {
 };
 
 /** Replacing an existing photo's image; `useExif` overwrites date and camera details from the new image. */
-export type AdminPhotoImageReplace = AdminPhotoImport & { useExif?: boolean };
+export type AdminPhotoImageReplace = AdminPhotoImport & {
+  useExif?: boolean;
+  /** Whether the new image becomes the one the photo shows; true unless given. */
+  current?: boolean;
+};
+
+/** One image of a photo. The photo shows its current version; the others are kept to switch back to. */
+export type AdminPhotoVersion = {
+  id: string;
+  label: string;
+  current: boolean;
+  storage: "remote-url" | "local";
+  /** Largest available image. */
+  src: string;
+  thumbnail: string;
+  width: number;
+  height: number;
+  source: PhotoSource | null;
+  createdAt: string;
+  /** The stored original's format (jpg, png, …) and size; null for referenced images. */
+  format: string | null;
+  bytes: number | null;
+};
+/** A photo's versions, oldest first, with the photo as it now is and the most it may have. */
+export type AdminPhotoVersionsResponse = {
+  photo: AdminPhoto;
+  versions: AdminPhotoVersion[];
+  limit: number;
+};
 
 /** One entry of a server import folder. */
 export type AdminServerFile = {
@@ -130,6 +158,109 @@ export type AdminServerFolder = {
   path: string;
   entries: AdminServerFile[];
 };
+
+/** An image folder on disk that the database does not know. */
+export type AdminStorageOrphan = {
+  key: string;
+  files: number;
+  bytes: number;
+  modifiedAt: string;
+  /** Whether it holds an original a photo can be made from. */
+  adoptable: boolean;
+};
+/** A known image with files missing: nothing on disk at all, or the listed files. */
+export type AdminStorageIssue = {
+  key: string;
+  /** The section the image belongs to: photo, project, media, person, branding or stack. */
+  ownerType: string;
+  /** The photo, or the entry of another section. */
+  photoId: string;
+  title: LocalizedText;
+  missing: string[];
+  /** Whether the original is there, so the generated sizes can be made again. */
+  repairable: boolean;
+};
+export type AdminStorageScan = {
+  scannedAt: string;
+  orphans: AdminStorageOrphan[];
+  missing: AdminStorageIssue[];
+  incomplete: AdminStorageIssue[];
+};
+export type AdminStorageOverview = {
+  /** False without the image register: totals are then unknown. */
+  registered: boolean;
+  /** Images in use, with the size of all their files and of the originals alone. */
+  images: number;
+  totalBytes: number;
+  originalBytes: number;
+  byOwner: { ownerType: string; images: number; bytes: number }[];
+  trash: { images: number; bytes: number };
+  /** The disk the uploads are on; null where it cannot be read. */
+  disk: { freeBytes: number; totalBytes: number } | null;
+  largest: {
+    key: string;
+    ownerType: string;
+    ownerId: string;
+    title: LocalizedText | null;
+    format: string;
+    bytes: number;
+  }[];
+  /** The last scan since the server started, if any. */
+  scan: AdminStorageScan | null;
+};
+
+/**
+ * Something in the trash: a whole photo with its versions, one version deleted on its own, or an image
+ * another section replaced or deleted ("image": a cover, a poster, a logo).
+ */
+export type AdminTrashItem = {
+  kind: "photo" | "version" | "image";
+  id: string;
+  /** The photo, or for an image the entry it belonged to. */
+  photoId: string;
+  /** The section an image belonged to (project, media, person, branding, stack); "photo" otherwise. */
+  ownerType: string;
+  /** Photos and versions can be put back; other sections' images can only be downloaded. */
+  restorable: boolean;
+  /** The photo's title, or the title of the entry an image belonged to (empty when it is gone). */
+  title: LocalizedText;
+  /** A version's own name; empty for photos. */
+  label: string;
+  thumbnail: string | null;
+  width: number;
+  height: number;
+  /** How many versions go with a photo; 1 for a version. */
+  versions: number;
+  /** Size of the files on the server; 0 for referenced images, null when it is not known. */
+  bytes: number | null;
+  deletedAt: string;
+  /** When it will be removed for good. */
+  expiresAt: string;
+};
+export type AdminTrashResponse = {
+  items: AdminTrashItem[];
+  retentionDays: number;
+  totalBytes: number;
+};
+
+/** Files about to be uploaded, checked against the photos already there. */
+export type AdminUploadCheck = { files: { name: string; sha256: string }[] };
+/**
+ * A file that matches an existing photo: "content" is the very same file, "name" an upload with the
+ * same file name. `index` is the file's position in the request.
+ */
+export type AdminUploadConflict = {
+  index: number;
+  reason: "content" | "name";
+  photo: Pick<AdminPhoto, "id" | "title" | "thumbnail">;
+};
+export type AdminUploadCheckResponse = { conflicts: AdminUploadConflict[] };
+
+/** Which of these upload ids reached the server and became a photo: upload id to photo id. */
+export type AdminUploadStatusResponse = { photos: Record<string, string> };
+
+/** The request header carrying the client's id of one upload, so a retry is not stored twice. */
+export const UPLOAD_ID_HEADER = "x-upload-id";
 
 export type AdminPhotosResponse = { photos: AdminPhoto[] };
 export type AdminPhotoResponse = { photo: AdminPhoto };

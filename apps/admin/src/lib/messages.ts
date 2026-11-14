@@ -106,6 +106,20 @@ export function tr(key: string, ...args: Arg[]): string {
 
 /** English sign-in and account errors from the API, for the Chinese interface. */
 const API_ZH: Record<string, string> = {
+  "This image cannot be put back; download it and add it again":
+    "这张图片不能恢复到原位，请下载后重新添加",
+  "This folder has no original image to make a photo from":
+    "这个文件夹里没有原图，无法作为照片添加",
+  "The original is missing, so the sizes cannot be made again": "原图丢失，无法重新生成",
+  "Not an orphan folder": "这个文件夹已经不是孤儿文件夹",
+  "This version's photo is in the trash; restore the photo first":
+    "这个版本所属的照片也在回收站里，请先恢复照片",
+  "Not in the trash": "回收站里没有这一项",
+  "This photo has reached its version limit; delete a version first":
+    "这张照片的版本数已达上限，请先删除一个版本",
+  "This version is the one being shown; switch to another first":
+    "这是当前显示的版本，请先切换到其他版本",
+  "This upload is still being processed": "这个文件还在处理中",
   "Invalid username or password": "用户名或密码错误",
   "Enter the code from your authenticator": "请输入验证器 App 中的验证码",
   "That code is not valid": "验证码不正确",

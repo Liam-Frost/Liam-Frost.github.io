@@ -1,5 +1,5 @@
 // The real API and built admin with in-memory repositories and a throwaway account, for Playwright.
-import { mkdtempSync, readFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -11,8 +11,10 @@ import type { PhotoRow } from "../../api/src/photos/types";
 import { buildServer } from "../../api/src/server";
 import type { SettingsRepository } from "../../api/src/settings/types";
 import { MemoryAnalyticsStore } from "../../api/test/memory-analytics-store";
+import { MemoryAssetRepository } from "../../api/test/memory-asset-repository";
 import { MemoryMediaRepository } from "../../api/test/memory-media-repository";
 import { MemoryPhotoRepository } from "../../api/test/memory-photo-repository";
+import { MemoryPhotoVersionRepository } from "../../api/test/memory-photo-version-repository";
 import { MemoryPlaylistRepository } from "../../api/test/memory-playlist-repository";
 import { MemoryProjectRepository } from "../../api/test/memory-project-repository";
 import { MemoryStackRepository } from "../../api/test/memory-stack-repository";
@@ -32,6 +34,8 @@ class Settings implements SettingsRepository {
 
 const settings = new Settings();
 const photos = new MemoryPhotoRepository();
+const photoVersions = new MemoryPhotoVersionRepository();
+const assets = new MemoryAssetRepository();
 const stack = new MemoryStackRepository();
 const media = new MemoryMediaRepository();
 const projects = new MemoryProjectRepository(stack);
@@ -78,6 +82,8 @@ function photo(index: number): PhotoRow {
 async function seed(scenario: "default" | "empty" | "large") {
   settings.values.clear();
   photos.rows.clear();
+  photoVersions.rows.clear();
+  assets.rows.clear();
   stack.categories.clear();
   stack.technologies.clear();
   projects.rows.clear();
@@ -168,6 +174,8 @@ const app = await buildServer({
   adminDistDir: join(here, "dist"),
   webDistDir: join(here, "../../web/public"),
   photos,
+  assets,
+  photoVersions,
   projects,
   stack,
   media,
@@ -184,6 +192,19 @@ app.post("/__e2e/seed", async (request) => {
   await seed((request.body as { scenario?: "default" | "empty" | "large" }).scenario ?? "default");
   return { ok: true };
 });
+// The fixture names are fixed by the storage spec. Requests provide only the image bytes.
+for (const name of ["lost-album", "old-export"]) {
+  const folder = join(config.uploads.dir!, "photos", name, "aaaaaaaaaaaa");
+  const originalPath = join(folder, "original.jpg");
+  app.post(`/__e2e/orphan/${name}`, async (request) => {
+    const { original } = request.body as { original: string };
+    mkdirSync(folder, { recursive: true });
+    writeFileSync(originalPath, Buffer.from(original, "base64"));
+    const old = new Date(Date.now() - 2 * 60 * 60 * 1000);
+    utimesSync(folder, old, old);
+    return { ok: true };
+  });
+}
 app.post("/__e2e/photo-visibility", async (request) => {
   const { id, visibility } = request.body as { id: string; visibility: "public" | "private" };
   photos.rows.set(id, { ...photos.rows.get(id)!, visibility });

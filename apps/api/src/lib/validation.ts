@@ -141,12 +141,53 @@ export const photoImageReplaceSchema = z
   .object({
     from: photoImportFrom,
     mode: z.enum(["import", "reference"]).default("import"),
-    useExif: z.boolean().optional()
+    useExif: z.boolean().optional(),
+    current: z.boolean().optional()
   })
   .strict()
   .refine((value) => value.from.type !== "server" || value.mode === "import", {
     message: "Server files are always hosted by the site"
   });
+
+export const photoVersionParamsSchema = z.object({
+  id: photoIdSchema.shape.id,
+  versionId: z.string().regex(/^[a-f0-9-]{36}$/, "Invalid version id")
+});
+export const storageKeySchema = z
+  .object({
+    key: z
+      .string()
+      .regex(
+        /^(photos|projects|media|people|stack|branding)\/[a-z0-9][a-z0-9-]{0,80}(\/[a-z0-9][a-z0-9-]{0,40})?$/,
+        "Invalid folder"
+      )
+  })
+  .strict();
+export const trashItemParamsSchema = z.object({
+  kind: z.enum(["photo", "version", "image"]),
+  id: z.string().regex(/^[a-z0-9][a-z0-9-]{0,80}$/, "Invalid id")
+});
+export const photoVersionLabelSchema = z.object({ label: z.string().trim().max(60) }).strict();
+
+const uploadId = z.string().regex(/^[A-Za-z0-9-]{8,64}$/, "Invalid upload id");
+export const uploadIdSchema = uploadId;
+
+export const uploadCheckSchema = z
+  .object({
+    files: z
+      .array(
+        z
+          .object({
+            name: z.string().min(1).max(300),
+            sha256: z.string().regex(/^[a-f0-9]{64}$/, "Invalid hash")
+          })
+          .strict()
+      )
+      .max(500)
+  })
+  .strict();
+
+export const uploadStatusSchema = z.object({ ids: z.array(uploadId).max(500) }).strict();
 
 export const serverFileQuerySchema = z
   .object({

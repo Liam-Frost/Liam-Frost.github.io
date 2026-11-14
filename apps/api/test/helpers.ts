@@ -11,9 +11,12 @@ import { SourceError, type MediaSources } from "../src/media/sources";
 import type { MediaRepository } from "../src/media/types";
 import type { PersonRepository, RelationRepository } from "../src/people/types";
 import type { PlaylistRepository } from "../src/playlists/types";
+import type { AssetRepository } from "../src/assets/types";
 import type { PhotoRepository } from "../src/photos/types";
+import type { PhotoVersionRepository } from "../src/photos/versions";
 import type { ProjectRepository } from "../src/projects/types";
 import { buildServer } from "../src/server";
+import { MemoryPhotoVersionRepository } from "./memory-photo-version-repository";
 import type { AdminAccountRepository } from "../src/auth/account-repository";
 import type { SettingsRepository } from "../src/settings/types";
 import type { StackRepository } from "../src/stack/types";
@@ -58,6 +61,10 @@ export type TestServerOptions = {
   webDistDir?: string;
   /** Defaults to none (seed mode). */
   photos?: PhotoRepository | null;
+  /** Defaults to none. */
+  assets?: AssetRepository | null;
+  /** Defaults to an in-memory one wherever photos are given. */
+  photoVersions?: PhotoVersionRepository | null;
   /** Defaults to none. */
   projects?: ProjectRepository | null;
   /** Defaults to none. */
@@ -116,6 +123,9 @@ export async function buildTestServer(
     adminDistDir: options.adminDistDir ?? "/nonexistent-admin-dist",
     webDistDir: options.webDistDir ?? "/nonexistent-web-dist",
     photos: options.photos ?? null,
+    assets: options.assets ?? null,
+    photoVersions:
+      options.photoVersions ?? (options.photos ? new MemoryPhotoVersionRepository() : null),
     projects: options.projects ?? null,
     stack: options.stack ?? null,
     media: options.media ?? null,

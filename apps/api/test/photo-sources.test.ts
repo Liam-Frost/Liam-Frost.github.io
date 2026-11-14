@@ -259,7 +259,7 @@ describe("photo sources", () => {
     });
   });
 
-  it("replaces a photo's image, keeping its details, and cleans up the old files", async () => {
+  it("replaces a photo's image, keeping its details and the old image as a version", async () => {
     const { app, post, cookie, uploadDir } = await setup({
       routes: { "https://img.example.com/new.png": image(other, "image/png") }
     });
@@ -296,8 +296,10 @@ describe("photo sources", () => {
       source: { type: "url" }
     });
     expect(replaced.thumbnail).not.toBe(photo.thumbnail);
-    expect(existsSync(join(uploadDir, ...oldFolder))).toBe(false);
-    expect((await app.inject({ url: photo.thumbnail, headers: { cookie } })).statusCode).toBe(404);
+    // The earlier image stays on disk as a version, for the admin only.
+    expect(existsSync(join(uploadDir, ...oldFolder))).toBe(true);
+    expect((await app.inject({ url: photo.thumbnail, headers: { cookie } })).statusCode).toBe(200);
+    expect((await app.inject({ url: photo.thumbnail })).statusCode).toBe(404);
     expect((await app.inject({ url: replaced.thumbnail, headers: { cookie } })).statusCode).toBe(
       200
     );
@@ -318,12 +320,14 @@ describe("photo sources", () => {
       source: { type: "upload", ref: "second.jpg" }
     });
 
-    // Deleting removes the photo's folder entirely.
+    // Deleting and emptying the trash removes the photo's folder entirely.
     await app.inject({
       method: "DELETE",
       url: `/api/admin/photos/${photo.id}`,
       headers: { ...csrf, cookie }
     });
+    expect(existsSync(join(uploadDir, "photos", oldFolder[1]!))).toBe(true);
+    await app.inject({ method: "DELETE", url: "/api/admin/trash", headers: { ...csrf, cookie } });
     expect(existsSync(join(uploadDir, "photos", oldFolder[1]!))).toBe(false);
   });
 
@@ -369,8 +373,8 @@ describe("photo sources", () => {
     ).json().photo;
     const folder = replaced.thumbnail.split("/").slice(2, 5);
     expect(folder[1]).toBe("old-photo");
-    // The old flat files are gone; the new image (in a sub-folder of the same folder) is kept.
-    expect(readdirSync(legacy)).toEqual([folder[2]]);
+    // The old flat files stay as a version; the new image is in a sub-folder of the same folder.
+    expect(readdirSync(legacy).sort()).toEqual([folder[2], "640.webp", "original.jpg"].sort());
     expect((await app.inject({ url: replaced.thumbnail, headers: { cookie } })).statusCode).toBe(
       200
     );

@@ -5,13 +5,17 @@ import {
   ArrowUp,
   EyeOff,
   GripVertical,
+  HardDrive,
   Link2,
   Pencil,
   Plus,
   Star,
+  Trash,
   Trash2
 } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, type DragEvent } from "react";
+import { Link } from "react-router";
 
 import { PageHeader } from "../components/layout/AdminLayout";
 import {
@@ -20,16 +24,23 @@ import {
   sourceLabel
 } from "../components/photos/ImageSourcePicker";
 import { PhotoEditor } from "../components/photos/PhotoEditor";
-import { UploadQueue, type UploadItem } from "../components/photos/UploadQueue";
+import { trashKey } from "./TrashPage";
+import {
+  UploadConflictDialog,
+  type ConflictQuestion
+} from "../components/photos/UploadConflictDialog";
+import { InterruptedUploadsNotice, UploadQueue } from "../components/photos/UploadQueue";
 import { DatabaseNotice } from "../components/ui/DatabaseNotice";
 import { Dialog } from "../components/ui/Dialog";
 import { IconButton } from "../components/ui/IconButton";
 import { useToast } from "../components/ui/Toast";
 import { useArrivalParams } from "../hooks/useArrivalParams";
 import { useDeletePhoto, usePhotos, useReorderPhotos, useSetPhoto } from "../hooks/usePhotos";
-import { api, uploadPhoto } from "../lib/api";
+import { useUploadQueue } from "../hooks/useUploadQueue";
+import { api, uploadPhoto, uploadPhotoImage } from "../lib/api";
 import { pickText } from "../lib/i18n";
 import { tr } from "../lib/messages";
+import { planUploads, sha256Hex } from "../lib/upload-plan";
 import { Select } from "../components/ui/Select";
 
 type Filter = "all" | "public" | "private";
@@ -71,7 +82,9 @@ export function PhotosPage() {
   const [filter, setFilter] = useState<Filter>("all");
   const [editing, setEditing] = useState<AdminPhoto | null>(null);
   const [deleting, setDeleting] = useState<AdminPhoto | null>(null);
-  const [uploads, setUploads] = useState<UploadItem[]>([]);
+  const { items: uploads, queue, interrupted, dismissInterrupted } = useUploadQueue();
+  const [checking, setChecking] = useState(false);
+  const [question, setQuestion] = useState<ConflictQuestion | null>(null);
   const [dragId, setDragId] = useState<string | null>(null);
   const [dropActive, setDropActive] = useState(false);
   // 概览 links here to add a photo (?open=add) or to a task's photos (?show=referenced | missing-en).
@@ -85,64 +98,82 @@ export function PhotosPage() {
   const setPhoto = useSetPhoto();
   const reorder = useReorderPhotos();
   const remove = useDeletePhoto();
+  const qc = useQueryClient();
+  const { data: trashed } = useQuery({ queryKey: trashKey, queryFn: api.trash });
+  const { data: loginPhotos } = useQuery({
+    queryKey: ["admin", "login-background-photos"],
+    queryFn: api.loginBackgroundPhotoIds
+  });
   const toast = useToast();
 
-  const patchUpload = (key: string, patch: Partial<UploadItem>) =>
-    setUploads((list) => list.map((item) => (item.key === key ? { ...item, ...patch } : item)));
-
-  /** One at a time: image processing is CPU-heavy on the server. */
+  /**
+   * Checks the files against the photos already there, asks about each match, then queues the rest:
+   * a few at a time, each retryable and, until the server has it, cancellable.
+   */
   const uploadFiles = async (files: File[]) => {
-    const items = files.map((file, i) => ({
-      file,
-      item: {
-        key: `${Date.now()}-${i}-${file.name}`,
-        name: file.name,
-        progress: 0,
-        status: "uploading" as const
-      }
-    }));
-    setUploads((list) => [...items.map((x) => x.item), ...list]);
-    for (const { file, item } of items) {
-      try {
-        const { photo } = await uploadPhoto(file, (progress) =>
-          patchUpload(item.key, progress >= 1 ? { progress, status: "processing" } : { progress })
-        );
-        setPhoto(photo, { prepend: true });
-        patchUpload(item.key, { status: "done", progress: 1 });
-      } catch (e) {
-        patchUpload(item.key, {
-          status: "error",
-          error: e instanceof Error ? e.message : tr("上传失败")
-        });
-      }
+    setChecking(true);
+    let hashes: (string | null)[] = files.map(() => null);
+    let conflicts: Awaited<ReturnType<typeof api.checkUploads>>["conflicts"] = [];
+    try {
+      hashes = await Promise.all(files.map((file) => sha256Hex(file)));
+      if (hashes.every((hash) => hash !== null))
+        ({ conflicts } = await api.checkUploads(
+          files.map((file, i) => ({ name: file.name, sha256: hashes[i]! }))
+        ));
+    } catch {
+      // The check is a convenience: without it every file is uploaded as a new photo.
     }
+    setChecking(false);
+    const { uploads: planned, skipped } = await planUploads(
+      files,
+      hashes,
+      conflicts,
+      (file, conflict, remaining) =>
+        new Promise((resolve) =>
+          setQuestion({
+            fileName: file.name,
+            conflict,
+            remaining,
+            answer: (result) => {
+              setQuestion(null);
+              resolve(result);
+            }
+          })
+        )
+    );
+    queue.add(
+      planned.map((upload) => {
+        const uploadId =
+          crypto.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2, 12)}`;
+        return {
+          name: upload.file.name,
+          kind: "upload" as const,
+          uploadId: upload.action === "new" ? uploadId : undefined,
+          run: async ({ onProgress, signal }) => {
+            const { photo } =
+              upload.action === "new"
+                ? await uploadPhoto(upload.file, onProgress, signal, uploadId)
+                : await uploadPhotoImage(upload.photoId, upload.file, false, onProgress, signal);
+            setPhoto(photo, { prepend: upload.action === "new" });
+          }
+        };
+      }),
+      skipped
+    );
   };
 
-  /** Links, gallery photos and server files, one at a time like uploads. */
-  const importItems = async (imports: AdminPhotoImport[]) => {
-    const items = imports.map((body, i) => ({
-      body,
-      item: {
-        key: `${Date.now()}-import-${i}`,
+  /** Links, gallery photos and server files, through the same queue as uploads. */
+  const importItems = (imports: AdminPhotoImport[]) =>
+    queue.add(
+      imports.map((body) => ({
         name: body.from.type === "server" ? body.from.path : body.from.url,
-        progress: 1,
-        status: "processing" as const
-      }
-    }));
-    setUploads((list) => [...items.map((x) => x.item), ...list]);
-    for (const { body, item } of items) {
-      try {
-        const { photo } = await api.importPhoto(body);
-        setPhoto(photo, { prepend: true });
-        patchUpload(item.key, { status: "done" });
-      } catch (e) {
-        patchUpload(item.key, {
-          status: "error",
-          error: e instanceof Error ? e.message : tr("添加失败")
-        });
-      }
-    }
-  };
+        kind: "import" as const,
+        run: async () => {
+          const { photo } = await api.importPhoto(body);
+          setPhoto(photo, { prepend: true });
+        }
+      }))
+    );
 
   const onDropFiles = (event: DragEvent) => {
     if (!event.dataTransfer.types.includes("Files")) return;
@@ -207,9 +238,20 @@ export function PhotosPage() {
             "从本机、服务器文件夹、图库或图片链接添加；新照片默认隐藏，编辑好信息再设为公开。也可以把图片直接拖到页面上上传。"
           )}
         />
-        <button type="button" className="btn-primary" onClick={() => setAdding(true)}>
-          <Plus aria-hidden="true" className="size-4" /> {tr("添加照片")}
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <Link to="/photos/storage" className="btn-secondary">
+            <HardDrive aria-hidden="true" className="size-4" /> {tr("文件管理")}
+          </Link>
+          <Link to="/photos/trash" className="btn-secondary">
+            <Trash aria-hidden="true" className="size-4" /> {tr("回收站")}
+            {trashed?.items.length ? (
+              <span className="text-subtle">{trashed.items.length}</span>
+            ) : null}
+          </Link>
+          <button type="button" className="btn-primary" onClick={() => setAdding(true)}>
+            <Plus aria-hidden="true" className="size-4" /> {tr("添加照片")}
+          </button>
+        </div>
       </div>
 
       <Dialog open={adding} title={tr("添加照片")} onClose={() => setAdding(false)}>
@@ -222,12 +264,28 @@ export function PhotosPage() {
           }}
           onImports={(items) => {
             setAdding(false);
-            void importItems(items);
+            importItems(items);
           }}
         />
       </Dialog>
 
-      <UploadQueue items={uploads} onClear={() => setUploads([])} />
+      <UploadConflictDialog question={question} />
+      {checking ? (
+        <p role="status" className="card mb-5 p-4 text-[13px] text-subtle">
+          {tr("正在检查是否已经上传过…")}
+        </p>
+      ) : null}
+      {interrupted ? (
+        <InterruptedUploadsNotice batch={interrupted} onDismiss={dismissInterrupted} />
+      ) : null}
+      <UploadQueue
+        items={uploads}
+        onRetry={(key) => queue.retry(key)}
+        onRetryFailed={() => queue.retryFailed()}
+        onCancel={(key) => queue.cancel(key)}
+        onCancelAll={() => queue.cancelAll()}
+        onClear={() => queue.clear()}
+      />
 
       <div
         role="tablist"
@@ -442,7 +500,8 @@ export function PhotosPage() {
                 deleting &&
                 remove.mutate(deleting.id, {
                   onSuccess: () => {
-                    toast(tr("已删除"));
+                    void qc.invalidateQueries({ queryKey: trashKey });
+                    toast(tr("已移到回收站"));
                     setDeleting(null);
                   },
                   onError: (e) => toast(e.message, "error")
@@ -456,11 +515,16 @@ export function PhotosPage() {
       >
         <p className="text-[13.5px] leading-relaxed text-muted">
           {tr(
-            "确定删除“{0}”吗？{1}此操作无法撤销。",
+            "“{0}”和它的所有版本会移到回收站，{1} 天内可以恢复，之后彻底删除。",
             deleting ? pickText(deleting.title, deleting.id) : "",
-            deleting?.storage === "local" ? tr("服务器上的图片文件也会一起删除，") : ""
+            trashed?.retentionDays ?? 30
           )}
         </p>
+        {deleting && loginPhotos?.includes(deleting.id) ? (
+          <p role="alert" className="mt-2 text-[13px] leading-relaxed text-status-error">
+            {tr("这张照片正用作登录页背景，删除后登录页不再显示它。")}
+          </p>
+        ) : null}
       </Dialog>
     </div>
   );

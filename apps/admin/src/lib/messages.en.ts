@@ -2019,5 +2019,161 @@ export const en: Record<string, string> = {
   描边: "Outline",
   "边缘折射：{0}×": "Edge refraction: {0}×",
   "1.0 是默认强度。Safari 和 Firefox 只显示毛玻璃，看不到边缘折射。":
-    "1.0 is the default strength. Safari and Firefox show frosted glass without the edge refraction."
+    "1.0 is the default strength. Safari and Firefox show frosted glass without the edge refraction.",
+  等待中: "Waiting",
+  已取消: "Cancelled",
+  "{0} / {1} 已完成": "{0} / {1} done",
+  "，{0} 个失败": ", {0} failed",
+  全部重试: "Retry all",
+  取消未开始的: "Cancel pending",
+  整体进度: "Overall progress",
+  "重试 {0}": "Retry {0}",
+  "取消 {0}": "Cancel {0}",
+  已跳过: "Skipped",
+  "，{0} 个已跳过": ", {0} skipped",
+  中断的上传: "Interrupted upload",
+  "上次上传在完成前被中断：{0} 张已完成，{1} 张没有完成。":
+    "The last upload was interrupted: {0} finished, {1} did not.",
+  "重新选择这些文件就能继续；已经上传的会被认出来，不会重复。":
+    "Choose these files again to continue; ones already uploaded are recognised and not duplicated.",
+  知道了: "Got it",
+  "正在检查是否已经上传过…": "Checking for files already uploaded…",
+  照片已存在: "Photo already exists",
+  跳过: "Skip",
+  都保留: "Keep both",
+  "这个文件已经上传过，对应照片“{0}”。": 'This file was already uploaded as the photo "{0}".',
+  "照片“{0}”来自一个同名文件。": 'The photo "{0}" came from a file with the same name.',
+  "跳过不上传，或者作为另一张照片保留。": "Skip it, or keep it as another photo.",
+  "替换会把新图片换到这张照片上，照片信息保持不变；都保留会新增一张照片。":
+    "Replace puts the new image on that photo and keeps its details; Keep both adds a new photo.",
+  "对剩下的 {0} 个冲突执行相同操作": "Do this for the remaining {0} conflicts",
+  图片管理: "Image management",
+  "设置回收站保留时间和每张照片的版本上限。":
+    "Set how long the trash keeps images and how many versions a photo may have.",
+  回收站保留天数: "Days kept in trash",
+  每张照片的版本上限: "Versions per photo",
+  保留与上限: "Retention and limits",
+  "修改后对之后的操作生效，已有的版本不会被删除。":
+    "Changes apply from now on; existing versions are not deleted.",
+  "删除的图片在回收站里保留这么多天，之后彻底删除。1 到 365 天。":
+    "Deleted images stay in the trash this many days, then are removed for good. 1 to 365 days.",
+  "一张照片最多保留这么多个版本，达到后需要先删除一个。1 到 50 个。":
+    "A photo keeps at most this many versions; at the limit, delete one first. 1 to 50.",
+  删除版本: "Delete version",
+  "这个版本的图片文件会从服务器删除，无法撤销。":
+    "This version's image files will be deleted from the server. This cannot be undone.",
+  "这个版本只引用外部链接，删除后不再保留这个链接。":
+    "This version only references an external link; deleting it drops the link.",
+  已删除版本: "Version deleted",
+  版本: "Versions",
+  "版本 {0} 的名称": "Name of version {0}",
+  "版本 {0}": "Version {0}",
+  当前显示: "Shown now",
+  已切换版本: "Version switched",
+  设为当前: "Show this one",
+  "删除版本 {0}": "Delete version {0}",
+  已添加版本并设为当前: "Version added and shown",
+  已添加版本: "Version added",
+  添加版本: "Add version",
+  "同一张照片的另一份图片，例如更清晰的文件或另一个来源。标题、说明、排序和公开状态都保留，原来的图片也保留为一个版本，可以随时切换回去。":
+    "Another image of the same photo, such as a sharper file or another source. Title, description, order and visibility are kept, and the earlier image stays as a version you can switch back to.",
+  设为当前显示的版本: "Show this version",
+  "This photo has reached its version limit; delete a version first":
+    "This photo has reached its version limit; delete a version first",
+  "This version is the one being shown; switch to another first":
+    "This version is the one being shown; switch to another first",
+  "This upload is still being processed": "This upload is still being processed",
+  "{0} 的版本{1}": "Version {1} of {0}",
+  彻底删除: "Delete for good",
+  "“{0}”和它在服务器上的图片文件会被彻底删除，无法恢复。":
+    '"{0}" and its image files on the server will be deleted for good. This cannot be undone.',
+  已彻底删除: "Deleted for good",
+  清空回收站: "Empty trash",
+  "回收站里的 {0} 项和它们的图片文件会被彻底删除，无法恢复。":
+    "The {0} items in the trash and their image files will be deleted for good. This cannot be undone.",
+  "有 {0} 项的文件没能删除，仍在回收站里，稍后会自动重试。":
+    "The files of {0} items could not be deleted; they stay in the trash and will be retried automatically.",
+  回收站已清空: "Trash emptied",
+  返回照片: "Back to photos",
+  回收站: "Trash",
+  "删除的照片和版本在这里保留 {0} 天，之后连同图片文件一起彻底删除。保留天数可以在网站设置的“图片管理”里调整。":
+    "Deleted photos and versions are kept here for {0} days, then removed for good with their image files. The number of days is set under Site settings → Image management.",
+  "共 {0} 项，占用 {1}": "{0} items, {1}",
+  "照片 · {0} 个版本": "Photo · {0} versions",
+  单个版本: "Single version",
+  删除于: "Deleted",
+  "{0} 天后彻底删除": "removed for good in {0} days",
+  "恢复 {0}": "Restore {0}",
+  已恢复: "Restored",
+  "彻底删除 {0}": "Delete {0} for good",
+  "回收站是空的。": "The trash is empty.",
+  已移到回收站: "Moved to the trash",
+  "“{0}”和它的所有版本会移到回收站，{1} 天内可以恢复，之后彻底删除。":
+    '"{0}" and all its versions will move to the trash. They can be restored within {1} days, then are removed for good.',
+  "这张照片正用作登录页背景，删除后登录页不再显示它。":
+    "This photo is used as a login background; once deleted, the login page no longer shows it.",
+  "这个版本会移到回收站，保留期内可以恢复。":
+    "This version will move to the trash and can be restored while it is kept.",
+  版本已移到回收站: "Version moved to the trash",
+  "This version's photo is in the trash; restore the photo first":
+    "This version's photo is in the trash; restore the photo first",
+  "Not in the trash": "Not in the trash",
+  品牌图: "Branding",
+  删除文件夹: "Delete folder",
+  "“{0}”里的 {1} 个文件会从服务器彻底删除，无法恢复。":
+    'The {1} files in "{0}" will be deleted from the server for good. This cannot be undone.',
+  已删除文件夹: "Folder deleted",
+  已作为隐藏照片添加: "Added as a hidden photo",
+  文件管理: "File management",
+  "缺少：{0}": "Missing: {0}",
+  原图: "original",
+  "查看图片占用的空间，并检查服务器上的文件和数据库记录是否一致。":
+    "See how much space the images take, and check that the files on the server match the database.",
+  使用中的图片: "Images in use",
+  "{0} 份图片 · 原图 {1} · 生成尺寸 {2}": "{0} images · originals {1} · generated sizes {2}",
+  "{0} 份图片，查看回收站": "{0} images, open the trash",
+  磁盘剩余空间: "Free disk space",
+  "空间不足，上传可能失败。共 {0}": "Low on space; uploads may fail. {0} in total",
+  "共 {0}": "{0} in total",
+  按模块: "By section",
+  还没有登记的图片: "No registered images yet",
+  占用最多的图片: "Largest images",
+  一致性检查: "Consistency check",
+  "上次扫描：": "Last scan: ",
+  "服务器启动后还没有扫描过。扫描只报告问题，不会改动任何文件。":
+    "Not scanned since the server started. A scan only reports; it changes no files.",
+  扫描完成: "Scan finished",
+  扫描文件: "Scan files",
+  "没有发现问题：服务器上的文件和数据库记录一致。":
+    "Nothing wrong: the files on the server match the database.",
+  孤儿文件夹: "Orphan folders",
+  "服务器上有这些文件夹，但没有任何照片在使用。可以删除，或把里面的原图作为一张新的隐藏照片。":
+    "These folders are on the server but no photo uses them. Delete them, or add the original inside as a new hidden photo.",
+  "{0} 个文件 · {1}": "{0} files · {1}",
+  "把 {0} 作为照片添加": "Add {0} as a photo",
+  作为照片添加: "Add as photo",
+  "删除文件夹 {0}": "Delete folder {0}",
+  文件不完整: "Incomplete images",
+  "这些图片缺少部分文件。原图还在的可以重新生成各个尺寸。":
+    "These images are missing some files. Where the original is still there, the sizes can be made again.",
+  "重新生成 {0}": "Regenerate {0}",
+  已重新生成: "Regenerated",
+  重新生成: "Regenerate",
+  "原图丢失，无法修复": "Original missing; cannot be repaired",
+  文件丢失: "Missing files",
+  "数据库里有这些图片，但服务器上找不到文件。需要从备份恢复，或给照片添加一个新版本。":
+    "The database has these images but the server has no files for them. Restore them from a backup, or add a new version to the photo.",
+  下载原图: "Download original",
+  "This folder has no original image to make a photo from":
+    "This folder has no original image to make a photo from",
+  "The original is missing, so the sizes cannot be made again":
+    "The original is missing, so the sizes cannot be made again",
+  "Not an orphan folder": "Not an orphan folder",
+  "{0}图片：{1}": "{0} image: {1}",
+  "被替换或删除的图片，只能下载": "Replaced or deleted image; download only",
+  "下载 {0}": "Download {0}",
+  "删除的照片和版本，以及项目、收藏等模块里被替换或删除的图片，在这里保留 {0} 天，之后连同图片文件一起彻底删除。保留天数可以在网站设置的“图片管理”里调整。":
+    "Deleted photos and versions, and images replaced or deleted in projects, the collection and other sections, are kept here for {0} days, then removed for good with their files. The number of days is set under Site settings → Image management.",
+  "This image cannot be put back; download it and add it again":
+    "This image cannot be put back; download it and add it again"
 };
