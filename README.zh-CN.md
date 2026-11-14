@@ -4,7 +4,7 @@
 
 用于展示摄影、软件项目，以及影视、书籍、游戏和音乐收藏的个人网站。采用 TypeScript monorepo，包含独立的前台、管理后台和 Fastify API。
 
-**[访问网站](https://www.twilightfrosty.com)** · [项目文档](docs/README.md) · [反馈问题](https://github.com/Liam-Frost/Liam-Frost.github.io/issues) · [报告安全漏洞](SECURITY.md)
+**[访问网站](https://www.twilightfrost.com)** · [项目文档](docs/README.md) · [反馈问题](https://github.com/Liam-Frost/Liam-Frost.github.io/issues) · [报告安全漏洞](SECURITY.md)
 
 ## 功能
 
@@ -32,7 +32,7 @@
 
 ![管理后台概览](docs/images/admin-preview-zh.png)
 
-网站持续迭代中。[预发布站](https://preview.twilightfrosty.com)用于验证开发版本；本 README 描述当前源码，具体上线状态以发布记录为准。主机、基础设施配置、凭据、诊断及运维资料均在私有位置维护。
+网站持续迭代中。[预发布站](https://preview.twilightfrost.com)用于验证开发版本；本 README 描述当前源码，具体上线状态以发布记录为准。主机、基础设施配置、凭据、诊断及运维资料均在私有位置维护。
 
 ## 技术栈
 

@@ -10,7 +10,7 @@ A personal website for photography, software projects, and a collection of films
 [![Node.js 26.13+](https://img.shields.io/badge/Node.js-%E2%89%A526.13-339933?logo=nodedotjs&logoColor=white)](https://nodejs.org/)
 [![Code license: MIT](https://img.shields.io/badge/code_license-MIT-blue)](LICENSE)
 
-**[Visit the website](https://www.twilightfrosty.com)** · [Documentation](docs/README.md) · [Report a bug](https://github.com/Liam-Frost/Liam-Frost.github.io/issues) · [Report a vulnerability](SECURITY.md)
+**[Visit the website](https://www.twilightfrost.com)** · [Documentation](docs/README.md) · [Report a bug](https://github.com/Liam-Frost/Liam-Frost.github.io/issues) · [Report a vulnerability](SECURITY.md)
 
 ## Features
 
@@ -39,7 +39,7 @@ Admin overview, shown with demonstration data:
 
 ### Project status
 
-The public website and preview are available at the links above and **[preview.twilightfrosty.com](https://preview.twilightfrosty.com)**. Hosting details, infrastructure configuration, credentials, diagnostics, and operational instructions are maintained privately outside this repository.
+The public website and preview are available at the links above and **[preview.twilightfrost.com](https://preview.twilightfrost.com)**. Hosting details, infrastructure configuration, credentials, diagnostics, and operational instructions are maintained privately outside this repository.
 
 This is a personal project under active development.
 

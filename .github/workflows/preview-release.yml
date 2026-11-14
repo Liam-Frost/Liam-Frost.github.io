@@ -33,7 +33,7 @@ jobs:
       actions: write
     environment:
       name: preview
-      url: https://preview.twilightfrosty.com
+      url: https://preview.twilightfrost.com
     steps:
       - uses: actions/checkout@v7
       - name: Build release image
@@ -89,8 +89,8 @@ jobs:
           ssh "${ssh_options[@]}" "$SSH_USER@$SSH_HOST" "deploy $REVISION"
       - name: Verify public HTTPS
         run: |
-          curl --fail --silent --show-error --retry 3 https://preview.twilightfrosty.com/api/health
-          printf 'Preview published: https://preview.twilightfrosty.com\n' >> "$GITHUB_STEP_SUMMARY"
+          curl --fail --silent --show-error --retry 3 https://preview.twilightfrost.com/api/health
+          printf 'Preview published: https://preview.twilightfrost.com\n' >> "$GITHUB_STEP_SUMMARY"
       - name: Remove superseded preview bundles when production is idle
         env:
           GH_TOKEN: ${{ github.token }}
