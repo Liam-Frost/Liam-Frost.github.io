@@ -3,7 +3,7 @@ name: Docker smoke test
 # Builds the production image and runs the full stack (PostgreSQL + app + Caddy) end to end.
 on:
   pull_request:
-    branches: ["main"]
+    branches: ["main", "dev"]
   workflow_dispatch:
   workflow_call:
     inputs:
