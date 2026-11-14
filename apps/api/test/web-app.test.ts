@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
 
 import { buildTestServer } from "./helpers";
+import { MemoryProjectRepository } from "./memory-project-repository";
 
 let dist: string;
 
@@ -65,6 +66,36 @@ describe("public site hosting", () => {
     }
     // Malformed percent-encoding is rejected by Fastify before routing.
     expect((await app.inject("/%E0%A4%A")).statusCode).toBe(400);
+  });
+
+  it("serves public page navigations with a cookie, including published project details", async () => {
+    const projects = new MemoryProjectRepository();
+    await projects.create({ id: "one", slug: "published", title: { en: "Published" } });
+    await projects.update("one", { visibility: "public" });
+    await projects.create({ id: "two", slug: "hidden", title: { en: "Hidden" } });
+    const app = await buildTestServer({}, { webDistDir: dist, projects });
+    const headers = { accept: "text/html", cookie: "domain-check=1" };
+    for (const url of [
+      "/portfolio",
+      "/projects",
+      "/collection",
+      "/privacy/",
+      "/projects/published?ref=test"
+    ]) {
+      const response = await app.inject({ url, headers });
+      expect(response.statusCode, url).toBe(200);
+      expect(response.body).toContain('<base href="/">');
+      expect(response.body).not.toContain("noindex");
+      expect(response.headers["content-security-policy"]).toContain("frame-ancestors 'none'");
+    }
+    for (const url of ["/projects/hidden", "/projects/missing"]) {
+      const response = await app.inject({ url, headers });
+      expect(response.statusCode, url).toBe(404);
+      expect(response.body).toContain("noindex");
+    }
+    const head = await app.inject({ method: "HEAD", url: "/projects/published", headers });
+    expect(head.statusCode).toBe(200);
+    expect(head.body).toBe("");
   });
 
   it("serves an HTML 404 shell for page navigations while missing APIs/assets stay JSON", async () => {
