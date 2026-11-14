@@ -12,7 +12,7 @@ REV = "a" * 40
 class PublicStatusTests(unittest.TestCase):
     def row(self, **changes):
         return {"id": "A", "status": "success", "expected_revision": REV,
-                "actual_revision": REV, "publication": "success", **changes}
+                "actual_revision": REV, "publication": "success"} | changes
 
     def test_matching_verified_target_succeeds(self):
         rows = status.public_rows({"targets": [self.row()]}, REV)
@@ -43,6 +43,14 @@ class PublicStatusTests(unittest.TestCase):
 
     def test_bad_input_stays_degraded(self):
         self.assertTrue(all(row["status"] == "degraded" for row in status.public_rows([], REV)))
+
+    def test_secondary_requires_matching_verified_revision(self):
+        self.assertEqual(status.secondary_row({"status": "success", "revision": REV}, REV)["status"], "success")
+        for report in ({}, {"status": "success", "revision": "b" * 40},
+                       {"status": "degraded", "revision": REV, "private": "hidden"}):
+            row = status.secondary_row(report, REV)
+            self.assertEqual(row["status"], "degraded")
+            self.assertNotIn("private", row)
 
 
 if __name__ == "__main__":

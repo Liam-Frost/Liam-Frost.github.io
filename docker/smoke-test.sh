@@ -52,7 +52,12 @@ EOF
 
 step "build image"
 write_env
-compose build app
+if [[ -n "${RELEASE_IMAGE_ARCHIVE:-}" ]]; then
+  [[ "${RELEASE_REVISION:-}" =~ ^[a-f0-9]{40}$ ]]
+  docker build --label "org.opencontainers.image.revision=$RELEASE_REVISION" -t liam-frost-site:local .
+else
+  compose build app
+fi
 
 step "create a throwaway admin login"
 PASSWORD="$(node -e "console.log(require('crypto').randomBytes(12).toString('base64url'))")"
@@ -121,3 +126,7 @@ check_project
 compose exec -T -w /app/apps/api app node /app/node_modules/prisma/build/index.js migrate status >/dev/null || fail "migrations not up to date"
 
 echo "Smoke test passed."
+
+if [[ -n "${RELEASE_IMAGE_ARCHIVE:-}" ]]; then
+  docker save liam-frost-site:local | gzip -1 > "$RELEASE_IMAGE_ARCHIVE"
+fi

@@ -19,6 +19,8 @@ jobs:
 
   smoke:
     uses: ./.github/workflows/docker.yml
+    with:
+      retain_secondary_image: true
 
   deploy:
     name: Publish preview
@@ -107,7 +109,7 @@ jobs:
               # The new preview is already deployed; old runs fail the promotion identity gate.
               artifacts = api('/actions/artifacts?per_page=100')['artifacts']
               for artifact in artifacts:
-                  if re.fullmatch(r'personal-home-(release|manifest)-[a-f0-9]{40}', artifact['name']) and artifact.get('workflow_run', {}).get('head_branch') == 'dev' and artifact['workflow_run']['id'] != int(os.environ['GITHUB_RUN_ID']):
+                  if re.fullmatch(r'personal-home-(release|manifest|secondary)-[a-f0-9]{40}', artifact['name']) and artifact.get('workflow_run', {}).get('head_branch') == 'dev' and artifact['workflow_run']['id'] != int(os.environ['GITHUB_RUN_ID']):
                       api('/actions/artifacts/' + str(artifact['id']), delete=True)
                       print('Removed superseded project artifact ' + str(artifact['id']))
           PY
