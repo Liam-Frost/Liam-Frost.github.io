@@ -3,9 +3,13 @@ name: Docker smoke test
 # Builds the production image and runs the full stack (PostgreSQL + app + Caddy) end to end.
 on:
   pull_request:
-    branches: ["main"]
+    branches: ["main", "dev"]
   workflow_dispatch:
   workflow_call:
+    inputs:
+      retain_secondary_image:
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -38,6 +42,23 @@ jobs:
 
       - name: Smoke test
         run: bash docker/smoke-test.sh
+        env:
+          RELEASE_REVISION: ${{ github.sha }}
+          RELEASE_IMAGE_ARCHIVE: ${{ inputs.retain_secondary_image && matrix.arch == 'arm64' && format('{0}/secondary-image.tar.gz', runner.temp) || '' }}
+      - name: Identify tested image
+        if: inputs.retain_secondary_image && matrix.arch == 'arm64'
+        run: python3 .github/scripts/secondary_artifact.py write "$RUNNER_TEMP"
+      - name: Retain tested image
+        if: inputs.retain_secondary_image && matrix.arch == 'arm64'
+        uses: actions/upload-artifact@v7
+        with:
+          name: personal-home-secondary-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/secondary-image.tar.gz
+            ${{ runner.temp }}/secondary-manifest.json
+          compression-level: 0
+          retention-days: 14
+          if-no-files-found: error
 
   smoke-gate:
     name: smoke

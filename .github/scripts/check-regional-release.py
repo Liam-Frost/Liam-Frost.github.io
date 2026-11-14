@@ -24,16 +24,29 @@ def public_rows(report, expected):
     return rows
 
 
+def read_report(path):
+    try:
+        value = json.loads(pathlib.Path(path).read_text(encoding="utf-8"))
+        return value if isinstance(value, dict) else {}
+    except (OSError, ValueError, TypeError):
+        return {}
+
+
+def secondary_row(report, expected):
+    actual = safe_revision(report.get("revision"))
+    ready = report.get("status") == "success" and actual == expected
+    return {"id": "F", "label": "Target F", "status": "success" if ready else "degraded",
+            "expected_revision": expected, "actual_revision": actual,
+            "publication": "success" if ready else "failed"}
+
+
 def main():
     expected = os.environ["REVISION"]
     assert safe_revision(expected) == expected, "Invalid revision"
-    try:
-        report = json.loads(pathlib.Path(os.environ["PRODUCTION_REPORT"]).read_text())
-        if not isinstance(report, dict):
-            report = {}
-    except (OSError, ValueError, KeyError):
-        report = {}
+    report = read_report(os.environ["PRODUCTION_REPORT"])
     rows = public_rows(report, expected)
+    if "SECONDARY_REPORT" in os.environ:
+        rows.append(secondary_row(read_report(os.environ["SECONDARY_REPORT"]), expected))
     failed = [row["id"] for row in rows if row["status"] != "success"]
     degraded = bool(failed or report.get("degraded"))
     with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
