@@ -699,7 +699,7 @@ export async function buildServer({
       onError: (error) => app.log.warn({ err: error }, "A part of the admin dashboard failed")
     })
   );
-  registerWebApp(app, webDistDir);
+  registerWebApp(app, webDistDir, projects);
 
   return app;
 }

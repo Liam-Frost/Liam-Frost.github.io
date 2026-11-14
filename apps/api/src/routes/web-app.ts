@@ -4,7 +4,9 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { join, relative, sep } from "node:path";
 
-import { notFound } from "../lib/errors";
+import { HttpError, notFound } from "../lib/errors";
+import { slugSchema } from "../lib/validation";
+import type { ProjectRepository } from "../projects/types";
 import { contentTypeFor } from "./content-types";
 
 /** Every file in the build, keyed by URL path ("/assets/index-abc.js"). Dotfiles are skipped. */
@@ -55,13 +57,36 @@ function cacheControl(urlPath: string) {
   return "public, max-age=3600";
 }
 
-/**
- * Serves the public site build (apps/web/dist) at "/". Only files that exist in the build at startup
- * are served, looked up by exact path, so requests cannot reach anything else. The site uses hash
- * routes, so "/" is its only page; other paths are 404s like any unknown route.
- * Without a build (development, where Vite serves the site) nothing is registered.
- */
-export function registerWebApp(app: FastifyInstance, distDir: string) {
+// Keep these in sync with the public pages in apps/web/src/app/App.tsx.
+const PUBLIC_PAGES = new Set(["/portfolio", "/projects", "/collection", "/privacy"]);
+
+async function isPublicPage(
+  pathname: string,
+  projects: ProjectRepository | null,
+  request: FastifyRequest
+) {
+  const path = pathname.replace(/\/+$/, "");
+  if (PUBLIC_PAGES.has(path.toLowerCase())) return true;
+
+  const match = /^\/projects\/([^/]+)$/i.exec(path);
+  if (!match || !projects) return false;
+  const slug = slugSchema.safeParse(match[1]);
+  if (!slug.success) return false;
+
+  try {
+    return (await projects.getBySlug(slug.data))?.visibility === "public";
+  } catch (error) {
+    request.log.warn({ error }, "Project database unavailable");
+    throw new HttpError(503, "UNAVAILABLE", "Projects are temporarily unavailable");
+  }
+}
+
+/** Serves build files by exact path and the public app shell for browser page navigations. */
+export function registerWebApp(
+  app: FastifyInstance,
+  distDir: string,
+  projects: ProjectRepository | null
+) {
   const indexFile = join(distDir, "index.html");
   if (!existsSync(indexFile)) {
     app.log.info(
@@ -89,14 +114,17 @@ export function registerWebApp(app: FastifyInstance, distDir: string) {
         !pathname.split("/").some((part) => part.startsWith(".")) &&
         !/\.[a-z0-9]+$/i.test(pathname);
       if (!pageRequest) throw notFound();
-      const html = (await readFile(indexFile, "utf8")).replace(
-        "<head>",
-        '<head><base href="/"><meta name="robots" content="noindex">'
-      );
+      const exists = await isPublicPage(pathname, projects, request);
+      // The Vite build uses relative asset URLs, including on nested project pages.
+      const head = exists
+        ? '<head><base href="/">'
+        : '<head><base href="/"><meta name="robots" content="noindex">';
+      const html = (await readFile(indexFile, "utf8")).replace("<head>", head);
       return reply
-        .code(404)
+        .code(exists ? 200 : 404)
         .header("content-type", "text/html; charset=utf-8")
-        .header("cache-control", "no-store")
+        .header("cache-control", exists ? "no-cache" : "no-store")
+        .header("vary", "Accept")
         .header("content-security-policy", csp)
         .send(html);
     }
