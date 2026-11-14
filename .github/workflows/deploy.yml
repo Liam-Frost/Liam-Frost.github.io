@@ -52,7 +52,7 @@ jobs:
           """Anonymous, bounded static snapshot builder. Embedded in the Pages workflow, no VPS secrets."""
           import datetime, hashlib, io, json, os, pathlib, re, tarfile, time, urllib.parse, urllib.request
 
-          SOURCE = 'https://www.twilightfrosty.com'
+          SOURCE = 'https://www.twilightfrost.com'
           PAGES = 'https://liam-frost.github.io'
           MAX_TOTAL = 384*1024**2
           ROOT = pathlib.Path(os.environ['RUNNER_TEMP'])/'emergency-site'
