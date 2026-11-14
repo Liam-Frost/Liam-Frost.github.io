@@ -44,7 +44,7 @@ import type { PhotoPatch, PhotoRepository, PhotoRow } from "../photos/types";
 import { imageFields, type PhotoVersionRepository, type VersionRow } from "../photos/versions";
 import type { ImageSettings } from "../settings/images";
 import type { LocalImageStore } from "../storage/local";
-import { readUploadedImage } from "./read-upload";
+import { readUploadedImage, withUploadCleanup } from "./read-upload";
 
 /** "IMG_1234 (2).JPG" -> "img-1234-2-k3f9a1": readable, URL-safe and unique. */
 export function photoIdFromFileName(fileName: string) {
@@ -216,29 +216,33 @@ export function registerAdminPhotoRoutes(
       .slice(0, 120) || null;
 
   /** Uploads one image from the device. */
-  app.post("/api/admin/photos", admin, async (request, reply): Promise<AdminPhotoResponse> => {
-    const photos = repo();
-    const header = request.headers[UPLOAD_ID_HEADER];
-    const uploadId = header === undefined ? null : parseInput(uploadIdSchema, header);
-    if (uploadId) {
-      // A retry of an upload that already succeeded (its answer was lost): return that photo.
-      const [known] = assets ? await assets.findByUploadIds([uploadId]) : [];
-      const existing = known ? await photos.get(known.ownerId) : null;
-      if (existing) {
-        const file = request.isMultipart() ? await request.file() : null;
-        file?.file.resume();
-        return { photo: toAdminPhoto(existing, store) };
+  app.post(
+    "/api/admin/photos",
+    { ...admin, config: { rateLimit: { max: 120, timeWindow: "1 minute" } } },
+    withUploadCleanup(async (request, reply): Promise<AdminPhotoResponse> => {
+      const photos = repo();
+      const header = request.headers[UPLOAD_ID_HEADER];
+      const uploadId = header === undefined ? null : parseInput(uploadIdSchema, header);
+      if (uploadId) {
+        // A retry of an upload that already succeeded (its answer was lost): return that photo.
+        const [known] = assets ? await assets.findByUploadIds([uploadId]) : [];
+        const existing = known ? await photos.get(known.ownerId) : null;
+        if (existing) {
+          const file = request.isMultipart() ? await request.file() : null;
+          file?.file.resume();
+          return { photo: toAdminPhoto(existing, store) };
+        }
+        if (inFlight.has(uploadId))
+          throw new HttpError(409, "UPLOAD_IN_PROGRESS", "This upload is still being processed");
+        inFlight.add(uploadId);
       }
-      if (inFlight.has(uploadId))
-        throw new HttpError(409, "UPLOAD_IN_PROGRESS", "This upload is still being processed");
-      inFlight.add(uploadId);
-    }
-    try {
-      return await receivePhoto(request, reply, uploadId);
-    } finally {
-      if (uploadId) inFlight.delete(uploadId);
-    }
-  });
+      try {
+        return await receivePhoto(request, reply, uploadId);
+      } finally {
+        if (uploadId) inFlight.delete(uploadId);
+      }
+    })
+  );
 
   const receivePhoto = async (
     request: FastifyRequest,
@@ -422,18 +426,22 @@ export function registerAdminPhotoRoutes(
    * Adds an uploaded image to a photo as a version, the current one unless `?current=0` (`?exif=1`
    * also takes its date and camera details).
    */
-  app.post("/api/admin/photos/:id/image", admin, async (request): Promise<AdminPhotoResponse> => {
-    const row = await getRow(request);
-    await checkVersionRoom(row);
-    const { fileName, image } = await readUploadedImage(request, maxUploadBytes, store);
-    const hosted = await hostImage(store, row.id, image, uploadSource(fileName), null);
-    const query = request.query as { exif?: string; current?: string };
-    return addVersion(request, row, hosted, {
-      makeCurrent: query.current !== "0",
-      useExif: query.exif === "1",
-      originalName: fileName
-    });
-  });
+  app.post(
+    "/api/admin/photos/:id/image",
+    { ...admin, config: { rateLimit: { max: 120, timeWindow: "1 minute" } } },
+    withUploadCleanup(async (request): Promise<AdminPhotoResponse> => {
+      const row = await getRow(request);
+      await checkVersionRoom(row);
+      const { fileName, image } = await readUploadedImage(request, maxUploadBytes, store);
+      const hosted = await hostImage(store, row.id, image, uploadSource(fileName), null);
+      const query = request.query as { exif?: string; current?: string };
+      return addVersion(request, row, hosted, {
+        makeCurrent: query.current !== "0",
+        useExif: query.exif === "1",
+        originalName: fileName
+      });
+    })
+  );
 
   /** Adds an image from a link, a Flickr photo or a server file as a version (current by default). */
   app.put("/api/admin/photos/:id/image", admin, async (request): Promise<AdminPhotoResponse> => {

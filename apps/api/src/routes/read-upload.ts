@@ -1,4 +1,4 @@
-import type { FastifyInstance, FastifyRequest } from "fastify";
+import type { FastifyReply, FastifyRequest } from "fastify";
 import { createHash } from "node:crypto";
 import { createWriteStream } from "node:fs";
 import { rm, stat } from "node:fs/promises";
@@ -11,16 +11,19 @@ import type { LocalImageStore } from "../storage/local";
 /** Temporary files of uploads being handled; saving the image moves the file away. */
 const received = new WeakMap<FastifyRequest, string[]>();
 
-/** Removes a request's leftover upload files once it is answered or dropped. */
-export function registerUploadCleanup(app: FastifyInstance) {
-  const discard = async (request: FastifyRequest) => {
-    const files = received.get(request);
-    if (!files) return;
-    received.delete(request);
-    for (const file of files) await rm(file, { force: true }).catch(() => undefined);
+/** Removes temporary files when the upload handler finishes, including interrupted uploads. */
+export function withUploadCleanup<T>(
+  handle: (request: FastifyRequest, reply: FastifyReply) => Promise<T>
+) {
+  return async (request: FastifyRequest, reply: FastifyReply): Promise<T> => {
+    try {
+      return await handle(request, reply);
+    } finally {
+      const files = received.get(request) ?? [];
+      received.delete(request);
+      for (const file of files) await rm(file, { force: true }).catch(() => undefined);
+    }
   };
-  app.addHook("onResponse", discard);
-  app.addHook("onRequestAbort", discard);
 }
 
 /**

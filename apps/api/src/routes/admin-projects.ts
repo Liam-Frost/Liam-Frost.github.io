@@ -27,7 +27,7 @@ import {
 } from "../projects/types";
 import type { StackRepository } from "../stack/types";
 import type { LocalImageStore } from "../storage/local";
-import { readUploadedImage } from "./read-upload";
+import { readUploadedImage, withUploadCleanup } from "./read-upload";
 
 const MAX_GALLERY = 30;
 
@@ -192,8 +192,8 @@ export function registerAdminProjectRoutes(
   /** Upload the cover (replacing the previous one) or add a screenshot: POST ...?slot=cover|gallery */
   app.post(
     "/api/admin/projects/:id/images",
-    admin,
-    async (request, reply): Promise<AdminProjectResponse> => {
+    { ...admin, config: { rateLimit: { max: 120, timeWindow: "1 minute" } } },
+    withUploadCleanup(async (request, reply): Promise<AdminProjectResponse> => {
       const { slot } = parseInput(projectImageSlotSchema, request.query);
       const preflight = await load(request);
       if (slot === "gallery" && preflight.gallery.length >= MAX_GALLERY)
@@ -243,7 +243,7 @@ export function registerAdminProjectRoutes(
       );
       reply.code(201);
       return respond(updated);
-    }
+    })
   );
 
   app.delete(

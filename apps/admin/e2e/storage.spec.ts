@@ -23,10 +23,12 @@ test.describe("file management", () => {
     for (const [name, width] of [
       ["lost-album", 921],
       ["old-export", 922]
-    ] as const)
-      await page.request.post("/__e2e/orphan", {
-        data: { name, original: (await jpeg(width)).toString("base64") }
+    ] as const) {
+      const response = await page.request.post(`/__e2e/orphan/${name}`, {
+        data: { original: (await jpeg(width)).toString("base64") }
       });
+      expect(response.ok()).toBe(true);
+    }
 
     await page.getByRole("link", { name: "文件管理" }).click();
     await expect(page.getByRole("heading", { name: "文件管理" })).toBeVisible();

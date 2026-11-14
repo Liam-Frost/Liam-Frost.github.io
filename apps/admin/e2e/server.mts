@@ -192,16 +192,19 @@ app.post("/__e2e/seed", async (request) => {
   await seed((request.body as { scenario?: "default" | "empty" | "large" }).scenario ?? "default");
   return { ok: true };
 });
-// An image folder no photo knows, old enough for the storage scan to report it.
-app.post("/__e2e/orphan", async (request) => {
-  const { name, original } = request.body as { name: string; original: string };
+// The fixture names are fixed by the storage spec. Requests provide only the image bytes.
+for (const name of ["lost-album", "old-export"]) {
   const folder = join(config.uploads.dir!, "photos", name, "aaaaaaaaaaaa");
-  mkdirSync(folder, { recursive: true });
-  writeFileSync(join(folder, "original.jpg"), Buffer.from(original, "base64"));
-  const old = new Date(Date.now() - 2 * 60 * 60 * 1000);
-  utimesSync(folder, old, old);
-  return { ok: true };
-});
+  const originalPath = join(folder, "original.jpg");
+  app.post(`/__e2e/orphan/${name}`, async (request) => {
+    const { original } = request.body as { original: string };
+    mkdirSync(folder, { recursive: true });
+    writeFileSync(originalPath, Buffer.from(original, "base64"));
+    const old = new Date(Date.now() - 2 * 60 * 60 * 1000);
+    utimesSync(folder, old, old);
+    return { ok: true };
+  });
+}
 app.post("/__e2e/photo-visibility", async (request) => {
   const { id, visibility } = request.body as { id: string; visibility: "public" | "private" };
   photos.rows.set(id, { ...photos.rows.get(id)!, visibility });

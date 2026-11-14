@@ -50,7 +50,7 @@ import {
 import { InvalidImageError, processImage } from "../photos/images";
 import type { StoredImage } from "../projects/types";
 import type { LocalImageStore } from "../storage/local";
-import { readUploadedImage } from "./read-upload";
+import { readUploadedImage, withUploadCleanup } from "./read-upload";
 
 const MUSIC = new Set(["track", "album"]);
 
@@ -370,8 +370,8 @@ export function registerAdminPeopleRoutes(
   /** Replaces the photo with an uploaded image. */
   app.post(
     "/api/admin/people/:id/photo",
-    admin,
-    async (request, reply): Promise<AdminPersonResponse> => {
+    { ...admin, config: { rateLimit: { max: 120, timeWindow: "1 minute" } } },
+    withUploadCleanup(async (request, reply): Promise<AdminPersonResponse> => {
       const preflight = await getPerson(personId(request));
       const { image } = await readUploadedImage(request, deps.maxUploadBytes, deps.store);
       const photo = await storePoster(store, preflight.id, image, "people");
@@ -396,7 +396,7 @@ export function registerAdminPeopleRoutes(
           );
       reply.code(201);
       return respond(result.updated);
-    }
+    })
   );
 
   app.get(

@@ -54,7 +54,6 @@ import { registerStackRoutes } from "./routes/stack";
 import { registerAboutRoutes } from "./routes/about";
 import { AboutStore } from "./about/store";
 import { registerSteamRoutes } from "./routes/steam";
-import { registerUploadCleanup } from "./routes/read-upload";
 import { registerUploadRoutes } from "./routes/uploads";
 import { registerWebApp } from "./routes/web-app";
 import { CollectionSettingsStore } from "./media/collection-settings";
@@ -438,7 +437,6 @@ export async function buildServer({
   app.register(multipart, {
     limits: { fileSize: config.uploads.maxBytes, files: 1, fields: 0, parts: 1 }
   });
-  registerUploadCleanup(app);
   // Whatever an earlier run left half-received or half-written.
   await store
     .clearStaging()
