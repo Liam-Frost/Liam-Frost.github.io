@@ -1,12 +1,16 @@
 import LoadingSkeleton from "../../../web/src/components/LoadingSkeleton";
-import type {
-  AdminProject,
-  AdminStackTechnology,
-  AdminProjectUpdate,
-  LocalizedText,
-  ProjectImage,
-  ProjectLinks,
-  ProjectStatus
+import {
+  PROJECT_KINDS,
+  type AdminProject,
+  type AdminStackTechnology,
+  type AdminProjectUpdate,
+  type LocalizedText,
+  type ProjectChallenge,
+  type ProjectDetails,
+  type ProjectImage,
+  type ProjectKind,
+  type ProjectLinks,
+  type ProjectStatus
 } from "@liam-frost/shared";
 import { ArrowLeft, ExternalLink, ImagePlus, Trash2, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type FormEvent, useId } from "react";
@@ -43,7 +47,19 @@ type Draft = {
   endedAt: string;
   featured: boolean;
   visibility: AdminProject["visibility"];
+  details: ProjectDetails;
 };
+
+const KIND_LABELS: Record<ProjectKind, string> = {
+  personal: tr("个人项目"),
+  team: tr("团队项目"),
+  course: tr("课程项目"),
+  work: tr("工作项目"),
+  "open-source": tr("开源项目")
+};
+
+/** The list and text fields of the details that have one text per language. */
+type DetailText = "role" | "contributions" | "outcomes" | "collaborators";
 
 /** Same technology name, ignoring case, spaces, '.', '-' and '_' ("SpringBoot" is "Spring Boot"). */
 const techKey = (name: string) =>
@@ -72,7 +88,8 @@ function toDraft(project: AdminProject): Draft {
     startedAt: project.startedAt ?? "",
     endedAt: project.endedAt ?? "",
     featured: project.featured,
-    visibility: project.visibility
+    visibility: project.visibility,
+    details: project.details
   };
 }
 
@@ -129,6 +146,36 @@ function ProjectEditor({ project }: { project: AdminProject }) {
   const setText = (field: "title" | "summary" | "body", value: string) =>
     setDraft((d) => ({ ...d, [field]: { ...d[field], [lang]: value } }));
 
+  const setDetail = <K extends keyof ProjectDetails>(key: K, value: ProjectDetails[K]) =>
+    setDraft((d) => ({ ...d, details: { ...d.details, [key]: value } }));
+  const setDetailText = (field: DetailText, value: string) =>
+    setDraft((d) => ({
+      ...d,
+      details: { ...d.details, [field]: { ...d.details[field], [lang]: value } }
+    }));
+  const setChallenge = (field: keyof ProjectChallenge, value: string) =>
+    setDraft((d) => ({
+      ...d,
+      details: {
+        ...d.details,
+        challenge: {
+          ...d.details.challenge,
+          [field]: { ...d.details.challenge[field], [lang]: value }
+        }
+      }
+    }));
+  const setCaption = (imageId: string, value: string) =>
+    setDraft((d) => ({
+      ...d,
+      details: {
+        ...d.details,
+        captions: {
+          ...d.details.captions,
+          [imageId]: { ...d.details.captions[imageId], [lang]: value }
+        }
+      }
+    }));
+
   const stack = useStack();
   const technologyChoices = useMemo(() => technologyOptions(stack.data ?? []), [stack.data]);
   // Technologies by name; null when several have it (namesakes in two categories): pick one in the list.
@@ -172,6 +219,23 @@ function ProjectEditor({ project }: { project: AdminProject }) {
         : [...d.technologyIds, technologyId]
     }));
 
+  // The project's technologies by name, to mark the ones the owner worked with.
+  const technologyNames = useMemo(() => {
+    const byId = new Map(
+      (stack.data ?? []).flatMap((c) => c.technologies).map((t) => [t.id, t.name] as const)
+    );
+    return [...draft.technologyIds.flatMap((id) => byId.get(id) ?? []), ...draft.otherTechnologies];
+  }, [stack.data, draft.technologyIds, draft.otherTechnologies]);
+  const isOwn = (name: string) =>
+    draft.details.ownTechnologies.some((own) => own.toLowerCase() === name.toLowerCase());
+  const toggleOwn = (name: string) =>
+    setDetail(
+      "ownTechnologies",
+      isOwn(name)
+        ? draft.details.ownTechnologies.filter((own) => own.toLowerCase() !== name.toLowerCase())
+        : [...draft.details.ownTechnologies, name]
+    );
+
   const submit = (event: FormEvent) => {
     event.preventDefault();
     if (!Object.values(draft.title).some((t) => t?.trim())) {
@@ -182,10 +246,23 @@ function ProjectEditor({ project }: { project: AdminProject }) {
       setError(tr("结束月份不能早于开始月份"));
       return;
     }
+    const { myStartedAt, myEndedAt } = draft.details;
+    if (myStartedAt && myEndedAt && myEndedAt < myStartedAt) {
+      setError(tr("我的参与时间：结束月份不能早于开始月份"));
+      return;
+    }
     setError("");
-    const { technologyIds, otherTechnologies, ...fields } = draft;
+    const { technologyIds, otherTechnologies, details, ...fields } = draft;
     const body: AdminProjectUpdate = {
       ...fields,
+      details: {
+        ...details,
+        // The owner's own project has no team; technologies taken off the project are not own either.
+        teamSize: details.kind === "personal" ? null : details.teamSize,
+        ownTechnologies: details.ownTechnologies.filter((own) =>
+          technologyNames.some((name) => name.toLowerCase() === own.toLowerCase())
+        )
+      },
       startedAt: draft.startedAt || null,
       endedAt: draft.endedAt || null,
       // Links are also edited from the stack page: send them only when changed here, so an
@@ -310,6 +387,104 @@ function ProjectEditor({ project }: { project: AdminProject }) {
                 onChange={(e) => setText("body", e.target.value)}
               />
             </Field>
+
+            <h2 className="pt-3 text-[14px] font-semibold text-brand-dark">{tr("我做了什么")}</h2>
+            <Field
+              label={tr("我的角色")}
+              htmlFor="project-role"
+              hint={tr("显示在卡片和详情页，例如：后端负责人")}
+            >
+              <input
+                id="project-role"
+                className="field"
+                value={draft.details.role[lang] ?? ""}
+                maxLength={80}
+                onChange={(e) => setDetailText("role", e.target.value)}
+              />
+            </Field>
+            <Field
+              label={tr("我的贡献")}
+              htmlFor="project-contributions"
+              hint={tr("每行一条，写清做了什么、怎么做的")}
+            >
+              <textarea
+                id="project-contributions"
+                rows={5}
+                className="field resize-y leading-relaxed"
+                value={draft.details.contributions[lang] ?? ""}
+                maxLength={2000}
+                onChange={(e) => setDetailText("contributions", e.target.value)}
+              />
+            </Field>
+            <Field
+              label={tr("成果")}
+              htmlFor="project-outcomes"
+              hint={tr("每行一条，格式：数字 | 说明，例如：40% | 接口响应时间下降")}
+            >
+              <textarea
+                id="project-outcomes"
+                rows={3}
+                className="field resize-y leading-relaxed"
+                value={draft.details.outcomes[lang] ?? ""}
+                maxLength={600}
+                onChange={(e) => setDetailText("outcomes", e.target.value)}
+              />
+            </Field>
+            {(
+              [
+                ["problem", tr("难点：问题")],
+                ["solution", tr("难点：方案")],
+                ["result", tr("难点：结果")]
+              ] as const
+            ).map(([field, label]) => (
+              <Field key={field} label={label} htmlFor={`project-challenge-${field}`}>
+                <textarea
+                  id={`project-challenge-${field}`}
+                  rows={2}
+                  className="field resize-y leading-relaxed"
+                  value={draft.details.challenge[field][lang] ?? ""}
+                  maxLength={1000}
+                  onChange={(e) => setChallenge(field, e.target.value)}
+                />
+              </Field>
+            ))}
+            <Field
+              label={tr("协作者")}
+              htmlFor="project-collaborators"
+              hint={tr("每行一人，格式：姓名 | 分工 | 链接（分工和链接可省略）")}
+            >
+              <textarea
+                id="project-collaborators"
+                rows={3}
+                className="field resize-y leading-relaxed"
+                value={draft.details.collaborators[lang] ?? ""}
+                maxLength={1500}
+                onChange={(e) => setDetailText("collaborators", e.target.value)}
+              />
+            </Field>
+            {project.gallery.length ? (
+              <fieldset className="space-y-2">
+                <legend className="mb-1.5 text-[12.5px] font-medium text-brand-dark">
+                  {tr("截图说明")}
+                </legend>
+                {project.gallery.map((image, index) => (
+                  <div key={image.id} className="flex items-center gap-2.5">
+                    <img
+                      src={image.variants[0].url}
+                      alt=""
+                      className="h-10 w-16 flex-none rounded-md border border-line object-cover"
+                    />
+                    <input
+                      className="field"
+                      aria-label={tr("截图 {0} 的说明", index + 1)}
+                      value={draft.details.captions[image.id]?.[lang] ?? ""}
+                      maxLength={200}
+                      onChange={(e) => setCaption(image.id, e.target.value)}
+                    />
+                  </div>
+                ))}
+              </fieldset>
+            ) : null}
           </LanguageTabPanel>
         </section>
 
@@ -375,6 +550,61 @@ function ProjectEditor({ project }: { project: AdminProject }) {
                   className="field"
                   value={draft.endedAt}
                   onChange={(e) => set("endedAt", e.target.value)}
+                />
+              </Field>
+            </div>
+            <Field label={tr("项目性质")} htmlFor="project-kind">
+              <Select
+                id="project-kind"
+                value={draft.details.kind ?? ""}
+                onChange={(value) => setDetail("kind", (value || null) as ProjectKind | null)}
+                options={[
+                  { value: "", label: tr("未设置") },
+                  ...PROJECT_KINDS.map((kind) => ({ value: kind, label: KIND_LABELS[kind] }))
+                ]}
+              />
+            </Field>
+            {draft.details.kind !== "personal" ? (
+              <Field
+                label={tr("团队人数")}
+                htmlFor="project-team-size"
+                hint={tr("包含自己；留空则不显示")}
+              >
+                <input
+                  id="project-team-size"
+                  type="number"
+                  min={1}
+                  max={999}
+                  className="field"
+                  value={draft.details.teamSize ?? ""}
+                  onChange={(e) => {
+                    const size = Math.round(Number(e.target.value));
+                    setDetail("teamSize", e.target.value && size >= 1 ? Math.min(999, size) : null);
+                  }}
+                />
+              </Field>
+            ) : null}
+            <div className="grid grid-cols-2 gap-3">
+              <Field label={tr("我的参与：开始")} htmlFor="project-my-start">
+                <input
+                  id="project-my-start"
+                  type="month"
+                  className="field"
+                  value={draft.details.myStartedAt ?? ""}
+                  onChange={(e) => setDetail("myStartedAt", e.target.value || null)}
+                />
+              </Field>
+              <Field
+                label={tr("我的参与：结束")}
+                htmlFor="project-my-end"
+                hint={tr("与项目时间相同可留空")}
+              >
+                <input
+                  id="project-my-end"
+                  type="month"
+                  className="field"
+                  value={draft.details.myEndedAt ?? ""}
+                  onChange={(e) => setDetail("myEndedAt", e.target.value || null)}
                 />
               </Field>
             </div>
@@ -456,6 +686,28 @@ function ProjectEditor({ project }: { project: AdminProject }) {
                 onBlur={addTech}
               />
             </Field>
+            {technologyNames.length ? (
+              <fieldset>
+                <legend className="mb-1 text-[12.5px] font-medium text-brand-dark">
+                  {tr("我负责的技术")}
+                </legend>
+                <p className="mb-2 text-[12px] text-faint">
+                  {tr("团队项目里勾选你亲自用过的；都不勾选时详情页不作区分。")}
+                </p>
+                <div className="flex flex-wrap gap-x-3 gap-y-1.5 text-[13px]">
+                  {technologyNames.map((name) => (
+                    <label key={name} className="flex items-center gap-1.5">
+                      <input
+                        type="checkbox"
+                        checked={isOwn(name)}
+                        onChange={() => toggleOwn(name)}
+                      />
+                      {name}
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
+            ) : null}
           </Panel>
 
           <Panel title={tr("链接")}>

@@ -14,6 +14,18 @@ export function projectPeriod(
   return end && end !== project.startedAt ? `${project.startedAt} – ${end}` : project.startedAt;
 }
 
+/** "Team project · 4 people", "Personal project", or nothing when the kind is not set. */
+export function projectKindLine(
+  project: Pick<PublicProjectSummary, "kind" | "teamSize">,
+  t: ReturnType<typeof useI18n>["t"]
+) {
+  if (!project.kind) return "";
+  const kind = t(`projects.kind.${project.kind}`);
+  return project.teamSize
+    ? `${kind} · ${t("projects.teamSize", { count: project.teamSize })}`
+    : kind;
+}
+
 /** srcset for an uploaded image's generated sizes. */
 export function imageSrcSet(image: ProjectImage) {
   return image.variants.map((v) => `${v.url} ${v.width}w`).join(", ");
@@ -30,6 +42,8 @@ export default function ProjectCard({
   const title = pickLocalized(project.title, lang) || project.slug;
   const summary = pickLocalized(project.summary, lang);
   const period = projectPeriod(project, t("projects.present"));
+  const kind = projectKindLine(project, t);
+  const role = pickLocalized(project.role, lang);
 
   return (
     <Link
@@ -61,6 +75,12 @@ export default function ProjectCard({
           {period ? <span>{period}</span> : null}
         </div>
         <h3 className="projectTitle">{title}</h3>
+        {kind || role ? (
+          <p className="projectRole">
+            {kind ? <span className="projectKind">{kind}</span> : null}
+            {role ? <span>{role}</span> : null}
+          </p>
+        ) : null}
         {summary ? <p className="projectSummary">{summary}</p> : null}
         {project.techStack.length ? (
           <div className="tags">

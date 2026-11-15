@@ -1,4 +1,9 @@
-import type { LocalizedText, ProjectLinks, ProjectStatus } from "@liam-frost/shared";
+import {
+  normalizeProjectDetails,
+  type LocalizedText,
+  type ProjectLinks,
+  type ProjectStatus
+} from "@liam-frost/shared";
 
 import {
   Prisma,
@@ -59,6 +64,7 @@ function toRow({ technologies, ...record }: ProjectRecord): ProjectRow {
     gallery: record.gallery as StoredImage[],
     techStack: record.techStack as string[],
     links: record.links as ProjectLinks,
+    details: normalizeProjectDetails(record.details),
     status: STATUS_FROM_DB[record.status],
     visibility: record.visibility === "PRIVATE" ? "private" : "public"
   };

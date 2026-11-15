@@ -2186,5 +2186,38 @@ export const en: Record<string, string> = {
   "整个前台的配色，每套都有浅色和深色两种。只能在这里更换，访客不能更改。":
     "The public site's colours; each scheme has a light and a dark form. It can be changed only here, not by visitors.",
   "选择前台的配色方案，并决定访客首次访问时的显示偏好。":
-    "Choose the public site's colour scheme and what visitors see on their first visit."
+    "Choose the public site's colour scheme and what visitors see on their first visit.",
+  个人项目: "Personal project",
+  团队项目: "Team project",
+  课程项目: "Course project",
+  工作项目: "Work project",
+  开源项目: "Open-source project",
+  "我的参与时间：结束月份不能早于开始月份":
+    "My involvement: the end month cannot be before the start month",
+  我做了什么: "What I did",
+  我的角色: "My role",
+  "显示在卡片和详情页，例如：后端负责人":
+    "Shown on the card and the detail page, e.g. Backend lead",
+  我的贡献: "My contributions",
+  "每行一条，写清做了什么、怎么做的": "One per line: what you did and how",
+  成果: "Outcomes",
+  "每行一条，格式：数字 | 说明，例如：40% | 接口响应时间下降":
+    "One per line, as: number | label, e.g. 40% | faster API responses",
+  "难点：问题": "Challenge: problem",
+  "难点：方案": "Challenge: solution",
+  "难点：结果": "Challenge: result",
+  协作者: "Collaborators",
+  "每行一人，格式：姓名 | 分工 | 链接（分工和链接可省略）":
+    "One person per line, as: name | role | link (role and link are optional)",
+  截图说明: "Screenshot captions",
+  "截图 {0} 的说明": "Caption of screenshot {0}",
+  项目性质: "Kind of project",
+  团队人数: "Team size",
+  "包含自己；留空则不显示": "Yourself included; leave empty to hide it",
+  "我的参与：开始": "My involvement: start",
+  "我的参与：结束": "My involvement: end",
+  与项目时间相同可留空: "Leave empty when it matches the project's dates",
+  我负责的技术: "Technologies I worked with",
+  "团队项目里勾选你亲自用过的；都不勾选时详情页不作区分。":
+    "In a team project, tick the ones you used yourself; with none ticked the detail page does not tell them apart."
 };

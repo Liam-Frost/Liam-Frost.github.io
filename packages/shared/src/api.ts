@@ -1,3 +1,4 @@
+import type { ProjectDetails, ProjectKind, PublicProjectDetails } from "./projects";
 import type { FeaturedWallSettings } from "./featured-wall";
 import type { RotationMode } from "./rotation";
 
@@ -281,6 +282,8 @@ export type ProjectImage = {
   /** Largest size. */
   src: string;
   variants: PhotoVariantInfo[];
+  /** A project screenshot's caption, when it has one. */
+  caption?: LocalizedText;
 };
 
 /** Project fields shown in lists (home page, /projects). */
@@ -296,6 +299,11 @@ export type PublicProjectSummary = {
   startedAt: string | null;
   endedAt: string | null;
   featured: boolean;
+  kind: ProjectKind | null;
+  /** People in the team; null when not stated or the project is the owner's own. */
+  teamSize: number | null;
+  /** The owner's role in the project. */
+  role: LocalizedText;
 };
 
 /** A project's detail page. */
@@ -303,10 +311,13 @@ export type PublicProject = PublicProjectSummary & {
   /** Markdown per language. */
   body: LocalizedText;
   gallery: ProjectImage[];
+  details: PublicProjectDetails;
 };
 
-export type AdminProject = PublicProject & {
+export type AdminProject = Omit<PublicProject, "details"> & {
   id: string;
+  /** What the owner did, as stored. */
+  details: ProjectDetails;
   /** Linked technologies of the stack, in the project's order (hidden ones included). */
   technologyIds: string[];
   /** Technologies that are not in the stack, as plain names. */
@@ -335,6 +346,8 @@ export type AdminProjectUpdate = Partial<{
   featured: boolean;
   visibility: PhotoVisibility;
   gallery: string[];
+  /** Replaces the whole of the details. */
+  details: ProjectDetails;
 }>;
 
 export type AdminProjectsResponse = { projects: AdminProject[] };

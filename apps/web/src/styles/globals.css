@@ -2937,6 +2937,213 @@ html[data-theme="light"] .stackDetail {
   line-height: 1.6;
 }
 
+/* What the owner did in a project: kind, team, role, own technologies, outcomes, contributions,
+   the challenge, captions and collaborators. */
+.projectRole {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 8px;
+  margin: 0;
+  font-size: 13px;
+  font-weight: 620;
+}
+
+.projectKind {
+  color: var(--muted);
+  font-weight: 520;
+}
+
+.projectKind::after {
+  content: "·";
+  margin-left: 8px;
+  color: var(--faint);
+}
+
+.projectFacts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 14px 24px;
+  margin: 18px 0 0;
+  padding: 16px 0;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+.projectFacts dt {
+  color: var(--faint);
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+}
+
+.projectFacts dd {
+  margin: 4px 0 0;
+  font-size: 15px;
+  font-weight: 650;
+  line-height: 1.45;
+}
+
+.projectTech {
+  display: grid;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.projectTechRow {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+}
+
+.projectTechRow .tags {
+  margin-top: 0;
+}
+
+.projectTechLabel {
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
+.tagMine {
+  border-color: rgba(var(--mist-rgb), 0.6);
+  background: rgba(var(--mist-rgb), 0.28);
+  font-weight: 650;
+}
+
+.tagOther {
+  background: none;
+  color: var(--muted);
+}
+
+.projectOutcomes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+  margin: 24px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.projectOutcomes li {
+  display: grid;
+  gap: 2px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--card);
+}
+
+.projectOutcomes strong {
+  font-size: 24px;
+  font-weight: 750;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.projectOutcomes span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.projectContrib,
+.projectChallenge {
+  margin-top: 14px;
+  padding: clamp(18px, 3vw, 28px);
+}
+
+.projectContrib h2,
+.projectChallenge h2 {
+  margin: 0 0 10px;
+  font-size: 18px;
+  letter-spacing: -0.01em;
+}
+
+.projectContrib ul {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding-left: 1.2em;
+  line-height: 1.65;
+}
+
+.projectChallenge dl {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+}
+
+.projectChallenge dl > div {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  gap: 12px;
+}
+
+.projectChallenge dt {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.75;
+}
+
+.projectChallenge dd {
+  margin: 0;
+  line-height: 1.65;
+}
+
+.projectDetail .card.prose {
+  margin-top: 14px;
+}
+
+.projectFigure {
+  margin: 0;
+}
+
+.projectFigure figcaption {
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.projectPeople {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.projectPeople li {
+  display: grid;
+  gap: 2px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.projectPeople a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.projectPeople a:hover strong {
+  text-decoration: underline;
+}
+
+.projectPeople span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+@media (max-width: 560px) {
+  .projectTechRow {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 6px;
+  }
+}
+
 /* Project detail */
 .projectDetail .projectMeta {
   margin-bottom: 10px;

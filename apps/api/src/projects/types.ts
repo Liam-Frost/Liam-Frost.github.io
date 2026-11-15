@@ -1,6 +1,7 @@
 import type {
   LocalizedText,
   PhotoVisibility,
+  ProjectDetails,
   ProjectLinks,
   ProjectStatus
 } from "@liam-frost/shared";
@@ -38,6 +39,7 @@ export type ProjectRow = {
   /** Linked technologies of the stack, in the project's order. */
   technologies: ProjectTechnologyRef[];
   links: ProjectLinks;
+  details: ProjectDetails;
   status: ProjectStatus;
   startedAt: string | null;
   endedAt: string | null;
