@@ -25,6 +25,7 @@ import ProjectsPage from "../pages/Projects";
 import { useI18n } from "../lib/i18n";
 import { scrollToElement, startSmoothScroll } from "../lib/smoothScroll";
 import { useTheme } from "../lib/useTheme";
+import { usePalette } from "../lib/usePalette";
 
 // Markdown is only needed on project/privacy pages; keep it out of the main bundle.
 const ProjectDetailPage = lazy(() => import("../pages/ProjectDetail"));
@@ -36,6 +37,7 @@ export default function App() {
   const settings = useSiteSettings();
   const presentation = usePresentation();
   const { theme, cycleTheme } = useTheme();
+  usePalette();
   // Smooth scrolling for the whole site (lib/smoothScroll.ts).
   useEffect(() => startSmoothScroll(), []);
 

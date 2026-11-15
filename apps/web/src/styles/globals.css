@@ -1,9 +1,20 @@
 :root {
   /* Palette */
-  --navy: #213448;
-  --blue: #547792;
-  --mist: #94b4c1;
-  --sand: #eae0cf;
+  /* Four colours as channels, so every tint is derived from them; a theme (styles/themes.css)
+     replaces these. navy: the dark base and the ink on light; sand: the light base and the ink on
+     dark; blue and mist: the accents. ink2 and paper2: the second background of each mode. */
+  --navy-rgb: 33, 52, 72;
+  --blue-rgb: 84, 119, 146;
+  --mist-rgb: 148, 180, 193;
+  --sand-rgb: 234, 224, 207;
+  --ink2-rgb: 27, 42, 62;
+  --paper2-rgb: 224, 213, 196;
+  --navy: rgb(var(--navy-rgb));
+  --blue: rgb(var(--blue-rgb));
+  --mist: rgb(var(--mist-rgb));
+  --sand: rgb(var(--sand-rgb));
+  --chevron-dark: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23eae0cf' stroke-opacity='0.8' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  --chevron-light: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23213448' stroke-opacity='0.7' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
 
   /* Typography (per-language) */
   --font-zh:
@@ -26,18 +37,18 @@
 
   /* Theme (default: dark) */
   --bg: var(--navy);
-  --bg2: #1b2a3e;
+  --bg2: rgb(var(--ink2-rgb));
 
   /* Frosted glass (≈10% opacity base) */
-  --card: rgba(234, 224, 207, 0.1);
-  --card2: rgba(234, 224, 207, 0.16);
-  --text: rgba(234, 224, 207, 0.96);
-  --muted: rgba(234, 224, 207, 0.82);
-  --faint: rgba(234, 224, 207, 0.78);
-  --border: rgba(234, 224, 207, 0.22);
+  --card: rgba(var(--sand-rgb), 0.1);
+  --card2: rgba(var(--sand-rgb), 0.16);
+  --text: rgba(var(--sand-rgb), 0.96);
+  --muted: rgba(var(--sand-rgb), 0.82);
+  --faint: rgba(var(--sand-rgb), 0.78);
+  --border: rgba(var(--sand-rgb), 0.22);
   /* Opaque enough to read over anything: tooltips and opened select lists. */
-  --popover: rgba(27, 42, 62, 0.94);
-  --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23eae0cf' stroke-opacity='0.8' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  --popover: rgba(var(--ink2-rgb), 0.94);
+  --select-chevron: var(--chevron-dark);
 
   --accent: var(--blue);
   --accent2: var(--mist);
@@ -46,10 +57,10 @@
   --emphasis: var(--mist);
 
   /* Background FX */
-  --fx-a: rgba(148, 180, 193, 0.46);
-  --fx-b: rgba(84, 119, 146, 0.38);
-  --fx-c: rgba(234, 224, 207, 0.22);
-  --fx-v-top: rgba(234, 224, 207, 0.1);
+  --fx-a: rgba(var(--mist-rgb), 0.46);
+  --fx-b: rgba(var(--blue-rgb), 0.38);
+  --fx-c: rgba(var(--sand-rgb), 0.22);
+  --fx-v-top: rgba(var(--sand-rgb), 0.1);
   --fx-v-bottom: rgba(0, 0, 0, 0.22);
 
   --shadow: 0 18px 54px rgba(0, 0, 0, 0.22);
@@ -110,24 +121,24 @@ html[data-lang="ja"] {
 html[data-theme="light"] {
   --bg: var(--sand);
   --emphasis: var(--blue);
-  --bg2: #e0d5c4;
+  --bg2: rgb(var(--paper2-rgb));
 
   --card: rgba(255, 255, 255, 0.74);
   --card2: rgba(255, 255, 255, 0.86);
-  --text: rgba(33, 52, 72, 0.95);
-  --muted: rgba(33, 52, 72, 0.78);
-  --faint: rgba(33, 52, 72, 0.76);
-  --border: rgba(33, 52, 72, 0.16);
-  --popover: rgba(250, 247, 241, 0.96);
-  --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23213448' stroke-opacity='0.7' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  --text: rgba(var(--navy-rgb), 0.95);
+  --muted: rgba(var(--navy-rgb), 0.78);
+  --faint: rgba(var(--navy-rgb), 0.76);
+  --border: rgba(var(--navy-rgb), 0.16);
+  --popover: color-mix(in srgb, var(--sand) 30%, rgba(255, 255, 255, 0.96));
+  --select-chevron: var(--chevron-light);
 
-  --fx-a: rgba(148, 180, 193, 0.26);
-  --fx-b: rgba(84, 119, 146, 0.18);
-  --fx-c: rgba(33, 52, 72, 0.12);
-  --fx-v-top: rgba(148, 180, 193, 0.16);
-  --fx-v-bottom: rgba(33, 52, 72, 0.1);
+  --fx-a: rgba(var(--mist-rgb), 0.26);
+  --fx-b: rgba(var(--blue-rgb), 0.18);
+  --fx-c: rgba(var(--navy-rgb), 0.12);
+  --fx-v-top: rgba(var(--mist-rgb), 0.16);
+  --fx-v-bottom: rgba(var(--navy-rgb), 0.1);
 
-  --shadow: 0 18px 54px rgba(33, 52, 72, 0.14);
+  --shadow: 0 18px 54px rgba(var(--navy-rgb), 0.14);
   color-scheme: light;
 }
 
@@ -135,24 +146,24 @@ html[data-theme="light"] {
   html[data-theme="system"] {
     --bg: var(--sand);
     --emphasis: var(--blue);
-    --bg2: #e0d5c4;
+    --bg2: rgb(var(--paper2-rgb));
 
     --card: rgba(255, 255, 255, 0.74);
     --card2: rgba(255, 255, 255, 0.86);
-    --text: rgba(33, 52, 72, 0.95);
-    --muted: rgba(33, 52, 72, 0.78);
-    --faint: rgba(33, 52, 72, 0.76);
-    --border: rgba(33, 52, 72, 0.16);
-    --popover: rgba(250, 247, 241, 0.96);
-    --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23213448' stroke-opacity='0.7' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    --text: rgba(var(--navy-rgb), 0.95);
+    --muted: rgba(var(--navy-rgb), 0.78);
+    --faint: rgba(var(--navy-rgb), 0.76);
+    --border: rgba(var(--navy-rgb), 0.16);
+    --popover: color-mix(in srgb, var(--sand) 30%, rgba(255, 255, 255, 0.96));
+    --select-chevron: var(--chevron-light);
 
-    --fx-a: rgba(148, 180, 193, 0.26);
-    --fx-b: rgba(84, 119, 146, 0.18);
-    --fx-c: rgba(33, 52, 72, 0.12);
-    --fx-v-top: rgba(148, 180, 193, 0.16);
-    --fx-v-bottom: rgba(33, 52, 72, 0.1);
+    --fx-a: rgba(var(--mist-rgb), 0.26);
+    --fx-b: rgba(var(--blue-rgb), 0.18);
+    --fx-c: rgba(var(--navy-rgb), 0.12);
+    --fx-v-top: rgba(var(--mist-rgb), 0.16);
+    --fx-v-bottom: rgba(var(--navy-rgb), 0.1);
 
-    --shadow: 0 18px 54px rgba(33, 52, 72, 0.14);
+    --shadow: 0 18px 54px rgba(var(--navy-rgb), 0.14);
     color-scheme: light;
   }
 }
@@ -234,7 +245,7 @@ img {
 }
 
 ::selection {
-  background: rgba(148, 180, 193, 0.32);
+  background: rgba(var(--mist-rgb), 0.32);
 }
 
 .container {
@@ -304,11 +315,11 @@ html[data-perf-filters="off"] .photoCard,
 html[data-perf-filters="off"] .photoOverlay,
 html[data-perf-filters="off"] .metaItem,
 html[data-perf-filters="off"] .input {
-  background: rgba(234, 224, 207, 0.12);
+  background: rgba(var(--sand-rgb), 0.12);
 }
 
 html[data-perf-filters="off"] .select {
-  background-color: rgba(234, 224, 207, 0.12);
+  background-color: rgba(var(--sand-rgb), 0.12);
 }
 
 html[data-theme="light"][data-perf-filters="off"] .photoCard,
@@ -421,7 +432,7 @@ html[data-theme="light"] .bgFx::after {
 
   border-radius: 0;
 
-  box-shadow: 0 0 0 6px rgba(148, 180, 193, 0.2);
+  box-shadow: 0 0 0 6px rgba(var(--mist-rgb), 0.2);
 }
 
 @media (prefers-reduced-motion: no-preference) {
@@ -495,7 +506,7 @@ html[data-theme="light"] .bgFx::after {
 }
 
 .btn:focus-visible {
-  outline: 3px solid rgba(148, 180, 193, 0.5);
+  outline: 3px solid rgba(var(--mist-rgb), 0.5);
   outline-offset: 2px;
 }
 
@@ -511,26 +522,26 @@ html[data-theme="light"] .bgFx::after {
 }
 
 .btnPrimary {
-  border-color: rgba(84, 119, 146, 0.35);
-  background: linear-gradient(135deg, rgba(84, 119, 146, 0.95), rgba(148, 180, 193, 0.9));
-  color: rgba(234, 224, 207, 0.96);
+  border-color: rgba(var(--blue-rgb), 0.35);
+  background: linear-gradient(135deg, rgba(var(--blue-rgb), 0.95), rgba(var(--mist-rgb), 0.9));
+  color: rgba(var(--sand-rgb), 0.96);
   background-size: 140% 140%;
   background-position: 0% 50%;
 }
 
 .btnPrimary:hover {
-  background: linear-gradient(135deg, rgba(84, 119, 146, 0.95), rgba(148, 180, 193, 0.9));
+  background: linear-gradient(135deg, rgba(var(--blue-rgb), 0.95), rgba(var(--mist-rgb), 0.9));
   background-position: 100% 50%;
 }
 
 .btnSoft {
-  background: rgba(148, 180, 193, 0.18);
-  border-color: rgba(148, 180, 193, 0.28);
+  background: rgba(var(--mist-rgb), 0.18);
+  border-color: rgba(var(--mist-rgb), 0.28);
 }
 
 .btnSoft:hover {
-  background: rgba(148, 180, 193, 0.24);
-  border-color: rgba(148, 180, 193, 0.34);
+  background: rgba(var(--mist-rgb), 0.24);
+  border-color: rgba(var(--mist-rgb), 0.34);
 }
 
 .btnGhost {
@@ -1351,14 +1362,14 @@ html[data-theme="light"] .stackDetail {
 .stackName {
   min-width: 0;
   font-size: 14px;
-  font-weight: 560;
+  font-weight: 400;
   line-height: 1.3;
   overflow-wrap: anywhere;
 }
 
-/* A slight emphasis only: every technology keeps the same size. */
+/* Primary technologies differ from the rest by weight alone: heavy against regular. */
 .stackItemPrimary .stackName {
-  font-weight: 720;
+  font-weight: 800;
 }
 
 .stackItemArrow {
@@ -1574,7 +1585,7 @@ html[data-theme="light"] .stackDetail {
   aspect-ratio: 2 / 1;
   overflow: hidden;
   border-radius: 10px;
-  background: rgba(148, 180, 193, 0.14);
+  background: rgba(var(--mist-rgb), 0.14);
   color: var(--muted);
   font-size: 15px;
   font-weight: 750;
@@ -1923,8 +1934,8 @@ html[data-theme="light"] .stackDetail {
 }
 
 .input:focus {
-  border-color: rgba(148, 180, 193, 0.5);
-  box-shadow: 0 0 0 3px rgba(148, 180, 193, 0.22);
+  border-color: rgba(var(--mist-rgb), 0.5);
+  box-shadow: 0 0 0 3px rgba(var(--mist-rgb), 0.22);
 }
 
 /*
@@ -1955,12 +1966,12 @@ html[data-theme="light"] .stackDetail {
 }
 
 .select:hover {
-  border-color: rgba(148, 180, 193, 0.42);
+  border-color: rgba(var(--mist-rgb), 0.42);
 }
 
 .select:focus-visible {
-  border-color: rgba(148, 180, 193, 0.5);
-  box-shadow: 0 0 0 3px rgba(148, 180, 193, 0.22);
+  border-color: rgba(var(--mist-rgb), 0.5);
+  box-shadow: 0 0 0 3px rgba(var(--mist-rgb), 0.22);
 }
 
 .select option {
@@ -2019,7 +2030,7 @@ html[data-theme="light"] .stackDetail {
 
   .select option:hover,
   .select option:focus-visible {
-    background: rgba(148, 180, 193, 0.2);
+    background: rgba(var(--mist-rgb), 0.2);
     outline: none;
   }
 
@@ -2122,7 +2133,7 @@ html[data-theme="light"] .stackDetail {
 
 .photoCard:hover {
   transform: translateY(-2px);
-  border-color: rgba(148, 180, 193, 0.38);
+  border-color: rgba(var(--mist-rgb), 0.38);
   background: var(--card2);
 }
 
@@ -2131,7 +2142,7 @@ html[data-theme="light"] .stackDetail {
 }
 
 .photoCard:focus-visible {
-  outline: 3px solid rgba(148, 180, 193, 0.5);
+  outline: 3px solid rgba(var(--mist-rgb), 0.5);
   outline-offset: 3px;
 }
 
@@ -2187,15 +2198,15 @@ html[data-theme="light"] .stackDetail {
   color: var(--text);
   padding: 6px 10px;
   border-radius: 999px;
-  border: 1px solid rgba(148, 180, 193, 0.3);
-  background: rgba(148, 180, 193, 0.16);
+  border: 1px solid rgba(var(--mist-rgb), 0.3);
+  background: rgba(var(--mist-rgb), 0.16);
 }
 
 /* Modal */
 .backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(33, 52, 72, 0.66);
+  background: rgba(var(--navy-rgb), 0.66);
   display: grid;
   place-items: center;
   padding: 20px;
@@ -2246,7 +2257,7 @@ html[data-theme="light"] .stackDetail {
 .modalMedia {
   width: var(--media-w);
   height: var(--media-h);
-  background: rgba(33, 52, 72, 0.18);
+  background: rgba(var(--navy-rgb), 0.18);
   overflow: hidden;
   min-width: 0;
   min-height: 0;
@@ -2836,12 +2847,12 @@ html[data-theme="light"] .stackDetail {
 
 .projectCard:hover {
   transform: translateY(-2px);
-  border-color: rgba(148, 180, 193, 0.38);
+  border-color: rgba(var(--mist-rgb), 0.38);
   background: var(--card2);
 }
 
 .projectCard:focus-visible {
-  outline: 3px solid rgba(148, 180, 193, 0.5);
+  outline: 3px solid rgba(var(--mist-rgb), 0.5);
   outline-offset: 3px;
 }
 
@@ -2850,7 +2861,7 @@ html[data-theme="light"] .stackDetail {
 .projectCover {
   aspect-ratio: 2 / 1;
   overflow: hidden;
-  background: rgba(148, 180, 193, 0.14);
+  background: rgba(var(--mist-rgb), 0.14);
   border-bottom: 1px solid var(--border);
 }
 
@@ -2902,11 +2913,11 @@ html[data-theme="light"] .stackDetail {
   padding: 3px 9px;
   border-radius: 999px;
   border: 1px solid var(--border);
-  background: rgba(148, 180, 193, 0.16);
+  background: rgba(var(--mist-rgb), 0.16);
 }
 
 .projectStatus-in-progress {
-  border-color: rgba(148, 180, 193, 0.45);
+  border-color: rgba(var(--mist-rgb), 0.45);
 }
 
 .projectStatus-archived {
@@ -2962,7 +2973,7 @@ html[data-theme="light"] .stackDetail {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   overflow: hidden;
-  background: rgba(148, 180, 193, 0.14);
+  background: rgba(var(--mist-rgb), 0.14);
   box-shadow: var(--shadow);
   cursor: zoom-in;
 }
@@ -3086,7 +3097,7 @@ html[data-theme="light"] .stackDetail {
   font-size: 0.9em;
   padding: 2px 6px;
   border-radius: 6px;
-  background: rgba(148, 180, 193, 0.16);
+  background: rgba(var(--mist-rgb), 0.16);
 }
 
 .prose pre {
@@ -3262,13 +3273,13 @@ html[data-theme="light"] .stackDetail {
 
 .mediaCard:hover {
   transform: translateY(-2px);
-  border-color: rgba(148, 180, 193, 0.38);
+  border-color: rgba(var(--mist-rgb), 0.38);
   background: var(--card2);
 }
 
 .mediaCard:focus-visible,
 .mediaRow:focus-visible {
-  outline: 3px solid rgba(148, 180, 193, 0.5);
+  outline: 3px solid rgba(var(--mist-rgb), 0.5);
   outline-offset: 3px;
 }
 
@@ -3276,7 +3287,7 @@ html[data-theme="light"] .stackDetail {
   position: relative;
   aspect-ratio: 2 / 3;
   overflow: hidden;
-  background: rgba(148, 180, 193, 0.14);
+  background: rgba(var(--mist-rgb), 0.14);
 }
 
 .mediaPoster img,
@@ -3305,8 +3316,8 @@ html[data-theme="light"] .stackDetail {
   padding: 3px 8px;
   border-radius: 999px;
   color: var(--text);
-  background: rgba(148, 180, 193, 0.24);
-  border: 1px solid rgba(148, 180, 193, 0.36);
+  background: rgba(var(--mist-rgb), 0.24);
+  border: 1px solid rgba(var(--mist-rgb), 0.36);
   white-space: nowrap;
 }
 
@@ -3314,7 +3325,7 @@ html[data-theme="light"] .stackDetail {
   position: absolute;
   top: 8px;
   left: 8px;
-  background: rgba(33, 52, 72, 0.72);
+  background: rgba(var(--navy-rgb), 0.72);
   color: #fff;
   border-color: transparent;
 }
@@ -3404,7 +3415,7 @@ html[data-theme="light"] .stackDetail {
 }
 
 .mediaRow:hover {
-  border-color: rgba(148, 180, 193, 0.38);
+  border-color: rgba(var(--mist-rgb), 0.38);
   background: var(--card2);
 }
 
@@ -3413,7 +3424,7 @@ html[data-theme="light"] .stackDetail {
   aspect-ratio: 2 / 3;
   border-radius: 8px;
   overflow: hidden;
-  background: rgba(148, 180, 193, 0.14);
+  background: rgba(var(--mist-rgb), 0.14);
 }
 
 .mediaRowPoster.isSquare,
@@ -3541,7 +3552,7 @@ html[data-theme="light"] .stackDetail {
 }
 
 .playButton:focus-visible {
-  outline: 3px solid rgba(148, 180, 193, 0.7);
+  outline: 3px solid rgba(var(--mist-rgb), 0.7);
   outline-offset: 2px;
 }
 
@@ -3606,12 +3617,12 @@ html[data-theme="light"] .stackDetail {
 
 .groupCard:hover {
   transform: translateY(-2px);
-  border-color: rgba(148, 180, 193, 0.38);
+  border-color: rgba(var(--mist-rgb), 0.38);
   background: var(--card2);
 }
 
 .groupCard:focus-visible {
-  outline: 3px solid rgba(148, 180, 193, 0.5);
+  outline: 3px solid rgba(var(--mist-rgb), 0.5);
   outline-offset: 3px;
 }
 
@@ -3749,7 +3760,7 @@ html[data-theme="light"] .stackDetail {
 .reviewRatingBar {
   height: 8px;
   border-radius: 999px;
-  background: rgba(148, 180, 193, 0.18);
+  background: rgba(var(--mist-rgb), 0.18);
   overflow: hidden;
 }
 
@@ -3799,13 +3810,13 @@ html[data-theme="light"] .stackDetail {
 
 .personCard:hover {
   transform: translateY(-2px);
-  border-color: rgba(148, 180, 193, 0.38);
+  border-color: rgba(var(--mist-rgb), 0.38);
   background: var(--card2);
 }
 
 .personCard:focus-visible,
 .linkRow:focus-visible {
-  outline: 3px solid rgba(148, 180, 193, 0.5);
+  outline: 3px solid rgba(var(--mist-rgb), 0.5);
   outline-offset: 3px;
 }
 
@@ -3815,7 +3826,7 @@ html[data-theme="light"] .stackDetail {
   margin-bottom: 6px;
   border-radius: 50%;
   overflow: hidden;
-  background: rgba(148, 180, 193, 0.14);
+  background: rgba(var(--mist-rgb), 0.14);
 }
 
 .personCardPhoto img {
@@ -3866,7 +3877,7 @@ html[data-theme="light"] .stackDetail {
 }
 
 .linkRow:hover {
-  border-color: rgba(148, 180, 193, 0.38);
+  border-color: rgba(var(--mist-rgb), 0.38);
   background: var(--card2);
 }
 
@@ -3875,7 +3886,7 @@ html[data-theme="light"] .stackDetail {
   aspect-ratio: 2 / 3;
   border-radius: 6px;
   overflow: hidden;
-  background: rgba(148, 180, 193, 0.14);
+  background: rgba(var(--mist-rgb), 0.14);
 }
 
 .linkRowThumb.isSquare {
@@ -3990,7 +4001,7 @@ html[data-theme="light"] .stackDetail {
   aspect-ratio: 2 / 3;
   border-radius: 12px;
   overflow: hidden;
-  background: rgba(148, 180, 193, 0.14);
+  background: rgba(var(--mist-rgb), 0.14);
   box-shadow: var(--shadow);
 }
 

@@ -89,6 +89,9 @@ describe("grouped website settings", () => {
       expect((await save("preferences", { theme: "injected", language: "en" })).statusCode).toBe(
         400
       );
+      expect(
+        (await save("preferences", { palette: "neon", theme: "dark", language: "en" })).statusCode
+      ).toBe(400);
       const security = await app.inject({
         url: "/api/admin/account",
         headers
@@ -151,6 +154,13 @@ describe("grouped website settings", () => {
       expect((await app.inject({ url: "/api/site-settings" })).json().navigation.refraction).toBe(
         2.5
       );
+      // Saved before colour schemes existed: reads as the default one.
+      await settings.set("site.preferences", { theme: "dark", language: "en" });
+      expect((await app.inject({ url: "/api/site-settings" })).json().preferences).toEqual({
+        palette: "mist",
+        theme: "dark",
+        language: "en"
+      });
       await settings.set("site.preferences", { theme: "broken" });
       expect((await app.inject({ url: "/api/site-settings" })).statusCode).toBe(503);
       expect(await settings.get("site.preferences")).toEqual({ theme: "broken" });

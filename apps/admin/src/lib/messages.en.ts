@@ -2175,5 +2175,16 @@ export const en: Record<string, string> = {
   "删除的照片和版本，以及项目、收藏等模块里被替换或删除的图片，在这里保留 {0} 天，之后连同图片文件一起彻底删除。保留天数可以在网站设置的“图片管理”里调整。":
     "Deleted photos and versions, and images replaced or deleted in projects, the collection and other sections, are kept here for {0} days, then removed for good with their files. The number of days is set under Site settings → Image management.",
   "This image cannot be put back; download it and add it again":
-    "This image cannot be put back; download it and add it again"
+    "This image cannot be put back; download it and add it again",
+  雾蓝: "Mist",
+  墨绿: "Pine",
+  黑白: "Mono",
+  午夜: "Midnight",
+  石墨: "Graphite",
+  配色方案: "Colour scheme",
+  使用中: "In use",
+  "整个前台的配色，每套都有浅色和深色两种。只能在这里更换，访客不能更改。":
+    "The public site's colours; each scheme has a light and a dark form. It can be changed only here, not by visitors.",
+  "选择前台的配色方案，并决定访客首次访问时的显示偏好。":
+    "Choose the public site's colour scheme and what visitors see on their first visit."
 };

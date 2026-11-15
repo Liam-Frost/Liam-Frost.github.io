@@ -1,5 +1,11 @@
 # Development Log
 
+## 2026-11-15: Colour schemes and primary technologies
+
+- Friends who tried the site could not tell primary technologies from the rest. Several stronger treatments were tried in a local demo (text chips for the rest, a tile, two kinds of glass frame) and rejected; the result is weight alone, 800 against 400 instead of 720 against 560, with primary technologies first in each category.
+- Colour schemes: the stylesheets' literal palette colours became four colour channels plus a second background per mode, so a scheme replaces six values and gets a light and a dark form. Five presets (mist, pine, mono, midnight, graphite) are chosen in the admin under 默认显示与语言; visitors cannot change the scheme, only light and dark. See `decisions.md`.
+- A local demo of more project fields (kind, team, role, contributions, outcomes) is kept on the unpushed branch `demo/stack-tiers-project-dimensions`; nothing was decided.
+
 ## 2026-11-10: Image file management, step 1 (upload queue)
 
 - The user reported slow batch uploads with no retry, and asked for a full image file management system. The confirmed plan is `plan-image-management.md` (six steps).
