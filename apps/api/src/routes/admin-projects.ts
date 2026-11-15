@@ -134,6 +134,7 @@ export function registerAdminProjectRoutes(
     const {
       gallery: galleryOrder,
       otherTechnologies,
+      details,
       ...patch
     } = parseInput(projectUpdateSchema, request.body);
     return lock.run(id, () =>
@@ -166,6 +167,21 @@ export function registerAdminProjectRoutes(
           await save(row.id, {
             ...patch,
             ...(otherTechnologies ? { techStack: otherTechnologies } : {}),
+            ...(details
+              ? {
+                  details: {
+                    ...details,
+                    // Captions belong to screenshots: empty ones and those of removed images go.
+                    captions: Object.fromEntries(
+                      Object.entries(details.captions).filter(
+                        ([imageId, caption]) =>
+                          Object.keys(caption).length &&
+                          row.gallery.some((image) => image.id === imageId)
+                      )
+                    )
+                  }
+                }
+              : {}),
             ...(gallery ? { gallery } : {})
           })
         );

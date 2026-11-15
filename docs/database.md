@@ -107,6 +107,8 @@ The home page's tech stack (migration `20261110090000_stack`, which also inserts
 
 `ProjectTechnology` (migration `20261111090000_project_technologies`) links projects and technologies: primary key `(projectId, technologyId)`, an index on `technologyId`, `sortOrder` (position in the project's list) and `createdAt`. Both foreign keys cascade: deleting a project or a technology deletes its links, never the other side. `Project.techStack` keeps only technologies that are not in the stack, as plain names; the migration moved the names that match a technology into links.
 
+`Project.details` (migration `20261124090000_project_details`, JSON, default `{}`) holds what the owner did in a project: kind, team size, role, own months, contributions, outcomes, challenge, collaborators, own technologies and screenshot captions. Its shape is `ProjectDetails` in `packages/shared/src/projects.ts`; a project saved before reads as empty details.
+
 ## Person and MediaRelation Models
 
 People linked to collection entries (migration `20261102090000_people_relations`):

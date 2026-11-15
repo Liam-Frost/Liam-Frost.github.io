@@ -4,6 +4,8 @@ import { join } from "node:path";
 import sharp from "sharp";
 import { beforeAll, describe, expect, it } from "vitest";
 
+import { EMPTY_PROJECT_DETAILS } from "@liam-frost/shared";
+
 import { buildTestServer, csrf, login, multipartFile } from "./helpers";
 import { MemoryProjectRepository } from "./memory-project-repository";
 
@@ -243,5 +245,71 @@ describe("admin project management", () => {
       payload: { ids: [ids[2], ids[0], ids[1]] }
     });
     expect(ok.json().projects.map((p: { slug: string }) => p.slug)).toEqual(["c", "a", "b"]);
+  });
+
+  it("saves what the owner did and shows it on the public project", async () => {
+    const { app, create, patch, upload } = await setup();
+    const { id } = (await create("team")).json().project;
+    expect((await create("team2")).json().project.details).toEqual(EMPTY_PROJECT_DETAILS);
+    const shot = (await upload(id, "gallery")).json().project.gallery[0].id;
+    const details = {
+      ...EMPTY_PROJECT_DETAILS,
+      kind: "team",
+      teamSize: 4,
+      role: { en: "Backend lead", zh: "" },
+      myStartedAt: "2025-02",
+      myEndedAt: "2025-05",
+      contributions: { en: "Designed the API\nWrote the deployment scripts" },
+      outcomes: { en: "18 | endpoints" },
+      challenge: { problem: { en: "No framework" }, solution: {}, result: {} },
+      collaborators: { en: "Ada | frontend | https://example.com/ada" },
+      ownTechnologies: ["fastify"],
+      captions: {
+        [shot]: { en: "The dashboard" },
+        removedimage: { en: "A removed screenshot" }
+      }
+    };
+
+    expect((await patch(id, { details: { ...details, kind: "hobby" } })).statusCode).toBe(400);
+    expect((await patch(id, { details: { ...details, teamSize: 0 } })).statusCode).toBe(400);
+    expect((await patch(id, { details: { ...details, myEndedAt: "2025-01" } })).statusCode).toBe(
+      400
+    );
+    expect((await patch(id, { details: { kind: "team" } })).statusCode).toBe(400);
+
+    const saved = await patch(id, {
+      details,
+      otherTechnologies: ["Fastify", "React"],
+      visibility: "public"
+    });
+    expect(saved.statusCode, saved.body).toBe(200);
+    // Empty texts are dropped, and so is the caption of an image the project does not have.
+    expect(saved.json().project.details).toEqual({
+      ...details,
+      role: { en: "Backend lead" },
+      captions: { [shot]: { en: "The dashboard" } }
+    });
+
+    const list = (await app.inject("/api/projects")).json();
+    expect(list[0]).toMatchObject({ kind: "team", teamSize: 4, role: { en: "Backend lead" } });
+    expect(list[0].details).toBeUndefined();
+    const shown = (await app.inject("/api/projects/team")).json();
+    expect(shown.details).toEqual({
+      myStartedAt: "2025-02",
+      myEndedAt: "2025-05",
+      contributions: details.contributions,
+      outcomes: details.outcomes,
+      challenge: details.challenge,
+      collaborators: details.collaborators,
+      ownTechStack: ["Fastify"]
+    });
+    expect(shown.gallery[0].caption).toEqual({ en: "The dashboard" });
+
+    // The owner's own project has no team size to show.
+    await patch(id, { details: { ...details, kind: "personal" } });
+    expect((await app.inject("/api/projects/team")).json()).toMatchObject({
+      kind: "personal",
+      teamSize: null
+    });
   });
 });

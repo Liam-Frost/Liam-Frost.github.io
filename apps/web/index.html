@@ -63,6 +63,11 @@
           const savedTheme = localStorage.getItem("theme");
           if (savedTheme) document.documentElement.setAttribute("data-theme", savedTheme);
 
+          // The colour scheme of the last visit (lib/usePalette.ts), so the page does not repaint.
+          const savedPalette = localStorage.getItem("site-palette");
+          if (savedPalette && /^[a-z]+$/.test(savedPalette))
+            document.documentElement.setAttribute("data-palette", savedPalette);
+
           const savedLang = localStorage.getItem("lang");
           if (savedLang) {
             document.documentElement.setAttribute("data-lang", savedLang);

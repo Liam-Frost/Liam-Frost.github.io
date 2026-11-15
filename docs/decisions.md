@@ -2,6 +2,10 @@
 
 ## User Decisions
 
+### 2026-11-15: Colour schemes and primary technologies
+
+The user chose five colour schemes from a local demo (mist, pine, mono, midnight, graphite) and asked that the scheme be changed only in the admin settings: the public site has no picker, and keeps its light / dark / system toggle. For primary technologies the user rejected chips, tiles and glass frames in turn and asked for the original weight-only distinction with a larger difference.
+
 ### 2026-11-06: Lenis smooth scrolling (Stage 26)
 
 After recordings showed that the reference's feel comes largely from Lenis (a wheel notch glides about 600ms instead of jumping), the user asked for Lenis on the whole site, reversing the earlier "no smooth-scrolling library". Touch and reduced motion stay native.

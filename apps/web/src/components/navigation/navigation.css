@@ -3,14 +3,14 @@
 /* Tokens CupertinoCN reads, mapped to the site's palette. Dark first, like globals.css. */
 .glassScope {
   --ios-font: var(--font-sans);
-  --ios-blue: #bcd3dd;
+  --ios-blue: color-mix(in srgb, var(--mist) 62%, white);
   --ios-label: var(--text);
   /* Opaque: a translucent stroke darkens wherever an icon's paths overlap. */
   --ios-secondary: color-mix(in srgb, var(--sand) 82%, var(--navy));
   --ios-surface: var(--bg2);
-  --glass-opaque-wash: rgb(27 42 62 / 74%);
-  --glass-regular-wash: rgb(33 52 72 / 34%);
-  --glass-clear-wash: rgb(234 224 207 / 4%);
+  --glass-opaque-wash: rgba(var(--ink2-rgb), 74%);
+  --glass-regular-wash: rgba(var(--navy-rgb), 34%);
+  --glass-clear-wash: rgba(var(--sand-rgb), 4%);
   --glass-rim-alpha: 0.55;
   --glass-shade: rgb(0 0 0 / 20%);
   --glass-shadow:
@@ -19,14 +19,14 @@
   --glass-shadow-lifted:
     0 24px 48px -14px rgb(8 14 22 / 66%), 0 8px 16px -4px rgb(8 14 22 / 38%),
     0 0.5px 1px rgb(8 14 22 / 38%);
-  --tab-copy-fill: rgb(234 224 207 / 15%);
-  --tabbar-selected-wash: rgb(234 224 207 / 22%);
+  --tab-copy-fill: rgba(var(--sand-rgb), 15%);
+  --tabbar-selected-wash: rgba(var(--sand-rgb), 22%);
   --tabbar-selected-text: #f6f1e7;
   --tabbar-selected-shadow: 0 2px 8px rgb(8 14 22 / 22%), 0 0.5px 1px rgb(8 14 22 / 18%);
 }
 
 html[data-theme="light"] .glassScope {
-  --ios-blue: #3a5e7a;
+  --ios-blue: color-mix(in srgb, var(--blue) 72%, var(--navy));
   --ios-label: var(--navy);
   --ios-secondary: color-mix(in srgb, var(--navy) 76%, var(--sand));
   --ios-surface: var(--sand);
@@ -34,22 +34,23 @@ html[data-theme="light"] .glassScope {
   --glass-regular-wash: rgb(250 246 238 / 42%);
   --glass-clear-wash: rgb(255 255 255 / 8%);
   --glass-rim-alpha: 1;
-  --glass-shade: rgb(33 52 72 / 7%);
+  --glass-shade: rgba(var(--navy-rgb), 7%);
   --glass-shadow:
-    0 16px 36px -14px rgb(33 52 72 / 30%), 0 3px 10px -3px rgb(33 52 72 / 12%),
-    0 0.5px 1px rgb(33 52 72 / 10%);
+    0 16px 36px -14px rgba(var(--navy-rgb), 30%), 0 3px 10px -3px rgba(var(--navy-rgb), 12%),
+    0 0.5px 1px rgba(var(--navy-rgb), 10%);
   --glass-shadow-lifted:
-    0 24px 48px -14px rgb(33 52 72 / 36%), 0 8px 16px -4px rgb(33 52 72 / 16%),
-    0 0.5px 1px rgb(33 52 72 / 12%);
+    0 24px 48px -14px rgba(var(--navy-rgb), 36%), 0 8px 16px -4px rgba(var(--navy-rgb), 16%),
+    0 0.5px 1px rgba(var(--navy-rgb), 12%);
   --tab-copy-fill: rgb(255 255 255 / 46%);
   --tabbar-selected-wash: rgb(255 255 255 / 74%);
   --tabbar-selected-text: var(--ios-blue);
-  --tabbar-selected-shadow: 0 2px 8px rgb(33 52 72 / 10%), 0 0.5px 1px rgb(33 52 72 / 8%);
+  --tabbar-selected-shadow:
+    0 2px 8px rgba(var(--navy-rgb), 10%), 0 0.5px 1px rgba(var(--navy-rgb), 8%);
 }
 
 @media (prefers-color-scheme: light) {
   html[data-theme="system"] .glassScope {
-    --ios-blue: #3a5e7a;
+    --ios-blue: color-mix(in srgb, var(--blue) 72%, var(--navy));
     --ios-label: var(--navy);
     --ios-secondary: color-mix(in srgb, var(--navy) 76%, var(--sand));
     --ios-surface: var(--sand);
@@ -57,17 +58,18 @@ html[data-theme="light"] .glassScope {
     --glass-regular-wash: rgb(250 246 238 / 42%);
     --glass-clear-wash: rgb(255 255 255 / 8%);
     --glass-rim-alpha: 1;
-    --glass-shade: rgb(33 52 72 / 7%);
+    --glass-shade: rgba(var(--navy-rgb), 7%);
     --glass-shadow:
-      0 16px 36px -14px rgb(33 52 72 / 30%), 0 3px 10px -3px rgb(33 52 72 / 12%),
-      0 0.5px 1px rgb(33 52 72 / 10%);
+      0 16px 36px -14px rgba(var(--navy-rgb), 30%), 0 3px 10px -3px rgba(var(--navy-rgb), 12%),
+      0 0.5px 1px rgba(var(--navy-rgb), 10%);
     --glass-shadow-lifted:
-      0 24px 48px -14px rgb(33 52 72 / 36%), 0 8px 16px -4px rgb(33 52 72 / 16%),
-      0 0.5px 1px rgb(33 52 72 / 12%);
+      0 24px 48px -14px rgba(var(--navy-rgb), 36%), 0 8px 16px -4px rgba(var(--navy-rgb), 16%),
+      0 0.5px 1px rgba(var(--navy-rgb), 12%);
     --tab-copy-fill: rgb(255 255 255 / 46%);
     --tabbar-selected-wash: rgb(255 255 255 / 74%);
     --tabbar-selected-text: var(--ios-blue);
-    --tabbar-selected-shadow: 0 2px 8px rgb(33 52 72 / 10%), 0 0.5px 1px rgb(33 52 72 / 8%);
+    --tabbar-selected-shadow:
+      0 2px 8px rgba(var(--navy-rgb), 10%), 0 0.5px 1px rgba(var(--navy-rgb), 8%);
   }
 }
 

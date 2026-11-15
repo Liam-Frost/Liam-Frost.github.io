@@ -4,6 +4,7 @@ import { z } from "zod";
 import {
   conflictingFields,
   DEFAULT_SITE_SETTINGS,
+  SITE_PALETTES,
   type SettingsConflictDetails,
   type SiteSettingsGroup
 } from "@liam-frost/shared";
@@ -100,6 +101,7 @@ const schemas = {
     }),
   preferences: z
     .object({
+      palette: z.enum(SITE_PALETTES).default("mist"),
       theme: z.enum(["system", "light", "dark"]),
       language: z.enum(["auto", "zh", "zh-Hant", "en", "ja", "fr"])
     })
