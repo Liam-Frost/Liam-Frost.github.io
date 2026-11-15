@@ -3149,16 +3149,11 @@ html[data-theme="light"] .stackDetail {
   margin-bottom: 10px;
 }
 
+/* The way back is a button like the page's others. */
 .projectBack {
-  display: inline-block;
-  margin-bottom: 14px;
-  color: var(--muted);
+  margin-bottom: 16px;
   text-decoration: none;
   font-size: 14px;
-}
-
-.projectBack:hover {
-  color: var(--text);
 }
 
 .projectLinks {

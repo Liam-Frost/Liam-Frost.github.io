@@ -84,12 +84,14 @@ export default function ProjectDetailPage() {
   const details = { ...EMPTY_PUBLIC_DETAILS, ...project.details };
   const kind = projectKindLine(project, t);
   const role = pickLocalized(project.role, lang);
-  const myPeriod = details.myStartedAt
-    ? projectPeriod(
-        { startedAt: details.myStartedAt, endedAt: details.myEndedAt, status: project.status },
-        t("projects.present")
-      )
-    : "";
+  // Either month alone is enough: someone who was there from the start may have left early.
+  const myPeriod =
+    details.myStartedAt || details.myEndedAt
+      ? projectPeriod(
+          { startedAt: details.myStartedAt, endedAt: details.myEndedAt, status: project.status },
+          t("projects.present")
+        )
+      : "";
   const contributions = projectLines(pickLocalized(details.contributions, lang));
   const outcomes = projectOutcomes(pickLocalized(details.outcomes, lang));
   const challenge = (["problem", "solution", "result"] as const)
@@ -105,7 +107,7 @@ export default function ProjectDetailPage() {
     <article className="section projectDetail">
       <div className="container">
         <Reveal intensity="subtle">
-          <Link className="projectBack" to="/projects">
+          <Link className="btn btnSmall projectBack" to="/projects">
             ← {t("projects.back")}
           </Link>
           <div className="projectMeta">

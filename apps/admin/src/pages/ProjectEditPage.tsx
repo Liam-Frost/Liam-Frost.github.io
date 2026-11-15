@@ -258,10 +258,13 @@ function ProjectEditor({ project }: { project: AdminProject }) {
       details: {
         ...details,
         // The owner's own project has no team; technologies taken off the project are not own either.
+        // Without the stack the linked technologies have no names here: the marks stay as they are.
         teamSize: details.kind === "personal" ? null : details.teamSize,
-        ownTechnologies: details.ownTechnologies.filter((own) =>
-          technologyNames.some((name) => name.toLowerCase() === own.toLowerCase())
-        )
+        ownTechnologies: stack.data
+          ? details.ownTechnologies.filter((own) =>
+              technologyNames.some((name) => name.toLowerCase() === own.toLowerCase())
+            )
+          : details.ownTechnologies
       },
       startedAt: draft.startedAt || null,
       endedAt: draft.endedAt || null,
