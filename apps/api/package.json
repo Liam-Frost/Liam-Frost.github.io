@@ -24,22 +24,22 @@
   },
   "dependencies": {
     "@fastify/cookie": "^11.1.5",
-    "@fastify/cors": "^11.4.1",
-    "@fastify/multipart": "^10.1.8",
+    "@fastify/cors": "^11.4.3",
+    "@fastify/multipart": "^10.1.9",
     "@fastify/rate-limit": "^11.2.2",
     "@liam-frost/content": "^0.1.0",
     "@liam-frost/shared": "^0.1.0",
     "@prisma/adapter-pg": "7.10.1",
     "@prisma/client": "7.10.1",
     "devicon": "^2.18.0",
-    "dotenv": "^18.0.9",
+    "dotenv": "^18.0.10",
     "exif-reader": "^2.0.3",
     "fastify": "^5.12.8",
-    "maxmind": "^5.0.8",
+    "maxmind": "^5.1.0",
     "prisma": "7.10.1",
     "qrcode-generator": "^2.0.4",
     "sharp": "^0.35.5",
-    "simple-icons": "^16.36.0",
+    "simple-icons": "^16.38.0",
     "zod": "^4.6.7"
   },
   "devDependencies": {
@@ -47,6 +47,6 @@
     "esbuild": "^0.28.2",
     "tsx": "^4.23.15",
     "typescript": "^5.5.4",
-    "vitest": "^5.1.0"
+    "vitest": "^5.1.1"
   }
 }
