@@ -1,19 +1,35 @@
 import { useSiteSettings } from "../data/useSiteSettings";
 import LoadingImage from "../components/LoadingImage";
 import LoadingSkeleton from "../components/LoadingSkeleton";
-import type { ProjectImage } from "@liam-frost/shared";
+import {
+  projectCollaborators,
+  projectLines,
+  projectOutcomes,
+  type ProjectImage,
+  type PublicProjectDetails
+} from "@liam-frost/shared";
 import { useEffect, useState } from "react";
 import Markdown from "react-markdown";
 import { Link, useParams } from "react-router";
 import remarkGfm from "remark-gfm";
 
 import FullscreenImageViewer from "../components/FullscreenImageViewer";
-import { imageSrcSet, projectPeriod } from "../components/ProjectCard";
+import { imageSrcSet, projectKindLine, projectPeriod } from "../components/ProjectCard";
 import Reveal from "../components/Reveal";
 import { useProject } from "../data/useProjects";
 import { pickLocalized, useI18n } from "../lib/i18n";
 
 const LINK_KEYS = ["demo", "repo", "docs"] as const;
+
+const EMPTY_PUBLIC_DETAILS: PublicProjectDetails = {
+  myStartedAt: null,
+  myEndedAt: null,
+  contributions: {},
+  outcomes: {},
+  challenge: { problem: {}, solution: {}, result: {} },
+  collaborators: {},
+  ownTechStack: []
+};
 
 export default function ProjectDetailPage() {
   const { slug = "" } = useParams();
@@ -63,11 +79,35 @@ export default function ProjectDetailPage() {
   const period = projectPeriod(project, t("projects.present"));
   const links = LINK_KEYS.filter((key) => project.links[key]);
 
+  // What the owner did. Every part is optional; a project without any looks as it did before.
+  // An API from before these fields existed sends none.
+  const details = { ...EMPTY_PUBLIC_DETAILS, ...project.details };
+  const kind = projectKindLine(project, t);
+  const role = pickLocalized(project.role, lang);
+  // Either month alone is enough: someone who was there from the start may have left early.
+  const myPeriod =
+    details.myStartedAt || details.myEndedAt
+      ? projectPeriod(
+          { startedAt: details.myStartedAt, endedAt: details.myEndedAt, status: project.status },
+          t("projects.present")
+        )
+      : "";
+  const contributions = projectLines(pickLocalized(details.contributions, lang));
+  const outcomes = projectOutcomes(pickLocalized(details.outcomes, lang));
+  const challenge = (["problem", "solution", "result"] as const)
+    .map((key) => ({ key, text: pickLocalized(details.challenge[key], lang) }))
+    .filter((part) => part.text);
+  const collaborators = projectCollaborators(pickLocalized(details.collaborators, lang));
+  const own = new Set(details.ownTechStack);
+  const otherTech = project.techStack.filter((tech) => !own.has(tech));
+  // Told apart only when some, not all, of the technologies are the owner's.
+  const splitTech = details.ownTechStack.length > 0 && otherTech.length > 0;
+
   return (
     <article className="section projectDetail">
       <div className="container">
         <Reveal intensity="subtle">
-          <Link className="projectBack" to="/projects">
+          <Link className="btn btnSmall projectBack" to="/projects">
             ← {t("projects.back")}
           </Link>
           <div className="projectMeta">
@@ -79,7 +119,53 @@ export default function ProjectDetailPage() {
           <h1 className="sectionTitle">{title}</h1>
           {summary ? <p className="sectionSubtitle">{summary}</p> : null}
 
-          {project.techStack.length ? (
+          {kind || role || myPeriod ? (
+            <dl className="projectFacts">
+              {kind ? (
+                <div>
+                  <dt>{t("projects.facts.kind")}</dt>
+                  <dd>{kind}</dd>
+                </div>
+              ) : null}
+              {role ? (
+                <div>
+                  <dt>{t("projects.facts.role")}</dt>
+                  <dd>{role}</dd>
+                </div>
+              ) : null}
+              {myPeriod ? (
+                <div>
+                  <dt>{t("projects.facts.myPeriod")}</dt>
+                  <dd>{myPeriod}</dd>
+                </div>
+              ) : null}
+            </dl>
+          ) : null}
+
+          {splitTech ? (
+            <div className="projectTech">
+              <div className="projectTechRow">
+                <span className="projectTechLabel">{t("projects.tech.mine")}</span>
+                <div className="tags">
+                  {details.ownTechStack.map((tech) => (
+                    <span key={tech} className="tag tagMine">
+                      {tech}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <div className="projectTechRow">
+                <span className="projectTechLabel">{t("projects.tech.others")}</span>
+                <div className="tags">
+                  {otherTech.map((tech) => (
+                    <span key={tech} className="tag tagOther">
+                      {tech}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ) : project.techStack.length ? (
             <div className="tags">
               {project.techStack.map((tech) => (
                 <span key={tech} className="tag">
@@ -128,6 +214,44 @@ export default function ProjectDetailPage() {
           </Reveal>
         ) : null}
 
+        {outcomes.length || contributions.length || challenge.length ? (
+          <Reveal after stagger>
+            {outcomes.length ? (
+              <ul className="projectOutcomes" aria-label={t("projects.outcomes")}>
+                {outcomes.map((outcome) => (
+                  <li key={`${outcome.value}|${outcome.label}`}>
+                    {outcome.value ? <strong>{outcome.value}</strong> : null}
+                    <span>{outcome.label}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+            {contributions.length ? (
+              <section className="card projectContrib">
+                <h2>{t("projects.contributions")}</h2>
+                <ul>
+                  {contributions.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              </section>
+            ) : null}
+            {challenge.length ? (
+              <section className="card projectChallenge">
+                <h2>{t("projects.challenge")}</h2>
+                <dl>
+                  {challenge.map((part) => (
+                    <div key={part.key}>
+                      <dt>{t(`projects.challenge.${part.key}`)}</dt>
+                      <dd>{part.text}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </section>
+            ) : null}
+          </Reveal>
+        ) : null}
+
         {body ? (
           <Reveal after stagger>
             <div className="card prose" data-analytics="project_body">
@@ -151,26 +275,49 @@ export default function ProjectDetailPage() {
             <h2 className="projectSectionTitle">{t("projects.gallery")}</h2>
             <div className="projectGallery">
               {project.gallery.map((image, index) => (
-                <button
-                  key={image.id}
-                  type="button"
-                  className="projectShot"
-                  onClick={() => setViewing(image)}
-                  aria-label={`${title} ${index + 1}`}
-                >
-                  <LoadingImage
-                    src={image.variants[Math.min(1, image.variants.length - 1)].url}
-                    srcSet={imageSrcSet(image)}
-                    sizes="(max-width: 760px) calc(100vw - 40px), 520px"
-                    width={image.width}
-                    height={image.height}
-                    alt=""
-                    loading="lazy"
-                    decoding="async"
-                  />
-                </button>
+                <figure key={image.id} className="projectFigure">
+                  <button
+                    type="button"
+                    className="projectShot"
+                    onClick={() => setViewing(image)}
+                    aria-label={`${title} ${index + 1}`}
+                  >
+                    <LoadingImage
+                      src={image.variants[Math.min(1, image.variants.length - 1)].url}
+                      srcSet={imageSrcSet(image)}
+                      sizes="(max-width: 760px) calc(100vw - 40px), 520px"
+                      width={image.width}
+                      height={image.height}
+                      alt=""
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  </button>
+                  {pickLocalized(image.caption, lang) ? (
+                    <figcaption>{pickLocalized(image.caption, lang)}</figcaption>
+                  ) : null}
+                </figure>
               ))}
             </div>
+          </Reveal>
+        ) : null}
+        {collaborators.length ? (
+          <Reveal after stagger>
+            <h2 className="projectSectionTitle">{t("projects.collaborators")}</h2>
+            <ul className="projectPeople">
+              {collaborators.map((person) => (
+                <li key={`${person.name}|${person.role}`}>
+                  {person.url ? (
+                    <a href={person.url} target="_blank" rel="noopener noreferrer">
+                      <strong>{person.name}</strong> ↗
+                    </a>
+                  ) : (
+                    <strong>{person.name}</strong>
+                  )}
+                  {person.role ? <span>{person.role}</span> : null}
+                </li>
+              ))}
+            </ul>
           </Reveal>
         ) : null}
       </div>

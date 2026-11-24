@@ -110,6 +110,9 @@ model Project {
   technologies ProjectTechnology[]
   /// { repo?, demo?, docs? } URLs.
   links      Json
+  /// What the owner did: kind, team size, role, own months, contributions, outcomes, challenge,
+  /// collaborators, own technologies and screenshot captions (ProjectDetails in packages/shared).
+  details    Json          @default("{}")
   status     ProjectStatus @default(IN_PROGRESS)
   /// YYYY-MM
   startedAt  String?

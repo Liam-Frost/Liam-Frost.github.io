@@ -32,6 +32,7 @@ import {
 } from "../components/settings/SettingsUI";
 import { useSettingsDocument } from "../components/settings/useSettingsDocument";
 import { AvatarUpload } from "../components/settings/BrandUpload";
+import { PalettePicker } from "../components/settings/PalettePicker";
 import { tr } from "../lib/messages";
 
 const titles: Record<SiteSettingsGroup, string> = {
@@ -46,7 +47,7 @@ const titles: Record<SiteSettingsGroup, string> = {
 const descriptions: Record<SiteSettingsGroup, string> = {
   identity: tr("设置公开姓名和首屏头像。"),
   footer: tr("为四个页面分别设置版权声明，并管理页脚链接。"),
-  preferences: tr("决定访客首次访问时的显示偏好。"),
+  preferences: tr("选择前台的配色方案，并决定访客首次访问时的显示偏好。"),
   navigation: tr("调整前台底部导航和页面按钮的玻璃效果。"),
   privacy: tr("编辑公开隐私说明，历史版本可载入为草稿。"),
   dictionary: tr("为收藏标签补齐多语言翻译，保留原有内容标识。"),
@@ -58,6 +59,7 @@ const fieldLabels: Record<string, string> = {
   adminTitle: tr("后台页面标题"),
   copyright: tr("版权声明"),
   links: tr("页脚链接"),
+  palette: tr("配色方案"),
   theme: tr("默认主题"),
   language: tr("默认语言"),
   tabBarMode: tr("显示模式"),
@@ -444,6 +446,19 @@ export function SiteSettingsPage({ group }: { group: SiteSettingsGroup }) {
                 />
               </Field>
             </SettingsGrid>
+          </SettingsSection>
+        ) : null}
+        {group === "preferences" ? (
+          <SettingsSection
+            title={tr("配色方案")}
+            description={tr(
+              "整个前台的配色，每套都有浅色和深色两种。只能在这里更换，访客不能更改。"
+            )}
+          >
+            <PalettePicker
+              value={preferences.palette}
+              onChange={(palette) => change({ ...preferences, palette })}
+            />
           </SettingsSection>
         ) : null}
         {group === "preferences" ? (

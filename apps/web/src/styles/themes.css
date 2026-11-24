@@ -1,0 +1,69 @@
+/* Colour schemes (site settings, preferences.palette; set as html[data-palette] by
+   lib/usePalette.ts). Each replaces the palette's channels (see :root in globals.css), so it has a
+   light and a dark form like the default, "mist", which needs no rule. The values match
+   SITE_PALETTE_COLORS in packages/shared (apps/api/test/site-palettes.test.ts). */
+
+html[data-palette="pine"] {
+  --navy-rgb: 28, 52, 44;
+  --blue-rgb: 63, 122, 98;
+  --mist-rgb: 156, 196, 173;
+  --sand-rgb: 239, 233, 217;
+  --ink2-rgb: 22, 42, 35;
+  --paper2-rgb: 227, 220, 200;
+  --radius: 16px;
+  --chevron-dark: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23efe9d9' stroke-opacity='0.8' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  --chevron-light: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231c342c' stroke-opacity='0.7' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+}
+
+html[data-palette="mono"] {
+  --navy-rgb: 19, 20, 22;
+  --blue-rgb: 61, 90, 254;
+  --mist-rgb: 154, 169, 255;
+  --sand-rgb: 243, 243, 240;
+  --ink2-rgb: 11, 11, 12;
+  --paper2-rgb: 230, 230, 226;
+  --radius: 6px;
+  --chevron-dark: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23f3f3f0' stroke-opacity='0.8' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  --chevron-light: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23131416' stroke-opacity='0.7' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+}
+
+html[data-palette="midnight"] {
+  --navy-rgb: 14, 22, 34;
+  --blue-rgb: 63, 127, 196;
+  --mist-rgb: 158, 197, 234;
+  --sand-rgb: 233, 237, 241;
+  --ink2-rgb: 9, 15, 24;
+  --paper2-rgb: 219, 225, 231;
+  --radius: 16px;
+  --chevron-dark: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23e9edf1' stroke-opacity='0.8' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  --chevron-light: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230e1622' stroke-opacity='0.7' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+}
+
+html[data-palette="graphite"] {
+  --navy-rgb: 24, 25, 28;
+  --blue-rgb: 125, 131, 141;
+  --mist-rgb: 197, 201, 208;
+  --sand-rgb: 238, 238, 235;
+  --ink2-rgb: 16, 17, 19;
+  --paper2-rgb: 225, 225, 221;
+  --radius: 14px;
+  --chevron-dark: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23eeeeeb' stroke-opacity='0.8' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  --chevron-light: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2318191c' stroke-opacity='0.7' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+}
+
+/* The deeper presets keep their dark form dark: the background glows are much fainter. */
+html[data-theme="dark"]:is([data-palette="midnight"], [data-palette="graphite"]) {
+  --fx-a: rgba(var(--mist-rgb), 0.16);
+  --fx-b: rgba(var(--blue-rgb), 0.2);
+  --fx-c: rgba(var(--sand-rgb), 0.06);
+  --fx-v-top: rgba(var(--sand-rgb), 0.03);
+}
+
+@media (prefers-color-scheme: dark) {
+  html[data-theme="system"]:is([data-palette="midnight"], [data-palette="graphite"]) {
+    --fx-a: rgba(var(--mist-rgb), 0.16);
+    --fx-b: rgba(var(--blue-rgb), 0.2);
+    --fx-c: rgba(var(--sand-rgb), 0.06);
+    --fx-v-top: rgba(var(--sand-rgb), 0.03);
+  }
+}

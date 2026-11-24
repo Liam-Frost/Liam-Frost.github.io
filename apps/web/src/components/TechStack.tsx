@@ -285,6 +285,11 @@ export default function TechStack({
         const name = pickLocalized(category.name, lang);
         const description = pickLocalized(category.description, lang);
         const headingId = `stack-${category.id}`;
+        // Primary technologies first; each tier keeps the order set in the admin.
+        const technologies = [
+          ...category.technologies.filter((x) => x.prominence === "primary"),
+          ...category.technologies.filter((x) => x.prominence !== "primary")
+        ];
         return (
           <section key={category.id} className="stackGroup" aria-labelledby={headingId}>
             <div className="stackGroupHead">
@@ -297,7 +302,7 @@ export default function TechStack({
               {description ? <p className="stackGroupDesc">{description}</p> : null}
             </div>
             <ul className="stackItems">
-              {category.technologies.map((technology) => (
+              {technologies.map((technology) => (
                 <li key={technology.id}>
                   <StackItem
                     technology={technology}

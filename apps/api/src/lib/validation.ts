@@ -1,4 +1,5 @@
 import {
+  PROJECT_KINDS,
   ABOUT_LIMITS,
   MANIFESTO_ROTATION_MODES,
   PERSON_ROLES,
@@ -244,6 +245,38 @@ export const projectCreateSchema = z
   })
   .strict();
 
+const projectDetailsSchema = z
+  .object({
+    kind: z.enum(PROJECT_KINDS).nullable(),
+    teamSize: z.number().int().min(1).max(999).nullable(),
+    role: localizedText(80),
+    myStartedAt: yearMonth,
+    myEndedAt: yearMonth,
+    contributions: localizedText(2000),
+    outcomes: localizedText(600),
+    challenge: z
+      .object({
+        problem: localizedText(1000),
+        solution: localizedText(1000),
+        result: localizedText(1000)
+      })
+      .strict(),
+    collaborators: localizedText(1500),
+    ownTechnologies: z
+      .array(z.string().trim().min(1).max(60))
+      .max(60)
+      .refine(
+        (list) => new Set(list.map((t) => t.toLowerCase())).size === list.length,
+        "Duplicate technology"
+      ),
+    captions: z.record(projectImageParamsSchema.shape.imageId, localizedText(200))
+  })
+  .strict()
+  .refine(
+    (value) => !value.myStartedAt || !value.myEndedAt || value.myEndedAt >= value.myStartedAt,
+    "The end month is before the start month"
+  );
+
 export const projectUpdateSchema = z
   .object({
     slug: slugSchema,
@@ -274,7 +307,8 @@ export const projectUpdateSchema = z
     endedAt: yearMonth,
     featured: z.boolean(),
     visibility: z.enum(["public", "private"]),
-    gallery: z.array(projectImageParamsSchema.shape.imageId).max(30)
+    gallery: z.array(projectImageParamsSchema.shape.imageId).max(30),
+    details: projectDetailsSchema
   })
   .partial()
   .strict();

@@ -20,6 +20,8 @@ export type SiteSettingsGroups = {
     links: FooterLink[];
   };
   preferences: {
+    /** The public site's colour scheme; chosen in the admin only, visitors cannot change it. */
+    palette: SitePalette;
     theme: "system" | "light" | "dark";
     language: "auto" | "zh" | "zh-Hant" | "en" | "ja" | "fr";
   };
@@ -44,6 +46,67 @@ export type SiteSettingsGroups = {
     maxPhotoVersions: number;
   };
 };
+/**
+ * The public site's colour schemes. Each has a light and a dark form, built from four colours: ink
+ * (the dark base, and the text on light), paper (the light base, and the text on dark) and two
+ * accents; ink2 and paper2 are each mode's second background. The web's stylesheets hold the same
+ * values (globals.css for the first, themes.css for the rest); a test keeps them in step.
+ */
+export const SITE_PALETTES = ["mist", "pine", "mono", "midnight", "graphite"] as const;
+export type SitePalette = (typeof SITE_PALETTES)[number];
+export type SitePaletteColors = {
+  ink: string;
+  accent: string;
+  soft: string;
+  paper: string;
+  ink2: string;
+  paper2: string;
+};
+export const SITE_PALETTE_COLORS: Record<SitePalette, SitePaletteColors> = {
+  mist: {
+    ink: "#213448",
+    accent: "#547792",
+    soft: "#94b4c1",
+    paper: "#eae0cf",
+    ink2: "#1b2a3e",
+    paper2: "#e0d5c4"
+  },
+  pine: {
+    ink: "#1c342c",
+    accent: "#3f7a62",
+    soft: "#9cc4ad",
+    paper: "#efe9d9",
+    ink2: "#162a23",
+    paper2: "#e3dcc8"
+  },
+  mono: {
+    ink: "#131416",
+    accent: "#3d5afe",
+    soft: "#9aa9ff",
+    paper: "#f3f3f0",
+    ink2: "#0b0b0c",
+    paper2: "#e6e6e2"
+  },
+  midnight: {
+    ink: "#0e1622",
+    accent: "#3f7fc4",
+    soft: "#9ec5ea",
+    paper: "#e9edf1",
+    ink2: "#090f18",
+    paper2: "#dbe1e7"
+  },
+  graphite: {
+    ink: "#18191c",
+    accent: "#7d838d",
+    soft: "#c5c9d0",
+    paper: "#eeeeeb",
+    ink2: "#101113",
+    paper2: "#e1e1dd"
+  }
+};
+export function isSitePalette(value: unknown): value is SitePalette {
+  return SITE_PALETTES.includes(value as SitePalette);
+}
 const DEFAULT_COPYRIGHT: FooterCopyright = { owner: {}, startYear: null, showRole: true };
 export const DEFAULT_SITE_SETTINGS: SiteSettingsGroups = {
   identity: { name: {}, title: {}, adminTitle: {} },
@@ -56,7 +119,7 @@ export const DEFAULT_SITE_SETTINGS: SiteSettingsGroups = {
     },
     links: []
   },
-  preferences: { theme: "system", language: "auto" },
+  preferences: { palette: "mist", theme: "system", language: "auto" },
   navigation: {
     tabBarMode: "hover",
     glass: "clear",

@@ -35,6 +35,10 @@ export function publicTechStack(row: Pick<ProjectRow, "technologies" | "techStac
   ];
 }
 
+/** Whether a team size says anything: the project is not the owner's own and has more than one person. */
+const teamSize = ({ details }: Pick<ProjectRow, "details">) =>
+  details.kind !== "personal" && details.teamSize && details.teamSize > 1 ? details.teamSize : null;
+
 export function toPublicProjectSummary(
   row: ProjectRow,
   store: LocalImageStore
@@ -49,21 +53,45 @@ export function toPublicProjectSummary(
     status: row.status,
     startedAt: row.startedAt,
     endedAt: row.endedAt,
-    featured: row.featured
+    featured: row.featured,
+    kind: row.details.kind,
+    teamSize: teamSize(row),
+    role: row.details.role
   };
 }
 
+/** The screenshots, each with its caption when it has one. */
+function toGallery(row: ProjectRow, store: LocalImageStore): ProjectImage[] {
+  return row.gallery.map((image) => {
+    const caption = row.details.captions[image.id];
+    return { ...toProjectImage(image, store), ...(caption ? { caption } : {}) };
+  });
+}
+
 export function toPublicProject(row: ProjectRow, store: LocalImageStore): PublicProject {
+  const { details } = row;
+  const summary = toPublicProjectSummary(row, store);
+  const own = new Set(details.ownTechnologies.map((name) => name.toLowerCase()));
   return {
-    ...toPublicProjectSummary(row, store),
+    ...summary,
     body: row.body,
-    gallery: row.gallery.map((image) => toProjectImage(image, store))
+    gallery: toGallery(row, store),
+    details: {
+      myStartedAt: details.myStartedAt,
+      myEndedAt: details.myEndedAt,
+      contributions: details.contributions,
+      outcomes: details.outcomes,
+      challenge: details.challenge,
+      collaborators: details.collaborators,
+      ownTechStack: summary.techStack.filter((name) => own.has(name.toLowerCase()))
+    }
   };
 }
 
 export function toAdminProject(row: ProjectRow, store: LocalImageStore): AdminProject {
   return {
     ...toPublicProject(row, store),
+    details: row.details,
     id: row.id,
     technologyIds: row.technologies.map((t) => t.id),
     otherTechnologies: row.techStack,

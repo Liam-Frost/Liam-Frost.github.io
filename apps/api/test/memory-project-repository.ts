@@ -1,3 +1,5 @@
+import { EMPTY_PROJECT_DETAILS } from "@liam-frost/shared";
+
 import {
   SlugTakenError,
   type NewProject,
@@ -84,6 +86,7 @@ export class MemoryProjectRepository implements ProjectRepository {
       gallery: [],
       techStack: [],
       links: {},
+      details: structuredClone(EMPTY_PROJECT_DETAILS),
       status: "in-progress",
       startedAt: null,
       endedAt: null,

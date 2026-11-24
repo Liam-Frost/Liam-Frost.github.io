@@ -183,8 +183,9 @@ test.describe("admin language", () => {
 
   test("the visitor defaults page has no admin language control", async ({ page }) => {
     await open(page, "/settings/experience/preferences");
+    // Two sections: the colour scheme and the first-visit defaults.
     await expect(page.locator("main").getByRole("combobox", { name: "界面语言" })).toHaveCount(0);
-    await expect(page.locator("main .settings-section")).toHaveCount(1);
+    await expect(page.locator("main .settings-section")).toHaveCount(2);
     await expect(page.getByLabel("默认语言")).toBeVisible();
   });
 
@@ -468,6 +469,31 @@ test.describe("contact links", () => {
     await page.reload();
     await choose("文字");
     expect((await saved()).icon).toBeUndefined();
+  });
+});
+
+test.describe("colour scheme", () => {
+  test.use({ viewport: { width: 1280, height: 800 } });
+  const saved = async (page: import("@playwright/test").Page) =>
+    (await (await page.request.get("/api/site-settings")).json()).preferences.palette;
+
+  test("is chosen from the presets and reaches the public settings", async ({ page }) => {
+    await open(page, "/settings/experience/preferences");
+    const group = page.getByRole("radiogroup", { name: "配色方案" });
+    await expect(group.getByRole("radio")).toHaveCount(5);
+    await expect(group.getByRole("radio", { name: /雾蓝/ })).toBeChecked();
+
+    await group.getByText("墨绿").click();
+    await expect(group.getByRole("radio", { name: /墨绿/ })).toBeChecked();
+    await page.getByRole("button", { name: "保存更改" }).click();
+    await expect(page.getByRole("region", { name: "保存操作" })).toHaveCount(0);
+    expect(await saved(page)).toBe("pine");
+
+    // Back to the default, which the other specs expect.
+    await group.getByText("雾蓝").click();
+    await page.getByRole("button", { name: "保存更改" }).click();
+    await expect(page.getByRole("region", { name: "保存操作" })).toHaveCount(0);
+    expect(await saved(page)).toBe("mist");
   });
 });
 
