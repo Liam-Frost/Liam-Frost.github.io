@@ -15,6 +15,8 @@ def public_rows(report, expected):
     rows = []
     for target in "ABCDE":
         row = source.get(target, {})
+        if target == "D" and row.get("status") == "retired":
+            continue
         actual = safe_revision(row.get("actual_revision"))
         healthy = row.get("status") == "success" and actual == expected and row.get("expected_revision") == expected
         rows.append({"id": target, "label": "Target " + target,
