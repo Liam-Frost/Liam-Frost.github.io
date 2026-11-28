@@ -48,14 +48,15 @@ import { readUploadedImage, withUploadCleanup } from "./read-upload";
 
 /** "IMG_1234 (2).JPG" -> "img-1234-2-k3f9a1": readable, URL-safe and unique. */
 export function photoIdFromFileName(fileName: string) {
-  const base = fileName
-    .replace(/\.[^.]*$/, "")
+  const extension = fileName.lastIndexOf(".");
+  const stem = extension < 0 ? fileName : fileName.slice(0, extension);
+  const base = stem
     .normalize("NFKD")
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
+    .replace(/^-/, "")
     .slice(0, 40)
-    .replace(/-+$/, "");
+    .replace(/-$/, "");
   return `${base || "photo"}-${randomBytes(3).toString("hex")}`;
 }
 

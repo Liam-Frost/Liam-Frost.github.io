@@ -1,5 +1,7 @@
 import { lookup as dnsLookup } from "node:dns/promises";
-import { BlockList, isIP } from "node:net";
+import { request as httpsRequest } from "node:https";
+import { BlockList, isIP, type LookupFunction } from "node:net";
+import { Readable } from "node:stream";
 
 /** A link that may not be fetched: not https, a private address, too large, not reachable. */
 export class UnsafeUrlError extends Error {}
@@ -9,8 +11,7 @@ const TIMEOUT_MS = 20_000;
 
 /**
  * Addresses a link may not reach: this machine, private networks, link-local and metadata services,
- * carrier-grade NAT, multicast and reserved ranges. 198.18.0.0/15 stays allowed: proxies in fake-IP
- * mode answer every name with it.
+ * carrier-grade NAT, benchmark networks, multicast and reserved ranges.
  */
 const BLOCKED = new BlockList();
 for (const [net, bits] of [
@@ -22,15 +23,19 @@ for (const [net, bits] of [
   ["172.16.0.0", 12],
   ["192.0.0.0", 24],
   ["192.168.0.0", 16],
+  ["198.18.0.0", 15],
   ["224.0.0.0", 4],
   ["240.0.0.0", 4]
 ] as const)
   BLOCKED.addSubnet(net, bits, "ipv4");
 for (const [net, bits] of [
-  ["::", 128],
-  ["::1", 128],
+  ["::", 96],
   ["fc00::", 7],
   ["fe80::", 10],
+  ["fec0::", 10],
+  ["64:ff9b::", 96],
+  ["64:ff9b:1::", 48],
+  ["2002::", 16],
   ["ff00::", 8]
 ] as const)
   BLOCKED.addSubnet(net, bits, "ipv6");
@@ -72,26 +77,77 @@ async function checkUrl(raw: string, lookup: (host: string) => Promise<string[]>
   }
   if (!addresses.length || addresses.some(isBlockedAddress))
     throw new UnsafeUrlError("不能访问内网或本机地址");
-  return url;
+  return { url, host, addresses };
 }
 
-/**
- * Downloads a public https link for importing: every redirect is checked again, the body is limited to
- * `maxBytes`, and requests time out. A name could still resolve differently between the check and the
- * request; the check is defense in depth, not a network policy.
- */
+/** Pass only the DNS answers checked for this hop to the socket. */
+export function pinnedLookup(host: string, addresses: string[]): LookupFunction {
+  const records = addresses.map((address) => ({ address, family: isIP(address) }));
+  return (hostname, options, callback) => {
+    const matching = records.filter(
+      (record) => !options.family || record.family === options.family
+    );
+    const first = matching[0];
+    if (hostname !== host || !first) {
+      callback(new Error("No validated address for host"), "");
+      return;
+    }
+    if (options.all) callback(null, matching);
+    else callback(null, first.address, first.family);
+  };
+}
+
+function downloadHop(url: URL, lookup: LookupFunction, init: RequestInit): Promise<Response> {
+  return new Promise((resolve, reject) => {
+    // Keep the URL hostname for the Host header, SNI and certificate verification.
+    // A fresh direct socket cannot reuse an unchecked connection or resolve the host again.
+    const request = httpsRequest(
+      url,
+      {
+        agent: false,
+        lookup,
+        signal: init.signal ?? undefined,
+        headers: { accept: "image/*,*/*;q=0.5" }
+      },
+      (incoming) => {
+        const status = incoming.statusCode ?? 502;
+        const headers = new Headers();
+        try {
+          for (const [key, value] of Object.entries(incoming.headers)) {
+            if (value !== undefined)
+              headers.set(key, Array.isArray(value) ? value.join(", ") : value);
+          }
+          const empty = status === 204 || status === 205 || status === 304;
+          if (empty) incoming.resume();
+          const body = empty ? null : (Readable.toWeb(incoming) as ReadableStream<Uint8Array>);
+          resolve(new Response(body, { status, headers }));
+        } catch (error) {
+          incoming.destroy();
+          reject(error);
+        }
+      }
+    );
+    request.once("error", reject);
+    request.end();
+  });
+}
+
+/** Download over a direct HTTPS connection pinned to the validated DNS addresses on every hop. */
 export async function fetchPublic(raw: string, options: SafeFetchOptions) {
-  const fetchImpl = options.fetchImpl ?? fetch;
   const lookup = options.lookup ?? resolveAll;
-  let url = await checkUrl(raw, lookup);
+  let checked = await checkUrl(raw, lookup);
   for (let hop = 0; ; hop++) {
+    const { url, host, addresses } = checked;
     let response: Response;
     try {
-      response = await fetchImpl(url, {
+      const init = {
         redirect: "manual",
         signal: AbortSignal.timeout(TIMEOUT_MS),
         headers: { accept: "image/*,*/*;q=0.5" }
-      });
+      } satisfies RequestInit;
+      response = options.fetchImpl
+        ? await options.fetchImpl(url, init)
+        : await downloadHop(url, pinnedLookup(host, addresses), init);
     } catch {
       throw new UnsafeUrlError(`无法连接 ${url.hostname}`);
     }
@@ -99,7 +155,7 @@ export async function fetchPublic(raw: string, options: SafeFetchOptions) {
       await response.body?.cancel();
       const location = response.headers.get("location");
       if (!location || hop >= MAX_REDIRECTS) throw new UnsafeUrlError("链接跳转过多");
-      url = await checkUrl(new URL(location, url).toString(), lookup);
+      checked = await checkUrl(new URL(location, url).toString(), lookup);
       continue;
     }
     if (!response.ok) {

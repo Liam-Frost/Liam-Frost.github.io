@@ -11,7 +11,7 @@ export function DatabaseNotice({ error, subject }: { error: Error; subject: stri
           {tr("{0}需要数据库。请在", subject)} <code className="chip">apps/api/.env</code>{" "}
           {tr("中设置")} <code className="chip">DATABASE_URL</code>
           {tr("，运行")} <code className="chip">npm run db:migrate</code> {tr("后重启 API（见")}{" "}
-          <code className="chip">docs/database.md</code>）。
+          <code className="chip">docs/local-development.md</code>）。
         </>
       ) : code === "DATABASE_UNAVAILABLE" ? (
         <>
@@ -24,7 +24,7 @@ export function DatabaseNotice({ error, subject }: { error: Error; subject: stri
             <code className="chip">apps/api</code> {tr("中运行")}{" "}
             <code className="chip">npx prisma dev</code>
             {tr("），地址和密码正确，然后刷新页面（见")}{" "}
-            <code className="chip">docs/database.md</code>）。
+            <code className="chip">docs/local-development.md</code>）。
           </p>
         </>
       ) : (
