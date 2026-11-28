@@ -90,7 +90,7 @@ What runs:
 
 - **postgres**: PostgreSQL 16; data in the `postgres_data` volume; also published on `127.0.0.1:5432` for database tools and `npm run dev`.
 - **app**: the production image (`Dockerfile`). Fastify serves the API, the site (`apps/web/dist`), the admin (`apps/admin/dist`) and `/uploads`. Uploaded images live in the `uploads` volume. It runs as a non-root user and has a health check on `/api/health`.
-- **caddy**: the only published entry point (`HTTP_PORT`, default 8080). With `SITE_ADDRESS` set to a domain it serves HTTPS with automatic certificates (Stage 10).
+- **caddy**: the only published entry point (`HTTP_PORT`, default 8080). With `SITE_ADDRESS` set to a domain it serves HTTPS with automatic certificates.
 
 Common commands:
 
@@ -105,7 +105,7 @@ If `docker compose up` reports that port 5432 or 8080 is already allocated, chan
 
 `ADMIN_COOKIE_SECURE` defaults to `true` in Docker; `.env.example` sets `false` so the admin works over plain HTTP locally. Set it back to `true` once the site is served over HTTPS.
 
-Data survives `docker compose down` / `up` and restarts. Back up the `postgres_data` and `uploads` volumes together (Stage 10 adds scripts for this).
+Data survives `docker compose down` / `up` and restarts. Back up the `postgres_data` and `uploads` volumes together.
 
 ## Checking the Docker Setup
 
@@ -127,3 +127,24 @@ NODE_ENV=production node dist/server.js
 ```
 
 The bundle includes the workspace packages and the generated Prisma client; the npm dependencies of `apps/api` must be installed.
+
+## Database and migrations
+
+Use the connection string in [apps/api/.env.example](../apps/api/.env.example) for local PostgreSQL. Prisma configuration lives in apps/api/prisma.config.ts. The client is generated to apps/api/src/generated/prisma. Build and type checks generate the client on a fresh checkout. Install the trusted CA when connecting to a database with a certificate issued by a private authority.
+
+| Command             | Use                                                           |
+| ------------------- | ------------------------------------------------------------- |
+| npm run db:generate | Regenerate the Prisma client                                  |
+| npm run db:migrate  | Develop and apply migrations locally, regenerate and seed     |
+| npm run db:deploy   | Apply committed migrations                                    |
+| npm run db:push     | Prototype schema changes on a disposable development database |
+| npm run db:seed     | Seed the starter photography data                             |
+| npm run db:studio   | Inspect the database                                          |
+
+See the [schema](../apps/api/prisma/schema.prisma) and [migration files](../apps/api/prisma/migrations/) for data models and migration history. A development database created by schema push has no migration history and may need to be recreated or baselined. The container applies pending migrations unless MIGRATE_ON_START is disabled. Use the existing release process for production.
+
+## Repository checks
+
+Run npm ci, npm run lint, npm run format:check, npm run typecheck, npm test and npm run build. The [CI](../.github/workflows/ci.yml) and [Docker](../.github/workflows/docker.yml) workflows define current triggers, test jobs and reported check names. Check the branch's required status checks before merging.
+
+[Dependabot configuration](../.github/dependabot.yml) defines dependency groups and schedules. For compiler and lint tool upgrades, verify compatibility across workspaces and run the regular checks. Report vulnerabilities through the private process in [SECURITY.md](../SECURITY.md).

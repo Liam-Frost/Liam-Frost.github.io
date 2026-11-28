@@ -4,7 +4,7 @@
 
 Website Settings uses task-based groups: Site & Brand, Pages & Experience, Privacy & Integrations, and Administration. Public/admin logos and the site favicon share a branding page; home modules and login appearance have separate editors. The admin's own language is set from the sidebar only. Analytics settings and audit history remain in their independent global sections. Legacy appearance/integration and grouped setting URLs redirect with query/hash intact.
 
-Settings pages share compact/standard/wide widths and arrange their content by the width they actually have. Logos, the avatar and the favicon are uploaded directly and take effect at once; other settings have a save bar. Compact list editors follow the technology-stack density. Session-memory drafts survive route changes and back/forward without a prompt; logout or session expiry clears them. Reload/close still warns. Forms that keep their input only in the page ask before leaving. See the [UI architecture and phase status](website-settings-ui.zh-CN.md).
+Settings pages share compact/standard/wide widths and arrange their content by the width they actually have. Logos, the avatar and the favicon are uploaded directly and take effect at once; other settings have a save bar. Compact list editors follow the technology-stack density. Session-memory drafts survive route changes and back/forward without a prompt; logout or session expiry clears them. Reload/close still warns. Forms that keep their input only in the page ask before leaving. See the [UI architecture and phase status](#settings-layout-and-drafts).
 
 Settings save field by field. Failed saves preserve the draft; a field changed elsewhere in the meantime shows both versions in words before an explicit decision and another save. Privacy retains ten previous saved versions. Referenced dictionary aliases cannot be removed, including references from private collection items. Existing visitor theme/language choices take precedence over site defaults.
 
@@ -23,22 +23,6 @@ The Audit Log page records login outcomes, logout, matched admin write requests,
 `GET /api/admin/audit` requires the normal admin session and IP guard, disables caching, and supports operation/result filters with 50 entries per page. No audit edit or delete endpoint exists. Ordinary successful reads are omitted to avoid recording every dashboard poll. The log does not reconstruct earlier events or describe which individual fields changed; an HTTP success records the request outcome, not a separate transaction guarantee.
 
 Deployment requires the additive `20261107160000_admin_audit_log` migration before the new application starts. With a database, records persist in `AdminAuditEvent`; database-free development uses a capped in-memory buffer. Persistence errors are logged without undoing the administrative request. This is an application audit trail, not an independently signed or tamper-proof archive. No automatic audit deletion is enabled; establish a retention policy before its size becomes material.
-
-## Current Scope
-
-Stage 3 added the authentication foundation; Stage 5 hardened it and added a configurable admin path and an IP allowlist.
-
-Current admin features:
-
-- API session check: `GET /api/admin/session` (returns `adminPath` only to a signed-in admin).
-- API login: `POST /api/admin/login`.
-- API logout: `POST /api/admin/logout`.
-- Signed-in check: `GET /api/admin/me`.
-- Reusable backend guard: `AdminAuthService.requireAdmin` (Fastify `preHandler`).
-- Standalone admin app `apps/admin` (Stage 6), served by the API at `ADMIN_PATH`: login, layout with Overview / Photos / Projects navigation, logout.
-- Photo management (Stage 7): upload, edit in five languages, publish/hide, home-page featured flag, drag-and-drop or button reordering, delete.
-- Overview (Stage 20): today's visits, things to fix, account and data source status, content counts and recent activity; see [Overview](#overview-概览).
-- Project management (Stage 8): create, edit (texts and Markdown body in five languages, slug, status, months, tech stack, links), cover and screenshots, publish/hide, home-page featured flag, reorder, delete.
 
 ## Configuration
 
@@ -88,18 +72,18 @@ On Windows Git Bash, a value like `ADMIN_PATH=/studio` on the command line is re
 ## Security Model
 
 - **Password**: stored only as a scrypt hash (`N=16384, r=8, p=1`). Scrypt runs even for a wrong username so timing does not reveal valid usernames.
-- **Session**: HttpOnly, `SameSite=Strict` cookie containing an HMAC-SHA256-signed token with an expiry. Logout revokes the token in memory until it expires.
+- **Session**: HttpOnly, `SameSite=Strict` cookie containing an HMAC-SHA256-signed token with an expiry. Logout revokes the session.
 - **CSRF**: every non-GET `/api/admin/*` request must send `x-admin-request: 1` (`ADMIN_REQUEST_HEADER` in `@liam-frost/shared`). Cross-site forms cannot set custom headers, and cross-origin scripts need a CORS preflight that only configured origins pass.
 - **Rate limit**: 8 login attempts per IP per 15 minutes, then `429` with `Retry-After`.
 - **IP allowlist**: when `ADMIN_ALLOWED_IPS` is set, every `/api/admin/*` route answers other IPs with the exact same `404` as an unknown route, before any other check, so the admin API's existence is not revealed.
 - **Admin path**: `ADMIN_PATH` is never returned by public endpoints; only a signed-in admin gets it from `/api/admin/session`. The admin app is served only at that path; other URLs never receive the admin page or its path.
 - **Logs**: `authorization`, `cookie` and `set-cookie` headers are redacted.
 
-Rate-limit counters and revoked sessions live in process memory, so the API must run as a single instance.
+The login rate limiter uses process memory. With a database, sessions and revocations are persisted.
 
 ## Photo Management
 
-Requires `DATABASE_URL` (see `database.md`).
+Requires `DATABASE_URL` (see [database setup](local-development.md#database-and-migrations)).
 
 - **Adding photos** (添加照片) from four sources, through a queue that runs three at a time. Each item shows 等待中, 上传中, 处理中, 已完成, 失败 or 已取消; failed and cancelled items can be retried (one or all), and items the server does not have yet can be cancelled. Reloading or leaving while items are unfinished asks first. Before uploading, files are compared with existing photos: the very same file (by SHA-256) or an upload with the same file name opens a dialog to skip, replace (the new image goes on that photo, details kept) or keep both, optionally for all remaining matches; identical files within one batch are sent once. Each upload carries an id (`x-upload-id`), so a retry after a lost answer returns the photo it already made. If the page is reloaded mid-batch, it afterwards lists the files that still need to be chosen again. An image's files are written to `UPLOAD_DIR/.staging` and moved into place in one step, so an interrupted upload leaves no partial folder; leftovers older than an hour are removed at startup.
   - **本机上传**: files from the device (also drag-and-drop anywhere on the Photos page). Accepted: JPEG, PNG, WebP, AVIF, TIFF up to `UPLOAD_MAX_MB` (default 40 MB) and 120 megapixels.
@@ -115,7 +99,7 @@ Requires `DATABASE_URL` (see `database.md`).
 - **Processing**: the image is auto-rotated from EXIF and rendered as WebP at 640, 1280, 2048 and 3072 px on the longest edge (never upscaled; smaller images get their own size instead). Generated files carry no metadata, so GPS and camera serial data are not published. The original file is kept next to them but is never served.
 - **New photos are hidden**: an upload becomes a private photo prefilled from EXIF (camera, lens, "1/200 · f/2.8 · ISO 400", capture date) with the file name as its title. Edit it, then switch on "公开显示". Nothing is left behind on failure, and deleting a photo removes its files.
 - **Editing**: title, category, location, description, alt text and tags per language (missing languages fall back on the site); date, camera, lens, settings; public and featured switches. A title in at least one language is required.
-- **Image** (in the editor): shows the source and whether the site hosts the image. 替换图片 puts a new image from any of the four sources on the photo, keeping its texts, order and visibility (optionally taking the new image's date and camera details); the old hosted files are removed. 转为本站托管 downloads a referenced image and hosts it, keeping its source.
+- **Image** (in the editor): shows the source and whether the site hosts the image. 替换图片 puts a new image from any of the four sources on the photo, keeping its texts, order and visibility (optionally taking the new image's date and camera details); the previously hosted files are handled by the image manager. 转为本站托管 downloads a referenced image and hosts it, keeping its source.
 - **Featured**: the home page "featured" section shows photos with "首页精选" on, in gallery order.
 - **Order**: drag cards (or use the arrow buttons) in the "全部" view. The server only accepts the complete current list, so two tabs cannot silently overwrite each other's order.
 - **Existing Flickr photos** stay as referenced links until replaced or hosted.
@@ -141,7 +125,7 @@ API: `GET/POST /api/admin/projects`, `GET/PATCH/DELETE /api/admin/projects/:id`,
 
 ## Tech Stack (技术栈)
 
-Requires `DATABASE_URL`. Categories and technologies of the home page's tech stack, in the site's order: drag or use the arrows (also between categories), search the icon libraries when adding a technology, upload a logo (SVG, PNG or WebP) when they have none, hide entries, mark them Primary. A category with technologies is only deleted after choosing to move them or to delete them too. Each technology's 关联项目 picks the projects using it (hidden ones included; the site lists public ones only), and a project's 技术栈 field picks technologies from the stack, with 其他技术 for names that are not in it; both edit the same links. Details and routes: [tech-stack.md](tech-stack.md).
+Requires `DATABASE_URL`. Categories and technologies of the home page's tech stack, in the site's order: drag or use the arrows (also between categories), search the icon libraries when adding a technology, upload a logo (SVG, PNG or WebP) when they have none, hide entries, mark them Primary. A category with technologies is only deleted after choosing to move them or to delete them too. Each technology's 关联项目 picks the projects using it (hidden ones included; the site lists public ones only), and a project's 技术栈 field picks technologies from the stack, with 其他技术 for names that are not in it; both edit the same links. Details and routes: [tech-stack.md](#technology-and-project-links).
 
 ## API configuration
 
@@ -175,7 +159,7 @@ Requires `DATABASE_URL`. Searching films and series needs TMDB credentials (a v3
 - **首页精选** (button on the collection page): every entry with the featured switch on, in the fixed order; drag a row or use the arrows, then save (`PUT /api/admin/media/featured-order` with every featured id once). Saving the order does not change the entries' update times. Entries featured later and never ordered come after the ordered ones, newest first. In 固定顺序 the wall follows this order exactly; entries that do not fit in its rows are not shown.
 - New entries are public with status 看过; posters are stored under `UPLOAD_DIR/media/<id>/`.
 - Anime gets its romaji name from AniList as the English and French title (editable like any title).
-- The site shows the collection at `/collection`. The home section 收藏近况 shows this year's counts (linking to 回顾), the featured wall (covers in their own shapes, edge to edge, in up to 展示行数 rows; hover or focus shows the title, a song plays in the corner player, anything else opens its details; see [featured-quilt-wall.md](featured-quilt-wall.md)), and recently finished entries (switchable by 影视 / 阅读 / 游戏; one row, two when nothing is featured); each entry appears once (public API: `GET /api/collection`, whose `home.wall` holds the wall's ordered ids and settings and `home.featured` the three picks older pages use, `GET /api/collection/:id`).
+- The site shows the collection at `/collection`. The home section 收藏近况 shows this year's counts (linking to 回顾), the featured wall (covers in their own shapes, edge to edge, in up to 展示行数 rows; hover or focus shows the title, a song plays in the corner player, anything else opens its details; see [featured-quilt-wall.md](performance.md#featured-collection-wall)), and recently finished entries (switchable by 影视 / 阅读 / 游戏; one row, two when nothing is featured); each entry appears once (public API: `GET /api/collection`, whose `home.wall` holds the wall's ordered ids and settings and `home.featured` the three picks older pages use, `GET /api/collection/:id`).
 
 API: `GET /api/admin/media`, `GET /api/admin/media/search?kind&source&q`, `POST /api/admin/media/import`, `POST /api/admin/media`, `GET/PATCH/DELETE /api/admin/media/:id`, `POST /api/admin/media/:id/poster`, `GET/PUT /api/admin/collection/settings`, `PUT /api/admin/media/featured-order`. Posters: `/uploads/media/<id>/<imageId>/<n>.webp`.
 
@@ -323,12 +307,60 @@ Codes used by admin routes: `VALIDATION`, `REQUEST_ERROR`, `CSRF`, `UNAUTHORIZED
 
 缩短保留期需要明确确认，下一次维护会永久删除过期原始记录，按天汇总保留。统计时区显示但不允许在线修改：历史日期桶不能直接转换，运维须先评估历史数据处理，再修改 `ANALYTICS_TIMEZONE`。代理信任范围、源站防火墙和备份策略仍属运维配置；填写国家请求头不会自动信任代理。只在可信代理覆盖该请求头且源站受保护时使用。MMDB 的数据许可和更新由管理员负责。
 
-## Appearance and home visibility
+## Settings layout and drafts
 
-The footer's copyright notice is set separately for 主页, 项目, 收藏 and 照片 (a project's page counts as 项目; other pages such as the privacy notice use 主页's), and the footer links are shared. Each secondary contact link in 联系我 shows its name or one of a fixed set of monochrome icons.
+| 类型       | 页面                                                                                        | 保存                           | SPA 内离开       | 刷新/关闭            |
+| ---------- | ------------------------------------------------------------------------------------------- | ------------------------------ | ---------------- | -------------------- |
+| 文档草稿   | 基本资料姓名、页脚、默认显示、导航外观、词典、隐私、首页模块、登录外观、Logo 文字、页面标题 | 吸底条显式保存                 | 草稿保留，不提示 | 浏览器提示，草稿丢失 |
+| 立即上传   | 头像、Logo、图标                                                                            | 上传成功即生效，恢复默认需确认 | 无               | 无                   |
+| 服务级草稿 | 集成与 API                                                                                  | 每个服务独立                   | 内存保留，不提示 | 浏览器提示           |
+| 独立提交   | 账号与安全                                                                                  | 每个表单独立                   | 有输入时确认     | 浏览器提示           |
 
-Website Settings edits independent public/admin header logos (an uploaded image or text), the login background (fixed, daily, each visit or each browsing session, like the other rotations; with no photos chosen it is plain), and seven home-section switches. These are validated settings documents in the existing Setting table; no new SQL migration is required. Saves are field by field, and photos added to the login background must currently be public. Deleted/hidden photos no longer resolve to URLs; the login background falls back to its plain surface.
+离开保护由 `lib/unsaved.ts` 登记未保存来源（`session` 或 `page`），`NavigationGuard` 用路由的 `useBlocker` 统一处理链接、选择器、代码跳转和浏览器后退。
 
-An enabled section still requires content: empty public stack categories, featured photos/projects, collection content, contact details, and about manifestos/gear are hidden once loading completes. The built-in introduction remains content and has its own switch. Loading and errors are distinguished from an empty successful response. If presentation settings cannot be read, the homepage offers retry rather than restoring default visibility over saved switches; the request has a bounded timeout. Older in-flight responses cannot override a refreshed settings generation. The section navigator derives its entries from rendered sections.
+保存按字段：`PATCH` 只发送改动的顶层字段及其修改前的值。服务端在同一把锁内比较，他人未改动的字段直接合并；同一字段被改成不同的值时返回 409 和字段名，由 `SettingsConflict` 让用户选择。登录背景只校验本次新增的照片必须公开，已选照片后来被隐藏不会阻塞保存，公开接口仍只返回公开照片。
 
-The login background is visible before authentication, so private photos cannot be selected; one hidden after being chosen stays listed but is not shown on the login page, and does not block other saves. The photo is chosen once when the login page opens and does not change while it is open. Public and admin logos share no setting values. These controls affect presentation rather than access permission. The static snapshot workflow also captures about and presentation settings so the emergency site retains the selected layout.
+## Collection sorting and music identities
+
+- 公共分类标签使用小型确定性字典补齐五种语言。数据库已有人工翻译优先，未知标签保留原文。卡片、详情、筛选和年度回顾共用同一显示函数，不覆盖历史数据。
+- 实际导入标签混有分类、创作者/角色/作品名和粉丝用语。词典覆盖通用分类、用途和已知缩写，不猜人名罗马字或改写作品名；后续可将自由标签与规范分类分开管理。没有来源核验的专名继续使用已有文本，仍可在内容编辑器补充翻译。
+- 后台作品支持最近修改、添加时间正反序、标题/拼音正反序、年份和评分；空年份/评分排最后，使用稳定ID打破相同值。顺序保存在URL，切换类型继续保留；管理排序不写入精选或歌单顺序。
+- 音乐专辑/艺人分组按所选标题顺序或组内条目排序位置排列；歌单的人工播放顺序保持独立。
+- 首页精选增加独立导航页，支持搜索标题/艺人、按类型定位、拖动、置顶、上下移动和直接输入目标序号。筛选只改变可见列表，保存仍提交完整顺序，服务器拒绝遗漏或并发变化的精选集合。它没有改变轮换模式；固定排序需在显示设置选择固定。
+
+已实现人物 / 团体 / 机构、别名、多来源唯一身份、MusicBrainz 搜索导入、Spotify Web API 艺人 ID 和可取得 ISRC 的保存，以及 iTunes artist ID 保存。现有 ID、资料图片和人工编辑不重建或覆盖。MusicBrainz 关联的 Spotify 身份初始为待确认，管理员核对后才参与自动关联。
+
+音乐自动关联仅接受已确认的来源身份；名字/别名和同名冲突显示在待确认面板，可逐项选择后批量确认，本次忽略不会永久屏蔽未来建议。确认失败保留选择，可幂等重试。既有歌曲缺少艺人 ID 时不会凭名字伪造 ID；可先手工确认作品关联，后续重新取得来源身份再启用精确匹配。公开播放列表嵌入页未给出艺人 ID 时也保留为空，不进行猜测。
+
+团体成员使用独立表保存人物、职责及加入/离开年份，与作品演唱、作曲、作词、制作、演奏角色独立。只允许人物作为成员，防止自引用和嵌套循环；删除人物级联移除成员关系。前台仅展示本来就符合公开展示条件的成员，不泄漏私密人物。成员不会自动继承团体全部作品的 credit。
+
+不会自动导入外部完整唱片目录、成员履历或批量覆盖人工资料；本轮也不按标题或 ISRC 自动合并不同版本作品。进一步的录音/发行关系导入和持久化拒绝名单可独立扩展。
+
+MusicBrainz接入需要共享请求队列、缓存和失败退避，按其官方每IP约1次/秒的规则运行，并提供可联系的User-Agent；不要为全部收藏定时并发刷新。头像不由MusicBrainz身份查询自动保证，继续保留人工图片及来源许可。[MusicBrainz限流文档](https://musicbrainz.org/doc/MusicBrainz_API/Rate_Limiting)。
+
+## Technology and project links
+
+Technologies and projects are linked many-to-many by `ProjectTechnology` (migration `20261111090000_project_technologies`): stable ids, `(projectId, technologyId)` unique, cascading deletes on both sides (a link goes, never a project or a technology). The project's `techStack` column only keeps names that are not in the stack ("其他技术"); there is no second list to keep in step.
+
+- **Old data**: the migration linked each project's names to the technology of the same name, ignoring case, spaces, `.`, `-` and `_`, plus common aliases (`src/projects/technology-matching.ts`, the same list as the migration: React.js, Node, Golang, Postgres, C++/cpp, CSS3, Premiere Pro, Adobe …). A name matching several technologies (namesakes in two categories) or none stays a plain name. `npm run db:link-project-technologies` lists what is left; with `-- --apply` it links names that match later (after adding the technology to the stack). Running it again adds nothing.
+- **Admin**: the technology dialog's 关联项目 (searchable multi-select of existing projects: hidden ones too, marked) and the project form's 技术栈 (searchable multi-select of the stack's technologies with their logos) both write the same links; typing a stack name in 其他技术 links it instead. Either side refreshes the other. Routes: `PATCH /api/admin/stack/technologies/:id` and `POST …/technologies` take `projectIds` (replaces that technology's links; a project linked anew gets it last in its own list), `PATCH /api/admin/projects/:id` takes `technologyIds` (in order) and `otherTechnologies`. Unknown ids are `400 UNKNOWN_PROJECT` / `UNKNOWN_TECHNOLOGY`. Both sides keep both limits (40 technologies per project, 500 projects per technology): a link that would pass one is `400 TOO_MANY_TECHNOLOGIES` / `TOO_MANY_PROJECTS`, so neither form can create data the other refuses to save. The project form sends its links only when they were changed there, and follows fresh project data while nothing is edited, so saving an unrelated change never writes back links edited on the stack page (Codex review of PR 51).
+- **Public**: `GET /api/stack` lists each technology's public projects (slug, title, summary, status, a 320 px cover) from one project query, no request per technology. Hidden and draft projects are never listed; a hidden technology does not appear because of a public project. Project pages list linked technologies that are public, then the other names.
+- **Site**: a technology used by public projects is a button opening its details: logo, name, website, and its projects (four, then 查看全部). On desktop a narrow side panel, on phones a bottom sheet; Esc, the backdrop and the close button close it and focus returns to the technology. A technology with only a website is a link as before, one with neither is plain text.
+
+Use the API catalog for library logos. Custom image uploads are validated and rasterized to WebP. The site retains each logo's proportions and uses initials when an image is unavailable. Admin stack reordering submits the complete list, with each category and technology represented once.
+
+## Image file management
+
+Batch photo uploads support retries and duplicate handling. Photos can keep multiple versions. Deleted photos and photo versions go to the recycle bin and can be restored before expiry. Hosted project, collection, people, branding and technology images share inventory and scanning. Their retired files can be downloaded or permanently deleted from the recycle bin. Storage scans report missing, incomplete and orphaned files. Background generation of image sizes remains an open decision, pending production upload timing. See the [implementation record](archive/plans/plan-image-management.md).
+
+## Authentication limits
+
+The current API limits a client IP to eight login attempts in a fifteen-minute window. The ninth request returns HTTP 429 with Retry-After. Successful login clears that IP's counter. This limits attempts rather than permanently banning an account; it is in memory and resets when the application restarts. It is suitable for the current single write authority, but does not coordinate multiple application instances or stop a distributed attack.
+
+Existing protections in the source include salted scrypt password hashes, constant-time hash/signature comparison, the same password derivation path for a wrong username, HMAC-signed expiring sessions, random session IDs, HttpOnly/SameSite=Strict cookies, Secure cookies by default in production, session revocation on logout, authenticated admin routes, an optional IP/CIDR allowlist, CSRF custom-header checks before body parsing, input schemas and size limits. The configured admin path avoids casual discovery but is not a replacement for authentication. Public responses hide the admin path until sign-in.
+
+Admin audit records login outcomes, logout, matched writes and rejected reads, without bodies, passwords, queries or session credentials. The new log is read-only through the API; it is not an independently tamper-proof archive. Sessions and their revocations are stored in the database; attempt counters are process-local. IP-based controls depend on a correct trusted-proxy boundary; never trust arbitrary forwarded IP headers.
+
+Two-step sign-in (TOTP with recovery codes), password and username changes and per-device session revocation are available on the 账号与安全 page. Recommended next steps are persistent/shared attempt counters, a bounded global login-rate budget alongside the per-IP limit, and optional passkeys. Prefer a cooldown with clear retry guidance to a permanent account lock that attackers could use to deny the owner access. Edge rate limiting should reinforce the application control after verifying the actual proxy IP chain. Alert on bursts using audit outcomes, and test notification delivery.
+
+No permanent IP ban, persistent limiter or edge-rule deployment is claimed by this review. Authentication tests use isolated local servers; do not brute-force the production login while validating the limit.

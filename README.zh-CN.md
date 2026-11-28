@@ -130,9 +130,9 @@ docker compose exec app node apps/api/dist/seed.js
 
 `apps/web` 为前台，`apps/admin` 为后台，`apps/api` 包含服务、数据库迁移和测试；`packages/shared` 提供共享类型，`packages/content` 提供照片种子内容；`docker`、`docs`、`scripts` 和 `.github` 分别存放容器配置、文档、维护脚本和 CI。
 
-提交前运行 lint、format:check、typecheck、test 和 build。CI 检查格式、代码、类型、测试与构建；Docker 冒烟测试验证生产镜像、认证、上传、迁移和持久化。针对 main 的 PR 需要 Quality checks 与 smoke 通过。分支与维护规则见[仓库维护](docs/repository-maintenance.md)。
+提交前运行 lint、format:check、typecheck、test 和 build。CI 检查格式、代码、类型、测试与构建；Docker 冒烟测试验证生产镜像、认证、上传、迁移和持久化。针对 main 的 PR 需要 Quality checks 与 smoke 通过。分支与维护规则见[仓库维护](docs/local-development.md#repository-checks)。
 
-更多资料：[后台功能](docs/admin.md)、[数据库](docs/database.md)、[架构](docs/architecture.md)、[人物与收藏方案](docs/collection-admin-ux.md)、[认证保护与边界](docs/admin-security-review.md)、[性能系统](docs/performance.md)、[网站设置说明](docs/website-settings-ui.zh-CN.md)。
+更多资料：[后台功能](docs/admin.md)、[数据库](docs/local-development.md#database-and-migrations)、[架构](docs/architecture.md)、[人物与收藏方案](docs/admin.md#collection-sorting-and-music-identities)、[认证保护与边界](docs/admin.md#authentication-limits)、[性能系统](docs/performance.md)、[网站设置说明](docs/admin.md#settings-layout-and-drafts)。
 
 ## 安全、许可与署名
 

@@ -1,88 +1,23 @@
 # Architecture
 
-## Overview
+This npm workspace contains three applications. See [local development](local-development.md) for setup, migrations and repository checks.
 
-A full-stack personal site deployed on a VPS: one Node process serves the public site, the admin app and the API.
+| Workspace        | Responsibility                                                                              |
+| ---------------- | ------------------------------------------------------------------------------------------- |
+| apps/web         | React and Vite site with photography, projects, collections and a player                    |
+| apps/admin       | Separate React and Vite admin bundle, with Tailwind and TanStack Query                      |
+| apps/api         | Fastify API, authentication, uploads, background work and production serving of both builds |
+| packages/shared  | Shared DTOs, validation constants and configuration helpers                                 |
+| packages/content | Starter content for seeding and supported static fallbacks                                  |
 
-```txt
-apps/web        React + Vite front-end (public site)
-apps/admin      React + Vite + Tailwind admin app
-apps/api        Fastify API service
-packages/content Shared content seed and content types
-packages/shared  Shared constants and API types
-docs            Project documentation
-scripts         Maintenance helpers
-```
+## Serving requests
 
-## Front-End
+Fastify can serve both bundles, the API and uploads on one origin. The local Docker setup uses Caddy at the front. The admin build uses relative assets and is served at the configured ADMIN_PATH. Fastify injects that base path at runtime. See [public routing](performance.md#routing-and-not-found-pages) and [admin authentication](admin.md#authentication-limits).
 
-The public site is React + Vite. Pages read their content from the API; photography seed data in `packages/content` is the fallback when the database is unavailable.
+## Data and media
 
-## Back-End
+PostgreSQL and Prisma store photos, projects, collections, technology links, settings and analytics. The [database schema](../apps/api/prisma/schema.prisma) defines the models. Configured database galleries show public records only, including an empty gallery when there are no public records. The photo API can fall back to seed content when a usable database is unavailable. Project content and admin writes require the database.
 
-The API uses Fastify and TypeScript, with PostgreSQL through Prisma when `DATABASE_URL` is set. Public endpoints live under `/api`. Admin endpoints live under `/api/admin`, behind the session cookie, the optional IP allowlist and the CSRF header; `admin.md` lists them by feature.
+Uploaded images use local storage keys and generated variants. Remote photos retain a source URL. Projects use stable UUIDs, editable slugs and localized Markdown. ProjectTechnology links projects and stack entries, with unmatched technology names stored as text.
 
-Settings are validated documents in the `Setting` table. The admin saves them field by field (`PATCH` with the changed fields and the values they were edited from), so pages editing different fields of one document do not conflict.
-
-Production hosting: one Node process serves everything on one origin. `routes/web-app.ts` serves the site build (`apps/web/dist`) at `/`: only files that exist in the build at startup, looked up by exact path; other paths are the usual JSON 404 (the site uses hash routes, so `/` is its only page). `index.html` gets a CSP that allows the inline theme bootstrap script by its hash, computed from the build at startup. The admin build is served at `ADMIN_PATH`, uploads at `/uploads`. In Docker, Caddy sits in front (`compose.yaml`, `docs/local-development.md`).
-
-API structure:
-
-```txt
-apps/api/src
-  config/env.ts     Zod-validated environment (fails fast on bad config)
-  auth/             password hashing, signed sessions, AdminAuthService (CSRF, IP allowlist, rate limit, revocation)
-  lib/              HttpError, Zod input validation, IP/CIDR lists
-  routes/           public and admin routes by feature (photos, projects, media, stack, settings, analytics…)
-  photos/           PhotoRepository interface + Prisma implementation, image processing (sharp), EXIF, DTO mapping
-  projects/         ProjectRepository interface + Prisma implementation, DTO mapping
-  storage/local.ts  uploaded files under UPLOAD_DIR
-  db/               Prisma client and seed script
-  generated/prisma  generated Prisma client (git-ignored)
-apps/api/test       Vitest + Fastify inject tests
-packages/shared     constants and API types shared by API, web and admin (admin path rules, CSRF header, error shape)
-```
-
-`buildServer({ config })` takes an explicit configuration, so tests build isolated servers without touching `process.env`. Every error response has the shape `{ "error": { "code", "message" } }`, and every response carries `nosniff`, `DENY` framing and a strict referrer policy.
-
-## Admin App
-
-`apps/admin` is a separate Vite app so the admin UI (Tailwind, TanStack Query, components adapted from `internal-developer-tools-portal`) never touches the public site's CSS or bundle.
-
-- **Mount path**: built with relative asset URLs (`base: "./"`). The API serves `apps/admin/dist` at `ADMIN_PATH` and injects `<base href="<ADMIN_PATH>/">` plus `<meta name="lf-admin-path">` into `index.html`, so changing `ADMIN_PATH` needs only a restart, and nested routes such as `/admin/photos` still resolve `./assets/...`.
-- **Not found by default**: the app reads the mount path from that `<meta>`; without it (any other URL) it renders a bare 404 and never calls the API.
-- **Hosting** (`apps/api/src/routes/admin-app.ts`): only `index.html`, Vite's hashed `assets/*` files and `favicon.svg` are served; any other file-like path is 404. The page gets a strict CSP and `no-store`; hashed assets are cached for a year. IPs outside `ADMIN_ALLOWED_IPS` get the unknown-route 404. Without a build, nothing is registered.
-- **Development**: `npm run dev:admin` (port 5174) proxies `/api` and `/uploads` to `127.0.0.1:8787` (override with `ADMIN_API_PROXY`) and injects the same `<meta>` from `ADMIN_PATH` in `apps/api/.env`.
-- **Interface rules**: settings pages lay out with container queries, single choices use one `Select` built on Base UI, and unsaved work is guarded through the router's navigation blocker. See `website-settings-ui.zh-CN.md`.
-- **Tests**: `apps/admin/e2e` runs Playwright against the real API with in-memory data.
-- **Session**: TanStack Query holds `/api/admin/session`; any 401 returns the app to the login screen; logout drops all other cached admin data.
-
-## Photos
-
-- **Storage**: `Photo.storage` is `remote-url` (existing Flickr photos: `src` is the URL) or `local` (uploads: `storageKey` + `variants`; URLs are derived at read time, so moving files to R2 later only changes how URLs are built).
-- **Repository**: routes depend on the `PhotoRepository` interface; the API uses the Prisma implementation when `DATABASE_URL` is set, tests use an in-memory one.
-- **Public shape**: `packages/content`'s `Photo` gained `featured` and optional `variants` (`{ width, height, url }`, smallest first). `src` stays the largest image, so the fullscreen viewer works unchanged.
-- **Front end**: `ResponsiveFlickrImage` keeps its Flickr suffix logic and, for photos with `variants`, builds `srcset` from them (capped by the adaptive quality tier), uses the 1280 px size as the lightbox medium and swaps in the size that covers the viewport.
-
-## Projects
-
-- **Data**: `Project` rows hold localized JSON texts (Markdown body), `cover` and `gallery` as image JSON (`{ id, key, width, height, variants }`; URLs derived at read time like photos), tech stack, links, status and `YYYY-MM` months. `id` is a UUID and never changes; `slug` is the editable URL segment.
-- **Images**: `routes/read-upload.ts` and `saveImage` are shared with photos; project files live under `projects/<projectId>/<imageId>/`, so deleting a project removes one folder.
-- **No seed data**: projects exist only in the database. Without the API the web app shows no project sections.
-- **Web**: `/projects` (filter by technologies used in more than one project) and `/projects/:slug`. The detail page is lazy-loaded so `react-markdown` stays out of the main bundle (main bundle 437 kB; the detail chunk 164 kB).
-
-## Content
-
-Photography seed data is stored in `packages/content` so that the front-end and API read the same content source during migration. This prevents data drift while the database layer is not yet introduced.
-
-The database seed script also reads from `packages/content`, so the same source currently powers the static fallback and the initial PostgreSQL data migration.
-
-## Image Storage Direction
-
-Image handling is designed around switchable storage drivers:
-
-- `remote-url`: keep using existing Flickr or image-host URLs.
-- `local`: serve uploaded images from the VPS filesystem.
-- `r2`: serve images from Cloudflare R2 public/custom-domain URLs.
-
-Cloudflare R2 is the preferred future target, but the API keeps the storage choice configurable so development can continue locally or with existing URLs.
+The API validates environment settings at startup. Tests create isolated Fastify instances with explicit configuration. The API's [error format](admin.md#error-format) is shared between the web and admin applications. Production-specific infrastructure and release records are maintained privately.
