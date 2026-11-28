@@ -1,78 +1,26 @@
-# Performance & Quality System
+# Public site behavior
 
-This project uses a **runtime adaptive quality system** to keep animations smooth (especially on battery-powered laptops) while **avoiding hardware fingerprinting**.
+## Adaptive quality and loading
 
-It also implements a **Flickr image delivery strategy** that keeps the grid fast (decode/memory/scroll) while still loading high quality in the lightbox.
+The site uses frame pacing, available long-task observations, tab visibility and browser preferences. Motion, filters, image resolution and speculative prefetch have independent budgets. Enable the debug panel with ?debug=1 before the hash in a production build.
 
-## What we measure (and why it’s not fingerprinting)
+Motion keeps its 0–3 frame-pacing ladder. Filter pressure uses a separate 0–2 ladder: sustained average frames above 24ms or p95 above 50ms lower filters after 1.5 seconds; average below 18ms and p95 below 25ms for 12 seconds recover one filter level. Filter 1 removes header/background blur; filter 0 removes supported filters with readable caption backgrounds. The motion tier no longer switches header blur.
 
-We only use **runtime performance measurements** and user accessibility preferences:
+Image resolution defaults to the grid's existing b-size ceiling, independent of frame pacing and motion preference. Responsive srcset still selects for rendered width and DPR. Explicit image overrides retain n/z/c/b for testing. Speculative prefetch uses a separate 0–2 budget; Save-Data and slow-2g/2g/3g disable it automatically. Hidden/reduced-motion states pause speculative work; explicitly requested images remain functional. Debug UI exposes independent motion, filter, image and prefetch controls. These policies do not infer CPU/GPU models.
 
-- `requestAnimationFrame` **frame deltas** (dt) to estimate frame pacing.
-- Optional **Long Tasks** via `PerformanceObserver({ type: "longtask" })` when supported.
-- `document.visibilityState` to pause work in background tabs.
-- `prefers-reduced-motion` to respect accessibility.
+The home section-restoration indicator stays visible while scroll position is resolved. Initial entry and the time before restoration show no full-page skeleton. The Spotify dock expands automatically once the iframe loads, at most once per browsing session. A manual open can show the loading placeholder before the iframe is ready.
 
-We do **not** attempt to infer CPU model, GPU, memory size, or other detailed hardware characteristics.
+## Motion, scrolling and the waveform navigator
 
-## Quality tiers
+Motion tokens live in globals.css. Reveal handles headings, content groups and staggered lists. Composite blocks reveal together. Portfolio filter results appear immediately. The technology stack can use a lazy GSAP scroll timeline and falls back when motion is disabled or unavailable. Lenis handles smooth desktop scrolling, with native fallback for scroll helpers. Test direct anchors, section reload restoration, back/forward history, keyboard navigation and reduced motion.
 
-Quality tier is an integer: `0 | 1 | 2 | 3`.
+The desktop waveform rail follows rendered homepage sections. It uses independent semantic buttons and a decorative SVG, without sampling audio. Playback state comes from the local audio element or validated messages from the Spotify iframe. Hidden or idle states stop animation. Reduced motion keeps the controls usable.
 
-- Tier 3: full visuals (target 60fps)
-- Tier 2: very similar visuals, budgeted updates (target 45fps)
-- Tier 1: reduced decorative work, filters off (target 30fps)
-- Tier 0: minimal motion; decorative updates off (target 30fps, sample-only)
+## Featured collection wall
 
-### Important semantics: `fpsCap`
+The wall partitions a contiguous list of public featured covers into justified rows based on their aspect ratios. It balances row heights and retains a clickable fallback when an image is unavailable. Sparse collections use fewer rows instead of duplicating entries. Collection settings control visible-row limit, target height and the use of fixed order or rotation. The layout calculation lives in apps/web/src/lib/justified-layout.ts.
 
-`fpsCap` is a **max work update frequency**, not an rAF skip.
-
-- rAF still runs so we can keep sampling, except when the document is hidden or reduced motion is requested.
-- “Heavy update” work only happens when `now - lastWorkTs >= 1000 / fpsCap`.
-- **`fpsCap = 0` means: never do heavy decorative updates** (avoid divide-by-zero by treating interval as `Infinity`).
-
-## Metrics window & thresholds
-
-We maintain a ring buffer of the last `N=120` frame deltas.
-
-Computed metrics:
-
-- `avgFrameMs`
-- `p95FrameMs`
-- `badFrameRatio` where `bad = dt > targetMs * 1.25`
-
-Hysteresis:
-
-- **Degrade quickly**: if `avgFrameMs > targetMs * 1.15` for `>=1.5s`, or `badFrameRatio > 0.25`
-- **Upgrade slowly**: if `avgFrameMs < nextTargetMs * 1.05` for `>=12s` AND long-task rate is low, fewer than 10% of frames miss the next tier budget, and at least 12 seconds have elapsed since the last tier change
-
-Visibility:
-
-- When hidden: pause sampling and clamp effective tier to 0.
-- When visible again: short re-warm-up (300–500ms).
-
-Reduced motion:
-
-- `prefers-reduced-motion: reduce` forces animation tier 0, disables decorative animation and frame sampling, and pauses speculative image fetching. Photograph resolution retains the underlying quality tier; a motion preference is not a low-resolution preference.
-- The typing greeting renders a complete, static phrase; its accessible text is always complete and stable. The technology stack tears down scroll timelines at tiers 0–1 as well as under reduced motion.
-- Tier changes discard old frame samples, so a single old slow window does not cascade through multiple tiers. The 1.05 upgrade tolerance lets a normal 60Hz screen recover to tier 3; 0.85 required more than 70Hz.
-- Images skipped while prefetching is paused are not cached as successfully fetched; upgrading can request them again.
-
-## Degrade ladder (mapping to UI/animations)
-
-The provider sets global DOM attributes:
-
-- `html[data-perf-tier="0..3"]`
-- `html[data-perf-filters="on|off"]`
-
-The CSS degrade ladder uses these to:
-
-1. Disable expensive `backdrop-filter`/`filter` while keeping the UI readable via more opaque backgrounds.
-2. Reduce/disable decorative CSS keyframe animations.
-3. Reduce blur-heavy reveal effects at low tiers.
-
-## Flickr image strategy
+## Responsive photography
 
 ### URL sizing via suffixes
 
@@ -128,34 +76,10 @@ If a suffix URL fails, we retry smaller suffixes locally per-image.
 
 This **does not** trigger global quality degradation.
 
-## How to test
+## Routing and not-found pages
 
-1. Run web dev: `npm run dev:web` (debug panel shows by default).
-2. Try `?debug=1` in preview/build.
-3. Use DevTools:
-   - CPU throttling (4× / 6×)
-   - Performance panel: look for Long Tasks
-4. Test visibility:
-   - switch tabs for 10–20s
-   - return and confirm it re-warm-ups (no tier penalty)
-5. Test accessibility:
-   - enable `prefers-reduced-motion` in OS/browser
-   - confirm tier is forced to 0 and decorative animations stop
-6. Battery vs plugged in:
-   - observe tier behavior and filter toggles on laptops
+Unknown hash routes and ordinary unknown document paths display the shared site header, footer, typography and theme, with links to the homepage and portfolio. Unknown physical paths use an absolute document base so nested URLs can load the application assets. Home navigation leaves the unknown document path instead of merely changing its hash.
 
-## Independent budgets (2026-11-07)
+The API application's web handler serves the application shell with HTTP 404, `no-store` and `noindex` for missing HTML document navigations. Unknown API, uploads, assets, dot paths and extension-bearing asset requests retain their JSON 404 response. Analytics records the missing physical path without its query string.
 
-Motion keeps its 0–3 frame-pacing ladder. Filter pressure uses a separate 0–2 ladder: sustained average frames above 24ms or p95 above 50ms lower filters after 1.5 seconds; average below 18ms and p95 below 25ms for 12 seconds recover one filter level. Filter 1 removes header/background blur; filter 0 removes supported filters with readable caption backgrounds. The motion tier no longer switches header blur.
-
-Image resolution defaults to the grid's existing b-size ceiling, independent of frame pacing and motion preference. Responsive srcset still selects for rendered width and DPR. Explicit image overrides retain n/z/c/b for testing. Speculative prefetch uses a separate 0–2 budget; Save-Data and slow-2g/2g/3g disable it automatically. Hidden/reduced-motion states pause speculative work; explicitly requested images remain functional. Debug UI exposes independent motion, filter, image and prefetch controls. These policies do not infer CPU/GPU models.
-
-The HTML preloads the portrait SVG and starts only the current interface language's font family (400/600/700/800); language changes update that stylesheet. The ordinary greeting's wrapping remains unchanged. Only the Japanese greeting measures the complete two-line phrase with cursor against available width and fits when necessary; its final character and cursor cannot wrap separately.
-
-The embed player reserves a same-height lightweight Spotify entry. Automatic iframe loading waits for document load, 2.5 seconds and an idle opportunity (bounded by a further 3 seconds); Save-Data/2g wait for interaction. Clicking or a player command loads immediately. Collapsing after loading keeps the iframe mounted. This avoids starting third-party work during initial navigation but does not eliminate it for visitors who use the player. Desktop navigation hit-area changes are deferred pending the user's design decision.
-
-### Player readiness and restoration feedback
-
-The embed dock starts collapsed and may load in the background after the deferred-load gate. It expands automatically only on the iframe document load event, unless the visitor has dismissed it. Visitors can open early to see the existing placeholder; the iframe replaces that placeholder after loading. Automatic collapse begins after document load. The iframe stays mounted on collapse; pending/closed content is hidden from interaction. As a cross-origin embed, its document load event is the available readiness boundary, not a guarantee about Spotify internal playback state.
-
-The section-restoration indicator rotates continuously while restoration is active; reduced-motion preference slows the small indicator rather than leaving it frozen. The existing restoration timeout/cancellation behavior is unchanged.
+Static regional servers have their own HTTP fallback configuration. The frontend can render the error page when they serve its shell, but this change does not by itself change those servers' HTTP status or fallback policy. Validate document status and fallback behavior on every serving layer during release acceptance.

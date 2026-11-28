@@ -43,7 +43,7 @@ The public website and preview are available at the links above and **[preview.t
 
 This is a personal project under active development.
 
-See [admin features](docs/admin.md), [collection UX and artist-source plans](docs/collection-admin-ux.md), [authentication protections and limits](docs/admin-security-review.md), and [performance behavior](docs/performance.md). The current source includes MusicBrainz artist imports, editable person/group identities, confirmed-ID music matching, and explicit name-match suggestions. The unified website-settings design is documented in [the settings document](docs/website-settings-ui.zh-CN.md); account and route changes remain proposals. Features reach production through the normal release process.
+See [admin features](docs/admin.md), [collection UX and artist-source plans](docs/admin.md#collection-sorting-and-music-identities), [authentication protections and limits](docs/admin.md#authentication-limits), and [performance behavior](docs/performance.md). The current source includes MusicBrainz artist imports, editable person/group identities, confirmed-ID music matching, and explicit name-match suggestions. The unified website-settings design is documented in [the settings document](docs/admin.md#settings-layout-and-drafts); account and route changes remain proposals. Features reach production through the normal release process.
 
 ## Technology
 
@@ -200,15 +200,15 @@ npm run build
 
 PRs targeting `main` require the **Quality checks** and **smoke** checks to pass. CI covers formatting, lint, types, tests, and the full build; the Docker check exercises the production image, authentication, uploads, migrations, and persistence. The Docker badge above tracks `dev`, where that workflow runs on every push. The CodeQL badge links to the repository's scan results.
 
-[Repository maintenance](docs/repository-maintenance.md) documents branch rules, dependency updates, security findings, and outstanding setup tasks.
+[Repository maintenance](docs/local-development.md#repository-checks) documents branch rules, dependency updates, security findings, and outstanding setup tasks.
 
 ## Documentation
 
 - [Local development and Docker](docs/local-development.md)
 - [Admin setup and integrations](docs/admin.md)
-- [Database and migrations](docs/database.md)
+- [Database and migrations](docs/local-development.md#database-and-migrations)
 - [Architecture](docs/architecture.md)
-- [Repository maintenance](docs/repository-maintenance.md)
+- [Repository maintenance](docs/local-development.md#repository-checks)
 - [Project documentation index](docs/README.md)
 
 ## Security
