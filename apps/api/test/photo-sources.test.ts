@@ -4,7 +4,7 @@ import { join } from "node:path";
 import sharp from "sharp";
 import { beforeAll, describe, expect, it } from "vitest";
 
-import { isBlockedAddress } from "../src/lib/safe-fetch";
+import { isBlockedAddress, pinnedLookup } from "../src/lib/safe-fetch";
 import { buildTestServer, csrf, login, multipartFile } from "./helpers";
 import { MemoryPhotoRepository, remotePhoto } from "./memory-photo-repository";
 
@@ -60,6 +60,18 @@ async function setup(
     app.inject({ method, url, headers: { ...csrf, cookie }, payload: payload as object });
   return { app, photos, uploadDir, cookie, post, calls: fetcher.calls };
 }
+
+it("allows a socket lookup to use only the prevalidated answers for its original host", () => {
+  const lookup = pinnedLookup("images.example.com", ["8.8.8.8", "2001:4860:4860::8888"]);
+  lookup("images.example.com", { all: true }, (error, addresses) => {
+    expect(error).toBeNull();
+    expect(addresses).toEqual([
+      { address: "8.8.8.8", family: 4 },
+      { address: "2001:4860:4860::8888", family: 6 }
+    ]);
+  });
+  lookup("unrelated.example.com", {}, (error) => expect(error).toBeInstanceOf(Error));
+});
 
 describe("photo sources", () => {
   it("imports a linked image as a hidden, site-hosted photo with EXIF suggestions", async () => {
@@ -129,7 +141,7 @@ describe("photo sources", () => {
     }
     expect(photos.rows.size).toBe(0);
     expect(isBlockedAddress("::ffff:192.168.1.1")).toBe(true);
-    expect(isBlockedAddress("198.18.0.7")).toBe(false);
+    expect(isBlockedAddress("198.18.0.7")).toBe(true);
     expect(isBlockedAddress("8.8.8.8")).toBe(false);
   });
 
