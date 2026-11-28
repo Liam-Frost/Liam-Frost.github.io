@@ -71,7 +71,7 @@
 
   --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
 
-  /* Motion tokens (see docs/motion.md). Reveal reads one intensity's set; the values are starting
+  /* Motion tokens (see docs/performance.md). Reveal reads one intensity's set; the values are starting
      points, tuned in the browser. Only transform and opacity move. */
   --motion-ease: var(--ease);
   --motion-distance-subtle: 6px;

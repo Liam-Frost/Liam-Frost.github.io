@@ -3,7 +3,7 @@ import { type CSSProperties, type ReactNode, useEffect, useRef, useState } from 
 import { cx } from "../lib/cx";
 import { observeReveal } from "../lib/reveal";
 
-/** How far and how long content moves in; see the motion tokens in globals.css and docs/motion.md. */
+/** How far and how long content moves in; see the motion tokens in globals.css and docs/performance.md. */
 export type RevealIntensity = "subtle" | "standard" | "expressive";
 
 type Props = {
